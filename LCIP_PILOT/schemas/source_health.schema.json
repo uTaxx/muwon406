@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/source_health.schema.json",
+  "title": "SourceHealth",
+  "description": "SOURCE_HEALTH 레코드 — TASK-003 필드셋 채택 (docs/04_DATA_AND_CONFIG_SCHEMA.md 충돌 로그 #4 참고, Blueprint §6.6보다 상세한 버전을 기준으로 함)",
+  "type": "object",
+  "required": [
+    "source_id", "checked_at", "http_status", "response_ms", "record_count",
+    "health_status", "consecutive_failures"
+  ],
+  "properties": {
+    "source_id": { "type": "string", "pattern": "^SRC-[0-9]{4}$" },
+    "checked_at": { "type": "string", "format": "date-time" },
+    "last_success_at": { "type": ["string", "null"], "format": "date-time" },
+    "http_status": { "type": ["integer", "null"] },
+    "response_ms": { "type": ["integer", "null"], "minimum": 0 },
+    "record_count": { "type": ["integer", "null"], "minimum": 0 },
+    "latest_reference_date": { "type": ["string", "null"], "format": "date" },
+    "health_status": {
+      "type": "string",
+      "enum": [
+        "HEALTHY", "DEGRADED", "STALE", "BROKEN_LINK", "SCHEMA_CHANGED",
+        "AUTH_ERROR", "RATE_LIMITED", "CONTENT_INVALID", "ANOMALY"
+      ]
+    },
+    "consecutive_failures": { "type": "integer", "minimum": 0 },
+    "error_type": { "type": ["string", "null"] },
+    "error_message": { "type": ["string", "null"] },
+    "recovery_action": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

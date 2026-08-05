@@ -1,0 +1,228 @@
+{
+  "name": "LCIP - Notification (WF-P07)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "매시 정각 확인",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "INTELLIGENCE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-003",
+      "name": "신규 변화 조회",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "SENT_HISTORY에 없는 신규 중요 이슈만",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.condition_placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-004",
+      "name": "08:00~20:00 인가?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "notification.yaml의 active_send_start/end 기준"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.LCIP_TEST_EMAIL_RECIPIENT }}",
+        "subject": "미국 엔지니어드스톤 리스크 알리미"
+      },
+      "id": "gmail-005",
+      "name": "Gmail 카드 발송",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        900,
+        220
+      ],
+      "notes": "제목: 미국 엔지니어드스톤 리스크 알리미. test_mode 준수.",
+      "disabled": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "PLACEHOLDER_CRED_Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.summary_text }}"
+      },
+      "id": "telegram-006",
+      "name": "Telegram 요약 발송",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        380
+      ],
+      "notes": "3~6줄, 신규 변화만, Dashboard 링크 포함",
+      "disabled": true,
+      "credentials": {
+        "telegramApi": {
+          "name": "PLACEHOLDER_CRED_Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "SENT_HISTORY",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-007",
+      "name": "SENT_HISTORY Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        300
+      ],
+      "notes": "중복발송 방지를 위한 dedupe_key 기록",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "매시 정각 확인": {
+      "main": [
+        [
+          {
+            "node": "신규 변화 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "신규 변화 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "신규 변화 조회": {
+      "main": [
+        [
+          {
+            "node": "08:00~20:00 인가?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08:00~20:00 인가?": {
+      "main": [
+        [
+          {
+            "node": "Gmail 카드 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail 카드 발송": {
+      "main": [
+        [
+          {
+            "node": "Telegram 요약 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram 요약 발송": {
+      "main": [
+        [
+          {
+            "node": "SENT_HISTORY Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

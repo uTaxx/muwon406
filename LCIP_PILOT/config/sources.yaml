@@ -1,0 +1,57 @@
+# LCIP Pilot — Source Registry 초기값
+# 03_BUILD_SPECIFICATION.md TASK-002/TASK-010 기준
+#
+# access_method: rss | api | html
+# reliability_grade: A(공식/규제기관) | B(주요 언론) | C(일반 언론/블로그)
+# 이 파일은 SOURCE_REGISTRY(Google Sheets) 초기 시드로 사용된다.
+
+sources:
+  - source_id: SRC-0001
+    source_name: Google News RSS (English)
+    source_type: news_rss
+    endpoint_url: "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+    access_method: rss
+    language: en
+    country: US
+    reliability_grade: B
+    collection_schedule: hourly
+    expected_freshness_hours: 2
+    active: true
+
+  - source_id: SRC-0002
+    source_name: Google News RSS (Korean)
+    source_type: news_rss
+    endpoint_url: "https://news.google.com/rss/search?q={query}&hl=ko&gl=KR&ceid=KR:ko"
+    access_method: rss
+    language: ko
+    country: KR
+    reliability_grade: B
+    collection_schedule: hourly
+    expected_freshness_hours: 2
+    active: true
+
+  - source_id: SRC-0003
+    source_name: Naver News Search API
+    source_type: news_api
+    endpoint_url: "https://openapi.naver.com/v1/search/news.json"
+    access_method: api
+    language: ko
+    country: KR
+    reliability_grade: B
+    collection_schedule: hourly
+    expected_freshness_hours: 2
+    # Naver API Key 준비 여부는 TASK-006/008 진행 전 사용자에게 확인해야 하는 항목
+    active: false
+
+  - source_id: SRC-0004
+    source_name: DART 공시 (전자공시시스템)
+    source_type: government_filing
+    endpoint_url: "https://opendart.fss.or.kr/api/list.json"
+    access_method: api
+    language: ko
+    country: KR
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    # DART API Key 보유 여부는 §24 질문 항목 — Sprint 6(확장) 단계에서 활성화
+    active: false

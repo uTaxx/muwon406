@@ -1,0 +1,9 @@
+{
+  "source_id": "SRC-0001",
+  "checked_at": "2026-08-05T09:00:00Z",
+  "http_status": 200,
+  "response_ms": -100,
+  "record_count": 12,
+  "health_status": "TOTALLY_FINE",
+  "consecutive_failures": 0
+}

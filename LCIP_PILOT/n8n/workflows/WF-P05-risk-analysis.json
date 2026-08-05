@@ -1,0 +1,172 @@
+{
+  "name": "LCIP - Risk Analysis (WF-P05)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "subwf-trigger-001",
+      "name": "Sub-workflow 입력",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "INTELLIGENCE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-003",
+      "name": "관련 LX Context 발췌",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "기존 사건 Timeline 일부 조회 (전체 KB 매번 전송 금지)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "claude-004",
+      "name": "Claude - Risk Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "prompts/risk_analysis.md 사용. 입력 최대 8000/출력 최대 1200 tokens. 출력은 claude_output.schema.json의 risk_analysis_output 준수.",
+      "disabled": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PLACEHOLDER_CRED_AnthropicApiKey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-005",
+      "name": "JSON Schema 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "실패 시 1회 교정 재호출 후 재실패하면 검토대기(needs_review)로 전환"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "INTELLIGENCE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-006",
+      "name": "INTELLIGENCE_DB Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        300
+      ],
+      "notes": "심층분석 결과 저장",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Sub-workflow 입력": {
+      "main": [
+        [
+          {
+            "node": "관련 LX Context 발췌",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "관련 LX Context 발췌",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "관련 LX Context 발췌": {
+      "main": [
+        [
+          {
+            "node": "Claude - Risk Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Risk Analysis": {
+      "main": [
+        [
+          {
+            "node": "JSON Schema 검증",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Schema 검증": {
+      "main": [
+        [
+          {
+            "node": "INTELLIGENCE_DB Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

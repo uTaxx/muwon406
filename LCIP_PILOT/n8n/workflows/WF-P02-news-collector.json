@@ -1,0 +1,175 @@
+{
+  "name": "LCIP - News Collector (WF-P02)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "매시 정각 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q={{ $json.query_en }}&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-003",
+      "name": "Google News RSS (EN)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "TOP-0001 영어 키워드 검색. AI 호출 금지."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q={{ $json.query_ko }}&hl=ko&gl=KR&ceid=KR:ko",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-004",
+      "name": "Google News RSS (KO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        460
+      ],
+      "notes": "TOP-0001 한국어 키워드 검색. AI 호출 금지."
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-005",
+      "name": "정규화 & 중복제거",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        380
+      ],
+      "notes": "URL canonicalization, 제목 HTML entity 해제, 제목 유사도 기반 중복그룹 생성. AI 호출 금지 (TASK-010)."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "ARTICLE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-006",
+      "name": "ARTICLE_DB Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        380
+      ],
+      "notes": "신규 기사만 append",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "매시 정각 실행": {
+      "main": [
+        [
+          {
+            "node": "Google News RSS (EN)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google News RSS (KO)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google News RSS (EN)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google News RSS (EN)": {
+      "main": [
+        [
+          {
+            "node": "정규화 & 중복제거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google News RSS (KO)": {
+      "main": [
+        [
+          {
+            "node": "정규화 & 중복제거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "정규화 & 중복제거": {
+      "main": [
+        [
+          {
+            "node": "ARTICLE_DB Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

@@ -1,0 +1,23 @@
+# LCIP Pilot — Cost Guard 정책
+# 03_BUILD_SPECIFICATION.md TASK-002/TASK-015, ADR-005 기준
+
+cost:
+  monthly_budget_usd: 20
+  target_budget_usd: 15
+  warning_rate: 0.70
+  restrict_rate: 0.90
+  hard_stop_rate: 1.00
+  daily_deep_analysis_limit: 5
+  max_input_tokens_per_call: 8000
+  max_output_tokens_per_call: 1200
+  classify_without_ai_first: true
+  use_prompt_cache_when_available: true
+
+# 모델명은 여기서만 관리한다 (코드에 하드코딩 금지).
+# 실제 모델 ID는 Anthropic API 준비 완료 후 TASK-009에서 확정한다.
+models:
+  classification_model_env: LCIP_CLASSIFICATION_MODEL
+  deep_analysis_model_env: LCIP_DEEP_ANALYSIS_MODEL
+
+# 모델별 단가(USD per 1M tokens)는 하드코딩하지 않고 아래 파일에서 관리한다.
+pricing_registry_path: config/model_pricing.yaml

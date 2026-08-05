@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/article.schema.json",
+  "title": "Article",
+  "description": "ARTICLE_DB 레코드 — 03_BUILD_SPECIFICATION.md TASK-003 필수필드 기준",
+  "type": "object",
+  "required": [
+    "article_id", "topic_id", "title_original", "source_name", "source_type",
+    "source_url", "canonical_url", "published_at", "collected_at", "language",
+    "country", "related_lx_companies", "event_type", "confidence_score",
+    "source_reliability_grade", "is_new_change", "status"
+  ],
+  "properties": {
+    "article_id": { "type": "string", "pattern": "^ART-[0-9]{8}-[0-9]{4}$" },
+    "topic_id": { "type": "string", "pattern": "^TOP-[0-9]{4}$" },
+    "title_original": { "type": "string", "minLength": 1 },
+    "title_ko": { "type": ["string", "null"] },
+    "source_name": { "type": "string", "minLength": 1 },
+    "source_type": {
+      "type": "string",
+      "enum": ["news_rss", "news_api", "government_filing", "official_website", "other"]
+    },
+    "source_url": { "type": "string", "format": "uri" },
+    "canonical_url": { "type": "string", "format": "uri" },
+    "published_at": { "type": "string", "format": "date-time" },
+    "collected_at": { "type": "string", "format": "date-time" },
+    "language": { "type": "string", "enum": ["en", "ko", "ja", "zh", "other"] },
+    "country": { "type": "string", "minLength": 2, "maxLength": 2 },
+    "summary_ko": { "type": ["string", "null"] },
+    "litigation_amount_total": { "type": ["number", "null"] },
+    "litigation_currency": { "type": ["string", "null"], "minLength": 3, "maxLength": 3 },
+    "litigation_amount_total_usd": { "type": ["number", "null"] },
+    "claimant_count": { "type": ["integer", "null"], "minimum": 0 },
+    "average_amount_per_person_usd": {
+      "type": ["number", "null"],
+      "description": "litigation_amount_total_usd / claimant_count. 둘 중 하나라도 없으면 null — AI가 임의 추정 금지."
+    },
+    "related_companies": { "type": "array", "items": { "type": "string" } },
+    "related_lx_companies": { "type": "array", "items": { "type": "string" } },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "litigation", "regulation", "safeguard_tariff", "industrial_safety",
+        "supply_chain", "ma_signal", "policy_change", "other"
+      ]
+    },
+    "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "source_reliability_grade": { "type": "string", "enum": ["A", "B", "C"] },
+    "duplicate_group_id": { "type": ["string", "null"] },
+    "is_new_change": { "type": "boolean" },
+    "status": {
+      "type": "string",
+      "enum": ["collected", "classified", "analyzed", "rejected", "needs_review"]
+    }
+  },
+  "additionalProperties": false
+}

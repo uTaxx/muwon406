@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/intelligence.schema.json",
+  "title": "Intelligence",
+  "description": "INTELLIGENCE_DB 레코드 — 03_BUILD_SPECIFICATION.md TASK-003 필수필드 기준. 사실·해석·추론·제안을 명확히 분리한다.",
+  "type": "object",
+  "required": [
+    "intelligence_id", "article_ids", "mission", "fact_summary", "verified_facts",
+    "ai_interpretation", "ai_inference", "lx_impact", "recommended_actions",
+    "unknowns", "confidence_score", "evidence", "created_at", "prompt_version",
+    "knowledge_version"
+  ],
+  "properties": {
+    "intelligence_id": { "type": "string", "pattern": "^INT-[0-9]{8}-[0-9]{4}$" },
+    "article_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^ART-[0-9]{8}-[0-9]{4}$" },
+      "minItems": 1
+    },
+    "mission": { "type": "string", "enum": ["future_readiness", "risk_management"] },
+    "fact_summary": { "type": "string", "minLength": 1 },
+    "verified_facts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "원문에서 직접 확인 가능한 사실만"
+    },
+    "ai_interpretation": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "사실에 대한 AI의 해석 (사실 자체와 구분)"
+    },
+    "ai_inference": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "원문에 명시되지 않은 AI의 추론 (해석보다 불확실성 높음)"
+    },
+    "lx_impact": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "LX홀딩스/계열사 관점의 영향 — 근거 없는 단정 금지"
+    },
+    "recommended_actions": { "type": "array", "items": { "type": "string" } },
+    "unknowns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "확인되지 않아 추가 조사가 필요한 사항"
+    },
+    "confidence_score": { "type": "string", "enum": ["low", "medium", "high"] },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "minItems": 1
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "prompt_version": { "type": "string" },
+    "knowledge_version": { "type": "string" }
+  },
+  "additionalProperties": false
+}

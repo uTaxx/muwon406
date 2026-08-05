@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/claude_output.schema.json",
+  "title": "ClaudeOutput",
+  "description": "WF-P04(Relevance Classifier)와 WF-P05(Risk Analysis)의 Claude API 응답 검증 스키마 — TASK-011 / DEVELOPMENT_MANUAL_REFERENCE.md §7 Step 4/5 기준",
+  "oneOf": [
+    { "$ref": "#/$defs/relevance_output" },
+    { "$ref": "#/$defs/risk_analysis_output" }
+  ],
+  "$defs": {
+    "relevance_output": {
+      "type": "object",
+      "required": [
+        "relevant", "relevance_score", "mission", "related_companies", "reason",
+        "needs_deep_analysis"
+      ],
+      "properties": {
+        "relevant": { "type": "boolean" },
+        "relevance_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "mission": { "type": "string", "enum": ["future_readiness", "risk_management"] },
+        "related_companies": { "type": "array", "items": { "type": "string" } },
+        "reason": { "type": "string" },
+        "needs_deep_analysis": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "risk_analysis_output": {
+      "type": "object",
+      "required": [
+        "facts", "significance", "lx_impact", "actions", "confidence", "evidence",
+        "unknowns"
+      ],
+      "properties": {
+        "facts": { "type": "array", "items": { "type": "string" } },
+        "significance": { "type": "string" },
+        "lx_impact": { "type": "array", "items": { "type": "string" } },
+        "actions": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+        "evidence": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

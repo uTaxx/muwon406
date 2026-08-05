@@ -1,0 +1,30 @@
+# LCIP Pilot — Google Drive 폴더 구조
+# 채택 기준: 03_BUILD_SPECIFICATION.md TASK-005
+# (docs/04_DATA_AND_CONFIG_SCHEMA.md §1 충돌 로그 #2 참고 — Blueprint의 8-폴더 구조는 참고용)
+
+drive_root_folder_name: LCIP_PILOT
+drive_root_folder_id_env: GOOGLE_DRIVE_ROOT_FOLDER_ID
+
+folders:
+  - name: 00_Project
+    purpose: 프로젝트 거버넌스/설정 문서 사본
+  - name: 01_Knowledge
+    purpose: LX Knowledge Base 원문 및 AI용 Markdown
+  - name: 02_Data
+    purpose: 원본 데이터 참조(수집 원문 캐시, DART 원문 등)
+  - name: 03_Dashboard
+    purpose: 대시보드 템플릿
+  - name: 04_Reports
+    purpose: 생성된 리포트/요약 산출물
+  - name: 05_Archive
+    purpose: 대시보드/리포트 날짜별 아카이브
+  - name: 06_Admin
+    purpose: Change Request, 운영 로그 등 관리자 자료
+
+subfolders:
+  04_Reports:
+    - CURRENT
+  05_Archive: []
+
+# create_drive_structure.py는 이 파일을 읽어 폴더 생성 계획을 세운다.
+# 실제 생성은 --apply 및 사용자 승인 후에만 수행한다.

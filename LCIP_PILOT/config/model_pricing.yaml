@@ -1,0 +1,17 @@
+# LCIP Pilot — Model Pricing Registry
+# TASK-015 Cost Guard 요구사항: "모델별 단가는 Config 또는 Pricing Registry로 관리하며
+# 코드에 영구 하드코딩하지 않는다."
+#
+# 아래 단가는 참고용 placeholder다. 실제 배포 전 Anthropic Console의 최신 가격표로 갱신해야
+# 한다 (TASK-009에서 Claude API Key 준비 시 확인).
+
+# usd_per_million_tokens: {input, output}
+pricing:
+  placeholder_low_cost_model:
+    usd_per_million_input_tokens: 0.0
+    usd_per_million_output_tokens: 0.0
+    note: "TODO: 1차 분류용 저비용 모델 확정 후 단가 갱신"
+  placeholder_sonnet_class_model:
+    usd_per_million_input_tokens: 0.0
+    usd_per_million_output_tokens: 0.0
+    note: "TODO: 심층분석용 Sonnet급 모델 확정 후 단가 갱신"

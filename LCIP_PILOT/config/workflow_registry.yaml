@@ -1,0 +1,72 @@
+# LCIP Pilot — n8n Workflow Registry
+# 03_BUILD_SPECIFICATION.md TASK-007/§4 Build Task Index 기준
+# 모든 워크플로우는 기본 active: false. 실제 배포/활성화는 TASK-008/018에서
+# 사용자 승인 후 순서대로 진행한다 (§22 활성화 순서).
+
+workflows:
+  - workflow_id: WF-P01
+    file: n8n/workflows/WF-P01-config-loader.json
+    name: LCIP - Config Loader
+    depends_on: []
+    active: false
+    activation_order: 1
+  - workflow_id: WF-P09
+    file: n8n/workflows/WF-P09-cost-guard.json
+    name: LCIP - Cost Guard
+    depends_on: [WF-P01]
+    active: false
+    activation_order: 2
+  - workflow_id: WF-P99
+    file: n8n/workflows/WF-P99-error-handler.json
+    name: LCIP - Error Handler
+    depends_on: []
+    active: false
+    activation_order: 3
+  - workflow_id: WF-P08
+    file: n8n/workflows/WF-P08-source-health.json
+    name: LCIP - Source Health
+    depends_on: [WF-P01]
+    active: false
+    activation_order: 4
+  - workflow_id: WF-P02
+    file: n8n/workflows/WF-P02-news-collector.json
+    name: LCIP - News Collector
+    depends_on: [WF-P01]
+    active: false
+    activation_order: 5
+  - workflow_id: WF-P03
+    file: n8n/workflows/WF-P03-public-source-collector.json
+    name: LCIP - Public Source Collector
+    depends_on: [WF-P01]
+    active: false
+    activation_order: 5
+  - workflow_id: WF-P04
+    file: n8n/workflows/WF-P04-relevance-classifier.json
+    name: LCIP - Relevance Classifier
+    depends_on: [WF-P01, WF-P02]
+    active: false
+    activation_order: 6
+  - workflow_id: WF-P05
+    file: n8n/workflows/WF-P05-risk-analysis.json
+    name: LCIP - Risk Analysis
+    depends_on: [WF-P01, WF-P04]
+    active: false
+    activation_order: 7
+  - workflow_id: WF-P06
+    file: n8n/workflows/WF-P06-dashboard-builder.json
+    name: LCIP - Dashboard Builder
+    depends_on: [WF-P05]
+    active: false
+    activation_order: 8
+  - workflow_id: WF-P07
+    file: n8n/workflows/WF-P07-notification.json
+    name: LCIP - Notification
+    depends_on: [WF-P06]
+    active: false
+    activation_order: 9
+  - workflow_id: WF-P10
+    file: n8n/workflows/WF-P10-natural-language-admin.json
+    name: LCIP - Natural Language Admin
+    depends_on: [WF-P01]
+    active: false
+    activation_order: 10

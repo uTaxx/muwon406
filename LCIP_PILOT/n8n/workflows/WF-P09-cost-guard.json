@@ -1,0 +1,137 @@
+{
+  "name": "LCIP - Cost Guard (WF-P09)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "subwf-trigger-001",
+      "name": "Sub-workflow 입력",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "COST_LOG",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-003",
+      "name": "COST_LOG 당월 누적 조회",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "cumulative_monthly_cost 확인",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-004",
+      "name": "70/90/100% 판정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "scripts/cost_guard.py의 판정 로직과 동일 규칙 사용 (single source of truth는 Python 모듈)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": "CONFIG_MASTER",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-005",
+      "name": "CONFIG_MASTER 갱신",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "restrict/hard_stop 플래그 갱신",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Sub-workflow 입력": {
+      "main": [
+        [
+          {
+            "node": "COST_LOG 당월 누적 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "COST_LOG 당월 누적 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "COST_LOG 당월 누적 조회": {
+      "main": [
+        [
+          {
+            "node": "70/90/100% 판정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "70/90/100% 판정": {
+      "main": [
+        [
+          {
+            "node": "CONFIG_MASTER 갱신",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

@@ -1,0 +1,138 @@
+/* LCIP Pilot Dashboard — LX홀딩스 공시/지속가능경영보고서 톤 참고 (02_SYSTEM_BLUEPRINT.md §10)
+   흰색 배경, 충분한 여백, 얇은 구분선, 카드 최소화, 과도한 색상/그림자/이모지 금지. */
+
+:root {
+  --lcip-text: #1c1c1c;
+  --lcip-muted: #5f6368;
+  --lcip-border: #e2e4e8;
+  --lcip-bg: #ffffff;
+  --lcip-accent: #0b3d91; /* 절제된 남색 포인트 컬러 하나만 사용 */
+  --lcip-warn-bg: #fbf3ea;
+  --lcip-warn-text: #7a4a12;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--lcip-bg);
+  color: var(--lcip-text);
+  font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "맑은 고딕", sans-serif;
+  line-height: 1.6;
+  word-break: keep-all; /* 표 셀 단어 비정상 분리 금지 */
+}
+
+.lcip-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.lcip-header {
+  border-bottom: 1px solid var(--lcip-border);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+.lcip-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 6px;
+}
+
+.lcip-header .lcip-meta {
+  color: var(--lcip-muted);
+  font-size: 0.875rem;
+}
+
+.lcip-today-change {
+  border: 1px solid var(--lcip-border);
+  border-left: 3px solid var(--lcip-accent);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  background: var(--lcip-bg);
+}
+
+.lcip-today-change h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.lcip-section {
+  margin-bottom: 40px;
+}
+
+.lcip-section h2 {
+  font-size: 1.125rem;
+  border-bottom: 1px solid var(--lcip-border);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.lcip-table-scroll {
+  overflow-x: auto; /* 가로스크롤 허용 */
+}
+
+table.lcip-table {
+  width: 100%;
+  min-width: 720px; /* 열 너비 최소폭 보장 */
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+table.lcip-table th,
+table.lcip-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--lcip-border);
+  vertical-align: top;
+  white-space: normal;
+}
+
+table.lcip-table th {
+  color: var(--lcip-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+table.lcip-table td.lcip-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.lcip-table a {
+  color: var(--lcip-accent);
+  text-decoration: none;
+}
+
+table.lcip-table a:hover {
+  text-decoration: underline;
+}
+
+.lcip-empty {
+  color: var(--lcip-muted);
+  font-size: 0.875rem;
+  padding: 12px 0;
+}
+
+.lcip-trend-chart {
+  width: 100%;
+  height: 180px;
+  border: 1px solid var(--lcip-border);
+}
+
+.lcip-footer {
+  color: var(--lcip-muted);
+  font-size: 0.75rem;
+  border-top: 1px solid var(--lcip-border);
+  padding-top: 16px;
+  margin-top: 48px;
+}
+
+@media (max-width: 640px) {
+  .lcip-container {
+    padding: 20px 12px 60px;
+  }
+}

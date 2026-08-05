@@ -1,0 +1,177 @@
+{
+  "name": "LCIP - Public Source Collector (WF-P03)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "매일 오전 7:30 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://opendart.fss.or.kr/api/list.json",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-003",
+      "name": "DART API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "DART API Key 준비 전까지 config/sources.yaml에서 active:false. Sub-workflow 구조로 향후 SEC/EDINET 확장 가능.",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.government_feed_url }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-004",
+      "name": "정부 보도자료 RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        460
+      ],
+      "notes": "정부기관 보도자료 RSS/API",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-005",
+      "name": "원문 URL·문서 ID 정규화",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        380
+      ],
+      "notes": "원문 URL과 문서 고유 ID를 저장"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "ARTICLE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-006",
+      "name": "ARTICLE_DB Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        380
+      ],
+      "notes": "신규 기사만 append",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "DART API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DART API": {
+      "main": [
+        [
+          {
+            "node": "원문 URL·문서 ID 정규화",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "정부 보도자료 RSS": {
+      "main": [
+        [
+          {
+            "node": "원문 URL·문서 ID 정규화",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "원문 URL·문서 ID 정규화": {
+      "main": [
+        [
+          {
+            "node": "ARTICLE_DB Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "매일 오전 7:30 실행": {
+      "main": [
+        [
+          {
+            "node": "DART API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "정부 보도자료 RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

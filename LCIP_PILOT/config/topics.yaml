@@ -1,0 +1,46 @@
+# LCIP Pilot — Topic 설정
+# 03_BUILD_SPECIFICATION.md TASK-002 / §10 Pilot 기본 Topic 기준
+#
+# 이 파일의 값은 TOPIC_CONFIG(Google Sheets) 생성 시 초기값으로 사용된다.
+# 운영 중 변경은 자연어 관리자 기능(WF-P10)을 통해 Change Request로 제안 →
+# 사용자 승인 후에만 반영한다. 이 파일을 직접 수정하는 것은 로컬 개발/테스트 목적으로만 허용한다.
+
+topics:
+  - topic_id: TOP-0001
+    name: engineered_stone_silicosis
+    display_name: 엔지니어드스톤·실리코시스
+    mission: risk_management
+    related_lx_companies:
+      - LX_HAUSYS
+    countries:
+      - US
+      - AU
+      - CA
+      - GB
+      - EU
+    languages:
+      - en
+      - ko
+    include_keywords:
+      - silicosis
+      - engineered stone
+      - artificial stone
+      - quartz countertop
+      - respirable crystalline silica
+      - silica lawsuit
+      - silica litigation
+      - engineered stone safeguard
+      - artificial stone safeguard
+      - quartz surface safeguard
+      - engineered stone tariffs
+      - 규폐증
+      - 엔지니어드스톤
+      - 인조대리석
+    exclude_keywords:
+      - sports
+      - unrelated natural stone
+    collection_interval_hours: 1
+    deep_analysis_rule: new_material_change_only
+    alert_rule: material_change_only
+    send_only_on_change: true
+    enabled: true

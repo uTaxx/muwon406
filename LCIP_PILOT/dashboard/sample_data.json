@@ -1,0 +1,26 @@
+{
+  "generated_at_kst": "2026-08-05 09:00",
+  "topic_display_name": "엔지니어드스톤·실리코시스",
+  "today_changes": [],
+  "today_changes_summary": "신규 주요 변화 없음",
+  "tracker_rows": [
+    {
+      "published_at": "2026-07-30",
+      "region": "미국 캘리포니아",
+      "title": "표본 사건명 (실제 데이터 아님 — WF-P05 실행 전 예시)",
+      "defendant": "표본 기업명",
+      "event_type": "소송",
+      "total_amount_usd": null,
+      "claimant_count": null,
+      "avg_amount_per_person_usd": null,
+      "status": "진행중",
+      "source_url": "https://example.com/sample-source",
+      "note": "샘플 fixture — 실제 수집 전"
+    }
+  ],
+  "non_us_issues": [],
+  "us_state_regulations": [],
+  "global_regulations": [],
+  "safeguard_news": [],
+  "litigation_amount_trend": []
+}

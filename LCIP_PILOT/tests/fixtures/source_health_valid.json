@@ -1,0 +1,14 @@
+{
+  "source_id": "SRC-0001",
+  "checked_at": "2026-08-05T09:00:00Z",
+  "last_success_at": "2026-08-05T09:00:00Z",
+  "http_status": 200,
+  "response_ms": 850,
+  "record_count": 12,
+  "latest_reference_date": "2026-08-05",
+  "health_status": "HEALTHY",
+  "consecutive_failures": 0,
+  "error_type": null,
+  "error_message": null,
+  "recovery_action": null
+}

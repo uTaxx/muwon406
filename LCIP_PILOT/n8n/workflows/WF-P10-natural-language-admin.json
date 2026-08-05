@@ -1,0 +1,118 @@
+{
+  "name": "LCIP - Natural Language Admin (WF-P10)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "claude-002",
+      "name": "Claude - 자연어 요청 파싱",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "prompts/natural_language_admin.md 사용. 직접 설정을 바꾸지 않고 Change Request 초안(JSON)만 생성.",
+      "disabled": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PLACEHOLDER_CRED_AnthropicApiKey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-003",
+      "name": "Diff·영향·비용 계산",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "affected_workflows, estimated_cost_impact 계산"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "CHANGE_REQUEST",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-004",
+      "name": "CHANGE_REQUEST Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "status=DRAFT 또는 PENDING_APPROVAL로 저장, 승인 대기",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Claude - 자연어 요청 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - 자연어 요청 파싱": {
+      "main": [
+        [
+          {
+            "node": "Diff·영향·비용 계산",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diff·영향·비용 계산": {
+      "main": [
+        [
+          {
+            "node": "CHANGE_REQUEST Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

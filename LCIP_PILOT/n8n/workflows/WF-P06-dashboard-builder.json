@@ -1,0 +1,195 @@
+{
+  "name": "LCIP - Dashboard Builder (WF-P06)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "매일 08:00 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "INTELLIGENCE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-003",
+      "name": "INTELLIGENCE_DB 조회",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "누적 DB 조회",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-004",
+      "name": "집계 (Tracker/국가별/규제/세이프가드)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "Chart용 숫자 집계는 Code 노드에서 처리 (AI 미사용)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-005",
+      "name": "HTML 템플릿 변수 주입",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "dashboard/template.html에 데이터 바인딩"
+    },
+    {
+      "parameters": {
+        "operation": "upload"
+      },
+      "id": "drive-006",
+      "name": "Drive CURRENT 업로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        220
+      ],
+      "notes": "04_Reports/CURRENT에 최신본 저장",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleDrive"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "upload"
+      },
+      "id": "drive-007",
+      "name": "Drive ARCHIVE 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        380
+      ],
+      "notes": "05_Archive에 날짜별 저장",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleDrive"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "매일 08:00 실행": {
+      "main": [
+        [
+          {
+            "node": "INTELLIGENCE_DB 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "INTELLIGENCE_DB 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INTELLIGENCE_DB 조회": {
+      "main": [
+        [
+          {
+            "node": "집계 (Tracker/국가별/규제/세이프가드)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "집계 (Tracker/국가별/규제/세이프가드)": {
+      "main": [
+        [
+          {
+            "node": "HTML 템플릿 변수 주입",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML 템플릿 변수 주입": {
+      "main": [
+        [
+          {
+            "node": "Drive CURRENT 업로드",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Drive ARCHIVE 저장",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

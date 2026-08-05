@@ -1,0 +1,23 @@
+# LCIP Pilot — Project 메타 설정
+# 03_BUILD_SPECIFICATION.md TASK-002 기준
+
+project:
+  id: LCIP-PILOT
+  name: LCIP Pilot
+  timezone: Asia/Seoul
+  pilot_mode: true
+  information_class: public_only
+  default_output_language: ko
+  preserve_original_language: true
+
+# Google Drive/Sheets 실제 리소스 ID는 여기 하드코딩하지 않는다.
+# TASK-005/006 실행(사용자 승인 후) 시 생성되는 값은 .env 또는
+# CONFIG_MASTER(Google Sheets)에 저장한다. 아래는 참조용 placeholder다.
+registry:
+  google_drive_root_folder_id_env: GOOGLE_DRIVE_ROOT_FOLDER_ID
+  google_sheets_master_spreadsheet_id_env: GOOGLE_SHEETS_MASTER_SPREADSHEET_ID
+  n8n_base_url_env: N8N_BASE_URL
+
+design:
+  web_font_stack: [Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "맑은 고딕"]
+  email_font_stack: ["Apple SD Gothic Neo", "맑은 고딕", Arial]

@@ -1,0 +1,25 @@
+# LCIP Pilot — 알림 정책
+# 03_BUILD_SPECIFICATION.md TASK-002/TASK-013 기준
+
+notifications:
+  timezone: Asia/Seoul
+  active_send_start: "08:00"
+  active_send_end: "20:00"
+  night_queue_send_time: "08:00"
+  send_only_on_change: true
+  email_enabled: true
+  telegram_enabled: true
+  # test_mode가 true인 동안에는 실제 운영 수신자에게 발송하지 않고
+  # config에 등록된 테스트 수신자에게만 발송한다.
+  test_mode: true
+
+email:
+  subject: "미국 엔지니어드스톤 리스크 알리미"
+  cta_button_label: "자세히 보기"
+  max_highlighted_changes: 3
+  recipient_env: LCIP_TEST_EMAIL_RECIPIENT
+
+telegram:
+  max_lines: 6
+  min_lines: 3
+  chat_id_env: TELEGRAM_CHAT_ID

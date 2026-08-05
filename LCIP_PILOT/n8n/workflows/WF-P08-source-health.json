@@ -1,0 +1,234 @@
+{
+  "name": "LCIP - Source Health (WF-P08)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "6시간마다 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "SOURCE_REGISTRY",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-003",
+      "name": "SOURCE_REGISTRY 조회",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "active=true 소스만",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.endpoint_url }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-004",
+      "name": "Health Check 요청",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "notes": "HTTP status/Content-Type/응답시간 확인"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+      },
+      "id": "code-005",
+      "name": "상태 분류",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "HEALTHY/DEGRADED/STALE/BROKEN_LINK/SCHEMA_CHANGED/AUTH_ERROR/RATE_LIMITED/CONTENT_INVALID/ANOMALY 중 하나로 분류"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "SOURCE_HEALTH",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-006",
+      "name": "SOURCE_HEALTH Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        220
+      ],
+      "notes": "점검 결과 저장",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.condition_placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-007",
+      "name": "3회 연속 실패?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        380
+      ],
+      "notes": "consecutive_failures >= 3"
+    },
+    {
+      "parameters": {},
+      "id": "noop-008",
+      "name": "관리자 알림 트리거",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        380
+      ],
+      "notes": "WF-P07 Notification 경로로 연결 예정 (Sprint 2+)"
+    }
+  ],
+  "connections": {
+    "6시간마다 실행": {
+      "main": [
+        [
+          {
+            "node": "SOURCE_REGISTRY 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "SOURCE_REGISTRY 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SOURCE_REGISTRY 조회": {
+      "main": [
+        [
+          {
+            "node": "Health Check 요청",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Check 요청": {
+      "main": [
+        [
+          {
+            "node": "상태 분류",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "상태 분류": {
+      "main": [
+        [
+          {
+            "node": "SOURCE_HEALTH Append",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "3회 연속 실패?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3회 연속 실패?": {
+      "main": [
+        [
+          {
+            "node": "관리자 알림 트리거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot"
+  ]
+}

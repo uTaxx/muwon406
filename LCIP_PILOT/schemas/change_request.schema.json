@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/change_request.schema.json",
+  "title": "ChangeRequest",
+  "description": "자연어 관리자(WF-P10) 출력 및 CHANGE_REQUEST 시트 레코드 — TASK-016 / 02_SYSTEM_BLUEPRINT.md §9 기준. 자연어 명령은 이 구조를 거쳐서만 반영되며, 직접 설정을 바꾸지 않는다.",
+  "type": "object",
+  "required": [
+    "request_id", "intent", "target", "changes", "affected_workflows",
+    "estimated_cost_impact", "risks", "requires_approval", "status"
+  ],
+  "properties": {
+    "request_id": { "type": "string", "pattern": "^CR-[0-9]{8}-[0-9]{4}$" },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "update_topic", "update_source", "update_notification", "update_cost_policy",
+        "update_schedule", "other"
+      ]
+    },
+    "target": { "type": "string" },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["field", "before", "after"],
+        "properties": {
+          "field": { "type": "string" },
+          "before": {},
+          "after": {}
+        }
+      }
+    },
+    "affected_workflows": { "type": "array", "items": { "type": "string" } },
+    "estimated_cost_impact": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "requires_approval": { "type": "boolean" },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "APPLIED"]
+    },
+    "created_at": { "type": ["string", "null"], "format": "date-time" },
+    "decided_at": { "type": ["string", "null"], "format": "date-time" },
+    "decided_by": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}
