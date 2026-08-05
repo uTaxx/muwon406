@@ -5,6 +5,8 @@ Round 4 지시("외부 API 실제 호출은 아직 시작하지 않는다. Mock 
 """
 from __future__ import annotations
 
+from datetime import date
+
 from .base import AIProvider, ProviderResult, ProviderUsage
 
 
@@ -69,4 +71,32 @@ class MockProvider(AIProvider):
             parsed_json=parsed,
             raw_text=str(parsed),
             usage=ProviderUsage(input_tokens=800, output_tokens=300, model="mock-analyzer"),
+        )
+
+    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+        self.call_count += 1
+        display_name = company.get("display_name") or company.get("query") or "알 수 없는 회사"
+        source_names = [s.get("source_name", "") for s in sources] or ["등록된 Source 없음"]
+        parsed = {
+            "target_company": display_name,
+            "scan_date": date.today().isoformat(),
+            "company_overview": f"{display_name}에 대한 공개정보 요약 (mock — 실제 Claude 미연동)",
+            "business_structure": ["mock: 사업부 구성 정보 미확인"],
+            "product_portfolio": ["mock: 주요 제품 정보 미확인"],
+            "financial_snapshot": ["mock: 공개 재무 스냅샷 미확인"],
+            "competitor": ["mock: 경쟁사 정보 미확인"],
+            "lx_strategic_fit": "mock: LX 전략적 연관성 미평가 (실제 Claude 미연동)",
+            "reference_sources": [s.get("endpoint_url", "https://example.com/mock-source") for s in sources]
+            or ["https://example.com/mock-source"],
+            "unknowns": [
+                "실제 Claude 미연동 상태 — mock 결과이므로 신뢰하지 말 것",
+                f"조회된 Source: {', '.join(source_names)}",
+            ],
+            "confidence": "low",
+        }
+        return ProviderResult(
+            ok=True,
+            parsed_json=parsed,
+            raw_text=str(parsed),
+            usage=ProviderUsage(input_tokens=1500, output_tokens=500, model="mock-quick-scan"),
         )

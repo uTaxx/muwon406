@@ -5,6 +5,76 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 5 반영 (2026-08-05, 5차)
+
+ChatGPT Architect Review Round 5 승인 및 반영. "Pilot을 실제 사용할 수 있는 방향으로
+고도화"가 목표 — Round 4의 Architecture Layer(Provider/Adapter/Pipeline/Widget)는
+안정적이라고 판단해 그대로 두고, 그 위에 4개 하위 엔진을 추가했다. Quick Company Scan을
+Pilot의 첫 번째 실제 서비스로 승격하고 Investment Review Engine과 연결했다. 새 Framework
+문서는 여전히 추가하지 않았고, 외부 API 실제 연결도 계속 시작하지 않았다.
+
+- **TASK-010A Storage Backend**: `scripts/storage/` — `StorageBackend`(추상) →
+  `LocalJSONLStorage`(실동작, Pilot 기본값) / `GoogleSheetsStorage`(구조만,
+  `enabled=False`, ClaudeProvider와 동일한 2중 안전장치 패턴) / `FutureDatabaseStorage`
+  (stub). `pipeline/store.py`는 하위호환 래퍼로 남기고 내부적으로 `LocalJSONLStorage`에
+  위임한다. `demo_mvp.py`/`test_mvp_integration.py`는 `StorageBackend`를 직접 사용하도록
+  전환해 "Pipeline은 StorageBackend만 참조한다"를 실제로 만족시켰다. 10개 테스트.
+- **Source Reliability Score**: `config/source_reliability.yaml`(정부/기업IR/DART/SEC=5,
+  로이터=4, Google RSS=3, 블로그=2, SNS=1) + `scripts/source_priority.py`
+  (`score_for_source_type()`, `resolve_conflict()`로 동일 사실 충돌 시 높은 점수 근거
+  우선). 기존 `reliability_grade`(A/B/C, Source 단위)와는 별도 축. 18개 테스트.
+- **TASK-009B Knowledge Retrieval Engine**: `scripts/knowledge_engine.py` —
+  knowledge/*.md를 Section 단위로 파싱해 `search_by_section/company/topic/
+  source_priority/confidence/last_verified()`로 검색 가능하게 한다. 부수 효과로
+  `scripts/knowledge_quality.py`가 4줄 분리 메타데이터 서식(`LX_HAUSYS_COMPANY_DNA.md`
+  등)을 지원하지 않아 실제 값이 있어도 항상 "메타데이터 없음"으로 오판정하던 버그를
+  발견해 함께 고쳤다 — 두 모듈이 같은 파서(`extract_section_metadata()`)를 공유한다.
+  14개 테스트(회귀 테스트 1건 포함).
+- **TASK-009A Prompt Engine**: `scripts/prompt_engine/` — `PromptTemplate`(prompts/*.md
+  로드) → `PromptBuilder`(Static/Knowledge/Source/Dynamic/Context 5블록 조립) →
+  `PromptValidator` → `PromptCache`(같은 프로세스 내 Static Block 재조립 방지).
+  `ClaudeProvider`가 `claude_client.build_cached_messages()` 대신 이 엔진을 쓰도록
+  전환 — `lx_context_excerpt`는 Knowledge Block으로, 기사 출처의 Source Reliability
+  Score는 Source Block으로 분리되었다(`prompts/risk_analysis.md` v0.3.0). 10개 테스트
+  + Provider 쪽 2개.
+- **TASK-012A Dashboard Data Provider**: `scripts/dashboard_data_provider.py` —
+  `DashboardDataProvider`(추상) → `StaticJSONDataProvider`/`PipelineDashboardDataProvider`
+  (`StorageBackend` 연동). `Widget`을 `get_data(data)`(구조화 데이터, HTML 아님)와
+  `render_html(widget_data)`(순수 렌더러)로 분리 — `render()`는 하위호환용으로 둘을
+  조합한 편의 메서드로만 남았다. `demo_mvp.py`가 `PipelineDashboardDataProvider`를
+  거치도록 전환. 8개 테스트.
+- **Quick Company Scan 실제 서비스 승격**: `scripts/quick_company_scan.py` +
+  `config/company_registry.yaml`(회사명/별칭/Ticker/DART 회사명 → company_id 정규화,
+  임의로 회사를 지어내지 않고 미등록은 `resolved=False`로 정직하게 처리) — 입력 →
+  `resolve_company_input()` → `select_sources_for_company()`(국가/DART 등록 여부로 자동
+  선택) → `AIProvider.quick_company_scan()`(신규 추상 메서드, `MockProvider`/
+  `ClaudeProvider`/미래 Provider 전부 구현) → `build_quick_report()`(Core 스키마 검증) →
+  `build_investment_review_input()`. 12개 테스트 + Provider 쪽 2개.
+- **Investment Review Engine**: `scripts/investment_review.py` +
+  `schemas/investment_review.schema.json` — Comparable(Peer EV/EBITDA·PER·PBR) 기반
+  Valuation만 계산(`compute_peer_average()`, `build_estimated_valuation()`은 대상기업
+  실적 미확인 시 금액 범위 대신 Peer 배수만 제시) — **DCF는 Enterprise Backlog**(Pilot
+  범위 아님, Architect Review Round 5 명시). `detect_deal_killers()`가 risk_assessment
+  키워드(소송/제재/형사/파산/상장폐지/회계부정)를 찾으면 다른 조건과 무관하게
+  `recommendation.signal = decline_deal_killer_found`로 덮어쓴다. 최종 투자판단이 아닌
+  스크리닝 신호까지만 제공(`knowledge/INVESTMENT_FRAMEWORK.md`와 동일 원칙, 해당 문서의
+  "Pilot에 연결 안 됨" 문구를 최신 상태로 수정). 14개 테스트.
+- **Technical Debt 4건 제거**(Architect Review Round 4 자체 제안 승인):
+  1) `claude_client.call_claude_mocked()`/`ClaudeUsage`/`ClaudeCallResult` 제거 —
+     `providers.mock_provider.MockProvider`로 완전히 대체되어 있었다.
+  2) `config/model_pricing.yaml`의 키(`placeholder_low_cost_model` 등)를
+     `config/model_registry.yaml`의 tier 키(classification/deep_analysis/future)와
+     통일해 `cost_tracking.py`의 `TIER_TO_PRICING_KEY` 이중 매핑 테이블을 제거.
+  3) `dashboard_widgets.py`의 `RegulationWidget(...)` 3회 반복 생성을
+     `_REGULATION_WIDGET_CONFIGS` 목록 기반 생성으로 정리.
+  4) `scripts/health_tracking.py`(Adapter 연동)를 `scripts/source_health_check.py`
+     (판정 로직)로 병합 — 파일명은 `docs/03_BUILD_SPECIFICATION.md` 원문이 지정한
+     `source_health_check.py`를 그대로 유지했다. `tests/test_health_tracking.py`도
+     `tests/test_source_health.py`로 병합.
+- 테스트: 신규 91건 추가, 기존 148건과 합쳐 총 **239개 테스트 전부 PASS**.
+- 문서: `CLAUDE.md`/`TODO.md`/`PROJECT_STATUS.md` 갱신, `knowledge/INVESTMENT_FRAMEWORK.md`
+  §4의 오래된 "Pilot에 연결 안 됨" 서술을 현재 상태로 수정.
+
 ### Added — Architect Review Round 4 반영 (2026-08-05, 4차)
 
 ChatGPT Architect Review Round 4 승인 및 반영. Architecture Layer/Knowledge Layer가

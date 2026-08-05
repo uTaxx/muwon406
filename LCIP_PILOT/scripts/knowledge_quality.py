@@ -8,6 +8,12 @@ knowledge/KNOWLEDGE_GOVERNANCE.md §10 공식을 구현한다:
     "신뢰 가능한 계층" = Confidence != draft AND Reference URL이 채워짐
                         AND Last Verified가 신선도 임계값 이내
                         (단, N/A 계층은 무조건 신뢰 가능으로 카운트)
+
+Round 5에서 메타데이터 파싱을 `scripts/knowledge_engine.py`의
+`extract_section_metadata()`로 교체했다 — 기존 정규식은 "Source: X / Reference URL: Y /
+Confidence: Z / Last Verified: W" 한 줄 서식만 지원해서, 4줄로 분리해 쓰는
+`LX_HAUSYS_COMPANY_DNA.md` 등은 항상 "메타데이터 없음"으로 오판정되어 Quality Score가
+실제 내용과 무관하게 0%로 고정되는 버그가 있었다.
 """
 from __future__ import annotations
 
@@ -17,6 +23,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from _common import project_root
+from knowledge_engine import extract_section_metadata
 
 KNOWLEDGE_DIR = project_root() / "knowledge"
 
@@ -27,11 +34,6 @@ FRESHNESS_DAYS_COMPANY_PROFILE = 183  # 6개월
 UNSET_MARKERS = {"", "(미확인)", "todo", "todo: source required", "n/a", "not applicable"}
 
 SECTION_HEADER_RE = re.compile(r"^## (\d+)\. ([^\n]+)$", re.MULTILINE)
-METADATA_LINE_RE = re.compile(
-    r"-\s*Source:\s*(?P<source>.*?)\s*/\s*Reference URL:\s*(?P<url>.*?)\s*/\s*"
-    r"Confidence:\s*(?P<confidence>.*?)\s*/\s*Last Verified:\s*(?P<last_verified>.*?)\s*$",
-    re.MULTILINE,
-)
 
 
 @dataclass(frozen=True)
@@ -74,17 +76,12 @@ def parse_layers(text: str, today: date | None = None) -> list[LayerStatus]:
         section_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
         section_text = text[section_start:section_end]
 
-        meta_match = None
-        for meta_match in METADATA_LINE_RE.finditer(section_text):
-            pass  # 마지막 매치(섹션 끝의 메타데이터 줄)를 사용
+        _source, ref_url, confidence, last_verified = extract_section_metadata(section_text)
 
-        if meta_match is None:
+        if not confidence and not ref_url and not last_verified:
             layers.append(LayerStatus(number, name, False, "draft", "", "", reliable=False))
             continue
 
-        confidence = meta_match.group("confidence")
-        ref_url = meta_match.group("url")
-        last_verified = meta_match.group("last_verified")
         is_na = _is_na(confidence, ref_url)
 
         if is_na:

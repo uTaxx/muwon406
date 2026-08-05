@@ -24,9 +24,9 @@ from pipeline.generate_intelligence import build_intelligence_record
 from pipeline.knowledge_retrieve import retrieve_context
 from pipeline.normalize import normalize
 from pipeline.rule_filter import passes_rule_filter
-from pipeline.store import append_record, existing_ids, existing_values, load_records
 from pipeline.validate import validate_article, validate_claude_output, validate_intelligence
 from providers.mock_provider import MockProvider
+from storage.local_jsonl_storage import LocalJSONLStorage
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_RSS_TEXT = (ROOT / "tests" / "fixtures" / "sample_google_news_rss.xml").read_text(
@@ -40,8 +40,9 @@ def test_pilot_mvp_end_to_end_flow(tmp_path):
     source_config = load_yaml("config/sources.yaml")["sources"][0]
     assert source_config["source_id"] == "SRC-0001"
 
-    article_db = tmp_path / "ARTICLE_DB.jsonl"
-    intelligence_db = tmp_path / "INTELLIGENCE_DB.jsonl"
+    # Round 5: Pipeline은 StorageBackend만 참조한다.
+    storage = LocalJSONLStorage(tmp_path)
+    ARTICLE_DB, INTELLIGENCE_DB = "ARTICLE_DB", "INTELLIGENCE_DB"
     now = datetime(2026, 8, 5, tzinfo=timezone.utc)
 
     # 1. Collect — Google RSS (fixture 주입, 실제 네트워크 호출 없음)
@@ -59,8 +60,8 @@ def test_pilot_mvp_end_to_end_flow(tmp_path):
         source_reliability_grade=source_config["reliability_grade"],
         country=source_config["country"],
         related_lx_companies=topic["related_lx_companies"],
-        existing_article_ids=existing_ids(article_db, "article_id"),
-        existing_canonical_urls=existing_values(article_db, "canonical_url"),
+        existing_article_ids=storage.existing_ids(ARTICLE_DB, "article_id"),
+        existing_canonical_urls=storage.existing_values(ARTICLE_DB, "canonical_url"),
         collected_at=now,
     )
     validate_article(article)
@@ -92,16 +93,16 @@ def test_pilot_mvp_end_to_end_flow(tmp_path):
         risk_analysis=analyze_result.parsed_json,
         prompt_version="0.2.0",
         knowledge_version=knowledge_version,
-        existing_intelligence_ids=existing_ids(intelligence_db, "intelligence_id"),
+        existing_intelligence_ids=storage.existing_ids(INTELLIGENCE_DB, "intelligence_id"),
         created_at=now,
     )
     validate_intelligence(intelligence)
 
-    # 8. Store — INTELLIGENCE_DB (여기서는 로컬 JSONL이 dry-run 스탠드인)
-    append_record(article_db, article)
-    append_record(intelligence_db, intelligence)
-    stored_articles = load_records(article_db)
-    stored_intelligences = load_records(intelligence_db)
+    # 8. Store — StorageBackend(LocalJSONLStorage)에 저장 (Google Sheets의 dry-run 스탠드인)
+    storage.append(ARTICLE_DB, article)
+    storage.append(INTELLIGENCE_DB, intelligence)
+    stored_articles = storage.load_all(ARTICLE_DB)
+    stored_intelligences = storage.load_all(INTELLIGENCE_DB)
     assert len(stored_articles) == 1
     assert len(stored_intelligences) == 1
     assert stored_intelligences[0]["article_ids"] == [article["article_id"]]

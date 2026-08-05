@@ -2,16 +2,28 @@
 # TASK-015 Cost Guard 요구사항: "모델별 단가는 Config 또는 Pricing Registry로 관리하며
 # 코드에 영구 하드코딩하지 않는다."
 #
+# Round 5 Technical Debt 정리(Architect Review Round 4 보고서 §24-2 제안 반영): 이 파일의
+# 키를 config/model_registry.yaml의 tier 키(classification/deep_analysis/future)와
+# 동일하게 맞췄다. Round 4까지는 pricing 키가 placeholder_low_cost_model/
+# placeholder_sonnet_class_model처럼 별도 이름이라 scripts/cost_tracking.py가
+# tier -> pricing 키 매핑 테이블(TIER_TO_PRICING_KEY)을 따로 유지해야 했다 — 키를
+# 통일하면서 그 매핑 자체를 제거했다(config/model_registry.yaml의 purpose를 그대로
+# 이 파일의 키로 조회한다).
+#
 # 아래 단가는 참고용 placeholder다. 실제 배포 전 Anthropic Console의 최신 가격표로 갱신해야
 # 한다 (TASK-009에서 Claude API Key 준비 시 확인).
 
 # usd_per_million_tokens: {input, output}
 pricing:
-  placeholder_low_cost_model:
+  classification:
     usd_per_million_input_tokens: 0.0
     usd_per_million_output_tokens: 0.0
-    note: "TODO: 1차 분류용 저비용 모델 확정 후 단가 갱신"
-  placeholder_sonnet_class_model:
+    note: "TODO: 1차 분류(Haiku 계열) 모델 확정 후 단가 갱신"
+  deep_analysis:
     usd_per_million_input_tokens: 0.0
     usd_per_million_output_tokens: 0.0
-    note: "TODO: 심층분석용 Sonnet급 모델 확정 후 단가 갱신"
+    note: "TODO: 심층분석(Sonnet 계열) 모델 확정 후 단가 갱신"
+  future:
+    usd_per_million_input_tokens: 0.0
+    usd_per_million_output_tokens: 0.0
+    note: "TODO: 미래준비/Quick Company Scan(Opus 계열) 모델 확정 후 단가 갱신"

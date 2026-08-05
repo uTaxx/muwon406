@@ -1,20 +1,25 @@
 ---
 prompt_id: risk_analysis
-prompt_version: 0.2.0
+prompt_version: 0.3.0
 used_by: Master Pipeline — AI Analyze 단계 (舊 WF-P05 Risk Analysis, ADR-007로 통합)
 output_schema: schemas/claude_output.schema.json#/$defs/risk_analysis_output
 max_input_tokens: 8000
 max_output_tokens: 1200
-cache_structure: static_block + dynamic_block (Architect Review Q3, scripts/claude_client.py의 build_cached_messages() 참고)
+cache_structure: static_block + knowledge_block + source_block + dynamic_block + context_block (Architect Review Round 5, scripts/prompt_engine/builder.py의 PromptBuilder.build() 참고)
 default_model_id: null
 ---
 
 # Risk Analysis Prompt
 
-> 이 프롬프트는 두 블록으로 나뉜다. **Static Block**은 호출마다 내용이 바뀌지 않으므로
-> Anthropic Prompt Caching(`cache_control: {"type": "ephemeral"}`)의 대상이 된다.
-> **Dynamic Block**은 매 호출마다 실제 기사/컨텍스트로 교체된다. `scripts/claude_client.py`는
-> 이 두 블록을 별도 message content 파트로 구성해 캐시 히트율을 높인다.
+> Round 5부터 이 프롬프트는 `scripts/prompt_engine/`의 PromptBuilder가 최대 5개 블록으로
+> 조립한다: **Static Block**(이 문서, 호출마다 내용 불변) → **Knowledge Block**(Knowledge
+> Retrieval Engine이 만든 LX Hausys Knowledge Base 발췌) → **Source Block**(원문 출처와
+> Source Reliability Score) → **Dynamic Block**(이번 기사) → **Context Block**(기존
+> 타임라인 요약, 있는 경우만). Static/Knowledge/Source Block은 Anthropic Prompt
+> Caching(`cache_control: {"type": "ephemeral"}`) 대상이고, Dynamic/Context Block은 매
+> 호출마다 바뀌므로 캐시하지 않는다. (Round 4까지는 `lx_context_excerpt`가 Dynamic Block
+> JSON 안에 섞여 있었으나, Round 5에서 별도 Knowledge Block으로 분리했다 — 아래 Dynamic
+> Block 예시 참고.)
 
 ## Static Block (Cacheable)
 
@@ -71,8 +76,24 @@ JSON 파싱 실패 시 1회만 교정 재호출하고, 그래도 실패하면 `n
 
 ```json
 {
-  "article": { "title_original": "...", "source_url": "...", "published_at": "...", "full_text_excerpt": "..." },
-  "lx_context_excerpt": "지식베이스(LX_HAUSYS_COMPANY_DNA.md/LX_HAUSYS_VALUE_CHAIN.md)에서 관련된 부분만 발췌 (전체 KB 전송 금지)",
-  "existing_timeline_excerpt": "기존 관련 사건 요약 (있는 경우)"
+  "article": { "title_original": "...", "source_url": "...", "published_at": "...", "full_text_excerpt": "..." }
 }
 ```
+
+## Knowledge Block (별도 조립, 캐시 대상)
+
+지식베이스(`LX_HAUSYS_COMPANY_DNA.md`/`LX_HAUSYS_VALUE_CHAIN.md` 등)에서 관련된 부분만
+발췌한 텍스트 (전체 KB 전송 금지). `scripts/knowledge_engine.py`의 검색 결과를
+`scripts/pipeline/knowledge_retrieve.py`가 발췌 형태로 만들어 `PromptBuilder.build()`의
+`knowledge_block` 인자로 전달한다.
+
+## Source Block (별도 조립, 캐시 대상)
+
+이번 기사의 출처명과 `scripts/source_priority.py`가 계산한 Source Reliability Score
+(1~5). 여러 출처가 같은 사실을 다르게 전달할 때, AI가 어느 근거를 우선해야 하는지 판단하는
+근거로 사용한다 (Architect Review Round 5: "동일 사실 충돌 시 Source Score가 높은 근거를
+우선한다").
+
+## Context Block (별도 조립, 캐시하지 않음 — 있는 경우만)
+
+기존 관련 사건 타임라인 요약 (있는 경우만 포함, 없으면 이 블록 자체를 생략한다).

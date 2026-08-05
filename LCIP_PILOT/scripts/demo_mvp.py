@@ -21,17 +21,17 @@ from pathlib import Path
 from _common import load_yaml, project_root
 from adapters.google_rss_adapter import GoogleRSSAdapter
 from build_dashboard import build_html
+from dashboard_data_provider import PipelineDashboardDataProvider
 from notifiers import EmailNotifier, TelegramNotifier, build_alert_message
 from pipeline.analyze import analyze_risk
 from pipeline.classify import classify_relevance
-from pipeline.dashboard_feed import build_dashboard_data
 from pipeline.generate_intelligence import build_intelligence_record
 from pipeline.knowledge_retrieve import retrieve_context
 from pipeline.normalize import normalize
 from pipeline.rule_filter import passes_rule_filter
-from pipeline.store import append_record, existing_ids, existing_values, load_records
 from pipeline.validate import validate_article, validate_claude_output, validate_intelligence
 from providers.mock_provider import MockProvider
+from storage.local_jsonl_storage import LocalJSONLStorage
 
 FIXTURE_RSS = project_root() / "tests" / "fixtures" / "sample_google_news_rss.xml"
 
@@ -51,8 +51,10 @@ def main() -> int:
 
     out_dir = project_root() / "output" / "demo_mvp"
     out_dir.mkdir(parents=True, exist_ok=True)
-    article_db = out_dir / "ARTICLE_DB.jsonl"
-    intelligence_db = out_dir / "INTELLIGENCE_DB.jsonl"
+    # Round 5: Pipeline은 StorageBackend만 참조한다 — 저장 구현(LocalJSONLStorage)이
+    # GoogleSheetsStorage로 바뀌어도 아래 로직은 수정하지 않는다.
+    storage = LocalJSONLStorage(out_dir)
+    ARTICLE_DB, INTELLIGENCE_DB = "ARTICLE_DB", "INTELLIGENCE_DB"
 
     step(1, "Collect — Google News RSS (fixture 주입, 실제 네트워크 호출 없음)")
     rss_text = FIXTURE_RSS.read_text(encoding="utf-8")
@@ -70,8 +72,8 @@ def main() -> int:
         source_reliability_grade=source_config["reliability_grade"],
         country=source_config["country"],
         related_lx_companies=topic["related_lx_companies"],
-        existing_article_ids=existing_ids(article_db, "article_id"),
-        existing_canonical_urls=existing_values(article_db, "canonical_url"),
+        existing_article_ids=storage.existing_ids(ARTICLE_DB, "article_id"),
+        existing_canonical_urls=storage.existing_values(ARTICLE_DB, "canonical_url"),
         collected_at=now,
     )
     validate_article(article)
@@ -106,25 +108,25 @@ def main() -> int:
         risk_analysis=analyze_result.parsed_json,
         prompt_version="0.2.0",
         knowledge_version=knowledge_version,
-        existing_intelligence_ids=existing_ids(intelligence_db, "intelligence_id"),
+        existing_intelligence_ids=storage.existing_ids(INTELLIGENCE_DB, "intelligence_id"),
         created_at=now,
     )
     validate_intelligence(intelligence)
     print(f"  intelligence_id={intelligence['intelligence_id']}")
 
-    step(8, "Store — ARTICLE_DB/INTELLIGENCE_DB 저장 (로컬 JSONL, dry-run 스탠드인)")
-    append_record(article_db, article)
-    append_record(intelligence_db, intelligence)
-    print(f"  {article_db}")
-    print(f"  {intelligence_db}")
+    step(8, "Store — ARTICLE_DB/INTELLIGENCE_DB 저장 (StorageBackend=LocalJSONLStorage)")
+    storage.append(ARTICLE_DB, article)
+    storage.append(INTELLIGENCE_DB, intelligence)
+    print(f"  {out_dir / (ARTICLE_DB + '.jsonl')}")
+    print(f"  {out_dir / (INTELLIGENCE_DB + '.jsonl')}")
 
-    step(9, "Dashboard 반영 — 정적 HTML 빌드")
-    dashboard_data = build_dashboard_data(
+    step(9, "Dashboard 반영 — Data Provider → Widget → Dashboard")
+    data_provider = PipelineDashboardDataProvider(
+        storage,
         topic_display_name=topic["display_name"],
         generated_at_kst=now.strftime("%Y-%m-%d %H:%M"),
-        articles=load_records(article_db),
-        intelligences=load_records(intelligence_db),
     )
+    dashboard_data = data_provider.get_data()
     html = build_html(dashboard_data)
     dashboard_path = out_dir / "dashboard.html"
     dashboard_path.write_text(html, encoding="utf-8")

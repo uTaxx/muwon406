@@ -54,6 +54,12 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    이며, TASK-016(Natural Language Admin 실연동)은 보류(on hold)한다. TASK-009~017은
    전부 **Mock/dry-run 기반**으로 구조와 테스트를 완성하는 것이 목표이며, 실제 외부 API
    호출(Anthropic/Google/Gmail/Telegram)은 여전히 시작하지 않는다 (`TODO.md` 참고).
+   Architect Review Round 5는 이 위에 4개 하위 확장 Task를 추가했다: **TASK-009A(Prompt
+   Engine) / TASK-009B(Knowledge Retrieval Engine) / TASK-010A(Storage Backend) /
+   TASK-012A(Dashboard Data Provider)** — Pilot을 "실제 사용할 수 있는" 수준으로
+   고도화하는 라운드이며, Quick Company Scan을 Pilot의 첫 번째 실제 서비스로 승격하고
+   그 출력을 Investment Review Engine 입력으로 연결한다. Round 5부터도 새 Framework
+   문서는 만들지 않고 ADR만 추가하며, 외부 API 실제 연결은 계속 시작하지 않는다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -161,11 +167,57 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     Tracker/Litigation/Regulation(재사용 가능한 단일 클래스)/**Statistics(신규)**/
     Timeline을 독립된 `Widget` 클래스로 분리 — `DEFAULT_WIDGETS` 목록에서 추가/제거해도
     나머지에 영향 없음.
-  - Notifier(`scripts/notifiers.py`)/Source Health(`scripts/health_tracking.py`)/
-    Cost Guard(`scripts/cost_tracking.py`)도 각각 test_mode dry-run, Adapter 실제 호출
-    결과 기반 판정, Provider 사용량 기반 비용 추정으로 연동되었다 — 전부 Mock/dry-run
-    기반이며 실제 발송·과금은 발생하지 않는다.
+  - Notifier(`scripts/notifiers.py`)/Source Health(`scripts/source_health_check.py`의
+    `run_health_check()`)/Cost Guard(`scripts/cost_tracking.py`)도 각각 test_mode
+    dry-run, Adapter 실제 호출 결과 기반 판정, Provider 사용량 기반 비용 추정으로
+    연동되었다 — 전부 Mock/dry-run 기반이며 실제 발송·과금은 발생하지 않는다.
   - `scripts/demo_mvp.py`가 위 전체를 하나의 흐름으로 실행하는 CLI 데모이며,
     `tests/test_mvp_integration.py`가 Pilot MVP 성공 기준(Round 4 정의: Google RSS→
     수집→Rule Filter→Claude 분석→INTELLIGENCE_DB 저장→Dashboard 반영→Test Email→
     Test Telegram)을 그대로 검증한다.
+- **Round 5: "Pilot을 실제 사용할 수 있는 방향으로 고도화"** — Round 4 구조를 유지한 채
+  4개 하위 엔진을 추가하고, Quick Company Scan을 Pilot 첫 실제 서비스로 승격했다.
+  - **Storage Backend** (`scripts/storage/`): `StorageBackend`(추상) →
+    `LocalJSONLStorage`(실동작, Pilot 기본값)/`GoogleSheetsStorage`(구조만, `enabled=False`
+    기본값)/`FutureDatabaseStorage`(stub). Pipeline은 이 인터페이스만 참조한다 —
+    `scripts/pipeline/store.py`는 하위호환용 래퍼로 남아 `LocalJSONLStorage`에 위임한다.
+  - **Source Reliability Score** (`config/source_reliability.yaml`,
+    `scripts/source_priority.py`): 출처 유형별 1~5점(정부/기업IR/DART/SEC=5, 로이터=4,
+    Google RSS=3, 블로그=2, SNS=1). `resolve_conflict()`로 동일 사실 충돌 시 높은 점수
+    근거를 우선한다. 기존 `reliability_grade`(A/B/C, Source 단위)와는 별도 축이다.
+  - **Knowledge Retrieval Engine** (`scripts/knowledge_engine.py`): knowledge/*.md를
+    Section 단위로 파싱해 Section/Topic/Company/Source Priority/Confidence/Last
+    Verified 기준으로 검색 가능하게 한다. 이 과정에서 `scripts/knowledge_quality.py`가
+    4줄 분리 메타데이터 서식(`LX_HAUSYS_COMPANY_DNA.md` 등)을 인식하지 못해 항상
+    Quality Score 0%로 오판정하던 버그를 함께 고쳤다.
+  - **Prompt Engine** (`scripts/prompt_engine/`): `PromptTemplate` → `PromptBuilder` →
+    `PromptValidator` → `PromptCache` → Provider. Static/Knowledge/Source/Dynamic/
+    Context 5개 Block으로 조립하며, Static/Knowledge/Source Block은 캐시 대상이다.
+    `ClaudeProvider`가 `claude_client.build_cached_messages()` 대신 이 엔진을 사용하며,
+    `lx_context_excerpt`는 Knowledge Block, 기사 출처의 Source Reliability Score는
+    Source Block으로 들어간다(`prompts/risk_analysis.md` v0.3.0).
+  - **Dashboard Data Provider** (`scripts/dashboard_data_provider.py`): Data
+    Provider(`StaticJSONDataProvider`/`PipelineDashboardDataProvider`) → Widget →
+    Dashboard 구조. `Widget`은 이제 `get_data(data)`(구조화 데이터, HTML 아님)와
+    `render_html(widget_data)`(순수 렌더러)로 나뉜다 — `render()`는 하위호환용으로
+    `render_html(get_data(data))`를 호출하는 조합으로만 남아 있다.
+  - **Quick Company Scan 실제 서비스** (`scripts/quick_company_scan.py`,
+    `config/company_registry.yaml`): 회사명/Ticker/DART 회사명 입력 →
+    `resolve_company_input()`(레지스트리에 없으면 임의로 지어내지 않고 `resolved=False`) →
+    `select_sources_for_company()`(국가/DART 등록 여부로 자동 선택) →
+    `AIProvider.quick_company_scan()`(신규 추상 메서드, Core 7개 스키마 준수) →
+    `build_quick_report()`(스키마 검증) → `build_investment_review_input()`.
+  - **Investment Review Engine** (`scripts/investment_review.py`,
+    `schemas/investment_review.schema.json`): Comparable(Peer EV/EBITDA·PER·PBR) 기반
+    Valuation만 계산한다 — **DCF는 Enterprise Backlog**(Pilot 범위 아님). Deal Killer
+    키워드가 발견되면 다른 조건과 무관하게 `recommendation.signal =
+    decline_deal_killer_found`로 덮어쓴다. 최종 투자판단이 아니라 스크리닝 신호까지만
+    제공한다(`knowledge/INVESTMENT_FRAMEWORK.md`와 동일 원칙).
+  - **Technical Debt 정리**: `claude_client.call_claude_mocked()`(및 `ClaudeUsage`/
+    `ClaudeCallResult`) 제거 — `providers.mock_provider.MockProvider`로 완전히
+    대체됨. `config/model_pricing.yaml`의 키를 `model_registry.yaml`의 tier 키
+    (classification/deep_analysis/future)와 통일해 `cost_tracking.py`의 이중 매핑
+    테이블(TIER_TO_PRICING_KEY)을 제거. `dashboard_widgets.py`의 `RegulationWidget` 3회
+    반복 생성을 설정 목록 기반으로 정리. `scripts/health_tracking.py`를
+    `scripts/source_health_check.py`로 병합(파일명은 `03_BUILD_SPECIFICATION.md` 원문
+    기준 유지).

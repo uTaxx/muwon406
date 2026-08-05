@@ -60,3 +60,23 @@ def test_holdings_context_scores_higher_due_to_na_layers():
     dna_score, _ = knowledge_quality.score_document("LX_HAUSYS_COMPANY_DNA.md")
     holdings_score, _ = knowledge_quality.score_document("LX_HOLDINGS_CONTEXT.md")
     assert holdings_score > dna_score
+
+
+def test_four_line_metadata_format_is_parsed_correctly():
+    """LX_HAUSYS_COMPANY_DNA.md 등이 쓰는 4줄 분리 서식(Source/Reference URL/Confidence/
+    Last Verified가 각각 별도 줄)도 한 줄 "/" 구분 서식과 동일하게 파싱되어야 한다 — Round 5
+    전에는 이 서식을 지원하지 않아 실제 값이 있어도 항상 "메타데이터 없음"으로 오판정했다."""
+    text = """## 1. Company — 개요
+
+확인된 사실
+
+- Source: DART
+- Reference URL: https://example.com/dart
+- Confidence: high
+- Last Verified: 2026-08-01
+"""
+    layers = knowledge_quality.parse_layers(text, today=date(2026, 8, 5))
+    assert len(layers) == 1
+    assert layers[0].confidence == "high"
+    assert layers[0].reference_url == "https://example.com/dart"
+    assert layers[0].reliable is True

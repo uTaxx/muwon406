@@ -52,6 +52,8 @@ owner: Architect Review (2026-08-05)
 
 ## 4. Pilot 범위 안내
 
-TOP-0001은 리스크관리 축 Topic이므로, 이 프레임워크는 Pilot 1차 구현에서는 실제
-파이프라인에 연결되지 않는다 (`prompts/quick_scan.md`와 동일하게 Sprint 6 확장 대상).
-이번 문서는 향후 미래준비 축 Topic이 추가될 때 즉시 사용할 수 있도록 구조만 먼저 준비한다.
+Architect Review Round 5부터 Quick Company Scan이 Pilot의 첫 번째 실제 서비스로
+승격되었고, 그 출력이 `scripts/investment_review.py`(Investment Review Engine)의 입력으로
+연결되었다 (`scripts/quick_company_scan.py:build_investment_review_input()`). Pilot
+범위의 Valuation은 **Comparable(비교기업 배수) 기반으로만** 계산하며, DCF는 Enterprise
+Backlog로 남긴다 — 이 문서의 "최종 투자판단을 내리지 않는다"는 원칙은 그대로 유지된다.

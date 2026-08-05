@@ -1,0 +1,37 @@
+# LCIP Pilot — Source Reliability Score (1~5)
+# Architect Review Round 5 신설.
+#
+# 기존 config/sources.yaml의 reliability_grade(A/B/C, Source 단위 고정값,
+# knowledge/SOURCE_PRIORITY.md 정의)와는 별도 축이다. 이 파일은 "출처 유형"(정부/기업IR/
+# DART/SEC/로이터/Google RSS/블로그/SNS)에 대한 더 세분화된 점수를 정의하며, Knowledge
+# Retrieval Engine의 source-priority 기반 검색과 AI의 "동일 사실 충돌 시 우선순위" 판단에
+# 사용한다.
+
+score_scale:
+  min: 1
+  max: 5
+
+source_type_scores:
+  government: 5
+  corporate_ir: 5
+  dart: 5
+  sec: 5
+  reuters: 4
+  google_rss: 3
+  blog: 2
+  sns: 1
+
+# source_type/source_name 문자열에 아래 키워드가 포함되면(대소문자 무시) 해당 유형으로
+# 매칭한다. 정확 매치(source_type_scores의 키와 동일)가 항상 우선한다.
+aliases:
+  government: ["government", "정부", "gov", "official_website"]
+  corporate_ir: ["corporate ir", "investor relations", "ir 자료", " ir"]
+  dart: ["dart", "전자공시", "government_filing"]
+  sec: ["sec", "edgar"]
+  reuters: ["reuters", "로이터"]
+  google_rss: ["google news", "google rss", "news_rss"]
+  blog: ["blog", "블로그"]
+  sns: ["sns", "twitter", "x.com", "facebook", "instagram"]
+
+# 매칭되는 유형을 찾지 못했을 때의 보수적 기본값 — 임의로 높은 점수를 주지 않는다.
+default_score: 2

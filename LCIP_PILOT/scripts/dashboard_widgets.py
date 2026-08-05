@@ -1,16 +1,21 @@
-"""TASK-012 — Widget 기반 대시보드 구성 요소.
+"""TASK-012/012A — Widget 기반 대시보드 구성 요소.
 
-Round 4 지시: "대시보드는 오늘의 주요변화/리스크 Tracker/소송/규제/통계/타임라인을 독립적으로
-추가·제거 가능한 Widget 클래스로 구성한다." 각 Widget은 `render_dashboard.data`(dict)를
-입력받아 자신이 담당하는 템플릿 토큰 하나를 채우는 HTML 조각만 반환한다 — 서로 의존하지
-않으므로 `DEFAULT_WIDGETS` 목록에서 순서를 바꾸거나 항목을 빼고 넣어도 나머지 Widget은
-영향받지 않는다.
+Round 4: "대시보드는 오늘의 주요변화/리스크 Tracker/소송/규제/통계/타임라인을 독립적으로
+추가·제거 가능한 Widget 클래스로 구성한다."
+
+Round 5(TASK-012A): "Widget은 HTML을 직접 생성하지 않는다. Widget Data를 반환한다." —
+구조를 **Data Provider → Widget → Dashboard**로 바꾼다. 각 Widget은 이제
+`get_data(data)`(구조화된 데이터만 반환, HTML 없음)와 `render_html(widget_data)`(그
+데이터를 HTML로 바꾸는 순수 렌더러)로 나뉜다. `render(data)`는 하위호환을 위해 남겨두되
+`render_html(get_data(data))`를 호출하는 조합으로만 구현된다 — Round 4 코드/테스트를
+그대로 통과시키면서 새 계약을 만족한다.
 """
 from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
 from html import escape
+from typing import Any
 
 NUM_FIELDS = {"total_amount_usd", "claimant_count", "avg_amount_per_person_usd"}
 
@@ -80,15 +85,30 @@ class Widget(ABC):
         """template.html에서 이 Widget이 채우는 플레이스홀더 이름 (예: "TODAY_CHANGES_HTML")."""
 
     @abstractmethod
+    def get_data(self, data: dict) -> Any:
+        """dashboard 입력 데이터에서 이 Widget에 필요한 부분만 구조화해 반환한다.
+        HTML은 만들지 않는다(Round 5: Data Provider → Widget → Dashboard)."""
+
+    @abstractmethod
+    def render_html(self, widget_data: Any) -> str:
+        """get_data()가 반환한 구조화 데이터를 HTML 조각으로 변환하는 순수 렌더러."""
+
     def render(self, data: dict) -> str:
-        """data(dashboard 입력 JSON)를 받아 이 Widget의 HTML 조각을 반환한다."""
+        """하위호환 편의 메서드 — get_data() + render_html()을 합쳐서 수행한다."""
+        return self.render_html(self.get_data(data))
 
 
 class TodayChangeWidget(Widget):
     token = "TODAY_CHANGES_HTML"
 
-    def render(self, data: dict) -> str:
-        return render_today_changes(data)
+    def get_data(self, data: dict) -> dict:
+        return {
+            "today_changes": data.get("today_changes") or [],
+            "today_changes_summary": data.get("today_changes_summary") or "신규 주요 변화 없음",
+        }
+
+    def render_html(self, widget_data: dict) -> str:
+        return render_today_changes(widget_data)
 
 
 class RiskTrackerWidget(Widget):
@@ -96,8 +116,11 @@ class RiskTrackerWidget(Widget):
 
     token = "TRACKER_ROWS_HTML"
 
-    def render(self, data: dict) -> str:
-        return render_tracker_rows(data.get("tracker_rows") or [])
+    def get_data(self, data: dict) -> list[dict]:
+        return data.get("tracker_rows") or []
+
+    def render_html(self, widget_data: list[dict]) -> str:
+        return render_tracker_rows(widget_data)
 
 
 class LitigationWidget(Widget):
@@ -105,8 +128,11 @@ class LitigationWidget(Widget):
 
     token = "NON_US_ISSUES_HTML"
 
-    def render(self, data: dict) -> str:
-        return render_generic_list(data.get("non_us_issues") or [], "등록된 미국 외 이슈 없음")
+    def get_data(self, data: dict) -> list[dict]:
+        return data.get("non_us_issues") or []
+
+    def render_html(self, widget_data: list[dict]) -> str:
+        return render_generic_list(widget_data, "등록된 미국 외 이슈 없음")
 
 
 class RegulationWidget(Widget):
@@ -123,15 +149,17 @@ class RegulationWidget(Widget):
     def token(self) -> str:
         return self._token
 
-    def render(self, data: dict) -> str:
-        return render_generic_list(data.get(self._data_key) or [], self._empty_label)
+    def get_data(self, data: dict) -> list[dict]:
+        return data.get(self._data_key) or []
+
+    def render_html(self, widget_data: list[dict]) -> str:
+        return render_generic_list(widget_data, self._empty_label)
 
 
 class StatisticsWidget(Widget):
-    """신규 Widget (Round 4 지시) — 오늘 대시보드에 반영된 각 구역의 건수를 한눈에 요약한다.
-
-    기존 sample_data.json 스키마를 변경하지 않고, 이미 다른 Widget들이 사용하는 데이터
-    키(tracker_rows/non_us_issues/...)만 세어 계산한다 — 별도 입력 필드가 필요 없다.
+    """Round 4에서 신규 추가된 Widget — 오늘 대시보드에 반영된 각 구역의 건수를 한눈에
+    요약한다. 기존 sample_data.json 스키마를 변경하지 않고, 이미 다른 Widget들이 사용하는
+    데이터 키(tracker_rows/non_us_issues/...)만 세어 계산한다 — 별도 입력 필드가 필요 없다.
     """
 
     token = "STATISTICS_HTML"
@@ -144,16 +172,19 @@ class StatisticsWidget(Widget):
         ("safeguard_news", "세이프가드 소식"),
     ]
 
-    def render(self, data: dict) -> str:
+    def get_data(self, data: dict) -> dict:
         stats = [(label, len(data.get(key) or [])) for key, label in self._COUNTED_KEYS]
         total = sum(count for _, count in stats)
+        return {"stats": stats, "total": total}
+
+    def render_html(self, widget_data: dict) -> str:
         items = "".join(
             f'<div class="lcip-stat"><div class="lcip-stat-value">{count}</div>'
             f'<div class="lcip-stat-label">{escape(label)}</div></div>'
-            for label, count in stats
+            for label, count in widget_data["stats"]
         )
         items += (
-            f'<div class="lcip-stat lcip-stat-total"><div class="lcip-stat-value">{total}</div>'
+            f'<div class="lcip-stat lcip-stat-total"><div class="lcip-stat-value">{widget_data["total"]}</div>'
             f'<div class="lcip-stat-label">전체 항목</div></div>'
         )
         return f'<div class="lcip-stat-grid">{items}</div>'
@@ -165,17 +196,30 @@ class TimelineWidget(Widget):
 
     token = "TREND_DATA_JSON"
 
-    def render(self, data: dict) -> str:
-        return json.dumps(data.get("litigation_amount_trend") or [], ensure_ascii=False)
+    def get_data(self, data: dict) -> list[dict]:
+        return data.get("litigation_amount_trend") or []
 
+    def render_html(self, widget_data: list[dict]) -> str:
+        return json.dumps(widget_data, ensure_ascii=False)
+
+
+# Round 5 Technical Debt 정리: RegulationWidget(token, data_key, empty_label) 3줄을
+# 각각 반복해서 나열하던 것을, (token, data_key, empty_label) 목록 하나로 모아 생성한다 —
+# 새 Regulation 구역을 추가할 때 이 목록에 튜플 하나만 추가하면 된다.
+_REGULATION_WIDGET_CONFIGS: list[tuple[str, str, str]] = [
+    ("US_STATE_REGULATIONS_HTML", "us_state_regulations", "등록된 미국 주별 규제 동향 없음"),
+    ("GLOBAL_REGULATIONS_HTML", "global_regulations", "등록된 글로벌 규제 동향 없음"),
+    ("SAFEGUARD_NEWS_HTML", "safeguard_news", "등록된 세이프가드 소식 없음"),
+]
 
 DEFAULT_WIDGETS: list[Widget] = [
     TodayChangeWidget(),
     StatisticsWidget(),
     RiskTrackerWidget(),
     LitigationWidget(),
-    RegulationWidget("US_STATE_REGULATIONS_HTML", "us_state_regulations", "등록된 미국 주별 규제 동향 없음"),
-    RegulationWidget("GLOBAL_REGULATIONS_HTML", "global_regulations", "등록된 글로벌 규제 동향 없음"),
-    RegulationWidget("SAFEGUARD_NEWS_HTML", "safeguard_news", "등록된 세이프가드 소식 없음"),
+    *[
+        RegulationWidget(token, data_key, empty_label)
+        for token, data_key, empty_label in _REGULATION_WIDGET_CONFIGS
+    ],
     TimelineWidget(),
 ]

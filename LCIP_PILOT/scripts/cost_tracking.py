@@ -7,20 +7,17 @@ Round 4 지시: "Cost Guard를 Provider 사용량 추적과 연동한다." `prov
 `config/model_pricing.yaml`의 단가가 아직 TODO placeholder(0.0)인 동안은 실제 비용도 항상
 0으로 계산된다 — 이는 버그가 아니라 "실제 모델 단가가 확정되지 않았다"는 사실을 정직하게
 반영한 것이다(CLAUDE.md 절대 원칙 #8, 임의 추정 금지).
+
+Round 5 Technical Debt 정리: `config/model_pricing.yaml`의 키를 `config/model_registry.yaml`
+의 tier 키(classification/deep_analysis/future)와 동일하게 맞춰서, Round 4까지 있던
+tier→pricing 키 매핑 테이블(TIER_TO_PRICING_KEY)을 제거했다 — `purpose`를 그대로 pricing
+조회 키로 쓴다.
 """
 from __future__ import annotations
 
 import cost_guard
 from _common import load_yaml
 from providers.base import ProviderUsage
-
-# purpose(model_registry.yaml의 tiers 키) -> model_pricing.yaml의 pricing 키.
-# 두 Config가 별도 축(모델 tier vs 단가표)이라 매핑이 필요하다 — model_id가 정식 확정되면
-# 이 매핑도 함께 갱신한다.
-TIER_TO_PRICING_KEY = {
-    "classification": "placeholder_low_cost_model",
-    "deep_analysis": "placeholder_sonnet_class_model",
-}
 
 
 def load_pricing_registry() -> dict:
@@ -30,15 +27,14 @@ def load_pricing_registry() -> dict:
 def estimate_usage_cost_usd(
     usage: ProviderUsage, purpose: str, pricing_registry: dict | None = None
 ) -> float:
-    """purpose(classification/deep_analysis)별 단가로 1회 Provider 호출 비용(USD)을 계산한다."""
+    """purpose(classification/deep_analysis/future)별 단가로 1회 Provider 호출 비용(USD)을
+    계산한다. purpose는 config/model_registry.yaml의 tier 키와 동일하다."""
     pricing_registry = pricing_registry if pricing_registry is not None else load_pricing_registry()
-    pricing_key = TIER_TO_PRICING_KEY.get(purpose)
-    if pricing_key is None or pricing_key not in pricing_registry:
+    if purpose not in pricing_registry:
         raise ValueError(
-            f"'{purpose}'에 대한 pricing 매핑이 없다 — config/model_pricing.yaml과 "
-            "TIER_TO_PRICING_KEY를 확인해야 한다."
+            f"'{purpose}'에 대한 단가 정보가 없다 — config/model_pricing.yaml을 확인해야 한다."
         )
-    unit = pricing_registry[pricing_key]
+    unit = pricing_registry[purpose]
     return cost_guard.estimate_cost_usd(
         usage.input_tokens,
         usage.output_tokens,

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/investment_review.schema.json",
+  "title": "InvestmentReview",
+  "description": "Investment Review Engine 출력 (Architect Review Round 5). Quick Company Scan의 build_investment_review_input() 출력을 입력으로 받는다. Valuation은 Comparable(비교기업 배수) 기반으로만 계산한다 — DCF는 Enterprise Backlog다(Pilot 범위 아님). 최종 투자판단이 아니라 검토 대상 스크리닝 신호까지만 제공한다 (knowledge/INVESTMENT_FRAMEWORK.md 원칙과 동일).",
+  "type": "object",
+  "required": [
+    "target_company", "review_date", "comparable", "peer_average", "estimated_valuation",
+    "strategic_fit", "synergy", "risk", "deal_killer", "recommendation", "unknowns", "confidence"
+  ],
+  "properties": {
+    "target_company": { "type": "string", "minLength": 1 },
+    "review_date": { "type": "string", "format": "date" },
+    "comparable": {
+      "type": "array",
+      "description": "Comparable Peer 목록. 값이 확인되지 않은 배수는 null.",
+      "items": {
+        "type": "object",
+        "required": ["peer_name", "ev_ebitda", "per", "pbr", "source_url"],
+        "properties": {
+          "peer_name": { "type": "string" },
+          "ev_ebitda": { "type": ["number", "null"] },
+          "per": { "type": ["number", "null"] },
+          "pbr": { "type": ["number", "null"] },
+          "source_url": { "type": "string", "format": "uri" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "peer_average": {
+      "type": "object",
+      "required": ["ev_ebitda_avg", "per_avg", "pbr_avg", "peer_count"],
+      "properties": {
+        "ev_ebitda_avg": { "type": ["number", "null"] },
+        "per_avg": { "type": ["number", "null"] },
+        "pbr_avg": { "type": ["number", "null"] },
+        "peer_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "estimated_valuation": {
+      "type": ["object", "null"],
+      "description": "Comparable 배수 기반으로만 계산한다. Peer가 없으면 최상위에서 null (임의 추정 금지).",
+      "properties": {
+        "basis": { "type": "string" },
+        "range_description": { "type": "string" },
+        "source_urls": { "type": "array", "items": { "type": "string", "format": "uri" } }
+      },
+      "required": ["basis", "range_description", "source_urls"],
+      "additionalProperties": false
+    },
+    "strategic_fit": { "type": "string" },
+    "synergy": { "type": "array", "items": { "type": "string" } },
+    "risk": { "type": "array", "items": { "type": "string" } },
+    "deal_killer": {
+      "type": "object",
+      "required": ["found", "reasons"],
+      "properties": {
+        "found": { "type": "boolean" },
+        "reasons": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "recommendation": {
+      "type": "object",
+      "description": "투자 조언이 아니라 절차적 스크리닝 신호다 (schemas/quick_company_scan.schema.json의 investment_recommendation과 동일 원칙).",
+      "required": ["signal", "rationale"],
+      "properties": {
+        "signal": {
+          "type": "string",
+          "enum": [
+            "proceed_to_deep_review", "monitor", "insufficient_public_information",
+            "not_aligned_based_on_available_facts", "decline_deal_killer_found"
+          ]
+        },
+        "rationale": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+  },
+  "additionalProperties": false
+}

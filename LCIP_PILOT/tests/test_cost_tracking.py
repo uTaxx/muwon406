@@ -4,11 +4,11 @@ import cost_tracking
 from providers.base import ProviderUsage
 
 PRICING = {
-    "placeholder_low_cost_model": {
+    "classification": {
         "usd_per_million_input_tokens": 1.0,
         "usd_per_million_output_tokens": 5.0,
     },
-    "placeholder_sonnet_class_model": {
+    "deep_analysis": {
         "usd_per_million_input_tokens": 3.0,
         "usd_per_million_output_tokens": 15.0,
     },

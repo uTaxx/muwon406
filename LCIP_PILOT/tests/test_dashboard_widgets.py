@@ -93,3 +93,32 @@ def test_build_html_includes_statistics_section():
     assert "통계 요약" in html
     assert "lcip-stat-grid" in html
     assert "{{" not in html
+
+
+def test_widget_get_data_returns_data_not_html():
+    """Round 5 핵심 요구사항: Widget은 HTML을 직접 만들지 않고 데이터를 반환한다."""
+    widget_data = RiskTrackerWidget().get_data(SAMPLE_DATA)
+    assert isinstance(widget_data, list)
+    assert "<" not in str(widget_data) or all(
+        "<td>" not in str(item) for item in widget_data
+    )
+    assert widget_data == SAMPLE_DATA.get("tracker_rows") or []
+
+
+def test_widget_render_equals_render_html_of_get_data():
+    for widget in DEFAULT_WIDGETS:
+        assert widget.render(SAMPLE_DATA) == widget.render_html(widget.get_data(SAMPLE_DATA))
+
+
+def test_statistics_widget_get_data_is_structured_not_html():
+    widget_data = StatisticsWidget().get_data(SAMPLE_DATA)
+    assert "stats" in widget_data and "total" in widget_data
+    assert isinstance(widget_data["stats"], list)
+    assert isinstance(widget_data["total"], int)
+
+
+def test_timeline_widget_get_data_returns_raw_list_not_json_string():
+    data = {"litigation_amount_trend": [{"date": "2026-07-01", "amount_usd": 1000}]}
+    widget_data = TimelineWidget().get_data(data)
+    assert widget_data == [{"date": "2026-07-01", "amount_usd": 1000}]
+    assert isinstance(widget_data, list)

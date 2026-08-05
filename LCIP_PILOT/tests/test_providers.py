@@ -37,6 +37,10 @@ def _risk_schema():
     return {**schema["$defs"]["risk_analysis_output"], "$defs": schema["$defs"]}
 
 
+def _quick_scan_schema():
+    return json.loads((SCHEMAS_DIR / "quick_company_scan.schema.json").read_text(encoding="utf-8"))
+
+
 def test_mock_provider_is_an_ai_provider():
     assert isinstance(MockProvider(), AIProvider)
 
@@ -69,6 +73,23 @@ def test_mock_provider_call_count_increments():
     assert provider.call_count == 2
 
 
+def test_mock_provider_quick_company_scan_matches_core_schema():
+    result = MockProvider().quick_company_scan(
+        {"display_name": "LX Hausys"},
+        [{"source_name": "Google News RSS (Korean)", "endpoint_url": "https://example.com/rss"}],
+    )
+    assert result.ok is True
+    jsonschema.validate(instance=result.parsed_json, schema=_quick_scan_schema())
+    assert result.parsed_json["target_company"] == "LX Hausys"
+
+
+def test_claude_provider_quick_company_scan_enabled_with_model_raises_not_implemented(monkeypatch):
+    monkeypatch.setenv("LCIP_FUTURE_READINESS_MODEL", "test-model-id")
+    provider = ClaudeProvider(enabled=True)
+    with pytest.raises(NotImplementedError):
+        provider.quick_company_scan({"display_name": "LX Hausys"}, [])
+
+
 def test_claude_provider_is_an_ai_provider():
     assert isinstance(ClaudeProvider(), AIProvider)
 
@@ -98,6 +119,23 @@ def test_claude_provider_enabled_with_model_raises_not_implemented(monkeypatch):
         provider.classify_relevance(SILICA_ARTICLE, TOPIC)
 
 
+def test_claude_provider_analyze_risk_enabled_with_model_raises_not_implemented(monkeypatch):
+    monkeypatch.setenv("LCIP_DEEP_ANALYSIS_MODEL", "test-model-id")
+    provider = ClaudeProvider(enabled=True)
+    with pytest.raises(NotImplementedError):
+        provider.analyze_risk(SILICA_ARTICLE, "LX Hausys 발췌", "기존 타임라인")
+
+
+def test_claude_provider_build_source_block_includes_reliability_score():
+    block = ClaudeProvider._build_source_block({"source_name": "DART 공시 (전자공시시스템)"})
+    assert "DART 공시 (전자공시시스템)" in block
+    assert "Source Reliability Score: 5/5" in block
+
+
+def test_claude_provider_build_source_block_empty_when_no_source_name():
+    assert ClaudeProvider._build_source_block({}) == ""
+
+
 def test_claude_provider_validate_output_accepts_valid_relevance_output():
     example = {
         "relevant": True,
@@ -124,6 +162,8 @@ def test_future_providers_are_ai_providers_but_not_implemented(provider_cls):
         provider.classify_relevance(SILICA_ARTICLE, TOPIC)
     with pytest.raises(NotImplementedError):
         provider.analyze_risk(SILICA_ARTICLE, "", "")
+    with pytest.raises(NotImplementedError):
+        provider.quick_company_scan({"display_name": "샘플"}, [])
 
 
 def test_providers_are_interchangeable_same_call_signature():
