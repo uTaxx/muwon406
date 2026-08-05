@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 import build_dashboard
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,3 +54,30 @@ def test_tracker_row_amount_formatting_no_null_crash():
 def test_html_output_has_no_broken_word_wrap_css():
     styles = (ROOT / "dashboard" / "styles.css").read_text(encoding="utf-8")
     assert "word-break: keep-all" in styles
+
+
+def test_split_mode_returns_three_files_with_external_refs():
+    data = json.loads((ROOT / "dashboard" / "sample_data.json").read_text(encoding="utf-8"))
+    result = build_dashboard.build_html(data, mode="split")
+
+    assert set(result.keys()) == {"dashboard.html", "styles.css", "app.js"}
+    assert '<link rel="stylesheet" href="styles.css">' in result["dashboard.html"]
+    assert '<script src="app.js"></script>' in result["dashboard.html"]
+    assert "{{" not in result["dashboard.html"]
+    assert "word-break: keep-all" in result["styles.css"]
+    assert result["app.js"] == (ROOT / "dashboard" / "app.js").read_text(encoding="utf-8")
+
+
+def test_single_mode_is_default_and_returns_self_contained_string():
+    data = json.loads((ROOT / "dashboard" / "sample_data.json").read_text(encoding="utf-8"))
+    html_default = build_dashboard.build_html(data)
+    html_explicit = build_dashboard.build_html(data, mode="single")
+    assert html_default == html_explicit
+    assert isinstance(html_default, str)
+    assert "<style>" in html_default and "word-break: keep-all" in html_default
+
+
+def test_invalid_mode_raises():
+    data = json.loads((ROOT / "dashboard" / "sample_data.json").read_text(encoding="utf-8"))
+    with pytest.raises(ValueError):
+        build_dashboard.build_html(data, mode="bogus")

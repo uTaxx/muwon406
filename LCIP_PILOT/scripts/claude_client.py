@@ -60,6 +60,54 @@ def load_prompt(name: str) -> tuple[str, str]:
     return text, version
 
 
+def split_prompt_blocks(prompt_text: str) -> tuple[str, str]:
+    """Architect Review Q3의 Static/Dynamic Block 구조를 파싱한다.
+
+    prompts/*.md는 `## Static Block`과 `## Dynamic Block` 두 개의 h2 섹션을 갖는다
+    (natural_language_admin.md처럼 h3 하위 섹션이 있어도 h2 경계만 기준으로 자른다).
+    반환값: (static_block_text, dynamic_block_text)
+    """
+    static_marker = "## Static Block"
+    dynamic_marker = "## Dynamic Block"
+    if static_marker not in prompt_text or dynamic_marker not in prompt_text:
+        raise ValueError(
+            "prompt에 '## Static Block'/'## Dynamic Block' 섹션이 없다 — "
+            "Architect Review Q3 구조를 따르지 않는 prompt 파일이다."
+        )
+    static_start = prompt_text.index(static_marker)
+    dynamic_start = prompt_text.index(dynamic_marker)
+    static_block = prompt_text[static_start:dynamic_start].strip()
+    dynamic_block = prompt_text[dynamic_start:].strip()
+    return static_block, dynamic_block
+
+
+def build_cached_messages(prompt_name: str, dynamic_payload: dict) -> list[dict]:
+    """Anthropic Messages API의 content 배열을 Static/Dynamic Block으로 분리 구성한다.
+
+    Static Block에는 `cache_control: {"type": "ephemeral"}`을 붙여 Prompt Caching 대상으로
+    표시한다 (config/cost_policy.yaml의 prompt_cache.cache_control_type과 동일 값). 실제
+    Anthropic API 클라이언트 호출은 TASK-009에서 이 반환값을 그대로 `messages[0]["content"]`로
+    사용하면 된다 — 이번 라운드는 메시지 구조만 만들고 실제 호출은 하지 않는다.
+    """
+    prompt_text, _version = load_prompt(prompt_name)
+    static_block, _dynamic_template = split_prompt_blocks(prompt_text)
+
+    policy = load_yaml("config/cost_policy.yaml")
+    cache_control_type = policy.get("prompt_cache", {}).get("cache_control_type", "ephemeral")
+
+    return [
+        {
+            "type": "text",
+            "text": static_block,
+            "cache_control": {"type": cache_control_type},
+        },
+        {
+            "type": "text",
+            "text": json.dumps(dynamic_payload, ensure_ascii=False, indent=2),
+        },
+    ]
+
+
 def clip_context(text: str, max_chars: int) -> str:
     """전체 Knowledge Base를 매번 보내지 않기 위한 단순 clipping 유틸.
 

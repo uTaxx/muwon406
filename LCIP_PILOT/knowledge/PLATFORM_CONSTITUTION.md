@@ -7,7 +7,7 @@ reference_date:
 last_reviewed: 2026-08-05
 source_urls: []
 confidence: draft
-version: 0.1
+version: 0.2
 owner: user
 ---
 
@@ -44,10 +44,17 @@ owner: user
 
 ## 5. 미션 정의
 
-- **미래준비**: 산업·정책·기술·자본시장 변화 탐지, M&A/Carve-out/Bolt-on/Venture 기회 탐색,
-  기업 Quick Scan.
-- **리스크 관리**: 소송·제품책임·산업안전·환경·통상·공급망 리스크 조기 감지, 계열사·사업·
-  Value Chain 영향 경로 분석.
+상세 서브카테고리 및 판단 규칙은 `knowledge/MISSION_FRAMEWORK.md`를 따른다 (요약):
+
+- **미래준비**: 산업·정책·기술·자본시장 변화 탐지, M&A/Carve-out/Bolt-on/JV/Venture 기회
+  탐색, 기업 Quick Scan (`knowledge/INVESTMENT_FRAMEWORK.md` 참고).
+- **리스크 관리**: 소송·제품책임·산업안전·환경·통상·공급망·정책·ESG 리스크 조기 감지,
+  계열사·사업·Value Chain 영향 경로 분석 (`knowledge/ANALYSIS_FRAMEWORK.md` 참고).
+
+## 6. Knowledge 작성 원칙
+
+Knowledge Base(`knowledge/*.md`)는 `knowledge/KNOWLEDGE_POLICY.md`의 16계층 Taxonomy와
+`knowledge/SOURCE_PRIORITY.md`의 출처 우선순위를 따라 작성한다.
 
 TODO: source required — 이 문서는 규정 문서이므로 외부 출처가 필요하지 않으나, 향후 LX홀딩스
 공식 거버넌스 문서와 연계할 경우 해당 출처를 여기에 추가한다.

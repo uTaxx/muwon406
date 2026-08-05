@@ -1,8 +1,9 @@
 # LCIP Pilot — Google Sheets 탭/컬럼 구조
 # 채택 기준: 03_BUILD_SPECIFICATION.md TASK-006 (11개 탭)
 # 컬럼 상세는 schemas/google_sheets_columns.json 참고.
-# status: confirmed = Blueprint/Build Spec에 문서화된 컬럼
-# status: draft     = 문서 간 정의가 없어 이번 라운드에서 초안 작성 (사용자 확인 필요)
+# status: confirmed = Blueprint/Build Spec에 문서화되었거나 Architect Review(2026-08-05, Q2)로
+#                      확정된 컬럼. 이전에는 SENT_HISTORY/ERROR_LOG/CHANGE_REQUEST/CHANGE_LOG
+#                      4개 탭이 draft였으나 Architect Review에서 컬럼을 추가 확정했다.
 
 master_spreadsheet_id_env: GOOGLE_SHEETS_MASTER_SPREADSHEET_ID
 
@@ -29,16 +30,16 @@ tabs:
     status: confirmed
     freeze_rows: 1
   - name: SENT_HISTORY
-    status: draft
+    status: confirmed
     freeze_rows: 1
   - name: ERROR_LOG
-    status: draft
+    status: confirmed
     freeze_rows: 1
   - name: CHANGE_REQUEST
-    status: draft
+    status: confirmed
     freeze_rows: 1
   - name: CHANGE_LOG
-    status: draft
+    status: confirmed
     freeze_rows: 1
 
 # 기존 Spreadsheet ID가 있을 경우 create_google_sheets.py는

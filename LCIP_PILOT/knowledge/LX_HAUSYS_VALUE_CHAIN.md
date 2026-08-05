@@ -7,14 +7,20 @@ reference_date:
 last_reviewed: 2026-08-05
 source_urls: []
 confidence: draft
-version: 0.1
+version: 0.2
 owner: user
+knowledge_taxonomy_version: 1.0
 ---
 
 # LX Hausys Value Chain
 
-> WF-P05(Risk Analysis)에서 "계열사·사업·제품·Value Chain 영향경로 분석"에 사용되는 참조
-> 문서. 각 단계는 공개정보로 확인된 범위에서만 채운다.
+> Master Pipeline의 AI Analyze 단계(舊 WF-P05 Risk Analysis, ADR-007로 통합)에서
+> "계열사·사업·제품·Value Chain 영향경로 분석"에 사용되는 참조 문서.
+> `knowledge/KNOWLEDGE_POLICY.md` §4 우선순위 2위 문서이며, 아래 절은 16계층 Taxonomy의
+> "5. Value Chain"을 세분화한 것이다 (Upstream=Raw Material, Manufacturing=Manufacturing,
+> Distribution/Downstream=Business·Customer). 각 단계는 공개정보로 확인된 범위에서만
+> 채운다. 항목별 근거는 `knowledge/KNOWLEDGE_POLICY.md` §3 서식(Source/Reference URL/
+> Confidence/Last Verified)을 따른다.
 
 ## 1. 원재료 조달 (Upstream)
 

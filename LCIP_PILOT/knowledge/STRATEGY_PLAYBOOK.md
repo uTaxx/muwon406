@@ -7,8 +7,9 @@ reference_date:
 last_reviewed: 2026-08-05
 source_urls: []
 confidence: draft
-version: 0.1
+version: 0.2
 owner: user
+knowledge_taxonomy_version: 1.0
 ---
 
 # Strategy Playbook
@@ -24,8 +25,10 @@ TODO: source required (IR 자료, 사업보고서 "사업의 개요")
 
 ## 2. 리스크 대응 우선순위 판단 기준
 
-> WF-P05(Risk Analysis)가 `significance`와 `recommended_actions`를 산출할 때 참고하는 기준.
-> 아래는 Pilot 시작 시점의 초안이며, 실제 운영 데이터가 쌓이면 개정한다.
+> Master Pipeline의 AI Analyze 단계(舊 WF-P05 Risk Analysis, ADR-007로 통합)가
+> `significance`와 `recommended_actions`를 산출할 때 참고하는 기준
+> (`knowledge/ANALYSIS_FRAMEWORK.md` §4와 연동). 아래는 Pilot 시작 시점의 초안이며,
+> 실제 운영 데이터가 쌓이면 개정한다.
 
 - **긴급(즉시 알림 대상)**: 신규 소송 제기, 신규 배상 판결/합의, 신규 규제·입법 통과, 생산/판매
   중단 조치

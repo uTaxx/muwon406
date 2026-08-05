@@ -1,72 +1,48 @@
 # LCIP Pilot — n8n Workflow Registry
-# 03_BUILD_SPECIFICATION.md TASK-007/§4 Build Task Index 기준
-# 모든 워크플로우는 기본 active: false. 실제 배포/활성화는 TASK-008/018에서
-# 사용자 승인 후 순서대로 진행한다 (§22 활성화 순서).
+# Architect Review Q4(2026-08-05) / docs/decisions/ADR-007-n8n-workflow-consolidation.md 반영.
+# 03_BUILD_SPECIFICATION.md TASK-007 원안(11개 워크플로우)은 n8n Cloud Starter 실행 횟수
+# 최소화를 위해 5개로 통합되었다. 모든 워크플로우는 기본 active: false. 실제 배포/활성화는
+# TASK-013 완료 후 TASK-008(자동배포 도구, 후순위화)에서 사용자 승인 후 진행한다.
 
 workflows:
   - workflow_id: WF-P01
-    file: n8n/workflows/WF-P01-config-loader.json
-    name: LCIP - Config Loader
+    file: n8n/workflows/WF-P01-master-pipeline.json
+    name: LCIP - Master Pipeline
+    role: Config Load -> News Collect -> Rule Filter -> AI Analyze -> Dashboard -> Notification -> Logging -> Finish (舊 WF-P01~P07 통합)
     depends_on: []
     active: false
     activation_order: 1
-  - workflow_id: WF-P09
-    file: n8n/workflows/WF-P09-cost-guard.json
-    name: LCIP - Cost Guard
-    depends_on: [WF-P01]
+  - workflow_id: WF-P02
+    file: n8n/workflows/WF-P02-source-health.json
+    name: LCIP - Source Health
+    role: Source Registry 상태 점검 (舊 WF-P08, 독립 스케줄 유지)
+    depends_on: []
     active: false
     activation_order: 2
-  - workflow_id: WF-P99
-    file: n8n/workflows/WF-P99-error-handler.json
-    name: LCIP - Error Handler
+  - workflow_id: WF-P03
+    file: n8n/workflows/WF-P03-cost-guard.json
+    name: LCIP - Cost Guard
+    role: Claude usage 집계 및 70/90/100% 단계 통제 (舊 WF-P09, Sub-workflow로 호출)
+    depends_on: []
+    active: false
+    activation_order: 2
+  - workflow_id: WF-P04
+    file: n8n/workflows/WF-P04-natural-language-admin.json
+    name: LCIP - Natural Language Admin
+    role: 자연어 요청 -> Change Request 초안 생성 (舊 WF-P10, 관리자 수동 실행 전용 — 자동 실행 횟수에 영향 없음)
     depends_on: []
     active: false
     activation_order: 3
-  - workflow_id: WF-P08
-    file: n8n/workflows/WF-P08-source-health.json
-    name: LCIP - Source Health
-    depends_on: [WF-P01]
+  - workflow_id: WF-P99
+    file: n8n/workflows/WF-P99-error-handler.json
+    name: LCIP - Error Handler
+    role: 공통 오류 로깅/알림/민감정보 마스킹 (변경 없음)
+    depends_on: []
     active: false
-    activation_order: 4
-  - workflow_id: WF-P02
-    file: n8n/workflows/WF-P02-news-collector.json
-    name: LCIP - News Collector
-    depends_on: [WF-P01]
-    active: false
-    activation_order: 5
-  - workflow_id: WF-P03
-    file: n8n/workflows/WF-P03-public-source-collector.json
-    name: LCIP - Public Source Collector
-    depends_on: [WF-P01]
-    active: false
-    activation_order: 5
-  - workflow_id: WF-P04
-    file: n8n/workflows/WF-P04-relevance-classifier.json
-    name: LCIP - Relevance Classifier
-    depends_on: [WF-P01, WF-P02]
-    active: false
-    activation_order: 6
-  - workflow_id: WF-P05
-    file: n8n/workflows/WF-P05-risk-analysis.json
-    name: LCIP - Risk Analysis
-    depends_on: [WF-P01, WF-P04]
-    active: false
-    activation_order: 7
-  - workflow_id: WF-P06
-    file: n8n/workflows/WF-P06-dashboard-builder.json
-    name: LCIP - Dashboard Builder
-    depends_on: [WF-P05]
-    active: false
-    activation_order: 8
-  - workflow_id: WF-P07
-    file: n8n/workflows/WF-P07-notification.json
-    name: LCIP - Notification
-    depends_on: [WF-P06]
-    active: false
-    activation_order: 9
-  - workflow_id: WF-P10
-    file: n8n/workflows/WF-P10-natural-language-admin.json
-    name: LCIP - Natural Language Admin
-    depends_on: [WF-P01]
-    active: false
-    activation_order: 10
+    activation_order: 0
+
+# 활성화 순서 (03_BUILD_SPECIFICATION.md §22 원안을 ADR-007 구조에 맞게 축약):
+# 0. WF-P99 Error Handler
+# 1. WF-P01 Master Pipeline (Config Load 포함)
+# 2. WF-P02 Source Health, WF-P03 Cost Guard
+# 3. WF-P04 Natural Language Admin (관리자 필요 시)

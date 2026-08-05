@@ -54,9 +54,11 @@ estimated_cost_impact, risks, requires_approval, status`. `status`는
 
 ### 2.5 Claude Output (`schemas/claude_output.schema.json`)
 
-WF-P04(Relevance Classifier)와 WF-P05(Risk Analysis)의 공용 출력 포맷 검증 스키마.
-relevance: `relevant, relevance_score, mission, related_companies, reason, needs_deep_analysis`.
-risk analysis: `facts, significance, lx_impact, actions, confidence, evidence, unknowns`.
+Master Pipeline의 Rule Filter/AI Analyze 단계(舊 WF-P04 Relevance Classifier / WF-P05 Risk
+Analysis, ADR-007로 통합)의 공용 출력 포맷 검증 스키마.
+relevance: `relevant, relevance_score, mission, mission_subcategory, related_companies, reason, needs_deep_analysis`.
+risk analysis: `facts, significance, mission_subcategory, lx_impact, actions, confidence, evidence, unknowns`.
+`mission_subcategory`는 Architect Review Q3(2026-08-05) 반영, `knowledge/MISSION_FRAMEWORK.md` 기준.
 
 ---
 
@@ -64,16 +66,20 @@ risk analysis: `facts, significance, lx_impact, actions, confidence, evidence, u
 
 11개 탭 전부의 컬럼을 담는다. 문서화된 7개(CONFIG_MASTER, TOPIC_CONFIG, SOURCE_REGISTRY,
 ARTICLE_DB, INTELLIGENCE_DB, SOURCE_HEALTH, COST_LOG)는 Blueprint §6 / TASK-003 기준.
-아래 4개는 이번 문서에서 새로 초안 작성(`status: draft`, 사용자 확인 필요):
+아래 4개는 처음엔 초안(draft)이었으나 **Architect Review Q2(2026-08-05)로 컬럼이 확장되어
+`status: confirmed`로 확정**되었다:
 
-- **SENT_HISTORY** (draft): `sent_id, intelligence_id, channel(email|telegram), recipient,
-  sent_at, dedupe_key, status(sent|failed|skipped_no_change)`
-- **ERROR_LOG** (draft): `error_id, workflow_id, node_name, error_type, error_message,
-  occurred_at, resolved, resolution_note`
-- **CHANGE_REQUEST** (draft): §2.4 Change Request 스키마와 동일 컬럼 + `created_at, decided_at,
-  decided_by`
-- **CHANGE_LOG** (draft): `change_id, entity_type(config|prompt|knowledge), entity_id,
-  before_version, after_version, change_request_id, applied_at`
+- **SENT_HISTORY**: `sent_id, intelligence_id, channel, recipient, sent_at, dedupe_key,
+  status, workflow_id, topic_id, subject, content_hash, delivery_latency_ms`
+- **ERROR_LOG**: `error_id, workflow_id, node_name, error_type, error_message, occurred_at,
+  resolved, resolution_note, severity, retry_count, stack_trace, first_occurred,
+  last_occurred`
+- **CHANGE_REQUEST**: §2.4 Change Request 스키마와 동일 컬럼 + `created_at, decided_at,
+  decided_by, request_source, requested_by, approved_by, approved_at, implemented_at`
+- **CHANGE_LOG**: `change_id, entity_type, entity_id, before_version, after_version,
+  change_request_id, applied_at, change_summary, rollback_version, implemented_by`
+
+`INTELLIGENCE_DB`에는 `mission_subcategory` 컬럼이 추가되었다 (Architect Review Q3).
 
 ---
 
@@ -87,7 +93,25 @@ ARTICLE_DB, INTELLIGENCE_DB, SOURCE_HEALTH, COST_LOG)는 Blueprint §6 / TASK-00
 | `cost_policy.yaml` | Claude API 예산·토큰 한도·단계별 통제 |
 | `notification.yaml` | 발송 시간대·채널 on/off·test_mode |
 | `drive_structure.yaml` | Google Drive 폴더 트리 (§1 충돌 #2 채택 결과 반영) |
-| `sheet_structure.yaml` | Google Sheets 11개 탭·컬럼 정의 (§3 반영, draft 표시 포함) |
-| `workflow_registry.yaml` | n8n 워크플로우 ID·이름·의존관계·기본 active 상태 |
+| `sheet_structure.yaml` | Google Sheets 11개 탭·컬럼 정의 (§3 반영, 전부 confirmed) |
+| `workflow_registry.yaml` | n8n 워크플로우 5개(ADR-007) ID·이름·의존관계·기본 active 상태 |
+| `model_pricing.yaml` | Claude 모델별 단가 Registry (TASK-015 Cost Guard용, 하드코딩 금지 원칙 충족) |
 
 모든 Config 값은 `scripts/validate_config.py`로 YAML 문법·필수값·ID 중복을 검증한다.
+
+---
+
+## 5. Architect Review 반영사항 (2026-08-05)
+
+TASK-001~007 검토 후 Architect Review로 아래 결정이 추가되었다. 상세 근거는 각 ADR 참고.
+
+| Q | 결정 요약 | 근거 문서 |
+|---|---|---|
+| Q1 | 문서 우선순위 고정 (BUILD_SPEC → BLUEPRINT → MANUAL → HANDOVER) | `decisions/ADR-006-document-priority-policy.md` |
+| Q2 | Sheets 4개 draft 탭 컬럼 확정 (`confirmed`로 전환) | 본 문서 §3 |
+| Q3 | Claude 모델 tier 권장(Haiku/Sonnet), Prompt를 Static/Dynamic Block으로 분리 | `config/cost_policy.yaml`, `prompts/*.md`, `scripts/claude_client.py` |
+| Q4 | n8n 11개 워크플로우 → 5개(Master Pipeline + Source Health + Cost Guard + NL Admin + Error Handler)로 통합 | `decisions/ADR-007-n8n-workflow-consolidation.md` |
+| Q5 | TASK 우선순위 변경: TASK-009→010→011→012→013→TASK-008(마지막) | `TODO.md` |
+| Q6 | Knowledge 파일 우선순위 및 출처 우선순위 확정 | `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/SOURCE_PRIORITY.md` |
+| Q7 | Dashboard Mode1(Single HTML, 기본)/Mode2(분리 Export) 이원화 | `scripts/build_dashboard.py` |
+| 추가 | TASK-004A(Knowledge Foundation Builder), TASK-004B(Corporate Intelligence Framework) 신설 | `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/MISSION_FRAMEWORK.md` 등 5개 신규 문서 |

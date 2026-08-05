@@ -1,5 +1,5 @@
 {
-  "name": "LCIP - Natural Language Admin (WF-P10)",
+  "name": "LCIP - Natural Language Admin (WF-P04)",
   "nodes": [
     {
       "parameters": {},
@@ -28,7 +28,7 @@
         460,
         300
       ],
-      "notes": "prompts/natural_language_admin.md 사용. 직접 설정을 바꾸지 않고 Change Request 초안(JSON)만 생성.",
+      "notes": "prompts/natural_language_admin.md 사용 (Static/Dynamic Block). 직접 설정을 바꾸지 않고 Change Request 초안(JSON)만 생성.",
       "disabled": true,
       "credentials": {
         "httpHeaderAuth": {
@@ -38,7 +38,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
       },
       "id": "code-003",
       "name": "Diff·영향·비용 계산",
@@ -64,7 +64,7 @@
         900,
         300
       ],
-      "notes": "status=DRAFT 또는 PENDING_APPROVAL로 저장, 승인 대기",
+      "notes": "status=DRAFT 또는 PENDING_APPROVAL로 저장, request_source=natural_language_admin",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
@@ -113,6 +113,7 @@
     "errorWorkflow": "LCIP - Error Handler"
   },
   "tags": [
-    "LCIP-Pilot"
+    "LCIP-Pilot",
+    "ADR-007-master-pipeline"
   ]
 }

@@ -44,11 +44,31 @@ TASK는 여기 나열된 조건을 모두 통과해야 "완료"로 보고할 수
 
 ## TASK-007 n8n Workflow Scaffold
 
-- [ ] `n8n/workflows/*.json` 11개 파일 모두 유효한 JSON
+> Architect Review Q4(2026-08-05)로 11개 → 5개 워크플로우로 통합됨
+> (`docs/decisions/ADR-007-n8n-workflow-consolidation.md`). 완료조건 자체는 동일하게 적용.
+
+- [ ] `n8n/workflows/*.json` 5개 파일(Master Pipeline, Source Health, Cost Guard,
+      Natural Language Admin, Error Handler) 모두 유효한 JSON
 - [ ] 전부 `"active": false`
 - [ ] Credential은 이름(placeholder)만 참조, ID 하드코딩 없음
 - [ ] 각 워크플로우에 Manual Trigger 노드와 Error 분기(WF-P99 참조 또는 자체 처리) 포함
 - [ ] `pytest tests/test_n8n_json.py` 통과
+
+## TASK-004A Knowledge Foundation Builder
+
+- [ ] `knowledge/LX_HAUSYS_COMPANY_DNA.md`, `knowledge/LX_HOLDINGS_CONTEXT.md`가
+      `knowledge/KNOWLEDGE_POLICY.md`의 16계층 Taxonomy(Company~Investment Point) 구조를
+      따름
+- [ ] 각 계층 항목에 Source/Reference URL/Confidence/Last Verified 필드 존재 (값은 TODO 가능)
+- [ ] 임의의 확정 회사 사실 없음 (기존 TASK-004 원칙 유지)
+
+## TASK-004B Corporate Intelligence Framework
+
+- [ ] `knowledge/ANALYSIS_FRAMEWORK.md`, `INVESTMENT_FRAMEWORK.md`, `SOURCE_PRIORITY.md`,
+      `KNOWLEDGE_POLICY.md`, `MISSION_FRAMEWORK.md` 5개 파일 모두 존재
+- [ ] `MISSION_FRAMEWORK.md`에 미래준비/리스크관리 두 축과 서브카테고리 정의 포함
+- [ ] `schemas/intelligence.schema.json`·`schemas/claude_output.schema.json`의
+      `mission_subcategory` enum이 `MISSION_FRAMEWORK.md`와 일치
 
 ## 공통 (모든 TASK)
 

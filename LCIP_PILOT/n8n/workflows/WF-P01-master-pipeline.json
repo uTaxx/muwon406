@@ -1,0 +1,778 @@
+{
+  "name": "LCIP - Master Pipeline (WF-P01)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-001",
+      "name": "Master Scheduler (매시 정각)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-003",
+      "name": "Config Load",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "notes": "CONFIG_MASTER/TOPIC_CONFIG 조회, 관련 Source/Prompt/Knowledge 경로 반환 (舊 WF-P01)"
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q={{ $json.query_en }}&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-004",
+      "name": "News Collect - Google News RSS (EN)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        220
+      ],
+      "notes": "TOP-0001 영어 키워드 검색. AI 호출 금지 (舊 WF-P02)."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q={{ $json.query_ko }}&hl=ko&gl=KR&ceid=KR:ko",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-005",
+      "name": "News Collect - Google News RSS (KO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        380
+      ],
+      "notes": "TOP-0001 한국어 키워드 검색. AI 호출 금지 (舊 WF-P02)."
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.public_source_endpoint }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-006",
+      "name": "News Collect - Public Source (DART/정부)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        540
+      ],
+      "notes": "DART/정부 보도자료 — sources.yaml에서 active:false인 동안 disabled (舊 WF-P03).",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-007",
+      "name": "News Collect - 정규화·중복제거",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        380
+      ],
+      "notes": "URL canonicalization, 제목 유사도 중복그룹 생성. AI 호출 금지."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "ARTICLE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-008",
+      "name": "ARTICLE_DB Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        380
+      ],
+      "notes": "신규 기사만 append",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-009",
+      "name": "Rule Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        380
+      ],
+      "notes": "포함/제외 키워드, 신뢰등급, 게시일, 관련 기업명 기반 1차 판정 (AI 미사용, 舊 WF-P04 1차 규칙)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.condition_placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-010",
+      "name": "애매한 건인가?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ],
+      "notes": "규칙 점수가 중간구간일 때만 True"
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "claude-011",
+      "name": "AI Analyze - Claude Relevance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        220
+      ],
+      "notes": "prompts/relevance_filter.md (Static/Dynamic Block 분리). Anthropic Key 준비 전까지 disabled (舊 WF-P04 AI 분류).",
+      "disabled": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PLACEHOLDER_CRED_AnthropicApiKey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.condition_placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-012",
+      "name": "신규 중요 사건인가?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        460
+      ],
+      "notes": "needs_deep_analysis=true → 심층분석 (舊 WF-P05 진입 조건)"
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "claude-013",
+      "name": "AI Analyze - Claude Risk Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        460
+      ],
+      "notes": "prompts/risk_analysis.md. 입력 최대 8000/출력 최대 1200 tokens. Anthropic Key 준비 전까지 disabled (舊 WF-P05).",
+      "disabled": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PLACEHOLDER_CRED_AnthropicApiKey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-014",
+      "name": "AI Analyze - JSON Schema 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        460
+      ],
+      "notes": "claude_output.schema.json 검증. 실패 시 1회 교정 재호출, 재실패하면 needs_review."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "INTELLIGENCE_DB",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-015",
+      "name": "INTELLIGENCE_DB Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2200,
+        460
+      ],
+      "notes": "심층분석 결과 저장",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-016",
+      "name": "Dashboard - 집계",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        380
+      ],
+      "notes": "Tracker/국가별/규제/세이프가드 집계는 Code 노드에서 처리 (AI 미사용, 舊 WF-P06)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+      },
+      "id": "code-017",
+      "name": "Dashboard - HTML 렌더링",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        380
+      ],
+      "notes": "scripts/build_dashboard.py 로직과 동일한 템플릿 주입."
+    },
+    {
+      "parameters": {
+        "operation": "upload"
+      },
+      "id": "drive-018",
+      "name": "Dashboard - Drive CURRENT 업로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2860,
+        300
+      ],
+      "notes": "04_Reports/CURRENT에 최신본 저장",
+      "disabled": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleDrive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload"
+      },
+      "id": "drive-019",
+      "name": "Dashboard - Drive ARCHIVE 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2860,
+        460
+      ],
+      "notes": "05_Archive에 날짜별 저장",
+      "disabled": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleDrive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.condition_placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-020",
+      "name": "Notification - 08:00~20:00 인가?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        380
+      ],
+      "notes": "notification.yaml active_send_start/end 기준 (舊 WF-P07)."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.LCIP_TEST_EMAIL_RECIPIENT }}",
+        "subject": "미국 엔지니어드스톤 리스크 알리미"
+      },
+      "id": "gmail-021",
+      "name": "Notification - Gmail 카드 발송",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3300,
+        300
+      ],
+      "notes": "test_mode 준수.",
+      "disabled": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "PLACEHOLDER_CRED_Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.summary_text }}"
+      },
+      "id": "telegram-022",
+      "name": "Notification - Telegram 요약 발송",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3300,
+        460
+      ],
+      "notes": "3~6줄, 신규 변화만.",
+      "disabled": true,
+      "credentials": {
+        "telegramApi": {
+          "name": "PLACEHOLDER_CRED_Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "SENT_HISTORY",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-023",
+      "name": "Logging - SENT_HISTORY Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3520,
+        380
+      ],
+      "notes": "발송 기록, dedupe_key 저장",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "COST_LOG",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-024",
+      "name": "Logging - COST_LOG Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3520,
+        540
+      ],
+      "notes": "Claude 호출 usage 기록",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "noop-025",
+      "name": "Finish",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3740,
+        380
+      ],
+      "notes": "Master Pipeline 종료 지점"
+    }
+  ],
+  "connections": {
+    "Master Scheduler (매시 정각)": {
+      "main": [
+        [
+          {
+            "node": "Config Load",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config Load",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Load": {
+      "main": [
+        [
+          {
+            "node": "News Collect - Google News RSS (EN)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "News Collect - Google News RSS (KO)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "News Collect - Public Source (DART/정부)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collect - Google News RSS (EN)": {
+      "main": [
+        [
+          {
+            "node": "News Collect - 정규화·중복제거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collect - Google News RSS (KO)": {
+      "main": [
+        [
+          {
+            "node": "News Collect - 정규화·중복제거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collect - Public Source (DART/정부)": {
+      "main": [
+        [
+          {
+            "node": "News Collect - 정규화·중복제거",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collect - 정규화·중복제거": {
+      "main": [
+        [
+          {
+            "node": "ARTICLE_DB Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ARTICLE_DB Append": {
+      "main": [
+        [
+          {
+            "node": "Rule Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rule Filter": {
+      "main": [
+        [
+          {
+            "node": "애매한 건인가?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "애매한 건인가?": {
+      "main": [
+        [
+          {
+            "node": "AI Analyze - Claude Relevance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analyze - Claude Relevance": {
+      "main": [
+        [
+          {
+            "node": "신규 중요 사건인가?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "신규 중요 사건인가?": {
+      "main": [
+        [
+          {
+            "node": "AI Analyze - Claude Risk Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analyze - Claude Risk Analysis": {
+      "main": [
+        [
+          {
+            "node": "AI Analyze - JSON Schema 검증",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analyze - JSON Schema 검증": {
+      "main": [
+        [
+          {
+            "node": "INTELLIGENCE_DB Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INTELLIGENCE_DB Append": {
+      "main": [
+        [
+          {
+            "node": "Dashboard - 집계",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard - 집계": {
+      "main": [
+        [
+          {
+            "node": "Dashboard - HTML 렌더링",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard - HTML 렌더링": {
+      "main": [
+        [
+          {
+            "node": "Dashboard - Drive CURRENT 업로드",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dashboard - Drive ARCHIVE 저장",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard - Drive CURRENT 업로드": {
+      "main": [
+        [
+          {
+            "node": "Notification - 08:00~20:00 인가?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification - 08:00~20:00 인가?": {
+      "main": [
+        [
+          {
+            "node": "Notification - Gmail 카드 발송",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notification - Telegram 요약 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification - Gmail 카드 발송": {
+      "main": [
+        [
+          {
+            "node": "Logging - SENT_HISTORY Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification - Telegram 요약 발송": {
+      "main": [
+        [
+          {
+            "node": "Logging - SENT_HISTORY Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - SENT_HISTORY Append": {
+      "main": [
+        [
+          {
+            "node": "Logging - COST_LOG Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - COST_LOG Append": {
+      "main": [
+        [
+          {
+            "node": "Finish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LCIP - Error Handler"
+  },
+  "tags": [
+    "LCIP-Pilot",
+    "ADR-007-master-pipeline"
+  ]
+}

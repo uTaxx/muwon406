@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "TASK-006 / docs/04_DATA_AND_CONFIG_SCHEMA.md §3 기준. 11개 탭의 컬럼 정의. status=confirmed는 원 설계문서에 명시된 컬럼, status=draft는 문서화가 없어 이번 라운드에서 초안 작성했으므로 사용자 확인이 필요함을 뜻한다.",
+  "$comment": "TASK-006 / docs/04_DATA_AND_CONFIG_SCHEMA.md §3 기준, Architect Review Q2(2026-08-05)로 4개 탭 컬럼 확정. 11개 탭의 컬럼 정의. status=confirmed는 원 설계문서에 명시되었거나 Architect Review로 확정된 컬럼.",
   "sheets": {
     "CONFIG_MASTER": {
       "status": "confirmed",
@@ -37,9 +37,9 @@
     "INTELLIGENCE_DB": {
       "status": "confirmed",
       "columns": [
-        "intelligence_id", "article_id", "mission", "related_company",
-        "related_business", "fact_summary", "significance", "lx_impact", "action",
-        "confidence", "evidence_links", "created_at"
+        "intelligence_id", "article_id", "mission", "mission_subcategory",
+        "related_company", "related_business", "fact_summary", "significance",
+        "lx_impact", "action", "confidence", "evidence_links", "created_at"
       ]
     },
     "SOURCE_HEALTH": {
@@ -58,32 +58,36 @@
       ]
     },
     "SENT_HISTORY": {
-      "status": "draft",
+      "status": "confirmed",
       "columns": [
         "sent_id", "intelligence_id", "channel", "recipient", "sent_at",
-        "dedupe_key", "status"
+        "dedupe_key", "status", "workflow_id", "topic_id", "subject",
+        "content_hash", "delivery_latency_ms"
       ]
     },
     "ERROR_LOG": {
-      "status": "draft",
+      "status": "confirmed",
       "columns": [
         "error_id", "workflow_id", "node_name", "error_type", "error_message",
-        "occurred_at", "resolved", "resolution_note"
+        "occurred_at", "resolved", "resolution_note", "severity", "retry_count",
+        "stack_trace", "first_occurred", "last_occurred"
       ]
     },
     "CHANGE_REQUEST": {
-      "status": "draft",
+      "status": "confirmed",
       "columns": [
         "request_id", "intent", "target", "changes", "affected_workflows",
         "estimated_cost_impact", "risks", "requires_approval", "status",
-        "created_at", "decided_at", "decided_by"
+        "created_at", "decided_at", "decided_by", "request_source", "requested_by",
+        "approved_by", "approved_at", "implemented_at"
       ]
     },
     "CHANGE_LOG": {
-      "status": "draft",
+      "status": "confirmed",
       "columns": [
         "change_id", "entity_type", "entity_id", "before_version", "after_version",
-        "change_request_id", "applied_at"
+        "change_request_id", "applied_at", "change_summary", "rollback_version",
+        "implemented_by"
       ]
     }
   }

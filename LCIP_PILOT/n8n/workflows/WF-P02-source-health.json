@@ -1,5 +1,5 @@
 {
-  "name": "LCIP - Source Health (WF-P08)",
+  "name": "LCIP - Source Health (WF-P02)",
   "nodes": [
     {
       "parameters": {
@@ -72,7 +72,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
       },
       "id": "code-005",
       "name": "상태 분류",
@@ -147,7 +147,7 @@
         1340,
         380
       ],
-      "notes": "WF-P07 Notification 경로로 연결 예정 (Sprint 2+)"
+      "notes": "Master Pipeline Notification 경로로 연결 예정 (다음 라운드)"
     }
   ],
   "connections": {
@@ -229,6 +229,7 @@
     "errorWorkflow": "LCIP - Error Handler"
   },
   "tags": [
-    "LCIP-Pilot"
+    "LCIP-Pilot",
+    "ADR-007-master-pipeline"
   ]
 }

@@ -25,7 +25,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
       },
       "id": "code-003",
       "name": "민감정보 마스킹",
@@ -51,7 +51,7 @@
         680,
         300
       ],
-      "notes": "오류 로그 저장",
+      "notes": "오류 로그 저장 (severity/retry_count 포함)",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
@@ -71,7 +71,7 @@
         900,
         300
       ],
-      "notes": "재시도 정책 초과 시에만 발송 (TASK-014 재시도 규칙 참고)",
+      "notes": "재시도 정책 초과 시에만 발송",
       "disabled": true,
       "credentials": {
         "telegramApi": {
@@ -131,6 +131,7 @@
     "executionOrder": "v1"
   },
   "tags": [
-    "LCIP-Pilot"
+    "LCIP-Pilot",
+    "ADR-007-master-pipeline"
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "LCIP - Cost Guard (WF-P09)",
+  "name": "LCIP - Cost Guard (WF-P03)",
   "nodes": [
     {
       "parameters": {},
@@ -46,7 +46,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: Sprint 2+ 구현 (03_BUILD_SPECIFICATION.md 해당 TASK 참고)\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
       },
       "id": "code-004",
       "name": "70/90/100% 판정",
@@ -132,6 +132,7 @@
     "errorWorkflow": "LCIP - Error Handler"
   },
   "tags": [
-    "LCIP-Pilot"
+    "LCIP-Pilot",
+    "ADR-007-master-pipeline"
   ]
 }

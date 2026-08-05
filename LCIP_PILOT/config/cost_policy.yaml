@@ -1,5 +1,6 @@
 # LCIP Pilot — Cost Guard 정책
 # 03_BUILD_SPECIFICATION.md TASK-002/TASK-015, ADR-005 기준
+# Architect Review Q3(2026-08-05)로 모델 tier 권장값 및 Prompt Cache 구조 지침 추가.
 
 cost:
   monthly_budget_usd: 20
@@ -14,10 +15,27 @@ cost:
   use_prompt_cache_when_available: true
 
 # 모델명은 여기서만 관리한다 (코드에 하드코딩 금지).
-# 실제 모델 ID는 Anthropic API 준비 완료 후 TASK-009에서 확정한다.
+# 실제 모델 ID는 Anthropic API 준비 완료 후 TASK-009에서 .env에 채운다.
 models:
   classification_model_env: LCIP_CLASSIFICATION_MODEL
   deep_analysis_model_env: LCIP_DEEP_ANALYSIS_MODEL
+  # recommended_tier는 실제 모델 ID가 아니라 "어느 급을 쓸지"에 대한 권장 라벨이다
+  # (Architect Review Q3). TASK-009에서 .env에 넣을 실제 모델 ID를 고를 때 참고한다.
+  classification_recommended_tier: haiku_class
+  deep_analysis_recommended_tier: sonnet_class
+
+# Prompt Caching 구조 (Architect Review Q3): 매 호출마다 프롬프트를 새로 만들지 않고
+# Static Block(Knowledge/LX Context/Strategy Context/Prompt Header — 호출 간 재사용 가능,
+# 캐시 대상)과 Dynamic Block(기사 원문 등 요청별 내용)으로 분리한다.
+# 상세 구조는 prompts/*.md의 "## Static Block" / "## Dynamic Block" 절과
+# scripts/claude_client.py의 build_cached_messages()를 참고.
+prompt_cache:
+  enabled_when_available: true
+  static_block_sources:
+    - knowledge/PLATFORM_CONSTITUTION.md
+    - knowledge/MISSION_FRAMEWORK.md
+    - knowledge/ANALYSIS_FRAMEWORK.md
+  cache_control_type: ephemeral
 
 # 모델별 단가(USD per 1M tokens)는 하드코딩하지 않고 아래 파일에서 관리한다.
 pricing_registry_path: config/model_pricing.yaml

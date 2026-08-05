@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lcip-pilot.local/schemas/change_request.schema.json",
   "title": "ChangeRequest",
-  "description": "자연어 관리자(WF-P10) 출력 및 CHANGE_REQUEST 시트 레코드 — TASK-016 / 02_SYSTEM_BLUEPRINT.md §9 기준. 자연어 명령은 이 구조를 거쳐서만 반영되며, 직접 설정을 바꾸지 않는다.",
+  "description": "자연어 관리자(Natural Language Admin 워크플로우) 출력 및 CHANGE_REQUEST 시트 레코드 — TASK-016 / 02_SYSTEM_BLUEPRINT.md §9 기준, 컬럼은 Architect Review Q2(2026-08-05)로 확장. 자연어 명령은 이 구조를 거쳐서만 반영되며, 직접 설정을 바꾸지 않는다.",
   "type": "object",
   "required": [
     "request_id", "intent", "target", "changes", "affected_workflows",
@@ -41,7 +41,16 @@
     },
     "created_at": { "type": ["string", "null"], "format": "date-time" },
     "decided_at": { "type": ["string", "null"], "format": "date-time" },
-    "decided_by": { "type": ["string", "null"] }
+    "decided_by": { "type": ["string", "null"] },
+    "request_source": {
+      "type": ["string", "null"],
+      "enum": ["natural_language_admin", "manual_review", "scheduled_review", null],
+      "description": "이 Change Request가 어디서 발생했는지 (자연어 요청 / 수동 검토 / 정기 점검)"
+    },
+    "requested_by": { "type": ["string", "null"] },
+    "approved_by": { "type": ["string", "null"] },
+    "approved_at": { "type": ["string", "null"], "format": "date-time" },
+    "implemented_at": { "type": ["string", "null"], "format": "date-time" }
   },
   "additionalProperties": false
 }
