@@ -68,6 +68,63 @@ def test_build_investment_review_input_extracts_expected_fields():
     assert "confidence" in review_input
 
 
+def test_company_registry_has_14_companies_round6_taskk02():
+    assert len(REGISTRY) == 14
+    ids = {c["company_id"] for c in REGISTRY}
+    assert ids == {
+        "LX_HOLDINGS", "LX_HAUSYS", "LX_MMA", "LX_SEMICON", "LX_PANTOS", "LX_INTERNATIONAL",
+        "KCC", "HANSSEM", "CAESARSTONE", "COSENTINO", "SHAW_INDUSTRIES", "WILSONART",
+        "LIXIL", "YKK_AP",
+    }
+
+
+@pytest.mark.parametrize(
+    "company_id,expected_ticker,expected_country",
+    [
+        ("LX_HOLDINGS", "383800", "KR"),
+        ("LX_HAUSYS", "108670", "KR"),
+        ("LX_SEMICON", "108320", "KR"),
+        ("LX_INTERNATIONAL", "001120", "KR"),
+        ("KCC", "002380", "KR"),
+        ("HANSSEM", "009240", "KR"),
+        ("CAESARSTONE", "CSTE", "IL"),
+        ("LIXIL", "5938", "JP"),
+    ],
+)
+def test_company_registry_confirmed_tickers(company_id, expected_ticker, expected_country):
+    entry = next(c for c in REGISTRY if c["company_id"] == company_id)
+    assert entry["ticker"] == expected_ticker
+    assert entry["country"] == expected_country
+
+
+def test_company_registry_every_entry_has_k02_required_fields():
+    """Round 6 TASK-K02: 모든 회사가 Company ID/Ticker/Country/Industry/Products/
+    Value Chain/Official Website/Primary Disclosure Source 필드를 갖는다(값이 null/빈
+    배열이어도 키 자체는 존재해야 한다 — 확인 안 된 사실은 TODO로 정직하게 표시)."""
+    required_keys = {
+        "company_id", "ticker", "country", "industry", "products", "value_chain",
+        "official_website", "primary_disclosure_source",
+    }
+    for entry in REGISTRY:
+        missing = required_keys - entry.keys()
+        assert not missing, f"{entry['company_id']}에 누락된 필드: {missing}"
+
+
+def test_resolve_company_input_exposes_k02_fields():
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    assert company.industry == "건축자재·자동차소재"
+    assert "HIMACS(솔리드 서페이스)" in company.products
+    assert company.official_website == "https://www.lxhausys.com"
+    assert company.primary_disclosure_source is not None
+
+
+def test_select_sources_for_company_non_kr_company_gets_global_rss_only():
+    company = qcs.resolve_company_input("Caesarstone", REGISTRY)
+    sources = qcs.select_sources_for_company(company, SOURCES)
+    source_ids = {s["source_id"] for s in sources}
+    assert source_ids == {"SRC-0001"}
+
+
 def test_end_to_end_quick_scan_pipeline_for_unregistered_company_still_produces_valid_report():
     """미등록 회사도 파이프라인 자체는 끝까지 동작해야 한다 — 다만 Provider가 그 사실을
     unknowns에 정직하게 남긴다(임의 사실 생성 금지)."""

@@ -179,8 +179,10 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
   4개 하위 엔진을 추가하고, Quick Company Scan을 Pilot 첫 실제 서비스로 승격했다.
   - **Storage Backend** (`scripts/storage/`): `StorageBackend`(추상) →
     `LocalJSONLStorage`(실동작, Pilot 기본값)/`GoogleSheetsStorage`(구조만, `enabled=False`
-    기본값)/`FutureDatabaseStorage`(stub). Pipeline은 이 인터페이스만 참조한다 —
-    `scripts/pipeline/store.py`는 하위호환용 래퍼로 남아 `LocalJSONLStorage`에 위임한다.
+    기본값)/`FutureDatabaseStorage`(stub). Pipeline은 이 인터페이스만 참조한다.
+    (Round 6 데드코드 정리: 당시 하위호환용으로 남겨뒀던 `scripts/pipeline/store.py`
+    래퍼는 실제 호출자가 자기 자신의 테스트뿐이었음이 확인되어 삭제했다 — 저장 로직은
+    `scripts/storage/`에만 존재한다.)
   - **Source Reliability Score** (`config/source_reliability.yaml`,
     `scripts/source_priority.py`): 출처 유형별 1~5점(정부/기업IR/DART/SEC=5, 로이터=4,
     Google RSS=3, 블로그=2, SNS=1). `resolve_conflict()`로 동일 사실 충돌 시 높은 점수

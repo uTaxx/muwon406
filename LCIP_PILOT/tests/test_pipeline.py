@@ -1,7 +1,4 @@
 from datetime import datetime, timezone
-from pathlib import Path
-
-import pytest
 
 from adapters.base import RawArticle
 from pipeline.analyze import analyze_risk
@@ -11,7 +8,6 @@ from pipeline.ids import next_id
 from pipeline.knowledge_retrieve import retrieve_context
 from pipeline.normalize import normalize
 from pipeline.rule_filter import passes_rule_filter
-from pipeline.store import append_record, existing_ids, existing_values, load_records
 from pipeline.validate import validate_article, validate_claude_output, validate_intelligence
 from providers.mock_provider import MockProvider
 
@@ -131,20 +127,3 @@ def test_build_intelligence_record_end_to_end_is_schema_valid():
     validate_intelligence(record)
     assert record["intelligence_id"] == "INT-20260805-0001"
     assert record["article_ids"] == ["ART-20260805-0001"]
-
-
-def test_store_append_and_load_round_trips(tmp_path: Path):
-    sink = tmp_path / "ARTICLE_DB.jsonl"
-    append_record(sink, {"article_id": "ART-20260805-0001", "canonical_url": "https://example.com/a"})
-    append_record(sink, {"article_id": "ART-20260805-0002", "canonical_url": "https://example.com/b"})
-    records = load_records(sink)
-    assert len(records) == 2
-    assert existing_ids(sink, "article_id") == {"ART-20260805-0001", "ART-20260805-0002"}
-    assert existing_values(sink, "canonical_url") == {
-        "https://example.com/a",
-        "https://example.com/b",
-    }
-
-
-def test_store_load_records_returns_empty_list_when_file_missing(tmp_path: Path):
-    assert load_records(tmp_path / "does_not_exist.jsonl") == []

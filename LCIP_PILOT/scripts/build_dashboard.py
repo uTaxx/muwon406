@@ -17,10 +17,10 @@ Architect Review Q7(2026-08-05)로 두 가지 출력 모드를 지원한다.
 from __future__ import annotations
 
 import argparse
-import json
 from html import escape
 
 from _common import project_root
+from dashboard_data_provider import StaticJSONDataProvider
 from dashboard_widgets import (
     DEFAULT_WIDGETS,
     render_generic_list,
@@ -97,7 +97,7 @@ def main() -> int:
     args = parser.parse_args()
 
     data_path = project_root() / args.data
-    data = json.loads(data_path.read_text(encoding="utf-8"))
+    data = StaticJSONDataProvider(data_path).get_data()
     result = build_html(data, mode=args.mode)
 
     if args.mode == "single":

@@ -22,16 +22,6 @@ def test_all_prompts_have_static_and_dynamic_blocks(prompt_name):
     assert len(dynamic_block) > 0
 
 
-def test_build_cached_messages_marks_static_block_as_ephemeral():
-    messages = claude_client.build_cached_messages(
-        "relevance_filter", {"article": {"title_original": "샘플"}}
-    )
-    assert len(messages) == 2
-    assert messages[0]["cache_control"] == {"type": "ephemeral"}
-    assert "cache_control" not in messages[1]
-    assert "샘플" in messages[1]["text"]
-
-
 def test_split_prompt_blocks_rejects_prompt_without_blocks():
     with pytest.raises(ValueError):
         claude_client.split_prompt_blocks("# 그냥 아무 텍스트\n내용만 있음")

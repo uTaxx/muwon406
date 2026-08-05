@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from _common import load_yaml, project_root
@@ -30,6 +30,13 @@ class CompanyIdentifier:
     dart_name: str | None
     country: str | None
     resolved: bool
+    # Round 6 TASK-K02: config/company_registry.yaml에 추가된 필드. 미등록 회사이거나
+    # 구버전 레지스트리 항목에는 채워지지 않을 수 있어 전부 기본값 None/빈 값을 둔다.
+    industry: str | None = None
+    products: list[str] = field(default_factory=list)
+    value_chain: str | None = None
+    official_website: str | None = None
+    primary_disclosure_source: str | None = None
 
 
 def load_company_registry() -> list[dict]:
@@ -59,6 +66,11 @@ def resolve_company_input(query: str, registry: list[dict] | None = None) -> Com
                 dart_name=entry.get("dart_name"),
                 country=entry.get("country"),
                 resolved=True,
+                industry=entry.get("industry"),
+                products=list(entry.get("products") or []),
+                value_chain=entry.get("value_chain"),
+                official_website=entry.get("official_website"),
+                primary_disclosure_source=entry.get("primary_disclosure_source"),
             )
 
     return CompanyIdentifier(

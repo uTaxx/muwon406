@@ -37,6 +37,20 @@ def test_google_rss_adapter_disabled_by_default():
         adapter.collect("engineered stone silicosis")
 
 
+def test_google_rss_adapter_default_enabled_follows_feature_flag():
+    """Round 6: enabled를 명시하지 않으면 config/feature_flags.yaml의
+    real_network_calls를 따른다(현재는 false)."""
+    from feature_flags import is_enabled
+
+    adapter = GoogleRSSAdapter(SRC_0001_CONFIG)
+    assert adapter.enabled == is_enabled("real_network_calls")
+
+
+def test_google_rss_adapter_explicit_enabled_overrides_feature_flag():
+    adapter = GoogleRSSAdapter(SRC_0001_CONFIG, enabled=True, http_get=lambda url: "")
+    assert adapter.enabled is True
+
+
 def test_google_rss_adapter_parse_feed_extracts_articles():
     adapter = GoogleRSSAdapter(SRC_0001_CONFIG)
     articles = adapter.parse_feed(SAMPLE_RSS_TEXT)

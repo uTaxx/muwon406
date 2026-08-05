@@ -6,11 +6,12 @@ Round 5 Technical Debt 정리: 실제 Provider 호출은 `scripts/providers/clau
 공유하는 하위 유틸(프롬프트 파일 파싱, Model Registry 조회)만 남긴다 — Round 4까지 있던
 `call_claude_mocked()`(및 `ClaudeUsage`/`ClaudeCallResult`)는 `providers/mock_provider.py`
 (MockProvider)로 완전히 대체되어 제거했다.
+
+Round 6 데드코드 정리: `build_cached_messages()`도 여기서 제거했다 — Round 5부터
+`ClaudeProvider`는 이 함수 대신 `prompt_engine.PromptBuilder`로 메시지를 조립하며,
+제거 시점에는 자기 자신의 단위 테스트 외에 실제 호출자가 없었다.
 """
 from __future__ import annotations
-
-import json
-from pathlib import Path
 
 from _common import env_or_none, load_yaml, project_root
 
@@ -99,33 +100,6 @@ def split_prompt_blocks(prompt_text: str) -> tuple[str, str]:
     static_block = prompt_text[static_start:dynamic_start].strip()
     dynamic_block = prompt_text[dynamic_start:].strip()
     return static_block, dynamic_block
-
-
-def build_cached_messages(prompt_name: str, dynamic_payload: dict) -> list[dict]:
-    """Anthropic Messages API의 content 배열을 Static/Dynamic Block으로 분리 구성한다.
-
-    Static Block에는 `cache_control: {"type": "ephemeral"}`을 붙여 Prompt Caching 대상으로
-    표시한다 (config/cost_policy.yaml의 prompt_cache.cache_control_type과 동일 값). 실제
-    Anthropic API 클라이언트 호출은 TASK-009에서 이 반환값을 그대로 `messages[0]["content"]`로
-    사용하면 된다 — 이번 라운드는 메시지 구조만 만들고 실제 호출은 하지 않는다.
-    """
-    prompt_text, _version = load_prompt(prompt_name)
-    static_block, _dynamic_template = split_prompt_blocks(prompt_text)
-
-    policy = load_yaml("config/cost_policy.yaml")
-    cache_control_type = policy.get("prompt_cache", {}).get("cache_control_type", "ephemeral")
-
-    return [
-        {
-            "type": "text",
-            "text": static_block,
-            "cache_control": {"type": cache_control_type},
-        },
-        {
-            "type": "text",
-            "text": json.dumps(dynamic_payload, ensure_ascii=False, indent=2),
-        },
-    ]
 
 
 def clip_context(text: str, max_chars: int) -> str:

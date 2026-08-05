@@ -1,10 +1,12 @@
-"""ClaudeProvider — 실제 Anthropic API를 호출하는 Provider (구조만, 이번 라운드는 미연동).
+"""ClaudeProvider — 실제 Anthropic API를 호출하는 Provider.
 
-Round 4 지시: "외부 API 실제 호출은 아직 시작하지 않는다." 이 클래스는 모델 조회
-(config/model_registry.yaml)와 Prompt 조립(Round 5부터 scripts/prompt_engine/)까지는
-실제로 동작하지만, 실제 네트워크 호출 직전 단계에서 명시적으로 막아둔다 — 사용자가
-Anthropic API Key를 준비하고 `enabled=True`로 명시적으로 켤 때만(TASK-009 본구현)
-`_call_anthropic()`을 완성한다.
+Round 6 지시(TASK-009 변경): "Claude Provider도 실제 Provider 코드를 구현한다." —
+`_call_anthropic()`은 이제 `anthropic` SDK로 실제 Messages API를 호출하는 코드를 담고
+있다. 다만 이 코드는 이중으로 게이트된다 — (1) `self.enabled`(생성자 인자, 기존과 동일)
+(2) `feature_flags.is_enabled("claude_api_enabled")`(`config/feature_flags.yaml`, 다음
+Architect 승인 전까지 `false`). 두 조건이 모두 참이어야만 실제 네트워크 호출까지 도달한다
+— 지금은 (2)가 `false`이므로 `enabled=True`로 켜도 여전히 `NotImplementedError`로 멈춘다
+(TASK-009 본 실행은 다음 승인 이후).
 
 Round 5부터 메시지 조립은 `claude_client.build_cached_messages()` 대신
 `prompt_engine.PromptBuilder`를 거친다 — Static/Knowledge/Source/Dynamic/Context 5개
@@ -17,7 +19,9 @@ from __future__ import annotations
 import json
 
 import claude_client
-from _common import project_root
+from _common import load_yaml, project_root
+from feature_flags import is_enabled
+from jsonschema import ValidationError
 from jsonschema import validate as jsonschema_validate
 from prompt_engine import PromptBuilder, PromptCache, PromptTemplate
 from source_priority import score_for_source_type
@@ -90,13 +94,58 @@ class ClaudeProvider(AIProvider):
             )
 
     def _call_anthropic(self, model: str, messages: list[dict], schema_def: str) -> ProviderResult:
-        # anthropic SDK import는 실제 네트워크 호출 로직을 채울 때(TASK-009 본구현, 사용자
-        # 승인 후)만 수행한다 — 지금 단계에서 SDK 설치 여부에 이 메서드의 동작이 좌우되지
-        # 않도록, import 자체를 실제 호출 구현과 함께 미룬다.
-        raise NotImplementedError(
-            "ClaudeProvider._call_anthropic 실제 호출부는 TASK-009 본구현 대상이다. "
-            "(anthropic SDK 연동은 사용자 승인 및 ANTHROPIC_API_KEY 준비 후 완성)"
+        if not is_enabled("claude_api_enabled"):
+            # feature_flags.claude_api_enabled=False인 동안은 self.enabled=True로 켜도
+            # 여기서 멈춘다 — anthropic SDK import조차 하지 않는다(설치 여부와 무관하게
+            # 항상 이 경로가 재현 가능해야 tests/test_providers.py의 기존 검증이 그대로
+            # 성립한다). 다음 Architect 승인 후 config/feature_flags.yaml만 바꾸면
+            # 아래 실제 호출 코드가 즉시 활성화된다.
+            raise NotImplementedError(
+                "ClaudeProvider._call_anthropic 실제 호출은 feature_flags.claude_api_enabled="
+                "True(다음 Architect 승인 후)에서만 실행된다. 지금은 config/feature_flags.yaml"
+                "에서 false로 고정되어 있다."
+            )
+
+        import anthropic
+
+        cost_policy = load_yaml("config/cost_policy.yaml")["cost"]
+        max_tokens = cost_policy["max_output_tokens_per_call"]
+
+        client = anthropic.Anthropic()
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": messages}],
+            )
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.NotFoundError,
+            anthropic.BadRequestError,
+            anthropic.RateLimitError,
+            anthropic.APIStatusError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            return ProviderResult(
+                ok=False, parsed_json=None, raw_text="", usage=None, error=str(exc)
+            )
+
+        raw_text = "".join(block.text for block in response.content if block.type == "text")
+        usage = ProviderUsage(
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            model=model,
         )
+        try:
+            parsed_json = json.loads(raw_text)
+            self.validate_output(parsed_json, schema_def)
+        except (json.JSONDecodeError, ValidationError) as exc:
+            return ProviderResult(
+                ok=False, parsed_json=None, raw_text=raw_text, usage=usage, error=str(exc)
+            )
+
+        return ProviderResult(ok=True, parsed_json=parsed_json, raw_text=raw_text, usage=usage)
 
     @staticmethod
     def validate_output(parsed_json: dict, schema_def: str) -> None:

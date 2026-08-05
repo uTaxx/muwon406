@@ -1,8 +1,17 @@
-# LCIP Pilot — Source Registry 초기값
-# 03_BUILD_SPECIFICATION.md TASK-002/TASK-010 기준
+# LCIP Pilot — Source Registry
+# 03_BUILD_SPECIFICATION.md TASK-002/TASK-010 기준, Round 6 TASK-K03로 실사용 수준 확장.
 #
 # access_method: rss | api | html
 # reliability_grade: A(공식/규제기관) | B(주요 언론) | C(일반 언론/블로그)
+#   — 세분화된 1~5점 Source Reliability Score는 `config/source_reliability.yaml` +
+#     `scripts/source_priority.py:score_for_source_type()`가 `source_type` 기준으로
+#     동적으로 계산한다. 이 파일에 숫자를 다시 저장하지 않는다(중복 관리 방지,
+#     Architect Review Round 6 "중복 구조 제거" 지시).
+# authentication / rate_limit: Round 6 TASK-K03 신설 필드 — 실제 연동 시 필요한 인증
+#   방식과 공식 문서 기준 호출 한도. 확인 안 된 값은 "TODO: source required"로 둔다.
+# collection_schedule: Round 6에서 요청한 "Update Frequency"와 동일 개념이다 — 이미
+#   존재하는 필드이므로 이름이 다른 중복 필드를 새로 만들지 않는다.
+#
 # 이 파일은 SOURCE_REGISTRY(Google Sheets) 초기 시드로 사용된다.
 
 sources:
@@ -16,6 +25,8 @@ sources:
     reliability_grade: B
     collection_schedule: hourly
     expected_freshness_hours: 2
+    authentication: "불필요(공개 RSS)"
+    rate_limit: "공식 문서화된 제한 없음 — 과도한 호출 시 일시 차단 가능(합리적 사용 권장)"
     active: true
 
   - source_id: SRC-0002
@@ -28,6 +39,8 @@ sources:
     reliability_grade: B
     collection_schedule: hourly
     expected_freshness_hours: 2
+    authentication: "불필요(공개 RSS)"
+    rate_limit: "공식 문서화된 제한 없음 — 과도한 호출 시 일시 차단 가능(합리적 사용 권장)"
     active: true
 
   - source_id: SRC-0003
@@ -40,6 +53,8 @@ sources:
     reliability_grade: B
     collection_schedule: hourly
     expected_freshness_hours: 2
+    authentication: "API Key(Client ID/Secret) — 네이버 개발자센터 앱 등록 필요"
+    rate_limit: "25,000 calls/day (뉴스 검색 API, 앱당 무료 티어 기준)"
     # Naver API Key 준비 여부는 TASK-006/008 진행 전 사용자에게 확인해야 하는 항목
     active: false
 
@@ -53,5 +68,114 @@ sources:
     reliability_grade: A
     collection_schedule: daily
     expected_freshness_hours: 24
+    authentication: "API Key — OpenDART(opendart.fss.or.kr) 무료 발급"
+    rate_limit: "10,000 calls/day (API Key 1개 기준)"
     # DART API Key 보유 여부는 §24 질문 항목 — Sprint 6(확장) 단계에서 활성화
+    active: false
+
+  - source_id: SRC-0005
+    source_name: KRX 상장공시시스템 (KIND)
+    source_type: government_filing
+    endpoint_url: "https://kind.krx.co.kr"
+    access_method: html
+    language: ko
+    country: KR
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "불필요(공개 웹사이트) — 공식 API 제공 여부는 TODO: source required"
+    rate_limit: "TODO: source required (공식 API 미확인, 웹 접근은 별도 제한 문서화 안 됨)"
+    # 한국거래소 상장공시 — 구조화된 공개 API 유무를 다음 라운드에서 확인해야 한다
+    active: false
+
+  - source_id: SRC-0006
+    source_name: SEC EDGAR (미국 증권거래위원회 전자공시)
+    source_type: government_filing
+    endpoint_url: "https://www.sec.gov/cgi-bin/browse-edgar"
+    access_method: api
+    language: en
+    country: US
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "API Key 불필요 — 회사/연락처를 명시한 User-Agent 헤더 필수(SEC 정책)"
+    rate_limit: "초당 10 requests (SEC 공식 Fair Access 정책)"
+    # Caesarstone(NASDAQ:CSTE) 등 미국 상장 경쟁사 공시 확인용 — Sprint 6 확장 대상
+    active: false
+
+  - source_id: SRC-0007
+    source_name: EDINET (일본 금융청 전자공시)
+    source_type: government_filing
+    endpoint_url: "https://disclosure2.edinet-fsa.go.jp/WEEE0010.aspx"
+    access_method: api
+    language: ja
+    country: JP
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "TODO: source required (API Key 필요 여부 미확인 — 확인 후 갱신)"
+    rate_limit: "TODO: source required"
+    # LIXIL(TSE:5938) 등 일본 상장 경쟁사 공시 확인용 — Sprint 6 확장 대상
+    active: false
+
+  - source_id: SRC-0008
+    source_name: SEDAR+ (캐나다 증권 공시 시스템)
+    source_type: government_filing
+    endpoint_url: "https://www.sedarplus.ca"
+    access_method: html
+    language: en
+    country: CA
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "TODO: source required (공식 API 제공 여부 미확인)"
+    rate_limit: "TODO: source required"
+    # 현재 Pilot 대상 회사 중 캐나다 상장사는 없음 — 향후 확장 대비 등록만 해둠
+    active: false
+
+  - source_id: SRC-0009
+    source_name: Companies House (영국 기업 등기소)
+    source_type: government_filing
+    endpoint_url: "https://find-and-update.company-information.service.gov.uk"
+    access_method: api
+    language: en
+    country: GB
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "API Key — Companies House 개발자 계정 무료 발급"
+    rate_limit: "TODO: source required (공식 문서 확인 필요)"
+    # 현재 Pilot 대상 회사 중 영국 등기 회사는 없음 — 향후 확장 대비 등록만 해둠
+    active: false
+
+  - source_id: SRC-0010
+    source_name: 정부 보도자료 RSS (일반 카테고리)
+    source_type: government_filing
+    endpoint_url: null
+    access_method: rss
+    language: multi
+    country: multi
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "기관별 상이 — 대부분 불필요(공개 RSS)"
+    rate_limit: "기관별 상이 — TODO: source required (대상 기관 확정 후 개별 등록)"
+    # OSHA/EPA 등 TOP-0001 관련 개별 정부기관 RSS는 대상이 확정되면 각각 별도
+    # source_id로 등록한다(이 항목은 카테고리 placeholder).
+    active: false
+
+  - source_id: SRC-0011
+    source_name: 기업 IR 페이지 (일반 카테고리)
+    source_type: official_website
+    endpoint_url: null
+    access_method: html
+    language: multi
+    country: multi
+    reliability_grade: A
+    collection_schedule: daily
+    expected_freshness_hours: 24
+    authentication: "불필요(공개 웹사이트)"
+    rate_limit: "회사별 상이 — TODO: source required"
+    # config/company_registry.yaml의 official_website를 대상으로 하는 카테고리
+    # placeholder — 실제 크롤링 대상은 회사별로 확정 후 개별 등록한다.
     active: false

@@ -1,11 +1,15 @@
 """GoogleRSSAdapter — Google News RSS(SRC-0001/SRC-0002)를 수집하는 실동작 Adapter.
 
-Round 4 제약("외부 API 실제 호출은 아직 시작하지 않는다")을 지키기 위해, 실제 HTTP 요청
-함수(`http_get`)는 생성자에서 주입받는다. 기본값은 `requests.get(...).text`를 쓰는 실제
-구현이지만, `enabled=False`(기본값)인 동안은 `collect()`가 즉시 `SourceAdapterDisabledError`를
-발생시켜 실제 네트워크 호출까지 도달하지 않는다. 파싱 로직 자체(RSS XML → RawArticle)는
-`enabled=True` + 테스트에서 주입한 fixture 문자열로 완전히 검증한다 — 이것이 실제 네트워크
-호출 없이 "구조와 파싱 로직"을 실제로 동작시키는 지점이다.
+RSS XML 파싱(`parse_feed()`)은 Round 4부터 이미 실제 로직이다(Mock이 아니다) — feedparser로
+실제 RSS 문서를 파싱해 `RawArticle`을 만든다. 실제 HTTP 요청 함수(`http_get`)는 생성자에서
+주입받으며, 기본값은 `requests.get(...).text`를 쓰는 실제 구현이다.
+
+Round 6부터 `enabled`의 기본값은 하드코딩된 `False`가 아니라 `config/feature_flags.yaml`의
+`real_network_calls` 전역 스위치를 따른다(다음 Architect 승인 전까지 그 값은 `false`로
+유지된다) — `enabled`를 명시적으로 넘기면 그 값이 항상 우선한다(테스트가 하는 것처럼).
+`enabled`가 꺼져 있는 동안은 `collect()`가 즉시 `SourceAdapterDisabledError`를 발생시켜
+실제 네트워크 호출까지 도달하지 않는다. Fixture 기반 테스트(`tests/test_adapters.py`)는
+`enabled=True` + 주입한 fixture 문자열로 파싱 로직을 실제 네트워크 없이 완전히 검증한다.
 """
 from __future__ import annotations
 
@@ -15,6 +19,7 @@ from typing import Callable
 
 import feedparser
 
+from feature_flags import is_enabled
 from .base import RawArticle, SourceAdapter, SourceAdapterDisabledError
 
 
@@ -32,11 +37,11 @@ class GoogleRSSAdapter(SourceAdapter):
     def __init__(
         self,
         source_config: dict,
-        enabled: bool = False,
+        enabled: bool | None = None,
         http_get: Callable[[str], str] | None = None,
     ):
         super().__init__(source_config)
-        self.enabled = enabled
+        self.enabled = enabled if enabled is not None else is_enabled("real_network_calls")
         self._http_get = http_get or _default_http_get
 
     def collect(self, query: str) -> list[RawArticle]:

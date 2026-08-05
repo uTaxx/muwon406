@@ -12,13 +12,25 @@ def test_parse_knowledge_sections_reads_real_company_dna_file():
     assert sections[0].company == "LX Hausys"
 
 
-def test_parse_knowledge_sections_handles_file_with_no_metadata_block():
-    """LX_HAUSYS_VALUE_CHAIN.md는 섹션에 Source/Confidence 메타데이터 블록이 아예 없다 —
-    빈 문자열로 처리되어야 하며 예외가 나지 않아야 한다."""
+def test_parse_knowledge_sections_handles_section_with_no_metadata_block():
+    """섹션에 Source/Confidence 메타데이터 블록이 아예 없어도 예외 없이 빈 문자열로
+    처리되어야 한다 (Round 6 TASK-K01 리서치 반영 전에는 LX_HAUSYS_VALUE_CHAIN.md 전체가
+    이 상태였다 — 이제는 실제 콘텐츠가 채워졌으므로, 이 엣지 케이스는 합성 텍스트로
+    직접 검증한다)."""
+    # parse_knowledge_sections()는 파일명을 받으므로, 메타데이터 추출 로직 자체를 직접 검증한다.
+    source, url, confidence, last_verified = ke.extract_section_metadata(
+        "아직 메타데이터가 없는 섹션 본문.\n"
+    )
+    assert (source, url, confidence, last_verified) == ("", "", "", "")
+
+
+def test_parse_knowledge_sections_reads_real_value_chain_file_with_populated_metadata():
+    """Round 6 TASK-K01 리서치 반영 후: LX_HAUSYS_VALUE_CHAIN.md는 이제 실제 Source/
+    Confidence 메타데이터를 갖는다."""
     sections = ke.parse_knowledge_sections("LX_HAUSYS_VALUE_CHAIN.md")
     assert len(sections) >= 1
-    assert sections[0].source == ""
-    assert sections[0].source_reliability_score == 0
+    assert sections[0].source != ""
+    assert sections[0].source_reliability_score >= 0
 
 
 def test_extract_section_metadata_supports_inline_and_four_line_formats():

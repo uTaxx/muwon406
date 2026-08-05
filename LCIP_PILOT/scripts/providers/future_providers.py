@@ -4,6 +4,11 @@ Architect Review Round 4 지시: "모델 변경 시 Business Logic 수정 없이
 가능해야 한다." 아래 두 클래스는 AIProvider를 구현하지만 실제 로직은 없다 — 나중에 실제
 OpenAI/Gemini SDK 연동이 필요해지면 scripts/pipeline/*을 전혀 건드리지 않고 이 파일만
 채우면 된다는 것을 보여준다.
+
+Round 6 감사 표시: `scripts/demo_pilot.py`(통합 데모)와 `scripts/providers/factory.py`
+어느 쪽도 이 두 클래스를 호출하지 않는다 — 단위 테스트(`tests/test_providers.py`)에서만
+"AIProvider 계약을 지키는지"를 확인하는 용도로 쓰인다. 삭제 후보가 아니라 Round 4가
+승인한 "Provider 교체 가능성" 증거이므로 그대로 둔다.
 """
 from __future__ import annotations
 

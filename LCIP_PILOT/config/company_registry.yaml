@@ -1,18 +1,199 @@
 # LCIP Pilot — Company Registry
-# Architect Review Round 5 신설. Quick Company Scan 입력(회사명/Ticker/DART 회사명)을
-# 내부 company_id로 정규화하기 위한 최소 시드다.
+# Architect Review Round 5 신설, Round 6 TASK-K02로 Pilot 수준 확장(14개사).
 #
-# CLAUDE.md 절대 원칙(임의의 기업 사실을 지어내지 않는다)에 따라, 확인되지 않은 필드는
-# null로 두고 TODO로 표시한다 — Ticker 등 정확한 공개 식별자는 반드시 출처와 함께 확정된
-# 뒤 채운다. 이 레지스트리에 없는 회사는 "미등록"으로 정직하게 처리하며, 임의로 새 항목을
-# 만들어내지 않는다.
+# Quick Company Scan 입력(회사명/Ticker/DART 회사명)을 내부 company_id로 정규화하는
+# 레지스트리다. CLAUDE.md 절대 원칙(임의의 기업 사실을 지어내지 않는다)에 따라, 확인되지
+# 않은 필드는 null 또는 "TODO: source required"로 남긴다 — 이 레지스트리에 없는 회사는
+# "미등록"으로 정직하게 처리하며, 임의로 새 항목을 만들어내지 않는다.
+#
+# 각 회사는 Round 6 지시대로 Company ID/Ticker/Country/Industry/Products/Value Chain/
+# Official Website/Primary Disclosure Source를 갖는다. 리서치 출처는 각 항목의 주석 또는
+# `docs/04_DATA_AND_CONFIG_SCHEMA.md`의 리서치 로그를 참고(WebSearch, 2026-08-05 기준 —
+# DART/EDGAR/EDINET 원문 대조는 다음 라운드 과제).
 
 companies:
+  # --- LX Group (6개사) ---
+  - company_id: LX_HOLDINGS
+    display_name: LX Holdings
+    aliases: ["LX Holdings", "LX홀딩스", "엘엑스홀딩스", "lx holdings corp"]
+    ticker: "383800"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
+    dart_name: "LX홀딩스"
+    country: KR
+    industry: "지주회사(Investment Holding Company)"
+    products: []  # 지주회사 — 자체 제품 없음(N/A)
+    value_chain: "N/A — 지주회사(계열사 포트폴리오 관리). 상세는 계열사별 항목 참고."
+    official_website: "https://www.lxholdings.co.kr"
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: true
+
   - company_id: LX_HAUSYS
     display_name: LX Hausys
-    # 대소문자/공백 무시하고 매칭할 별칭들. 사용자가 입력할 법한 표기를 모아둔다.
     aliases: ["LX Hausys", "LX하우시스", "엘엑스하우시스", "lx hausys"]
-    ticker: null  # TODO: source required (KRX 상장 Ticker 확인 필요)
+    ticker: "108670"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
     dart_name: "LX하우시스"
     country: KR
+    industry: "건축자재·자동차소재"
+    products: ["HIMACS(솔리드 서페이스)", "VIATERA(쿼츠 표면재)", "자동차 내장재"]
+    value_chain: "쿼츠 등 원재료 → 미국 Adairsville(GA)/국내 생산 → Fabricator·유통 파트너 → 건축·인테리어 고객"
+    official_website: "https://www.lxhausys.com"
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
     is_lx_group_company: true
+
+  - company_id: LX_MMA
+    display_name: LX MMA
+    aliases: ["LX MMA", "엘엑스엠엠에이"]
+    ticker: null  # 비상장(LX홀딩스 50% 지분 JV) — Korea Times, 2025
+    dart_name: "LX MMA"
+    country: KR
+    industry: "화학(MMA, 메틸메타크릴레이트)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "TODO: source required (비상장, 외부감사대상법인 공시 여부 미확인)"
+    is_lx_group_company: true
+
+  - company_id: LX_SEMICON
+    display_name: LX Semicon
+    aliases: ["LX Semicon", "LX세미콘", "엘엑스세미콘"]
+    ticker: "108320"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
+    dart_name: "LX세미콘"
+    country: KR
+    industry: "반도체(디스플레이 구동 IC 등 Fabless)"
+    products: ["OLED/LCD Timing Controller", "Driver IC", "Power Management IC"]
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: true
+
+  - company_id: LX_PANTOS
+    display_name: LX Pantos
+    aliases: ["LX Pantos", "LX판토스", "엘엑스판토스"]
+    ticker: null  # 비상장 — LX International 자회사(지분 75.9%, Korea Times 2025)
+    dart_name: "LX판토스"
+    country: KR
+    industry: "종합물류(해상·항공·육상운송, 창고, 통관)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "TODO: source required (비상장, LX International 연결 공시로 일부 반영)"
+    is_lx_group_company: true
+
+  - company_id: LX_INTERNATIONAL
+    display_name: LX International
+    aliases: ["LX International", "LX인터내셔널", "엘엑스인터내셔널"]
+    ticker: "001120"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
+    dart_name: "LX인터내셔널"
+    country: KR
+    industry: "트레이딩·자원개발·물류투자"
+    products: []  # TODO: source required (팜유, 니켈, 석탄 등 트레이딩 품목 — 정량화 미확인)
+    value_chain: "TODO: source required"
+    official_website: "http://www.lxinternational.com"
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: true
+
+  # --- 국내 건축자재/가구 경쟁사 (2개사) ---
+  - company_id: KCC
+    display_name: KCC Corporation
+    aliases: ["KCC", "KCC Corporation", "케이씨씨"]
+    ticker: "002380"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
+    dart_name: "KCC"
+    country: KR
+    industry: "건축자재(도료·단열재·석고보드·바닥재)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: false
+
+  - company_id: HANSSEM
+    display_name: Hanssem
+    aliases: ["Hanssem", "한샘"]
+    ticker: "009240"  # KRX, 확인됨(stockanalysis.com, 2026-08-05)
+    dart_name: "한샘"
+    country: KR
+    industry: "가구·인테리어"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: false
+
+  # --- 해외 엔지니어드스톤/표면재 경쟁사 (TOP-0001 핵심 비교군, 4개사) ---
+  - company_id: CAESARSTONE
+    display_name: Caesarstone
+    aliases: ["Caesarstone", "카이저스톤"]
+    ticker: "CSTE"  # NASDAQ, 확인됨(Yahoo Finance/TradingView, 2026-08-05)
+    dart_name: null
+    country: IL
+    industry: "엔지니어드스톤·포슬린 표면재"
+    products: []  # TODO: source required (Caesarstone 브랜드 라인 세부 미확인)
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "SEC(EDGAR) — 미국 NASDAQ 상장 외국기업"
+    is_lx_group_company: false
+
+  - company_id: COSENTINO
+    display_name: Cosentino
+    aliases: ["Cosentino", "코센티노"]
+    ticker: null  # 비상장(Bloomberg, 2026-08-05)
+    dart_name: null
+    country: ES
+    industry: "쿼츠·포슬린 표면재(Silestone, Dekton 브랜드)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "TODO: source required (비상장, 스페인 상업등기소 공시 여부 미확인)"
+    is_lx_group_company: false
+
+  - company_id: SHAW_INDUSTRIES
+    display_name: Shaw Industries
+    aliases: ["Shaw Industries", "Shaw", "쇼인더스트리스"]
+    ticker: null  # 비상장 — Berkshire Hathaway 완전 자회사(Shaw 공식 홈페이지, 2026-08-05)
+    dart_name: null
+    country: US
+    industry: "바닥재(Flooring)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://shawinc.com"
+    primary_disclosure_source: "모회사 Berkshire Hathaway(NYSE: BRK.A/BRK.B) SEC 공시에 일부 반영 — Shaw 자체 별도 공시 의무 없음(비상장 완전자회사)"
+    is_lx_group_company: false
+
+  - company_id: WILSONART
+    display_name: Wilsonart
+    aliases: ["Wilsonart", "윌슨아트"]
+    ticker: null  # 비상장으로 확인됨(CB Insights, 2026-08-05) — 소유구조 상세는 미확인
+    dart_name: null
+    country: US
+    industry: "엔지니어드 표면재(라미네이트 등)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: null  # TODO: source required
+    primary_disclosure_source: "TODO: source required (비상장, 소유구조 미확인)"
+    is_lx_group_company: false
+
+  # --- 일본 건축자재 경쟁사 (2개사) ---
+  - company_id: LIXIL
+    display_name: LIXIL Corporation
+    aliases: ["LIXIL", "LIXIL Corporation", "릭실"]
+    ticker: "5938"  # TSE, 확인됨(TradingView, 2026-08-05)
+    dart_name: null
+    country: JP
+    industry: "위생도기·주택건축자재(Water/Housing/Building Technology)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.lixil.com"
+    primary_disclosure_source: "EDINET(일본 금융청 전자공시시스템)"
+    is_lx_group_company: false
+
+  - company_id: YKK_AP
+    display_name: YKK AP
+    aliases: ["YKK AP", "YKKAP", "와이케이케이에이피"]
+    ticker: null  # 비상장 — YKK그룹은 요시다 가문이 소유하는 비상장 기업(YKK 공식 홈페이지, 2026-08-05)
+    dart_name: null
+    country: JP
+    industry: "건축용 창호·파사드(Architectural Products)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.ykkap.com"
+    primary_disclosure_source: "TODO: source required (비상장, 일본 법인 공시 의무 제한적)"
+    is_lx_group_company: false

@@ -5,6 +5,14 @@ Business Logic(scripts/pipeline/*)은 AIProvider 인터페이스에만 의존한
 """
 from .base import AIProvider, ProviderResult, ProviderUsage
 from .claude_provider import ClaudeProvider
+from .factory import get_default_provider
 from .mock_provider import MockProvider
 
-__all__ = ["AIProvider", "ProviderResult", "ProviderUsage", "ClaudeProvider", "MockProvider"]
+__all__ = [
+    "AIProvider",
+    "ProviderResult",
+    "ProviderUsage",
+    "ClaudeProvider",
+    "MockProvider",
+    "get_default_provider",
+]

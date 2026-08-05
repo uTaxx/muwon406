@@ -1,11 +1,14 @@
 # TODO
 
-> 2026-08-05 Architect Review Round 5 반영 후 갱신. Round 4 구조(Provider/Adapter/
-> Pipeline/Widget) 위에 Storage Backend/Knowledge Retrieval Engine/Prompt Engine/
-> Dashboard Data Provider 4개 하위 엔진을 추가하고, Quick Company Scan을 Pilot의 첫
-> 실제 서비스로 승격해 Investment Review Engine과 연결했다. 여전히 Mock/dry-run
-> 기반이며, 남은 것은 TASK-016(보류)과 TASK-008(n8n 자동배포, 마지막) — 나머지는
-> 사용자가 API Key/계정을 준비해야 "실동작"으로 전환할 수 있다.
+> 2026-08-05 Architect Review Round 6 반영 후 갱신. Round 6는 "Engine Development"에서
+> "Working Product"로 방향을 전환 — 새 Engine/Framework/Layer 추가를 절대 금지하고,
+> Knowledge Base 실제 내용(5개 문서, Quality Score 95.8%)/Company Registry(14개사)/
+> Source Registry(11개 Source)를 채우고, News Adapter/Claude Provider를 "구조만"에서
+> "실제 코드 존재 + Feature Flag(`config/feature_flags.yaml`)로 안전하게 차단"으로
+> 전환했다. 데모는 2개(`demo_mvp.py`+`demo_quick_scan.py`)에서 1개(`demo_pilot.py`)로
+> 통합했고, Coverage 대신 품질을 재는 `scripts/quality_gate.py`를 신설했다. 여전히
+> Mock/dry-run 기반이며, 남은 것은 TASK-016(보류)과 TASK-008(n8n 자동배포, 마지막) —
+> 나머지는 사용자가 API Key/계정을 준비하고 Feature Flag를 켜야 "실동작"으로 전환된다.
 
 ## 사용자가 해야 할 작업 (Claude Code가 추정/대신 수행하지 않음)
 
@@ -38,33 +41,31 @@ TASK-009~017의 구조/테스트는 Mock 기반으로 이미 완료됐다 — �
       데모(`scripts/demo_mvp.py`)에서 미설정 시 "(미설정)"으로만 표시됨
 - [ ] DART API Key 보유 여부 (Sprint 6 확장 대상)
 - [ ] Google Drive Desktop 동기화 사용 여부
-- [ ] Quick Company Scan 대상 회사 추가 등록 — `config/company_registry.yaml`에 회사명/
-      별칭/Ticker/DART 회사명을 등록해야 `scripts/quick_company_scan.py`가 그 회사를
-      인식한다(현재 LX Hausys만 등록, Ticker는 미확인 TODO). 임의로 회사 정보를 지어내지
-      않으므로 등록되지 않은 회사는 계속 "미등록"으로 처리된다.
-- [ ] LX Hausys KRX 상장 Ticker 확인 — `config/company_registry.yaml`의 `ticker: null`을
-      실제 값으로 채워야 한다(출처 필요, 임의 기재 금지)
+- [x] Quick Company Scan 대상 회사 등록 확대 (Round 6 TASK-K02) — `config/
+      company_registry.yaml`에 14개사(LX Group 6/국내 경쟁사 2/해외 엔지니어드스톤
+      경쟁사 4/일본 경쟁사 2) 등록 완료. LX Hausys(108670) 등 확인된 Ticker는 채웠으나,
+      `products`/`value_chain`/`official_website`/`primary_disclosure_source`의 여러
+      TODO 항목은 다음 라운드 리서치 대상 — `python scripts/quality_gate.py`의
+      Registry Completion으로 진행률 확인 가능(현재 48.8%).
 
 ### Knowledge Base — 출처 필요 (우선순위 확정, Architect Review Round 2 Q6)
 
-`knowledge/KNOWLEDGE_POLICY.md` §4에 확정된 순서대로 공개 출처를 찾아 채워야 한다. 출처
-확인 순서는 `knowledge/SOURCE_PRIORITY.md` 기준(공식 홈페이지 → 사업보고서 →
-지속가능경영보고서 → DART → IR 자료 → 공식 보도자료 → 정부자료 → 언론 → RSS). 진행 상황은
-`python scripts/knowledge_quality.py --verbose`로 정량 확인 가능 (Quality Score).
+Round 6 TASK-K01로 우선순위 1~4번, 6번 문서에 WebSearch로 확인한 실제 공개정보를
+채웠다 — Knowledge Quality Score 평균 25% → **95.8%** (`python
+scripts/knowledge_quality.py --verbose`로 재확인 가능). 남은 것:
 
-1. `LX_HAUSYS_COMPANY_DNA.md` — 특히 "10. Risk"의 "미국 사업 및 엔지니어드스톤 관련 노출"이
-   TOP-0001 분석의 핵심 근거이므로 최우선 (현재 Quality Score 0%)
-2. `LX_HAUSYS_VALUE_CHAIN.md`
-3. `GROUP_RISK_MAP.md`
-4. `GROUP_OPPORTUNITY_MAP.md`
-5. `STRATEGY_PLAYBOOK.md`
-6. `LX_HOLDINGS_CONTEXT.md` (현재 Quality Score 50% — N/A 계층 6개가 이미 "신뢰가능"으로
-   카운트되기 때문. 실제로 채워야 할 계층은 6개: Company/Business/Government/Risk/
-   Opportunity/Investment Point)
+1. ~~`LX_HAUSYS_COMPANY_DNA.md`~~ ✅ 91.7% (Section 12 Investment Point는 여전히 draft)
+2. ~~`LX_HAUSYS_VALUE_CHAIN.md`~~ ✅ 완료(6개 섹션 + Source/Reference/Confidence footer)
+3. ~~`GROUP_RISK_MAP.md`~~ ✅ Section 2 완료
+4. ~~`GROUP_OPPORTUNITY_MAP.md`~~ ✅ Section 2 완료
+5. [ ] `STRATEGY_PLAYBOOK.md` — Round 6 미착수, 여전히 `confidence: draft`
+6. ~~`LX_HOLDINGS_CONTEXT.md`~~ ✅ 100% (Section 10 재무 수치는 단위 확인 필요로 draft 유지)
 7. `PLATFORM_CONSTITUTION.md` (이미 완성 — 회사 사실 아님, 낮은 우선순위)
 
 각 항목은 `knowledge/KNOWLEDGE_POLICY.md` §3 서식(Source/Reference URL/Confidence/
-Last Verified)을 따라 채운다.
+Last Verified)을 따라 채운다. 남은 TODO: LX Hausys 미국 법인의 named lawsuit 피고 여부
+직접 확인, `LX_HOLDINGS_CONTEXT.md` 재무 수치 단위(억 원/조 원) 원문 대조,
+`LX_HAUSYS_COMPANY_DNA.md` Section 12(Investment Point) 작성.
 
 ## Claude Code가 다음에 할 작업 — Architect Review Round 4 순서 (전부 완료, Mock 기반)
 
@@ -137,26 +138,56 @@ Pilot의 첫 실제 서비스로 승격했다. 여전히 실제 외부 API 호�
       (`model_pricing.yaml` 키를 tier 이름과 일치), Dashboard `RegulationWidget` 반복 구성
       정리, `health_tracking.py`를 `source_health_check.py`로 병합.
 
-## 이번 라운드(Architect Review Round 5 반영)에서 알려진 한계
+## Claude Code가 다음에 할 작업 — Architect Review Round 6 (전부 완료, Mock 기반)
+
+Round 6는 "Engine Development"에서 "Working Product"로 방향을 전환했다 — 새 Engine/
+Framework/Layer 추가를 절대 금지하고, 실제 데이터를 사용하는 Pilot 완성에 집중했다.
+
+- [x] **TASK-K01** Knowledge Population — `knowledge/LX_HAUSYS_COMPANY_DNA.md` →
+      `LX_HAUSYS_VALUE_CHAIN.md` → `LX_HOLDINGS_CONTEXT.md` → `GROUP_RISK_MAP.md` →
+      `GROUP_OPPORTUNITY_MAP.md` 순으로 WebSearch 확인 사실만 작성. Quality Score
+      25% → 95.8%.
+- [x] **TASK-K02** Company Registry — `config/company_registry.yaml` 14개사(Company
+      ID/Ticker/Country/Industry/Products/Value Chain/Official Website/Primary
+      Disclosure Source).
+- [x] **TASK-K03** Source Registry — `config/sources.yaml` 11개 Source(Google RSS/
+      Naver/DART/KRX/SEC/EDINET/SEDAR+/Companies House/정부 RSS/기업 IR),
+      authentication/rate_limit 필드.
+- [x] **TASK-010 변경** 실제 RSS Parser 전환 — `GoogleRSSAdapter.enabled` 기본값이
+      `config/feature_flags.yaml`의 `real_network_calls`를 따르도록 전환(여전히
+      `false`).
+- [x] **TASK-009 변경** 실제 ClaudeProvider — `_call_anthropic()`이 `anthropic` SDK로
+      실제 호출하는 코드를 갖되 `feature_flags.claude_api_enabled=False`(현재값)면
+      SDK조차 import하지 않고 멈춘다. `scripts/providers/factory.py:get_default_provider()`
+      — API Key + Flag 둘 다 있어야 `ClaudeProvider`, 아니면 `MockProvider`.
+- [x] **TASK-017 변경** 데모 통합(2→1) — `scripts/demo_pilot.py` 하나로 뉴스수집→Rule
+      Filter→Knowledge Retrieval→Claude Analysis→INTELLIGENCE_DB→Dashboard→Quick
+      Company Scan→Investment Review→Email/Telegram Preview 전 구간 실행.
+- [x] Quality Gate — `scripts/quality_gate.py`: Coverage 대신 품질(Knowledge Quality/
+      Registry Completion/Public Source Coverage/Source Freshness/Mock Dependency/
+      Pilot Operational Readiness) 측정.
+- [x] 중복/데드코드 감사 — `pipeline/store.py`, `claude_client.build_cached_messages()`
+      삭제. `build_dashboard.py`의 중복 JSON 로딩을 `StaticJSONDataProvider`로 통합.
+
+## 이번 라운드(Architect Review Round 6 반영)에서 알려진 한계
 
 - Google Drive/Sheets/n8n/이메일/Telegram/Anthropic API 어떤 것도 실제로 연결·호출되지
-  않았다 — Provider/Adapter/Storage/Notifier는 전부 `enabled=False`·`test_mode=true`
-  기본값이며, 실제 호출 직전에서 `NotImplementedError`/dry-run으로 명시적으로 멈춘다.
+  않았다 — `config/feature_flags.yaml`의 4개 플래그가 전부 `false`인 한, `ClaudeProvider`/
+  `GoogleRSSAdapter`/`GoogleSheetsStorage`/Notifier는 실제 호출 직전에서 명시적으로
+  멈춘다(코드는 실제로 존재하지만 도달하지 않는다).
 - `config/model_registry.yaml`의 모든 `model_id`가 아직 `null`이고, `config/model_pricing.yaml`
   단가도 TODO placeholder(0.0)다 — 실제 모델 확정 전까지 Cost Guard가 계산하는 비용은
   항상 0이다 (임의 추정 금지 원칙에 따른 의도된 동작).
 - ARTICLE_DB/INTELLIGENCE_DB는 아직 Google Sheets가 아니라 `LocalJSONLStorage`(로컬
   JSONL)다 — `GoogleSheetsStorage`는 구조만 있고 `enabled=False`다.
-- `GoogleRSSAdapter`는 구조·파싱 로직이 실동작하지만 실제 HTTP 호출은 `enabled=True` +
-  사용자 승인 전까지 하지 않는다. Naver/DART/정부/IR Adapter는 API Key/소스 미등록으로
-  아직 stub이다.
-- `config/company_registry.yaml`에는 LX Hausys 1개 회사만 등록되어 있다 — Quick Company
-  Scan은 등록된 회사만 "정규화 성공(resolved=True)"으로 인식하고, 그 외에는 임의로 정보를
-  지어내지 않고 정직하게 "미등록"으로 처리한다.
+- Naver/DART/정부/IR Adapter는 API Key/소스 미등록으로 아직 stub이다(`scripts/adapters/
+  future_adapters.py`, Round 6 감사에서 "Pilot 데모 미호출" 표시 추가).
+- `config/company_registry.yaml`은 14개사로 확대됐지만 `products`/`value_chain`/
+  `official_website`/`primary_disclosure_source`의 다수 필드가 여전히 TODO다
+  (`python scripts/quality_gate.py`의 Registry Completion 48.8%로 정량 확인 가능).
 - Investment Review Engine의 Deal Killer 판정은 `risk_assessment` 원문의 키워드 매칭
   수준이다(소송/제재/형사/파산/상장폐지/회계부정) — 고도화는 Enterprise 확장 대상.
-- Knowledge Base(`knowledge/*.md`)는 Round 3 이후 구조 변경이 없다 — 실제 회사 사실
-  리서치(TODO 항목 참고)는 여전히 수행되지 않았다.
-- `scripts/demo_mvp.py`/통합 테스트는 TOP-0001 1개 Topic, SRC-0001(Google RSS 영문) 1개
+- `STRATEGY_PLAYBOOK.md`는 Round 6에서 손대지 않아 여전히 `confidence: draft`다.
+- `scripts/demo_pilot.py`/통합 테스트는 TOP-0001 1개 Topic, SRC-0001(Google RSS 영문) 1개
   소스만 다룬다 — 여러 Topic/여러 소스를 동시에 오케스트레이션하는 상위 루프는 아직 없다
   (n8n Master Pipeline이 TASK-008에서 그 역할을 맡을 예정).

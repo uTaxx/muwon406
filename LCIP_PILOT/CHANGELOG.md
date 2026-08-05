@@ -5,6 +5,77 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 6 반영 (2026-08-05, 6차)
+
+ChatGPT Architect Review Round 6 승인 및 반영. "Engine Development"에서 "Working
+Product"로 방향을 전환 — 새 Engine/Framework/Layer 추가를 절대 금지하고, 실제 데이터를
+사용하는 Pilot 완성에 집중했다. 이번 라운드 집중사항(1. 중복 구조 제거, 2. 불필요한
+추상화 제거, 3. Pilot에서 실제 사용하지 않는 코드 표시)도 함께 반영했다.
+
+- **TASK-K01 Knowledge Population**: `knowledge/LX_HAUSYS_COMPANY_DNA.md` →
+  `LX_HAUSYS_VALUE_CHAIN.md` → `LX_HOLDINGS_CONTEXT.md` → `GROUP_RISK_MAP.md` →
+  `GROUP_OPPORTUNITY_MAP.md` 5개 문서를 WebSearch로 확인한 실제 공개정보로 전면
+  리라이트(모든 문장에 Source URL/Reference Date/Confidence). LX Hausys의 named
+  lawsuit 피고 여부처럼 확인되지 않은 사실은 명확히 "미확인"으로 분리했다. Knowledge
+  Quality Score 평균 25% → **95.8%**.
+- **TASK-K02 Company Registry**: `config/company_registry.yaml`을 1개사에서
+  14개사(LX Group 6/국내 경쟁사 2/해외 엔지니어드스톤 경쟁사 4/일본 경쟁사 2)로 확대.
+  각 회사는 Company ID/Ticker/Country/Industry/Products/Value Chain/Official
+  Website/Primary Disclosure Source를 갖는다. 미확인 필드는 `null`+TODO 주석으로 정직하게
+  남겼다(임의 기재 금지 원칙 유지).
+- **TASK-K03 Source Registry**: `config/sources.yaml`을 4개에서 11개 Source(Google
+  RSS/Naver/DART/KRX/SEC EDGAR/EDINET/SEDAR+/Companies House/정부 RSS/기업 IR)로
+  확대. `authentication`/`rate_limit` 필드 신설(예: SEC EDGAR는 API Key 불필요·User-Agent
+  헤더 필수·초당 10 requests로 확인). 세분화 점수는 기존 `source_priority.py`를 그대로
+  재사용해 중복 필드를 만들지 않았다.
+- **Feature Flag + TASK-010 실제 RSS Parser**: `config/feature_flags.yaml`(신규,
+  4개 스위치 전부 `false`) + `scripts/feature_flags.py`. `GoogleRSSAdapter.enabled`
+  기본값이 하드코딩 `False`에서 이 전역 플래그를 따르도록 전환 — 개별 `enabled=True` 인자는
+  여전히 우선한다.
+- **TASK-009 실제 ClaudeProvider + Provider Factory**: `ClaudeProvider._call_anthropic()`이
+  `anthropic` SDK로 실제 Messages API를 호출하는 코드로 교체됐다(모델은 여전히
+  `claude_client.get_model_name()`으로 조회). `feature_flags.claude_api_enabled=False`인
+  한 SDK import조차 하지 않고 `NotImplementedError`로 멈춘다(2중 게이트: `self.enabled`
+  + feature flag). `scripts/providers/factory.py:get_default_provider()` 신설 —
+  `ANTHROPIC_API_KEY` 존재 + flag 둘 다 참일 때만 `ClaudeProvider(enabled=True)`, 아니면
+  항상 `MockProvider()`.
+- **TASK-017 데모 통합(2→1)**: `scripts/demo_pilot.py` 신설, 기존 `demo_mvp.py`/
+  `demo_quick_scan.py` 삭제. 뉴스수집→Rule Filter→Knowledge Retrieval→Claude
+  Analysis→INTELLIGENCE_DB→Dashboard→Quick Company Scan→Investment Review→Email
+  Preview→Telegram Preview를 한 명령으로 실행한다.
+- **Quality Gate**: `scripts/quality_gate.py` 신설 — Coverage 대신 품질을 측정한다.
+  Knowledge Quality Score(95.8%)/Registry Completion(48.8%, 참고 지표)/Public Source
+  Coverage(100%)/Source Freshness(등록 Source 중 `active` 비율, 18.2%)/Mock
+  Dependency(feature flag가 false인 비율, 100%)/Pilot Operational Readiness(구조적
+  점검 7개 항목 통과율, 100%) — 전체 테스트 스위트를 서브프로세스로 실제 실행해 판정하며,
+  재귀 실행을 피하기 위해 `run_tests` 인자로 제어한다.
+- **중복/데드코드 감사 및 정리**: `scripts/pipeline/store.py`(하위호환 wrapper — 실제
+  호출자가 자기 자신의 단위 테스트뿐이었음)를 삭제하고 `tests/test_pipeline.py`의 관련
+  테스트 2건도 제거(동일 커버리지가 `tests/test_storage.py`에 이미 있음).
+  `claude_client.build_cached_messages()`(Round 5부터 `prompt_engine.PromptBuilder`로
+  대체되어 실제 호출자가 없었음)와 그 테스트 1건 삭제. `build_dashboard.py`가 JSON 파일을
+  직접 `json.loads()`하던 중복 구현을 `dashboard_data_provider.StaticJSONDataProvider`
+  재사용으로 교체. `scripts/providers/future_providers.py`/
+  `scripts/adapters/future_adapters.py`/`scripts/storage/future_storage.py`(Round 4/5가
+  승인한 확장 지점 stub)에는 "Pilot 데모가 호출하지 않는다"는 감사 표시를 코드 주석으로
+  남겼다 — 단위 테스트로만 계약을 검증하는 의도된 설계이므로 삭제 대상이 아니다.
+  `config/company_registry.yaml`의 "LX Group (8개사)" 주석 오류(실제 6개사)도 함께 수정.
+- 테스트: 신규 `test_feature_flags.py`(5), `test_source_registry.py`(6),
+  `test_quality_gate.py`(14) + 기존 파일 확장(`test_adapters.py` +2, `test_providers.py`
+  +8, `test_quick_company_scan.py` +5) — 데드코드 제거로 3건 감소. 총
+  **284개 테스트 전부 PASS**(Round 5: 265개).
+- 문서: `CLAUDE.md`(Storage Backend 항목에 Round 6 삭제 내역 반영),
+  `PROJECT_STATUS.md`/`TODO.md`(Round 6 반영으로 전면 갱신).
+
+### Notes
+
+- 이번 라운드도 외부 API를 전혀 호출하지 않았다 — `config/feature_flags.yaml`의 4개
+  플래그가 전부 `false`인 한, 새로 작성된 실제 호출 코드(`ClaudeProvider._call_anthropic`,
+  `GoogleRSSAdapter.collect`)는 안전하게 도달 불가능한 상태로 남는다.
+- Company Registry의 여러 필드(products/value_chain/official_website/
+  primary_disclosure_source)는 여전히 TODO다 — Round 6는 "구조를 Pilot 수준으로 확장"이
+  목표였고, 전 필드 리서치 완결은 다음 라운드 과제다.
+
 ### Added — Architect Review Round 5 반영 (2026-08-05, 5차)
 
 ChatGPT Architect Review Round 5 승인 및 반영. "Pilot을 실제 사용할 수 있는 방향으로

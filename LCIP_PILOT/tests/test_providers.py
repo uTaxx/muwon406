@@ -6,6 +6,7 @@ import pytest
 
 from providers.base import AIProvider, ProviderResult, ProviderUsage
 from providers.claude_provider import ClaudeProvider, ClaudeProviderDisabledError
+from providers.factory import get_default_provider
 from providers.future_providers import GeminiProvider, OpenAIProvider
 from providers.mock_provider import MockProvider
 
@@ -172,3 +173,162 @@ def test_providers_are_interchangeable_same_call_signature():
     for provider in providers:
         result = provider.classify_relevance(SILICA_ARTICLE, TOPIC)
         assert isinstance(result, ProviderResult)
+
+
+# --- Round 6 TASK-009: 실제 _call_anthropic 호출부 (feature_flags.claude_api_enabled로 이중 게이트) ---
+
+
+class _FakeTextBlock:
+    type = "text"
+
+    def __init__(self, text: str):
+        self.text = text
+
+
+class _FakeUsage:
+    def __init__(self, input_tokens: int, output_tokens: int):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+
+
+class _FakeAnthropicResponse:
+    def __init__(self, text: str, input_tokens: int = 100, output_tokens: int = 50):
+        self.content = [_FakeTextBlock(text)]
+        self.usage = _FakeUsage(input_tokens, output_tokens)
+
+
+class _FakeMessages:
+    def __init__(self, response):
+        self._response = response
+        self.calls: list[dict] = []
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return self._response
+
+
+class _FakeAnthropicClient:
+    def __init__(self, response):
+        self.messages = _FakeMessages(response)
+
+
+_RELEVANCE_PAYLOAD = {
+    "relevant": True,
+    "relevance_score": 0.9,
+    "mission_category": ["risk_management"],
+    "mission_subcategory": ["litigation"],
+    "intelligence_categories": ["litigation"],
+    "related_companies": ["LX_HAUSYS"],
+    "reason": "실제 호출 경로 테스트 (fake client)",
+    "needs_deep_analysis": True,
+}
+
+
+def test_claude_provider_real_call_still_not_implemented_when_flag_off_even_if_enabled(monkeypatch):
+    """feature_flags.claude_api_enabled가 false인 한(config 기본값), self.enabled=True로
+    켜도 anthropic SDK를 import조차 하지 않고 NotImplementedError로 멈춰야 한다."""
+    monkeypatch.setenv("LCIP_CLASSIFICATION_MODEL", "test-model-id")
+    provider = ClaudeProvider(enabled=True)
+    with pytest.raises(NotImplementedError):
+        provider.classify_relevance(SILICA_ARTICLE, TOPIC)
+
+
+def test_claude_provider_real_call_executes_when_both_gates_true(monkeypatch):
+    import anthropic
+    import providers.claude_provider as claude_provider_module
+
+    monkeypatch.setattr(claude_provider_module, "is_enabled", lambda flag_name: True)
+    monkeypatch.setenv("LCIP_CLASSIFICATION_MODEL", "test-model-id")
+
+    fake_client = _FakeAnthropicClient(
+        _FakeAnthropicResponse(json.dumps(_RELEVANCE_PAYLOAD, ensure_ascii=False))
+    )
+    monkeypatch.setattr(anthropic, "Anthropic", lambda: fake_client)
+
+    provider = ClaudeProvider(enabled=True)
+    result = provider.classify_relevance(SILICA_ARTICLE, TOPIC)
+
+    assert result.ok is True
+    assert result.parsed_json["relevant"] is True
+    assert result.usage.model == "test-model-id"
+    assert result.usage.input_tokens == 100
+    assert fake_client.messages.calls[0]["model"] == "test-model-id"
+    assert fake_client.messages.calls[0]["messages"][0]["role"] == "user"
+
+
+def test_claude_provider_real_call_returns_not_ok_on_invalid_json(monkeypatch):
+    import anthropic
+    import providers.claude_provider as claude_provider_module
+
+    monkeypatch.setattr(claude_provider_module, "is_enabled", lambda flag_name: True)
+    monkeypatch.setenv("LCIP_CLASSIFICATION_MODEL", "test-model-id")
+
+    fake_client = _FakeAnthropicClient(_FakeAnthropicResponse("이건 JSON이 아니다"))
+    monkeypatch.setattr(anthropic, "Anthropic", lambda: fake_client)
+
+    provider = ClaudeProvider(enabled=True)
+    result = provider.classify_relevance(SILICA_ARTICLE, TOPIC)
+
+    assert result.ok is False
+    assert result.error is not None
+
+
+def test_claude_provider_real_call_returns_not_ok_on_api_error(monkeypatch):
+    import anthropic
+    import providers.claude_provider as claude_provider_module
+
+    monkeypatch.setattr(claude_provider_module, "is_enabled", lambda flag_name: True)
+    monkeypatch.setenv("LCIP_CLASSIFICATION_MODEL", "test-model-id")
+
+    class _RaisingMessages:
+        def create(self, **kwargs):
+            request = anthropic._base_client.httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+            response = anthropic._base_client.httpx.Response(429, request=request)
+            raise anthropic.RateLimitError("rate limited", response=response, body=None)
+
+    class _RaisingClient:
+        def __init__(self):
+            self.messages = _RaisingMessages()
+
+    monkeypatch.setattr(anthropic, "Anthropic", lambda: _RaisingClient())
+
+    provider = ClaudeProvider(enabled=True)
+    result = provider.classify_relevance(SILICA_ARTICLE, TOPIC)
+
+    assert result.ok is False
+    assert "rate limited" in result.error.lower()
+
+
+# --- Round 6 TASK-009: Provider Factory ---
+
+
+def test_get_default_provider_returns_mock_when_no_api_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert isinstance(get_default_provider(), MockProvider)
+
+
+def test_get_default_provider_returns_mock_when_flag_off_even_with_api_key(monkeypatch):
+    """다음 Architect 승인 전까지 config/feature_flags.yaml의 claude_api_enabled는 false —
+    ANTHROPIC_API_KEY가 있어도 factory는 여전히 MockProvider를 반환해야 한다."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
+    assert isinstance(get_default_provider(), MockProvider)
+
+
+def test_get_default_provider_returns_claude_provider_when_key_and_flag_both_true(monkeypatch):
+    import providers.factory as factory_module
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
+    monkeypatch.setattr(factory_module, "is_enabled", lambda flag_name: True)
+
+    provider = get_default_provider()
+    assert isinstance(provider, ClaudeProvider)
+    assert provider.enabled is True
+
+
+def test_get_default_provider_returns_mock_when_flag_true_but_no_key(monkeypatch):
+    import providers.factory as factory_module
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(factory_module, "is_enabled", lambda flag_name: True)
+
+    assert isinstance(get_default_provider(), MockProvider)
