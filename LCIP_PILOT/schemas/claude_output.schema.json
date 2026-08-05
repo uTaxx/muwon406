@@ -62,8 +62,8 @@
     "risk_analysis_output": {
       "type": "object",
       "required": [
-        "facts", "significance", "lx_impact", "actions", "confidence", "evidence",
-        "unknowns"
+        "facts", "significance", "intelligence_categories", "lx_impact", "actions",
+        "confidence", "evidence", "unknowns"
       ],
       "properties": {
         "facts": { "type": "array", "items": { "type": "string" } },

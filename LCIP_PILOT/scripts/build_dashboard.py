@@ -21,84 +21,31 @@ import json
 from html import escape
 
 from _common import project_root
+from dashboard_widgets import (
+    DEFAULT_WIDGETS,
+    render_generic_list,
+    render_today_changes,
+    render_tracker_rows,
+)
 
 DASHBOARD_DIR = project_root() / "dashboard"
 
-NUM_FIELDS = {"total_amount_usd", "claimant_count", "avg_amount_per_person_usd"}
+# render_tracker_rows/render_generic_list/render_today_changes는 dashboard_widgets.py로
+# 이전되었다 — 기존 호출부(tests/test_dashboard.py 등)와의 하위 호환을 위해 이 모듈에서도
+# 그대로 재노출한다.
 
 
-def _fmt_num(value) -> str:
-    if value is None:
-        return "-"
-    if isinstance(value, float) and value.is_integer():
-        value = int(value)
-    return f"{value:,}"
-
-
-def render_tracker_rows(rows: list[dict]) -> str:
-    if not rows:
-        return '        <tr><td colspan="11" class="lcip-empty">등록된 Tracker 항목 없음</td></tr>'
-    out = []
-    for r in rows:
-        out.append(
-            "        <tr>"
-            f"<td>{escape(r.get('published_at') or '-')}</td>"
-            f"<td>{escape(r.get('region') or '-')}</td>"
-            f"<td>{escape(r.get('title') or '-')}</td>"
-            f"<td>{escape(r.get('defendant') or '-')}</td>"
-            f"<td>{escape(r.get('event_type') or '-')}</td>"
-            f"<td class=\"lcip-num\">{_fmt_num(r.get('total_amount_usd'))}</td>"
-            f"<td class=\"lcip-num\">{_fmt_num(r.get('claimant_count'))}</td>"
-            f"<td class=\"lcip-num\">{_fmt_num(r.get('avg_amount_per_person_usd'))}</td>"
-            f"<td>{escape(r.get('status') or '-')}</td>"
-            f"<td><a href=\"{escape(r.get('source_url') or '#')}\" target=\"_blank\" rel=\"noopener\">원문 보기</a></td>"
-            f"<td>{escape(r.get('note') or '')}</td>"
-            "</tr>"
-        )
-    return "\n".join(out)
-
-
-def render_generic_list(items: list[dict], empty_label: str) -> str:
-    if not items:
-        return f'<p class="lcip-empty">{escape(empty_label)}</p>'
-    rows = []
-    for item in items:
-        cols = "".join(f"<td>{escape(str(v))}</td>" for v in item.values())
-        rows.append(f"<tr>{cols}</tr>")
-    headers = "".join(f"<th>{escape(k)}</th>" for k in items[0].keys())
-    return (
-        '<table class="lcip-table"><thead><tr>'
-        + headers
-        + "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-    )
-
-
-def render_today_changes(data: dict) -> str:
-    changes = data.get("today_changes") or []
-    if not changes:
-        return escape(data.get("today_changes_summary") or "신규 주요 변화 없음")
-    return "<ul>" + "".join(f"<li>{escape(str(c))}</li>" for c in changes) + "</ul>"
-
-
-def _render_common_tokens(data: dict) -> dict[str, str]:
-    trend = data.get("litigation_amount_trend") or []
-    return {
+def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[str, str]:
+    """Round 4 지시(Widget 기반 대시보드)에 따라, 각 Widget이 자신의 토큰만 책임지고 채운다.
+    `widgets` 목록에서 항목을 빼거나 추가하면 해당 섹션만 독립적으로 켜지거나 꺼진다 —
+    나머지 Widget/토큰에는 영향을 주지 않는다."""
+    tokens = {
         "{{TOPIC_DISPLAY_NAME}}": escape(data.get("topic_display_name") or "엔지니어드스톤·실리코시스"),
         "{{GENERATED_AT_KST}}": escape(data.get("generated_at_kst") or ""),
-        "{{TODAY_CHANGES_HTML}}": render_today_changes(data),
-        "{{TRACKER_ROWS_HTML}}": render_tracker_rows(data.get("tracker_rows") or []),
-        "{{NON_US_ISSUES_HTML}}": render_generic_list(data.get("non_us_issues") or [], "등록된 미국 외 이슈 없음"),
-        "{{US_STATE_REGULATIONS_HTML}}": render_generic_list(
-            data.get("us_state_regulations") or [], "등록된 미국 주별 규제 동향 없음"
-        ),
-        "{{GLOBAL_REGULATIONS_HTML}}": render_generic_list(
-            data.get("global_regulations") or [], "등록된 글로벌 규제 동향 없음"
-        ),
-        "{{SAFEGUARD_NEWS_HTML}}": render_generic_list(data.get("safeguard_news") or [], "등록된 세이프가드 소식 없음"),
-        "{{TREND_DATA_JSON}}": json.dumps(trend, ensure_ascii=False),
     }
+    for widget in widgets:
+        tokens[f"{{{{{widget.token}}}}}"] = widget.render(data)
+    return tokens
 
 
 def build_html(data: dict, mode: str = "single") -> str | dict[str, str]:

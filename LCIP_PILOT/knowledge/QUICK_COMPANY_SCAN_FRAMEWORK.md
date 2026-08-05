@@ -7,8 +7,8 @@ reference_date:
 last_reviewed: 2026-08-05
 source_urls: []
 confidence: high
-version: 1.0
-owner: Architect Review (2026-08-05)
+version: 1.1
+owner: Architect Review (2026-08-05, Round 4로 Core/Advanced 구조 갱신)
 ---
 
 # Quick Company Scan Framework
@@ -17,7 +17,7 @@ owner: Architect Review (2026-08-05)
 > Review Engine(Enterprise 단계)의 **입력(Input)**이 된다. 출력 구조는
 > `schemas/quick_company_scan.schema.json`으로 검증하며, 실제 사용은
 > `prompts/quick_scan.md`가 담당한다 (Pilot에서는 아직 파이프라인에 연결되지 않음, Sprint 6
-> 확장 대상).
+> 확장 대상). Round 4부터 Core(7개 필수)/Advanced(13개 선택) 구조로 운영한다.
 
 ## 0. 절대 원칙 (기존 quick_scan.md 원칙과 동일, 확장판에도 그대로 적용)
 
@@ -31,30 +31,42 @@ owner: Architect Review (2026-08-05)
    `estimated_valuation`은 공개된 배수(comparable multiple)가 실제로 존재할 때만 채우고,
    없으면 명시적으로 `null` + 사유를 남긴다.
 
-## 1. 20개 항목 정의
+## 1. 20개 항목 정의 — Core(필수)/Advanced(선택) 2단 구조 (Architect Review Round 4 Q3)
 
-| # | 항목 | 설명 | Taxonomy 연결 |
-|---|---|---|---|
-| 1 | Company Overview | 법인 개요, 연혁, 소재지 | Knowledge Taxonomy #1 Company |
-| 2 | Business Structure | 사업부/자회사 구성 | Taxonomy #2 Business |
-| 3 | Product Portfolio | 주요 제품/브랜드 | Taxonomy #3 Product |
-| 4 | Manufacturing | 생산 거점/공정 | Taxonomy #4 Manufacturing |
-| 5 | Value Chain | 원재료~고객 흐름 | Taxonomy #5 Value Chain |
-| 6 | Customer | 고객 산업/구조 | Taxonomy #6 Customer |
-| 7 | Competitor | 경쟁사/시장 지위 | Taxonomy #7 Competitor |
-| 8 | Financial Snapshot | 공개된 매출/영업이익/부채 등 스냅샷 | 신규 (재무) |
-| 9 | Capital Market | 상장 여부, 시가총액, 최근 자본시장 활동 | Taxonomy #11 Opportunity와 연결 |
-| 10 | Investment Multiple | 공개된 배수(P/E, EV/EBITDA 등) — 확인 안 되면 null | 신규 (재무) |
-| 11 | Comparable Companies | 비교 가능한 동종 상장/비상장 기업 | 신규 |
-| 12 | Growth Strategy | 공식 발표된 성장 전략 | Taxonomy #11 Opportunity |
-| 13 | Government Exposure | 관련 정부/규제 노출 | Taxonomy #9 Government |
-| 14 | Risk Assessment | 공개된 리스크 요인 | Taxonomy #10 Risk / `MISSION_FRAMEWORK.md` risk_management |
-| 15 | Opportunity Assessment | 공개된 성장기회 | Taxonomy #11 Opportunity / `MISSION_FRAMEWORK.md` future_readiness |
-| 16 | LX Strategic Fit | LX홀딩스/계열사 사업과의 연관성·시너지 여지 | Taxonomy #12 Investment Point |
-| 17 | Investment Recommendation | 스크리닝 신호(아래 §2) — 투자 조언 아님 | 신규 |
-| 18 | Estimated Valuation | 공개 배수 기반 추정치, 없으면 null | 신규 |
-| 19 | Synergy Analysis | LX 기존 사업과의 시너지 가능 영역 | `INVESTMENT_FRAMEWORK.md` §2와 연동 |
-| 20 | Reference Sources | 전체 근거 URL 목록 (필수, 최소 1개) | Taxonomy #13~14 |
+> "Framework Completion"에서 "Working Product Completion"으로 방향 전환하면서, 20개 전체를
+> 매 호출 필수로 요구하던 구조를 완화했다. **Pilot은 Core 7개 + 메타데이터만으로도 보고서
+> 생성이 가능해야 한다.** Advanced 13개는 Enterprise 단계 또는 필요 시에만 채운다. 스키마
+> 상 필수 여부는 `schemas/quick_company_scan.schema.json`의 `required` 배열이 최종 기준이다.
+
+### Core Section (필수 7개)
+
+| # | 항목 | 필드명 | 설명 | Taxonomy 연결 |
+|---|---|---|---|---|
+| 1 | Company Overview | `company_overview` | 법인 개요, 연혁, 소재지 | Knowledge Taxonomy #1 Company |
+| 2 | Business Structure | `business_structure` | 사업부/자회사 구성 | Taxonomy #2 Business |
+| 3 | Product | `product_portfolio` | 주요 제품/브랜드 | Taxonomy #3 Product |
+| 4 | Financial Snapshot | `financial_snapshot` | 공개된 매출/영업이익/부채 등 스냅샷 | 신규 (재무) |
+| 5 | Competitor | `competitor` | 경쟁사/시장 지위 | Taxonomy #7 Competitor |
+| 6 | LX Strategic Fit | `lx_strategic_fit` | LX홀딩스/계열사 사업과의 연관성 | Taxonomy #12 Investment Point |
+| 7 | Reference Sources | `reference_sources` | 전체 근거 URL 목록 (최소 1개) | Taxonomy #13~14 |
+
+### Advanced Section (선택 13개 — Enterprise에서 채움)
+
+| # | 항목 | 필드명 | 설명 | Taxonomy 연결 |
+|---|---|---|---|---|
+| 8 | Manufacturing | `manufacturing` | 생산 거점/공정 | Taxonomy #4 Manufacturing |
+| 9 | Value Chain | `value_chain` | 원재료~고객 흐름 | Taxonomy #5 Value Chain |
+| 10 | Customer | `customer` | 고객 산업/구조 | Taxonomy #6 Customer |
+| 11 | Capital Market | `capital_market` | 상장 여부, 시가총액, 최근 자본시장 활동 | Taxonomy #11 Opportunity와 연결 |
+| 12 | Investment Multiple | `investment_multiple` | 공개된 배수(P/E, EV/EBITDA 등) — 확인 안 되면 null | 신규 (재무) |
+| 13 | Comparable Companies | `comparable_companies` | 비교 가능한 동종 상장/비상장 기업 | 신규 |
+| 14 | Growth Strategy | `growth_strategy` | 공식 발표된 성장 전략 | Taxonomy #11 Opportunity |
+| 15 | Government Exposure | `government_exposure` | 관련 정부/규제 노출 | Taxonomy #9 Government |
+| 16 | Risk Assessment | `risk_assessment` | 공개된 리스크 요인 | Taxonomy #10 Risk / `MISSION_FRAMEWORK.md` risk_management |
+| 17 | Opportunity Assessment | `opportunity_assessment` | 공개된 성장기회 | Taxonomy #11 Opportunity / `MISSION_FRAMEWORK.md` future_readiness |
+| 18 | Investment Recommendation | `investment_recommendation` | 스크리닝 신호(아래 §2) — 투자 조언 아님 | 신규 |
+| 19 | Estimated Valuation | `estimated_valuation` | 공개 배수 기반 추정치, 없으면 null | 신규 |
+| 20 | Synergy Analysis | `synergy_analysis` | LX 기존 사업과의 시너지 가능 영역 | `INVESTMENT_FRAMEWORK.md` §2와 연동 |
 
 ## 2. Investment Recommendation — 스크리닝 신호 정의
 

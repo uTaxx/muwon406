@@ -2,15 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lcip-pilot.local/schemas/quick_company_scan.schema.json",
   "title": "QuickCompanyScan",
-  "description": "TASK-004D Quick Company Scan Framework 출력 검증 스키마 (knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md 기준). 20개 항목 + 메타데이터. investment_recommendation은 투자 조언이 아니라 절차적 스크리닝 신호다. Pilot 범위에서는 아직 파이프라인에 연결되지 않았다 (Sprint 6 확장 대상).",
+  "description": "TASK-004D Quick Company Scan Framework 출력 검증 스키마 (knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md 기준). Architect Review Round 4(Q3)로 Core(7개 필수)/Advanced(13개 선택) 2단 구조로 변경 — Pilot에서는 Core만으로도 보고서 생성이 가능해야 한다. investment_recommendation은 투자 조언이 아니라 절차적 스크리닝 신호다. Pilot 범위에서는 아직 파이프라인에 연결되지 않았다 (Sprint 6 확장 대상).",
   "type": "object",
   "required": [
-    "target_company", "scan_date", "company_overview", "business_structure",
-    "product_portfolio", "manufacturing", "value_chain", "customer", "competitor",
-    "financial_snapshot", "capital_market", "investment_multiple", "comparable_companies",
-    "growth_strategy", "government_exposure", "risk_assessment", "opportunity_assessment",
-    "lx_strategic_fit", "investment_recommendation", "estimated_valuation",
-    "synergy_analysis", "reference_sources", "unknowns", "confidence"
+    "target_company", "scan_date",
+    "company_overview", "business_structure", "product_portfolio", "financial_snapshot",
+    "competitor", "lx_strategic_fit", "reference_sources",
+    "unknowns", "confidence"
   ],
   "properties": {
     "target_company": {
@@ -20,19 +18,26 @@
     },
     "scan_date": { "type": "string", "format": "date" },
 
-    "company_overview": { "type": "string" },
-    "business_structure": { "type": "array", "items": { "type": "string" } },
-    "product_portfolio": { "type": "array", "items": { "type": "string" } },
-    "manufacturing": { "type": "array", "items": { "type": "string" } },
-    "value_chain": { "type": "string" },
-    "customer": { "type": "array", "items": { "type": "string" } },
-    "competitor": { "type": "array", "items": { "type": "string" } },
-
+    "company_overview": { "type": "string", "description": "Core #1 — Core Section(필수, Round 4 Q3): Pilot은 이 7개 + meta만으로 보고서를 생성할 수 있어야 한다" },
+    "business_structure": { "type": "array", "items": { "type": "string" }, "description": "Core #2" },
+    "product_portfolio": { "type": "array", "items": { "type": "string" }, "description": "Core #3 (Product)" },
     "financial_snapshot": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "공개된 매출/영업이익/부채 등 스냅샷 사실만. 추정치 금지."
+      "description": "Core #4. 공개된 매출/영업이익/부채 등 스냅샷 사실만. 추정치 금지."
     },
+    "competitor": { "type": "array", "items": { "type": "string" }, "description": "Core #5" },
+    "lx_strategic_fit": { "type": "string", "description": "Core #6" },
+    "reference_sources": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "minItems": 1,
+      "description": "Core #7"
+    },
+
+    "manufacturing": { "type": "array", "items": { "type": "string" }, "description": "Advanced Section(선택, Enterprise에서 채움) 시작" },
+    "value_chain": { "type": "string" },
+    "customer": { "type": "array", "items": { "type": "string" } },
     "capital_market": { "type": "string" },
     "investment_multiple": {
       "type": ["array", "null"],
@@ -50,11 +55,8 @@
     "comparable_companies": { "type": "array", "items": { "type": "string" } },
     "growth_strategy": { "type": "array", "items": { "type": "string" } },
     "government_exposure": { "type": "array", "items": { "type": "string" } },
-
     "risk_assessment": { "type": "array", "items": { "type": "string" } },
     "opportunity_assessment": { "type": "array", "items": { "type": "string" } },
-    "lx_strategic_fit": { "type": "string" },
-
     "investment_recommendation": {
       "type": "object",
       "required": ["signal", "rationale"],
@@ -83,11 +85,6 @@
     },
     "synergy_analysis": { "type": "array", "items": { "type": "string" } },
 
-    "reference_sources": {
-      "type": "array",
-      "items": { "type": "string", "format": "uri" },
-      "minItems": 1
-    },
     "unknowns": { "type": "array", "items": { "type": "string" } },
     "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
   },

@@ -5,6 +5,75 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 4 반영 (2026-08-05, 4차)
+
+ChatGPT Architect Review Round 4 승인 및 반영. Architecture Layer/Knowledge Layer가
+Pilot에 충분하다고 판단, 방향을 "Framework Completion"에서 "Working Product Completion"
+으로 전환 — 이제부터 새 Framework 문서는 추가하지 않고 ADR만 추가하며, 대신 동작하는
+코드/테스트/실제 Pipeline 비중을 높인다. 외부 API 실제 호출은 여전히 시작하지 않는다
+(Mock 기반으로 구조와 테스트를 먼저 완성).
+
+- **Q1 (ADR-009)**: Workflow ID Active/Deprecated/Archived 3단계 생명주기 모델 —
+  `docs/decisions/ADR-009-workflow-lifecycle-policy.md` 신규, `config/workflow_registry.yaml`
+  전 워크플로우에 `lifecycle_stage` 필드 추가.
+- **Q2**: `mission_category`(목적 축)와 `intelligence_categories`(도메인 축)는 독립적인
+  두 축임을 재확인, `risk_analysis_output`에도 `intelligence_categories`를 필수로 승격 —
+  `schemas/claude_output.schema.json`, `prompts/risk_analysis.md`, `prompts/policy_analysis.md`,
+  `tests/test_schema.py` 동기화.
+- **Q3**: Quick Company Scan을 Core(필수 7개: Company Overview/Business Structure/
+  Product/Financial Snapshot/Competitor/LX Strategic Fit/Reference Sources)/Advanced
+  (선택 13개)로 분리 — Pilot은 Core만으로 보고서 생성 가능해야 한다.
+  `schemas/quick_company_scan.schema.json` 재작성, `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`
+  §1을 Core/Advanced 두 표로 재구성, `prompts/quick_scan.md`(v0.4.0, Core-only/전체 두
+  출력 예시), Core-only 검증용 fixture `quick_company_scan_core_only.json` 추가.
+- **TASK-009 Provider Layer (신규)**: `scripts/providers/` — `AIProvider`(추상 인터페이스)
+  → `ClaudeProvider`(모델 조회·Prompt Cache 메시지 구성까지 실동작, 실제 네트워크 호출
+  직전에서 `NotImplementedError`로 명시적으로 멈춤, `enabled=False` 기본값) /
+  `MockProvider`(결정론적 mock, Pipeline 기본값) / `OpenAIProvider`·`GeminiProvider`
+  (미래 확장 stub). Pipeline은 `AIProvider` 인터페이스에만 의존해 모델/공급자 교체 시
+  Business Logic을 수정하지 않는다. `tests/test_providers.py`(14건).
+- **TASK-010 Source Adapter (신규)**: `scripts/adapters/` — `SourceAdapter`(추상) →
+  `GoogleRSSAdapter`(RSS XML 파싱은 실동작, 실제 HTTP 호출은 `http_get` 함수 주입 구조로
+  실제 네트워크 없이 fixture로 테스트, `enabled=False` 기본값) / Naver/DART/정부/IR은
+  `NotImplementedError` stub(API Key·소스 미등록). `tests/test_adapters.py`(9건),
+  `tests/fixtures/sample_google_news_rss.xml` 추가.
+- **TASK-011 Analysis Pipeline (신규)**: `scripts/pipeline/` — Collect→Normalize→Rule
+  Filter→Classify→Knowledge Retrieve→Analyze→Validate→Generate Intelligence→Store를
+  분리된 순수 함수로 구현. `ids.py`(ART-/INT- ID 발급), `normalize.py`(Article 스키마
+  매핑·중복 판정), `rule_filter.py`(AI 호출 없는 키워드 필터), `knowledge_retrieve.py`
+  (Knowledge 파일 우선순위대로 발췌+버전 추적), `generate_intelligence.py`(risk_analysis_
+  output→Intelligence 레코드 매핑, 사실/해석/추론 구분), `store.py`(로컬 JSONL — Google
+  Sheets 실연동 전 dry-run 스탠드인), `dashboard_feed.py`(Store→Dashboard 연결).
+  `tests/test_pipeline.py`(14건).
+- **TASK-012 Dashboard Widget (신규)**: `scripts/dashboard_widgets.py` — Today's
+  Change/Risk Tracker/Litigation/Regulation(재사용 가능한 단일 클래스, 미국 주별·글로벌·
+  세이프가드 세 구역에 인스턴스 3개)/**Statistics(신규)**/Timeline을 독립 `Widget`
+  클래스로 분리. `build_dashboard.py`는 `DEFAULT_WIDGETS` 목록을 조합해 토큰을 채우도록
+  리팩터링(기존 함수/토큰 하위호환 유지, 전체 테스트 무변경 통과). `dashboard/template.html`에
+  "통계 요약" 섹션, `dashboard/styles.css`에 `.lcip-stat-grid` 스타일 추가.
+  `tests/test_dashboard_widgets.py`(10건).
+- **TASK-013/014/015 Notifier/Source Health/Cost Guard 연동 (신규)**:
+  `scripts/notifiers.py`(Email/Telegram, `test_mode` dry-run, 실제 발송 경로는
+  명시적으로 차단), `scripts/health_tracking.py`(`SourceAdapter.collect()` 실제 호출
+  결과를 `source_health_check.py` 판정 로직에 연결), `scripts/cost_tracking.py`
+  (`ProviderUsage`를 `config/model_pricing.yaml` 단가로 환산해 `cost_guard.evaluate()`와
+  연결 — 단가가 아직 TODO placeholder라 실제 비용은 항상 0). 통합
+  `tests/test_notifiers.py`(8건), `tests/test_health_tracking.py`(4건),
+  `tests/test_cost_tracking.py`(6건).
+- **TASK-017 Pilot MVP 통합 테스트 + 데모 (신규)**: `tests/test_mvp_integration.py`가
+  Round 4가 정의한 Pilot MVP 성공 기준(Google RSS→1건 수집→Rule Filter→Claude 분석
+  (Mock)→INTELLIGENCE_DB 저장→Dashboard 반영→Test Email→Test Telegram)을 그대로
+  end-to-end 검증(1건). 전략팀 데모용 `scripts/demo_mvp.py` CLI 추가 — 동일 흐름을
+  10단계로 콘솔에 출력하며 `output/demo_mvp/`에 ARTICLE_DB/INTELLIGENCE_DB(JSONL)와
+  대시보드 HTML을 생성한다.
+- **자체 발견 버그 수정**: `notifiers.py` 구현 중 `config/notification.yaml`의
+  `email`/`telegram` 섹션이 `notifications`의 형제(sibling) 키(중첩이 아님)라는 사실을
+  놓쳐, 실제 config로는 수신자 env 변수 이름을 항상 찾지 못하던 문제를 발견해 수정.
+  회귀 테스트 `test_load_notification_config_resolves_real_recipient_env_names` 추가.
+- 우선순위: TASK-009→010→011→012→013→014→015→017→008 순서(TASK-016 보류)로 전부 진행,
+  `TODO.md`/`CLAUDE.md`/`PROJECT_STATUS.md` 갱신.
+- 테스트: 신규 8개 파일 68건 추가, 기존 80건과 합쳐 총 **148개 테스트 전부 PASS**.
+
 ### Added / Changed — Architect Review Round 3 반영 (2026-08-05, 3차)
 
 ChatGPT Architect Review Round 3(Q1~Q5 + TASK-004C/D/E 추가 지시) 승인 및 반영. Knowledge

@@ -44,6 +44,7 @@ unknown         - 원문에서 단계를 특정할 수 없음
   "significance": "",
   "mission_category": ["risk_management"],
   "mission_subcategory": ["regulatory"],
+  "intelligence_categories": ["regulation"],
   "lx_impact": [],
   "actions": [],
   "confidence": "medium",
@@ -54,6 +55,8 @@ unknown         - 원문에서 단계를 특정할 수 없음
 
 이 출력은 `risk_analysis_output`을 확장한 형태이며, `regulatory_stage`를 제외한 나머지
 필드는 `schemas/claude_output.schema.json`의 `risk_analysis_output`과 동일한 규칙을 따른다.
+`intelligence_categories`는 Architect Review Round 4(Q2)로 `risk_analysis_output`에서도
+필수가 되었다 — 반드시 채운다.
 
 ## Dynamic Block (Per-Request — 캐시하지 않음)
 

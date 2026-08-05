@@ -1,0 +1,13 @@
+{
+  "target_company": "Sample Materials Inc.",
+  "scan_date": "2026-08-05",
+  "company_overview": "샘플 기업 개요 (fixture, Core Section만 채운 최소 케이스)",
+  "business_structure": ["샘플 사업부 A"],
+  "product_portfolio": ["샘플 제품 A"],
+  "financial_snapshot": [],
+  "competitor": ["샘플 경쟁사 A"],
+  "lx_strategic_fit": "관련성 불명확 (fixture)",
+  "reference_sources": ["https://example.com/sample-source"],
+  "unknowns": ["Advanced Section 미작성"],
+  "confidence": "low"
+}

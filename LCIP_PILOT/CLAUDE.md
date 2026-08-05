@@ -43,13 +43,17 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
 4. Task 순서는 `docs/03_BUILD_SPECIFICATION.md`의 TASK-001~007을 기본으로 하되, Architect
    Review(2026-08-05, Round 2/3)로 TASK-008 이후 순서가 다음과 같이 조정되었다:
    TASK-004A(Knowledge Foundation Builder) → TASK-004B(Corporate Intelligence Framework)
-   → **TASK-004C(Knowledge Governance) → TASK-004D(Quick Company Scan Framework) →
-   TASK-004E(Corporate Intelligence Taxonomy) → TASK-009(Claude API) →
-   TASK-010(News Collection) → TASK-011(Analysis) → TASK-012(Dashboard) →
-   TASK-013(Notification) → TASK-008(n8n 자동배포, 마지막)**. Round 3 지시: "Knowledge
-   Layer가 완성되어야 Claude API의 분석 품질이 확보된다" — TASK-004C~E(Knowledge Layer)를
-   TASK-009보다 먼저 완료한다. TASK-008은 실제 Workflow 로직이 완성된 뒤 자동배포 도구를
-   만드는 것으로 후순위화되었다 (`TODO.md` 참고).
+   → TASK-004C(Knowledge Governance) → TASK-004D(Quick Company Scan Framework) →
+   TASK-004E(Corporate Intelligence Taxonomy) — 여기까지 Framework/Knowledge Layer는
+   Round 4에서 "Pilot에 충분하다"고 승인되어 **완료 및 동결**되었다. Round 4부터는 새로운
+   Framework 문서를 추가하지 않고 ADR만 추가하며, "Framework Completion"에서
+   "Working Product Completion"으로 방향을 전환한다. Round 4가 확정한 이후 순서는
+   **TASK-009(Provider Layer) → TASK-010(Source Adapter) → TASK-011(Analysis Pipeline) →
+   TASK-012(Dashboard Widget) → TASK-013(Notifier)/TASK-014(Source Health)/
+   TASK-015(Cost Guard) → TASK-017(Pilot MVP 통합 테스트) → TASK-008(n8n 자동배포, 마지막)**
+   이며, TASK-016(Natural Language Admin 실연동)은 보류(on hold)한다. TASK-009~017은
+   전부 **Mock/dry-run 기반**으로 구조와 테스트를 완성하는 것이 목표이며, 실제 외부 API
+   호출(Anthropic/Google/Gmail/Telegram)은 여전히 시작하지 않는다 (`TODO.md` 참고).
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -132,3 +136,36 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
   신뢰도·인용·충돌해결·아카이브·품질점수 규칙, `scripts/knowledge_quality.py`로 측정),
   `QUICK_COMPANY_SCAN_FRAMEWORK.md`(20항목, `schemas/quick_company_scan.schema.json`),
   `INTELLIGENCE_TAXONOMY.md`(19개 도메인 카테고리).
+- **Workflow ID는 Active/Deprecated/Archived 3단계 생명주기로 관리한다**
+  (`docs/decisions/ADR-009-workflow-lifecycle-policy.md`, Architect Review Round 4 Q1,
+  `config/workflow_registry.yaml`의 `lifecycle_stage` 필드).
+- `intelligence_categories`는 `relevance_output`뿐 아니라 `risk_analysis_output`에서도
+  **필수**다 (Architect Review Round 4 Q2) — `mission_category`(목적 축)와
+  `intelligence_categories`(도메인 축)는 항상 함께, 서로 독립적으로 채운다.
+- Quick Company Scan은 **Core(필수 7개)/Advanced(선택 13개)**로 분리되었다
+  (Architect Review Round 4 Q3, `schemas/quick_company_scan.schema.json`,
+  `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`). Pilot은 Core만으로 보고서를 생성할 수
+  있어야 하며, Enterprise 단계에서 Advanced까지 채운다.
+- **Round 4부터 "Working Product Completion" 단계다** — 새 Framework 문서 대신 실제
+  동작하는 코드/테스트를 늘린다. 핵심 아키텍처 패턴 4가지:
+  - **Provider Layer** (`scripts/providers/`): `AIProvider`(추상) → `ClaudeProvider`
+    (구조는 실동작, `enabled=False` 기본값으로 실제 호출은 여전히 차단)/`MockProvider`
+    (결정론적 mock, Pipeline 기본값)/`OpenAIProvider`·`GeminiProvider`(미래 확장 stub).
+  - **Source Adapter** (`scripts/adapters/`): `SourceAdapter`(추상) →
+    `GoogleRSSAdapter`(RSS 파싱은 실동작, `enabled=False` 기본값으로 실제 HTTP는 차단,
+    `http_get` 주입으로 테스트)/Naver·DART·정부·IR은 `NotImplementedError` stub.
+  - **Analysis Pipeline** (`scripts/pipeline/`): Collect→Normalize→Rule Filter→
+    Classify→Knowledge Retrieve→Analyze→Validate→Generate Intelligence→Store를
+    분리된 순수 함수로 구현. 오케스트레이션은 `scripts/demo_mvp.py`가 담당한다.
+  - **Dashboard Widget** (`scripts/dashboard_widgets.py`): Today's Change/Risk
+    Tracker/Litigation/Regulation(재사용 가능한 단일 클래스)/**Statistics(신규)**/
+    Timeline을 독립된 `Widget` 클래스로 분리 — `DEFAULT_WIDGETS` 목록에서 추가/제거해도
+    나머지에 영향 없음.
+  - Notifier(`scripts/notifiers.py`)/Source Health(`scripts/health_tracking.py`)/
+    Cost Guard(`scripts/cost_tracking.py`)도 각각 test_mode dry-run, Adapter 실제 호출
+    결과 기반 판정, Provider 사용량 기반 비용 추정으로 연동되었다 — 전부 Mock/dry-run
+    기반이며 실제 발송·과금은 발생하지 않는다.
+  - `scripts/demo_mvp.py`가 위 전체를 하나의 흐름으로 실행하는 CLI 데모이며,
+    `tests/test_mvp_integration.py`가 Pilot MVP 성공 기준(Round 4 정의: Google RSS→
+    수집→Rule Filter→Claude 분석→INTELLIGENCE_DB 저장→Dashboard 반영→Test Email→
+    Test Telegram)을 그대로 검증한다.

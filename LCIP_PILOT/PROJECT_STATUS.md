@@ -1,79 +1,84 @@
 # Project Status
 
-최종 갱신: 2026-08-05 (Architect Review Round 3 반영)
+최종 갱신: 2026-08-05 (Architect Review Round 4 반영)
 
 ## 요약
 
-TASK-001~007 완료 → Architect Review Round 2(Q1~Q7) 반영 → **Round 3(Q1~Q5 + TASK-004C/D/E)
-반영** 완료. Knowledge Layer(TASK-004A~E)가 TASK-009보다 먼저 전부 완료된 상태다. 외부 API
-실제 호출은 여전히 없음 (Google Drive/Sheets 생성 없음, n8n 배포 없음, Claude API 실호출
-없음, 이메일/Telegram 실제 발송 없음).
+TASK-001~007 완료 → Round 2(Q1~Q7) → Round 3(Q1~Q5 + TASK-004C/D/E, Knowledge Layer
+완성) → **Round 4(Q1~Q3 + TASK-009~017) 반영** 완료. Round 4는 "Framework Completion"에서
+"Working Product Completion"으로 방향을 전환 — 새 Framework 문서 없이 Provider
+Layer/Source Adapter/Analysis Pipeline/Dashboard Widget/Notifier·Health·Cost 연동/Pilot
+MVP 통합 테스트까지 전부 Mock/dry-run 기반으로 실제 동작하는 코드로 구현했다. 외부 API
+실제 호출은 여전히 없음 (Anthropic/Google Drive·Sheets/n8n/이메일/Telegram 어느 것도
+실제로 호출하지 않음 — 전부 `enabled=False`/`test_mode=true` 기본값 또는 fixture 주입으로
+검증).
 
 ## Task 진행 상태
 
 | Task | 상태 | 비고 |
 |---|---|---|
-| TASK-001~003 | ✅ 완료 | 변경 없음 (Round 3) |
-| TASK-004 Knowledge Templates | ✅ 완료 | |
-| TASK-004A Knowledge Foundation Builder | ✅ 완료 | Round 3 Q5로 `LX_HOLDINGS_CONTEXT.md`도 16계층 전부(N/A 포함)로 재구성 |
-| TASK-004B Corporate Intelligence Framework | ✅ 완료 | Round 3 Q3로 mission 필드 배열화 반영 |
-| **TASK-004C Knowledge Governance** | ✅ 완료 (신규) | `KNOWLEDGE_GOVERNANCE.md` 10개 규칙 + `scripts/knowledge_quality.py` |
-| **TASK-004D Quick Company Scan Framework** | ✅ 완료 (신규) | `QUICK_COMPANY_SCAN_FRAMEWORK.md` 20개 항목 + `schemas/quick_company_scan.schema.json` |
-| **TASK-004E Corporate Intelligence Taxonomy** | ✅ 완료 (신규) | `INTELLIGENCE_TAXONOMY.md` 19개 카테고리 + `intelligence_categories` 스키마 필드 |
-| TASK-005/006 Google Drive/Sheets Tooling | ✅ 완료 (dry-run만) | 변경 없음 |
-| TASK-007 n8n Workflow Scaffold | ✅ 완료 (재구성 2회) | Round 2에서 11→5 통합, Round 3에서 ID 원복(WF-P08/09/10, ADR-008) |
-| TASK-009~013 | ⏸ 대기 (다음 순서) | Knowledge Layer 완료로 착수 조건 충족, 사용자 API Key 대기 |
-| TASK-008 | ⏸ 대기 (마지막 순위) | Round 2 Q5 유지 |
-| TASK-014~018 | ⏸ 대기 | 변경 없음 |
+| TASK-001~007 | ✅ 완료 | 변경 없음 (Round 4) |
+| TASK-004A~E (Knowledge Layer) | ✅ 완료·동결 | Round 4에서 "Pilot에 충분" 승인, 이후 신규 Framework 문서 추가 안 함 |
+| **TASK-009 Provider Layer** | ✅ 완료 (신규) | `scripts/providers/` — AIProvider/ClaudeProvider/MockProvider/미래 Provider stub |
+| **TASK-010 Source Adapter** | ✅ 완료 (신규) | `scripts/adapters/` — SourceAdapter/GoogleRSSAdapter(실동작 파싱)/Naver·DART·정부·IR stub |
+| **TASK-011 Analysis Pipeline** | ✅ 완료 (신규) | `scripts/pipeline/` — Collect→Normalize→Rule Filter→Classify→Knowledge Retrieve→Analyze→Validate→Generate Intelligence→Store 8단계 |
+| **TASK-012 Dashboard Widget** | ✅ 완료 (신규) | `scripts/dashboard_widgets.py` — Widget 6종(Statistics 신규), `build_dashboard.py` 하위호환 유지 |
+| **TASK-013 Notifier** | ✅ 완료 (신규) | `scripts/notifiers.py` — Email/Telegram, test_mode dry-run |
+| **TASK-014 Source Health 연동** | ✅ 완료 (신규) | `scripts/health_tracking.py` — Adapter 실제 호출 결과 기반 판정 |
+| **TASK-015 Cost Guard 연동** | ✅ 완료 (신규) | `scripts/cost_tracking.py` — Provider 사용량 기반 비용 추정 |
+| **TASK-017 Pilot MVP 통합 테스트** | ✅ 완료 (신규) | `tests/test_mvp_integration.py` + `scripts/demo_mvp.py` |
+| TASK-016 Natural Language Admin | ⏸ 보류 | Round 4 지시로 보류 |
+| TASK-008 n8n API Deployment | ⏸ 대기 (마지막 순위) | 위 항목 전부 완성 후 진행 |
+| TASK-018 | ⏸ 대기 | 변경 없음 |
 
 ## 테스트 결과
 
 ```text
-$ pytest tests/                                     -> 전부 PASS (80개 테스트)
-$ python scripts/validate_config.py                 -> PASS
-$ python scripts/secret_scan.py                      -> PASS
-$ python scripts/bootstrap_project.py --dry-run       -> PASS
-$ python scripts/knowledge_quality.py --verbose
-    LX_HAUSYS_COMPANY_DNA.md: 0.0%
-    LX_HOLDINGS_CONTEXT.md: 50.0% (N/A 계층 6개가 구조상 완료로 카운트됨)
-    전체 평균: 25.0%
+$ pytest tests/ -q                                   -> 전부 PASS (148개 테스트, Round 3: 80개 → +68개)
+$ python scripts/validate_config.py                  -> PASS
+$ python scripts/secret_scan.py                       -> PASS
+$ python scripts/bootstrap_project.py --dry-run        -> PASS
+$ python scripts/demo_mvp.py                           -> PASS (Pilot MVP 10단계 전부 정상 동작, Mock 기반)
 ```
 
-## Round 3에서 새로 생성/수정된 파일
+## Round 4에서 새로 생성/수정된 파일
 
-**신규 (8개)**
-- `docs/decisions/ADR-008-workflow-id-policy.md`
-- `knowledge/KNOWLEDGE_GOVERNANCE.md`
-- `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`
-- `knowledge/INTELLIGENCE_TAXONOMY.md`
-- `schemas/quick_company_scan.schema.json`
-- `scripts/knowledge_quality.py`
-- `tests/test_knowledge_templates.py`, `tests/test_knowledge_quality.py`
+**신규 패키지/모듈 (11개)**
+- `scripts/providers/` (`base.py`, `mock_provider.py`, `claude_provider.py`, `future_providers.py`)
+- `scripts/adapters/` (`base.py`, `google_rss_adapter.py`, `future_adapters.py`)
+- `scripts/pipeline/` (`ids.py`, `normalize.py`, `rule_filter.py`, `classify.py`,
+  `knowledge_retrieve.py`, `analyze.py`, `validate.py`, `generate_intelligence.py`,
+  `store.py`, `collect.py`, `dashboard_feed.py`)
+- `scripts/dashboard_widgets.py`, `scripts/notifiers.py`, `scripts/health_tracking.py`,
+  `scripts/cost_tracking.py`, `scripts/demo_mvp.py`
 
-**n8n 파일명 원복 (ADR-008)**: `WF-P02→WF-P08-source-health.json`,
-`WF-P03→WF-P09-cost-guard.json`, `WF-P04→WF-P10-natural-language-admin.json`
+**신규 문서**: `docs/decisions/ADR-009-workflow-lifecycle-policy.md`
 
-**주요 스키마 변경**: `mission`→`mission_category`(배열), `mission_subcategory`(배열화),
-`intelligence_categories`(신규, 필수) — `schemas/intelligence.schema.json`,
-`schemas/claude_output.schema.json`, `schemas/google_sheets_columns.json` 전부 반영.
+**신규 테스트 (10개 파일, 68건)**: `test_providers.py`(14), `test_adapters.py`(9),
+`test_pipeline.py`(14), `test_dashboard_widgets.py`(10), `test_cost_tracking.py`(6),
+`test_health_tracking.py`(4), `test_notifiers.py`(8), `test_mvp_integration.py`(1) +
+fixtures(`sample_google_news_rss.xml`, `quick_company_scan_core_only.json`)
 
-**Config 변경**: `config/model_registry.yaml`(신규, 3-tier), `config/cost_policy.yaml`
-(모델 tier 관리를 model_registry.yaml로 이전), `config/workflow_registry.yaml`(ID 원복).
+**스키마/Config 변경**: `risk_analysis_output`에 `intelligence_categories` 필수 추가
+(Round 4 Q2), `quick_company_scan.schema.json`을 Core(필수 7)/Advanced(선택 13)로 재작성
+(Round 4 Q3), `config/workflow_registry.yaml`에 `lifecycle_stage`(active/deprecated)
+필드 추가(Round 4 Q1).
 
-**Knowledge 재구성**: `LX_HOLDINGS_CONTEXT.md`가 16계층 전부(해당없는 6개는 N/A) 구조로 재작성.
-
-**코드 변경**: `scripts/claude_client.py`에 `get_model_name()` 3단계 조회 로직
-(환경변수→Registry→Prompt fallback) 추가.
+**버그 수정 (자체 발견·수정)**: `notifiers.py`가 `config/notification.yaml`의
+`email`/`telegram` 섹션이 `notifications`의 형제(sibling) 키임을 반영하지 못해 수신자
+env 변수 이름을 항상 놓치던 문제를 `test_load_notification_config_resolves_real_recipient_env_names`
+회귀 테스트와 함께 수정.
 
 ## 알려진 설계 결정 이력 (전체, 상세는 docs/04_DATA_AND_CONFIG_SCHEMA.md §1/§5, 각 ADR)
 
 - ADR-006: 문서 우선순위 정책
 - ADR-007: n8n Master Pipeline 통합 (11→5)
-- ADR-008: Workflow ID 영속성 정책 (재배정 금지, Round 2의 재배정을 원복)
-- Round 2 Q2/Q3/Q5/Q6/Q7, Round 3 Q3/Q4/Q5: 각각 스키마·모델 전략·우선순위·Knowledge 구조에 반영
+- ADR-008: Workflow ID 영속성 정책 (재배정 금지)
+- ADR-009: Workflow ID Active/Deprecated/Archived 3단계 생명주기 (Round 4 Q1)
+- Round 2/3/4의 각 Q 항목: `CHANGELOG.md`에 라운드별 상세 기록
 
 ## 남은 사용자 작업
 
-`TODO.md` 참고 — Claude API Key 및 3-tier 모델 ID(classification/deep_analysis/future)
-확정이 최우선(TASK-009), 이어서 Google/n8n/Gmail/Telegram 계정 준비 및 Knowledge Base
-실제 리서치(우선순위 확정됨).
+`TODO.md` 참고 — 구조/테스트는 Mock 기반으로 전부 완료됐다. 실제 "동작"으로 전환하려면
+Claude API Key/모델 ID 3종, Google/n8n 계정, Gmail/Telegram 계정을 사용자가 준비해야
+한다. Knowledge Base 실제 리서치도 여전히 남아 있다(우선순위 확정됨).

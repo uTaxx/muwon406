@@ -142,6 +142,7 @@ def test_claude_risk_analysis_output_example_validates():
         "facts": ["샘플 사실"],
         "significance": "high",
         "mission_category": ["risk_management"],
+        "intelligence_categories": ["litigation"],
         "lx_impact": [],
         "actions": [],
         "confidence": "medium",
@@ -151,10 +152,49 @@ def test_claude_risk_analysis_output_example_validates():
     jsonschema.validate(instance=example, schema=schema)
 
 
+def test_claude_risk_analysis_output_requires_intelligence_categories():
+    # Architect Review Round 4 Q2: risk_analysis_output에서도 intelligence_categories 필수
+    schema = _schema("claude_output.schema.json")
+    example = {
+        "facts": ["샘플 사실"],
+        "significance": "high",
+        "mission_category": ["risk_management"],
+        "lx_impact": [],
+        "actions": [],
+        "confidence": "medium",
+        "evidence": ["https://example.com/a"],
+        "unknowns": [],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=example, schema=schema)
+
+
 def test_valid_quick_company_scan_fixture_passes():
     schema = _schema("quick_company_scan.schema.json")
     data = _load_json(FIXTURES_DIR / "quick_company_scan_valid.json")
     jsonschema.validate(instance=data, schema=schema)
+
+
+def test_quick_company_scan_core_only_is_sufficient():
+    # Architect Review Round 4 Q3: Pilot은 Core 7개 + meta만으로 보고서 생성 가능해야 한다
+    schema = _schema("quick_company_scan.schema.json")
+    data = _load_json(FIXTURES_DIR / "quick_company_scan_core_only.json")
+    jsonschema.validate(instance=data, schema=schema)
+    advanced_fields = [
+        "manufacturing", "value_chain", "customer", "capital_market", "investment_multiple",
+        "comparable_companies", "growth_strategy", "government_exposure", "risk_assessment",
+        "opportunity_assessment", "investment_recommendation", "estimated_valuation",
+        "synergy_analysis",
+    ]
+    assert not any(field in data for field in advanced_fields)
+
+
+def test_quick_company_scan_missing_core_field_fails():
+    schema = _schema("quick_company_scan.schema.json")
+    data = _load_json(FIXTURES_DIR / "quick_company_scan_core_only.json")
+    del data["competitor"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=data, schema=schema)
 
 
 def test_quick_company_scan_requires_at_least_one_reference_source():

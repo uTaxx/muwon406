@@ -8,6 +8,9 @@
 #   Master Pipeline에 흡수되어 결번(deprecated) 상태로 영구히 남는다 — 다른 워크플로우에
 #   재사용하지 않는다.
 #
+# Architect Review Round 4 Q1(2026-08-05) / docs/decisions/ADR-009-workflow-lifecycle-policy.md:
+#   모든 Workflow ID는 Active/Deprecated/Archived 3단계 Life Cycle을 가진다.
+#
 # 모든 워크플로우는 기본 active: false. 실제 배포/활성화는 TASK-013 완료 후 TASK-008
 # (자동배포 도구, 후순위화)에서 사용자 승인 후 진행한다.
 
@@ -19,6 +22,7 @@ workflows:
     depends_on: []
     active: false
     activation_order: 1
+    lifecycle_stage: active
   - workflow_id: WF-P08
     file: n8n/workflows/WF-P08-source-health.json
     name: LCIP - Source Health
@@ -26,6 +30,7 @@ workflows:
     depends_on: []
     active: false
     activation_order: 2
+    lifecycle_stage: active
   - workflow_id: WF-P09
     file: n8n/workflows/WF-P09-cost-guard.json
     name: LCIP - Cost Guard
@@ -33,6 +38,7 @@ workflows:
     depends_on: []
     active: false
     activation_order: 2
+    lifecycle_stage: active
   - workflow_id: WF-P10
     file: n8n/workflows/WF-P10-natural-language-admin.json
     name: LCIP - Natural Language Admin
@@ -40,6 +46,7 @@ workflows:
     depends_on: []
     active: false
     activation_order: 3
+    lifecycle_stage: active
   - workflow_id: WF-P99
     file: n8n/workflows/WF-P99-error-handler.json
     name: LCIP - Error Handler
@@ -47,22 +54,32 @@ workflows:
     depends_on: []
     active: false
     activation_order: 0
+    lifecycle_stage: active
 
-# 결번(WF-P02~WF-P07)은 Master Pipeline에 흡수된 舊 워크플로우 번호이며, ADR-008에 따라
-# 다른 역할에 재사용하지 않는다. Enterprise 전환 시 원래 의미 그대로 복원한다.
+# 결번(WF-P02~WF-P07)은 Master Pipeline에 흡수된 舊 워크플로우 번호이며, ADR-008/ADR-009에
+# 따라 다른 역할에 재사용하지 않는다. lifecycle_stage: deprecated — Enterprise 전환 시 원래
+# 의미 그대로 active로 복원 가능 (deprecated -> archived 전이는 분기 검토에서 사람이 결정).
 deprecated_workflow_ids:
   - id: WF-P02
     original_role: News Collector
+    lifecycle_stage: deprecated
   - id: WF-P03
     original_role: Public Source Collector
+    lifecycle_stage: deprecated
   - id: WF-P04
     original_role: Relevance Classifier
+    lifecycle_stage: deprecated
   - id: WF-P05
     original_role: Risk Analysis
+    lifecycle_stage: deprecated
   - id: WF-P06
     original_role: Dashboard Builder
+    lifecycle_stage: deprecated
   - id: WF-P07
     original_role: Notification
+    lifecycle_stage: deprecated
+
+archived_workflow_ids: []
 
 # 활성화 순서 (03_BUILD_SPECIFICATION.md §22 원안을 ADR-007 구조에 맞게 축약):
 # 0. WF-P99 Error Handler

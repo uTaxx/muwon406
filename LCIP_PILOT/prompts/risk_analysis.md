@@ -33,11 +33,14 @@ default_model_id: null
    계산식: `인당 평균배상액 = 총 배상액 ÷ 원고 수` (양쪽 다 있을 때만).
 4. `lx_impact`는 LX Hausys Knowledge Base(Value Chain, Company DNA)에 실제로 근거가 있을
    때만 작성한다. 근거 없는 단정 금지 — 불확실하면 `unknowns`에 남긴다.
-5. `mission_category`(배열)와 `mission_subcategory`(배열)는 `knowledge/MISSION_FRAMEWORK.md`
-   기준으로 판단한다. 하나의 기사가 미래준비·리스크관리 두 축에 동시에 해당하면 둘 다
-   포함한다 (Architect Review Round 3 Q3). `intelligence_categories`는
-   `knowledge/INTELLIGENCE_TAXONOMY.md` 19개 카테고리 중 해당하는 전부를 매핑한다
-   (TASK-004E).
+5. `mission_category`(배열, 전략 관점: 미래준비/리스크관리)와 `mission_subcategory`(배열)는
+   `knowledge/MISSION_FRAMEWORK.md` 기준으로 판단한다. 하나의 기사가 두 축에 동시에
+   해당하면 둘 다 포함한다 (Architect Review Round 3 Q3). `intelligence_categories`(배열,
+   도메인 분류: Government/Technology/Investment/Regulation/Litigation 등)는
+   `knowledge/INTELLIGENCE_TAXONOMY.md` 19개 카테고리 중 해당하는 전부를 매핑하며 **필수다**
+   (Architect Review Round 4 Q2 — `risk_analysis_output`에서도 필수로 승격). `mission_category`
+   (전략 관점)와 `intelligence_categories`(도메인 분류)는 서로 독립적인 축이므로 둘 다
+   채운다.
 6. 분석 절차는 `knowledge/ANALYSIS_FRAMEWORK.md`를 따른다 (Knowledge Taxonomy 매핑 →
    Mission 매핑 → significance 판단 → lx_impact → actions → unknowns).
 7. `significance`는 `knowledge/STRATEGY_PLAYBOOK.md` §2의 긴급/중요/참고 기준을 따른다.

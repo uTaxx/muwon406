@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Google News - engineered stone silicosis</title>
+    <link>https://news.google.com/rss/search?q=engineered+stone+silicosis</link>
+    <description>Google News search results</description>
+    <item>
+      <title>Engineered stone silicosis lawsuit filed in California court</title>
+      <link>https://example.com/news/silicosis-lawsuit-california</link>
+      <pubDate>Thu, 30 Jul 2026 09:00:00 GMT</pubDate>
+      <source url="https://example.com">Example News</source>
+      <description>A new lawsuit was filed against engineered stone manufacturers.</description>
+    </item>
+    <item>
+      <title>Local weather forecast for the coming week</title>
+      <link>https://example.com/news/weather-forecast</link>
+      <pubDate>Thu, 30 Jul 2026 08:00:00 GMT</pubDate>
+      <source url="https://example.com">Example News</source>
+      <description>Sunny with a chance of rain on Friday.</description>
+    </item>
+  </channel>
+</rss>
