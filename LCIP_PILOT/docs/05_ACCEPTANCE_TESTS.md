@@ -44,14 +44,19 @@ TASK는 여기 나열된 조건을 모두 통과해야 "완료"로 보고할 수
 
 ## TASK-007 n8n Workflow Scaffold
 
-> Architect Review Q4(2026-08-05)로 11개 → 5개 워크플로우로 통합됨
-> (`docs/decisions/ADR-007-n8n-workflow-consolidation.md`). 완료조건 자체는 동일하게 적용.
+> Architect Review Round 2 Q4(2026-08-05)로 11개 → 5개 워크플로우로 통합됨
+> (`docs/decisions/ADR-007-n8n-workflow-consolidation.md`). Round 3 Q1로 Source
+> Health/Cost Guard/NL Admin은 원래 번호(WF-P08/P09/P10)를 유지한다
+> (`docs/decisions/ADR-008-workflow-id-policy.md`). 완료조건 자체는 동일하게 적용.
 
-- [ ] `n8n/workflows/*.json` 5개 파일(Master Pipeline, Source Health, Cost Guard,
-      Natural Language Admin, Error Handler) 모두 유효한 JSON
+- [ ] `n8n/workflows/*.json` 5개 파일(WF-P01 Master Pipeline, WF-P08 Source Health,
+      WF-P09 Cost Guard, WF-P10 Natural Language Admin, WF-P99 Error Handler) 모두 유효한
+      JSON
 - [ ] 전부 `"active": false`
 - [ ] Credential은 이름(placeholder)만 참조, ID 하드코딩 없음
 - [ ] 각 워크플로우에 Manual Trigger 노드와 Error 분기(WF-P99 참조 또는 자체 처리) 포함
+- [ ] Workflow ID가 이전 라운드에서 재배정된 적이 있어도 최종적으로는 원래 번호로 복원됨
+      (ADR-008)
 - [ ] `pytest tests/test_n8n_json.py` 통과
 
 ## TASK-004A Knowledge Foundation Builder
@@ -68,7 +73,33 @@ TASK는 여기 나열된 조건을 모두 통과해야 "완료"로 보고할 수
       `KNOWLEDGE_POLICY.md`, `MISSION_FRAMEWORK.md` 5개 파일 모두 존재
 - [ ] `MISSION_FRAMEWORK.md`에 미래준비/리스크관리 두 축과 서브카테고리 정의 포함
 - [ ] `schemas/intelligence.schema.json`·`schemas/claude_output.schema.json`의
-      `mission_subcategory` enum이 `MISSION_FRAMEWORK.md`와 일치
+      `mission_category`/`mission_subcategory`가 배열이며 `MISSION_FRAMEWORK.md`와 enum 일치
+      (Round 3 Q3로 배열화)
+
+## TASK-004C Knowledge Governance
+
+- [ ] `knowledge/KNOWLEDGE_GOVERNANCE.md`에 10개 항목(Version/Review Cycle/Confidence
+      Rule/Citation Rule/Conflict Resolution/Evidence Priority/Public Info Policy/Last
+      Verified Policy/Archive Policy/Quality Score) 전부 존재
+- [ ] `scripts/knowledge_quality.py`가 §10 공식을 그대로 구현하고 0~100% 범위 값을 출력
+- [ ] `pytest tests/test_knowledge_quality.py` 통과
+
+## TASK-004D Quick Company Scan Framework
+
+- [ ] `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`에 20개 항목 전부 정의
+- [ ] `schemas/quick_company_scan.schema.json` 존재, `reference_sources` minItems 1
+- [ ] `investment_recommendation.signal`이 4개 절차적 신호 enum으로 제한(투자 조언 아님을
+      명시)
+- [ ] `prompts/quick_scan.md`가 20개 항목 출력 구조로 갱신됨
+- [ ] `pytest tests/test_schema.py`의 quick_company_scan 관련 테스트 통과
+
+## TASK-004E Corporate Intelligence Taxonomy
+
+- [ ] `knowledge/INTELLIGENCE_TAXONOMY.md`에 19개 도메인 카테고리 전부 정의
+- [ ] `schemas/intelligence.schema.json`(필수 필드), `schemas/claude_output.schema.json`
+      (relevance_output 필수 필드)에 `intelligence_categories` 반영, enum이 Taxonomy와 일치
+- [ ] `schemas/google_sheets_columns.json`의 INTELLIGENCE_DB에 `intelligence_categories`
+      컬럼 존재
 
 ## 공통 (모든 TASK)
 

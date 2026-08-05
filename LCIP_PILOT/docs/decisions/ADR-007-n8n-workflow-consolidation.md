@@ -20,12 +20,18 @@
 
 ### 통합 후 구조 (5개 워크플로우)
 
+> **Workflow ID 표기 갱신 (2026-08-05, ADR-008 반영)**: 최초 통합 직후에는 남은 5개에
+> `WF-P01~P04`로 번호를 촘촘히 재배정했었으나, Architect Review Round 3(Q1)에서 "Workflow
+> ID는 영구 식별자이며 재배정하지 않는다"는 원칙이 확정되어 Source Health/Cost Guard/
+> Natural Language Admin은 **원래 번호(WF-P08/P09/P10)로 되돌렸다**. 상세는
+> `docs/decisions/ADR-008-workflow-id-policy.md` 참고. 아래 표는 최종(현재) 상태를 반영한다.
+
 | 파일 | 이름 | 트리거 | 비고 |
 |---|---|---|---|
 | `WF-P01-master-pipeline.json` | LCIP - Master Pipeline | Schedule(시간) + Manual | Config Load → News Collect → Rule Filter → AI Analyze → Dashboard → Notification → Logging → Finish를 단일 워크플로우 내 노드 체인으로 수행 |
-| `WF-P02-source-health.json` | LCIP - Source Health | Schedule(6시간) + Manual | 기존 WF-P08과 동일 역할, 독립 스케줄 유지 |
-| `WF-P03-cost-guard.json` | LCIP - Cost Guard | Sub-workflow + Manual | 기존 WF-P09과 동일 역할, Master Pipeline 및 다른 워크플로우에서 필요 시 호출 |
-| `WF-P04-natural-language-admin.json` | LCIP - Natural Language Admin | Manual (관리자 수동 실행) | 기존 WF-P10과 동일 역할, 자동 스케줄 없음 → 실행 횟수에 영향 없음 |
+| `WF-P08-source-health.json` | LCIP - Source Health | Schedule(6시간) + Manual | 원래 번호 유지, 독립 스케줄 유지 |
+| `WF-P09-cost-guard.json` | LCIP - Cost Guard | Sub-workflow + Manual | 원래 번호 유지, Master Pipeline 및 다른 워크플로우에서 필요 시 호출 |
+| `WF-P10-natural-language-admin.json` | LCIP - Natural Language Admin | Manual (관리자 수동 실행) | 원래 번호 유지, 자동 스케줄 없음 → 실행 횟수에 영향 없음 |
 | `WF-P99-error-handler.json` | LCIP - Error Handler | Error Trigger + Manual | 변경 없음 |
 
 ### 폐기(병합)된 개별 워크플로우

@@ -56,9 +56,11 @@ estimated_cost_impact, risks, requires_approval, status`. `status`는
 
 Master Pipeline의 Rule Filter/AI Analyze 단계(舊 WF-P04 Relevance Classifier / WF-P05 Risk
 Analysis, ADR-007로 통합)의 공용 출력 포맷 검증 스키마.
-relevance: `relevant, relevance_score, mission, mission_subcategory, related_companies, reason, needs_deep_analysis`.
-risk analysis: `facts, significance, mission_subcategory, lx_impact, actions, confidence, evidence, unknowns`.
-`mission_subcategory`는 Architect Review Q3(2026-08-05) 반영, `knowledge/MISSION_FRAMEWORK.md` 기준.
+relevance: `relevant, relevance_score, mission_category[], mission_subcategory[], intelligence_categories[], related_companies, reason, needs_deep_analysis`.
+risk analysis: `facts, significance, mission_category[], mission_subcategory[], intelligence_categories[], lx_impact, actions, confidence, evidence, unknowns`.
+`mission_category`/`mission_subcategory`는 Round 2 Q3에서 도입, Round 3 Q3로 배열화.
+`intelligence_categories`는 Round 3 TASK-004E, `knowledge/INTELLIGENCE_TAXONOMY.md` 기준
+(relevance_output에서는 필수).
 
 ---
 
@@ -79,7 +81,8 @@ ARTICLE_DB, INTELLIGENCE_DB, SOURCE_HEALTH, COST_LOG)는 Blueprint §6 / TASK-00
 - **CHANGE_LOG**: `change_id, entity_type, entity_id, before_version, after_version,
   change_request_id, applied_at, change_summary, rollback_version, implemented_by`
 
-`INTELLIGENCE_DB`에는 `mission_subcategory` 컬럼이 추가되었다 (Architect Review Q3).
+`INTELLIGENCE_DB`에는 `mission_subcategory`(Round 2 Q3), `intelligence_categories`
+(Round 3 TASK-004E) 컬럼이 추가되었다.
 
 ---
 
@@ -96,6 +99,7 @@ ARTICLE_DB, INTELLIGENCE_DB, SOURCE_HEALTH, COST_LOG)는 Blueprint §6 / TASK-00
 | `sheet_structure.yaml` | Google Sheets 11개 탭·컬럼 정의 (§3 반영, 전부 confirmed) |
 | `workflow_registry.yaml` | n8n 워크플로우 5개(ADR-007) ID·이름·의존관계·기본 active 상태 |
 | `model_pricing.yaml` | Claude 모델별 단가 Registry (TASK-015 Cost Guard용, 하드코딩 금지 원칙 충족) |
+| `model_registry.yaml` | Claude 모델 tier(classification/deep_analysis/future) Registry — 환경변수→Registry→Prompt 순 조회 (Round 3 Q4) |
 
 모든 Config 값은 `scripts/validate_config.py`로 YAML 문법·필수값·ID 중복을 검증한다.
 
@@ -115,3 +119,15 @@ TASK-001~007 검토 후 Architect Review로 아래 결정이 추가되었다. �
 | Q6 | Knowledge 파일 우선순위 및 출처 우선순위 확정 | `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/SOURCE_PRIORITY.md` |
 | Q7 | Dashboard Mode1(Single HTML, 기본)/Mode2(분리 Export) 이원화 | `scripts/build_dashboard.py` |
 | 추가 | TASK-004A(Knowledge Foundation Builder), TASK-004B(Corporate Intelligence Framework) 신설 | `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/MISSION_FRAMEWORK.md` 등 5개 신규 문서 |
+
+### Round 3 (2026-08-05, 같은 날 2차 검토)
+
+| Q | 결정 요약 | 근거 문서 |
+|---|---|---|
+| Q1 | Workflow ID는 영구 식별자 — Round 2의 WF-P02~P04 재배정을 원복, WF-P08/P09/P10 유지 | `decisions/ADR-008-workflow-id-policy.md` |
+| Q2 | Natural Language Admin은 Master Pipeline에 미포함 유지 (기존 판단 승인) | `decisions/ADR-007-n8n-workflow-consolidation.md` |
+| Q3 | `mission_category`/`mission_subcategory`를 Pilot부터 배열(Array)로 설계 | `schemas/intelligence.schema.json`, `schemas/claude_output.schema.json`, `knowledge/MISSION_FRAMEWORK.md` |
+| Q4 | Model Registry 신설, 모델 조회 순서 = 환경변수→Registry→Prompt | `config/model_registry.yaml`, `scripts/claude_client.py:get_model_name()` |
+| Q5 | 회사 프로필 Knowledge 문서는 16계층 전부 유지, 해당없음은 N/A 표기 (삭제 금지) | `knowledge/LX_HOLDINGS_CONTEXT.md`, `knowledge/KNOWLEDGE_POLICY.md` §2.1 |
+| 추가 | TASK-004C(Knowledge Governance), TASK-004D(Quick Company Scan Framework), TASK-004E(Corporate Intelligence Taxonomy) 신설 | `knowledge/KNOWLEDGE_GOVERNANCE.md`, `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md` + `schemas/quick_company_scan.schema.json`, `knowledge/INTELLIGENCE_TAXONOMY.md` |
+| 우선순위 변경 | TASK-004C→004D→004E→TASK-009(이하 Round 2 Q5 순서 유지) | `TODO.md`, `CLAUDE.md` |

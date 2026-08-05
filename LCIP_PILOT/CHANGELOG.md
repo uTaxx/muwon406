@@ -5,6 +5,50 @@
 
 ## [Unreleased]
 
+### Added / Changed — Architect Review Round 3 반영 (2026-08-05, 3차)
+
+ChatGPT Architect Review Round 3(Q1~Q5 + TASK-004C/D/E 추가 지시) 승인 및 반영. Knowledge
+Layer를 TASK-009보다 먼저 완성한다는 방향 전환. 외부 API 호출 없음.
+
+- **Q1 (ADR-008)**: Workflow ID는 영구 식별자 — Round 2에서 재배정했던
+  `WF-P02/03/04`를 원래 번호 `WF-P08/09/10`로 원복. `docs/decisions/ADR-008-workflow-id-policy.md`
+  신규 작성, `config/workflow_registry.yaml`에 결번(WF-P02~P07) 명시.
+- **Q2**: Natural Language Admin을 Master Pipeline에 포함하지 않는 기존 판단 승인 (변경 없음).
+- **Q3**: `mission`(단일값) → `mission_category`(배열), `mission_subcategory`를 배열로
+  변경 — 기사 하나가 복수 축에 걸치는 경우를 처음부터 지원. `schemas/intelligence.schema.json`,
+  `schemas/claude_output.schema.json`, `schemas/google_sheets_columns.json`,
+  `tests/fixtures/*`, `prompts/*.md`, `knowledge/MISSION_FRAMEWORK.md`,
+  `knowledge/ANALYSIS_FRAMEWORK.md` 전부 동기화. 다축 케이스 검증용 fixture
+  `intelligence_valid_multi_mission.json` 추가.
+- **Q4**: `config/model_registry.yaml` 신설 (classification/deep_analysis/future 3-tier,
+  각각 Haiku/Sonnet/Opus 권장). `scripts/claude_client.py:get_model_name()`을
+  환경변수→Registry→Prompt embedded fallback 3단계 조회로 재작성. `config/cost_policy.yaml`은
+  모델 tier 관리를 model_registry.yaml로 위임.
+- **Q5**: 회사 프로필 Knowledge 문서는 16계층 Taxonomy를 예외 없이 전부 포함 — 해당 없는
+  계층은 삭제하지 않고 `N/A`로 표기. `knowledge/LX_HOLDINGS_CONTEXT.md` 전면 재작성(6개
+  계층 N/A 명시). `knowledge/KNOWLEDGE_POLICY.md` §2.1 "동일 Template 원칙" 추가.
+- **TASK-004C (신규) Knowledge Governance**: `knowledge/KNOWLEDGE_GOVERNANCE.md` 작성
+  (Version/Review Cycle/Confidence Rule/Source Citation Rule/Conflict Resolution/Evidence
+  Priority/Public Information Policy/Last Verified Policy/Archive Policy/Knowledge Quality
+  Score 10개 규칙). `scripts/knowledge_quality.py` 신규 — §10 공식을 그대로 구현해 회사
+  프로필 문서의 완성도를 정량 측정.
+- **TASK-004D (신규) Quick Company Scan Framework**: `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`
+  20개 항목(Company Overview~Reference Sources) 정의, `schemas/quick_company_scan.schema.json`
+  신설, `prompts/quick_scan.md`를 20개 항목 출력 구조로 확장. `investment_recommendation`은
+  투자 조언이 아닌 절차적 스크리닝 신호(4개 enum)로 설계, `estimated_valuation`은 공개 배수
+  없으면 null 강제.
+- **TASK-004E (신규) Corporate Intelligence Taxonomy**: `knowledge/INTELLIGENCE_TAXONOMY.md`
+  19개 도메인 카테고리(Government~Macro) 정의. `intelligence_categories` 필드를
+  `schemas/intelligence.schema.json`(필수), `schemas/claude_output.schema.json`의
+  relevance_output(필수)/risk_analysis_output(선택), `schemas/google_sheets_columns.json`의
+  INTELLIGENCE_DB에 반영.
+- 우선순위 변경: TASK-004C→004D→004E를 TASK-009보다 먼저 완료(이번 라운드에서 전부 완료).
+  `TODO.md`/`CLAUDE.md` 갱신.
+- 테스트: `tests/test_knowledge_templates.py`(3건), `tests/test_knowledge_quality.py`(6건),
+  `tests/test_claude_client.py`에 Model Registry 테스트 6건 추가, `tests/test_schema.py`에
+  quick_company_scan/다축 mission/intelligence_categories 테스트 추가. 총 80개 테스트 전부
+  PASS.
+
 ### Changed — Architect Review 반영 (2026-08-05, 2차)
 
 ChatGPT Architect Review(Q1~Q7) 승인 및 지시 반영. TASK-008 이전 정리 라운드. 외부 API

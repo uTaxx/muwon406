@@ -1,0 +1,19 @@
+{
+  "intelligence_id": "INT-20260805-0003",
+  "article_ids": ["ART-20260805-0001"],
+  "mission_category": ["risk_management", "future_readiness"],
+  "mission_subcategory": ["regulatory", "technology"],
+  "intelligence_categories": ["regulation", "technology"],
+  "fact_summary": "규제 강화가 동시에 저실리카 제품 기술 전환 기회로 해석되는 샘플",
+  "verified_facts": ["규제 초안이 공청회 단계에 있다."],
+  "ai_interpretation": ["경쟁사 대비 기술 전환 여지가 있다."],
+  "ai_inference": [],
+  "lx_impact": [],
+  "recommended_actions": ["기술 로드맵 검토"],
+  "unknowns": [],
+  "confidence_score": "low",
+  "evidence": ["https://example.com/original-article"],
+  "created_at": "2026-07-30T12:00:00Z",
+  "prompt_version": "0.1.0",
+  "knowledge_version": "0.1"
+}

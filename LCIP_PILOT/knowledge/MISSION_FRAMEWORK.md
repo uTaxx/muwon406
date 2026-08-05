@@ -13,16 +13,17 @@ owner: Architect Review (2026-08-05)
 
 # Mission Framework
 
-> TASK-004B 산출물. LCIP Pilot의 모든 판단 기준이 되는 최상위 분류 체계다. WF-P04(Rule
-> Filter)/WF-P05(AI Analyze) 단계와 `schemas/intelligence.schema.json` /
-> `schemas/claude_output.schema.json`의 `mission` / `mission_subcategory` 필드가 이 문서를
-> 그대로 따른다.
+> TASK-004B 산출물. LCIP Pilot의 모든 판단 기준이 되는 최상위 분류 체계다. Master Pipeline의
+> Rule Filter/AI Analyze 단계(舊 WF-P04/WF-P05)와 `schemas/intelligence.schema.json` /
+> `schemas/claude_output.schema.json`의 `mission_category` / `mission_subcategory` 필드가
+> 이 문서를 그대로 따른다. **두 필드 모두 배열(Array)이다** (Architect Review Round 3 Q3) —
+> 기사 하나가 미래준비·리스크관리 두 축에 동시에 걸치는 경우가 흔하기 때문이다.
 
 ## 1. 원칙
 
 LCIP의 모든 판단(Article, Intelligence)은 반드시 다음 두 축 중 **하나 이상**에 매핑되어야
-한다. 어느 축에도 해당하지 않으면 관련성이 낮은 것으로 간주하고(WF-P04 Rule Filter 단계에서)
-버린다.
+한다 (`mission_category` 배열에 해당하는 축을 전부 담는다). 어느 축에도 해당하지 않으면
+관련성이 낮은 것으로 간주하고 Rule Filter 단계에서 버린다.
 
 ## 2. 미래준비 (`future_readiness`)
 
@@ -58,14 +59,18 @@ LCIP의 모든 판단(Article, Intelligence)은 반드시 다음 두 축 중 **�
 
 ## 4. TOP-0001(엔지니어드스톤·실리코시스)의 기본 매핑
 
-`config/topics.yaml`의 TOP-0001은 기본적으로 `mission: risk_management`이며, 세부적으로는
-`safety`(산업안전) 또는 `litigation`(소송) 또는 `regulatory`(세이프가드·관세 등 규제)로
-분류된다. 하나의 Article이 복수 서브카테고리에 걸칠 수 있으나(예: 소송이면서 동시에
-안전 이슈), `intelligence.schema.json`의 `mission_subcategory`는 Pilot 단계에서는 **가장
-핵심적인 단일 값**만 저장한다 (복수 태깅은 Enterprise 확장 시 배열로 전환 검토).
+`config/topics.yaml`의 TOP-0001은 기본적으로 `mission: risk_management`(Topic 레벨 설정,
+단일값 — Topic 자체의 주된 목적을 나타내므로 배열이 아니다)이며, 실제 수집되는 개별
+Article/Intelligence는 세부적으로 `safety`(산업안전), `litigation`(소송),
+`regulatory`(세이프가드·관세 등 규제) 중 하나 이상으로 분류된다. 하나의 Article이 복수
+서브카테고리·복수 미션 축에 동시에 걸칠 수 있으므로(예: 소송이면서 동시에 안전 이슈, 또는
+규제 강화이면서 동시에 기술전환 기회), `mission_category`와 `mission_subcategory` 둘 다
+**처음부터 배열**로 저장한다 — Pilot 단계에서 단일값으로 시작했다가 나중에 배열로 바꾸는
+것보다, 지금 배열로 설계하는 편이 훨씬 쉽다는 판단이다.
 
 ## 5. 분류 실패 시 처리
 
-원문만으로 `mission_subcategory`를 특정할 수 없으면 `null`로 두고 `unknowns`에 그 사실을
-남긴다. 임의로 서브카테고리를 추정하지 않는다 (`PLATFORM_CONSTITUTION.md`의 사실·추론 분리
-원칙과 동일).
+원문만으로 `mission_subcategory`를 특정할 수 없으면 빈 배열로 두고 `unknowns`에 그 사실을
+남긴다. `mission_category`는 최소 1개 이상 필요하므로(스키마 `minItems: 1`), 관련성 자체가
+불확실하면 애초에 Rule Filter/AI Analyze 대상에서 제외한다. 임의로 서브카테고리를 추정하지
+않는다 (`PLATFORM_CONSTITUTION.md`의 사실·추론 분리 원칙과 동일).

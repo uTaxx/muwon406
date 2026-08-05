@@ -41,11 +41,15 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
 2. 수정 전 현재 폴더 구조와 기존 파일을 검사한다.
 3. 기존 파일이 있으면 덮어쓰지 말고 diff와 migration 계획을 제시한다.
 4. Task 순서는 `docs/03_BUILD_SPECIFICATION.md`의 TASK-001~007을 기본으로 하되, Architect
-   Review(2026-08-05)로 TASK-008 이후 순서가 다음과 같이 조정되었다: TASK-004A(Knowledge
-   Foundation Builder) → TASK-004B(Corporate Intelligence Framework) → **TASK-009(Claude
-   API) → TASK-010(News Collection) → TASK-011(Analysis) → TASK-012(Dashboard) →
-   TASK-013(Notification) → TASK-008(n8n 자동배포, 마지막)**. TASK-008은 실제 Workflow
-   로직이 완성된 뒤 자동배포 도구를 만드는 것으로 후순위화되었다 (`TODO.md` 참고).
+   Review(2026-08-05, Round 2/3)로 TASK-008 이후 순서가 다음과 같이 조정되었다:
+   TASK-004A(Knowledge Foundation Builder) → TASK-004B(Corporate Intelligence Framework)
+   → **TASK-004C(Knowledge Governance) → TASK-004D(Quick Company Scan Framework) →
+   TASK-004E(Corporate Intelligence Taxonomy) → TASK-009(Claude API) →
+   TASK-010(News Collection) → TASK-011(Analysis) → TASK-012(Dashboard) →
+   TASK-013(Notification) → TASK-008(n8n 자동배포, 마지막)**. Round 3 지시: "Knowledge
+   Layer가 완성되어야 Claude API의 분석 품질이 확보된다" — TASK-004C~E(Knowledge Layer)를
+   TASK-009보다 먼저 완료한다. TASK-008은 실제 Workflow 로직이 완성된 뒤 자동배포 도구를
+   만드는 것으로 후순위화되었다 (`TODO.md` 참고).
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -67,12 +71,14 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
 6. `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/MISSION_FRAMEWORK.md`,
    `knowledge/SOURCE_PRIORITY.md`, `knowledge/ANALYSIS_FRAMEWORK.md`,
    `knowledge/INVESTMENT_FRAMEWORK.md` — Corporate Intelligence Framework (TASK-004B)
-7. Knowledge 파일 우선순위(Architect Review Q6, `knowledge/KNOWLEDGE_POLICY.md` §4):
+7. `knowledge/KNOWLEDGE_GOVERNANCE.md`(TASK-004C), `knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md`
+   (TASK-004D), `knowledge/INTELLIGENCE_TAXONOMY.md`(TASK-004E) — Knowledge Engine 3종
+8. Knowledge 파일 우선순위(Architect Review Round 2 Q6, `knowledge/KNOWLEDGE_POLICY.md` §4):
    `LX_HAUSYS_COMPANY_DNA.md` → `LX_HAUSYS_VALUE_CHAIN.md` → `GROUP_RISK_MAP.md` →
    `GROUP_OPPORTUNITY_MAP.md` → `STRATEGY_PLAYBOOK.md` → `LX_HOLDINGS_CONTEXT.md` →
    `PLATFORM_CONSTITUTION.md`
-8. `schemas/*.json`
-9. `config/*.yaml`
+9. `schemas/*.json`
+10. `config/*.yaml`
 
 파일이 없으면 Blueprint 기준으로 템플릿을 생성하되, 임의의 기업 사실은 작성하지 않고 TODO와
 필요한 출처를 표시한다 (`knowledge/KNOWLEDGE_POLICY.md` §2~3의 16계층 Taxonomy와 서식을
@@ -103,7 +109,26 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
 - n8n 워크플로우는 `docs/decisions/ADR-007-n8n-workflow-consolidation.md`에 따라 Master
   Pipeline 구조로 통합되어 있다 (5개 파일: Master Pipeline, Source Health, Cost Guard,
   Natural Language Admin, Error Handler).
-- Claude 모델은 1차 분류에 Haiku 계열, 심층분석에 Sonnet 계열을 권장하며(Architect Review
-  Q3), 실제 모델 ID는 여전히 `.env`/Config로만 관리한다(하드코딩 금지 원칙 불변). Prompt는
-  Static Block(Knowledge/LX Context/Strategy Context/Header, 캐시 대상)과 Dynamic
-  Block(요청별 내용)으로 분리한다 (`prompts/*.md`, `scripts/claude_client.py` 참고).
+- Claude 모델은 1차 분류에 Haiku 계열, 심층분석에 Sonnet 계열, 미래준비 고품질 분석(Quick
+  Company Scan 등)에 Opus 계열을 권장한다. 실제 모델 ID는 `config/model_registry.yaml`이
+  단일 진실 공급원이며, 조회 순서는 환경변수(.env) → Registry → Prompt embedded fallback
+  이다(`scripts/claude_client.py:get_model_name()`, Architect Review Round 3 Q4). 코드
+  하드코딩 금지 원칙은 불변. Prompt는 Static Block(Knowledge/LX Context/Strategy
+  Context/Header, 캐시 대상)과 Dynamic Block(요청별 내용)으로 분리한다.
+- **Workflow ID는 영구 식별자이며 재배정하지 않는다** (`docs/decisions/ADR-008-workflow-id-policy.md`,
+  Architect Review Round 3 Q1). Source Health/Cost Guard/Natural Language Admin은 원래
+  번호(WF-P08/P09/P10)를 유지한다. WF-P02~WF-P07은 Master Pipeline에 흡수된 결번으로 영구
+  보존하며 다른 역할에 재사용하지 않는다.
+- `mission_category`/`mission_subcategory`/`intelligence_categories`는 Pilot 초기부터
+  **배열(Array)**로 설계한다 (Architect Review Round 3 Q3, TASK-004E) — 기사 하나가 여러
+  축·카테고리에 동시에 해당하는 경우가 흔하기 때문이다. `intelligence_categories`는
+  `knowledge/INTELLIGENCE_TAXONOMY.md`의 19개 도메인 카테고리를 따르며 목적 축
+  (`mission_category`)과는 독립적으로 함께 사용된다.
+- 회사 프로필류 Knowledge 문서(`LX_HAUSYS_COMPANY_DNA.md`, `LX_HOLDINGS_CONTEXT.md`, 향후
+  Quick Company Scan 산출물)는 16계층 Taxonomy를 예외 없이 동일하게 포함하며, 해당 없는
+  계층은 삭제하지 않고 `N/A`로 표기한다 (Architect Review Round 3 Q5,
+  `knowledge/KNOWLEDGE_POLICY.md` §2.1).
+- Knowledge Engine 3종(TASK-004C/D/E)이 추가되었다: `KNOWLEDGE_GOVERNANCE.md`(버전·검토주기·
+  신뢰도·인용·충돌해결·아카이브·품질점수 규칙, `scripts/knowledge_quality.py`로 측정),
+  `QUICK_COMPANY_SCAN_FRAMEWORK.md`(20항목, `schemas/quick_company_scan.schema.json`),
+  `INTELLIGENCE_TAXONOMY.md`(19개 도메인 카테고리).

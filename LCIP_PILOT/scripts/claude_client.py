@@ -32,17 +32,15 @@ class ClaudeCallResult:
     error: str | None = None
 
 
-def get_model_name(purpose: str) -> str:
-    """purpose: 'classification' | 'deep_analysis'. 모델명은 코드에 하드코딩하지 않는다."""
-    policy = load_yaml("config/cost_policy.yaml")
-    env_key = policy["models"][f"{purpose}_model_env"]
-    model = env_or_none(env_key)
-    if not model:
-        raise RuntimeError(
-            f"{env_key}가 .env에 설정되어 있지 않다. TASK-009에서 사용할 Claude 모델명을 "
-            "확정한 뒤 .env에 채워야 한다 (하드코딩 금지)."
-        )
-    return model
+def _frontmatter_field(text: str, field: str) -> str | None:
+    """prompts/*.md의 YAML frontmatter에서 `field:` 값을 읽는다. 없거나 null이면 None."""
+    for line in text.splitlines():
+        if line.strip().startswith(f"{field}:"):
+            value = line.split(":", 1)[1].strip()
+            if value in ("", "null", "~"):
+                return None
+            return value
+    return None
 
 
 def load_prompt(name: str) -> tuple[str, str]:
@@ -52,12 +50,49 @@ def load_prompt(name: str) -> tuple[str, str]:
     """
     path = PROMPTS_DIR / f"{name}.md"
     text = path.read_text(encoding="utf-8")
-    version = "unknown"
-    for line in text.splitlines():
-        if line.strip().startswith("prompt_version:"):
-            version = line.split(":", 1)[1].strip()
-            break
+    version = _frontmatter_field(text, "prompt_version") or "unknown"
     return text, version
+
+
+def load_model_registry() -> dict:
+    """config/model_registry.yaml을 로드한다 (Architect Review Round 3 Q4)."""
+    return load_yaml("config/model_registry.yaml")["tiers"]
+
+
+def get_model_name(purpose: str) -> str:
+    """purpose: 'classification' | 'deep_analysis' | 'future'.
+
+    모델명 조회 순서 (Architect Review Round 3 Q4, 하드코딩 금지 원칙 유지):
+      1. .env의 model_env 환경변수 (최우선 — 임시 override 등)
+      2. config/model_registry.yaml의 tiers.<purpose>.model_id (팀 표준 기본값)
+      3. tiers.<purpose>.used_by_prompts[0] 프롬프트 frontmatter의 default_model_id (최후 fallback)
+      4. 셋 다 없으면 명시적으로 에러 — 임의로 모델을 추측하지 않는다.
+    """
+    registry = load_model_registry()
+    if purpose not in registry:
+        raise ValueError(f"model_registry.yaml에 없는 purpose: {purpose}")
+    tier = registry[purpose]
+
+    env_key = tier["model_env"]
+    model = env_or_none(env_key)
+    if model:
+        return model
+
+    if tier.get("model_id"):
+        return tier["model_id"]
+
+    for prompt_name in tier.get("used_by_prompts", []):
+        prompt_text, _ = load_prompt(prompt_name)
+        default_model = _frontmatter_field(prompt_text, "default_model_id")
+        if default_model:
+            return default_model
+
+    raise RuntimeError(
+        f"'{purpose}' tier의 모델을 확인할 수 없다 — {env_key}(.env), "
+        f"config/model_registry.yaml의 tiers.{purpose}.model_id, "
+        f"prompts/*.md의 default_model_id가 전부 비어 있다. Anthropic Console에서 모델 ID를 "
+        "확정한 뒤 이 중 하나에 채워야 한다 (코드 하드코딩 금지)."
+    )
 
 
 def split_prompt_blocks(prompt_text: str) -> tuple[str, str]:
@@ -128,7 +163,9 @@ def call_claude_mocked(prompt_name: str, input_payload: dict) -> ClaudeCallResul
     mock_response = {
         "relevant": True,
         "relevance_score": 0.5,
-        "mission": "risk_management",
+        "mission_category": ["risk_management"],
+        "mission_subcategory": [],
+        "intelligence_categories": ["litigation"],
         "related_companies": [],
         "reason": "mock response — 실제 API 미연동 상태",
         "needs_deep_analysis": False,

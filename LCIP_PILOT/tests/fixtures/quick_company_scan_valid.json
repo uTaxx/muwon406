@@ -1,0 +1,29 @@
+{
+  "target_company": "Sample Materials Inc.",
+  "scan_date": "2026-08-05",
+  "company_overview": "샘플 기업 개요 (fixture, 실제 데이터 아님)",
+  "business_structure": ["샘플 사업부 A"],
+  "product_portfolio": ["샘플 제품 A"],
+  "manufacturing": [],
+  "value_chain": "샘플 Value Chain 요약",
+  "customer": ["B2B 건축자재 유통"],
+  "competitor": ["샘플 경쟁사 A"],
+  "financial_snapshot": [],
+  "capital_market": "비상장으로 추정 (미확인)",
+  "investment_multiple": null,
+  "comparable_companies": [],
+  "growth_strategy": [],
+  "government_exposure": [],
+  "risk_assessment": [],
+  "opportunity_assessment": [],
+  "lx_strategic_fit": "관련성 불명확 (fixture)",
+  "investment_recommendation": {
+    "signal": "insufficient_public_information",
+    "rationale": "공개 자료가 충분하지 않아 스크리닝 불가 (fixture 샘플)"
+  },
+  "estimated_valuation": null,
+  "synergy_analysis": [],
+  "reference_sources": ["https://example.com/sample-source"],
+  "unknowns": ["재무 정보 미확인"],
+  "confidence": "low"
+}

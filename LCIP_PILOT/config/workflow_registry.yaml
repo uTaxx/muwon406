@@ -1,8 +1,15 @@
 # LCIP Pilot — n8n Workflow Registry
-# Architect Review Q4(2026-08-05) / docs/decisions/ADR-007-n8n-workflow-consolidation.md 반영.
-# 03_BUILD_SPECIFICATION.md TASK-007 원안(11개 워크플로우)은 n8n Cloud Starter 실행 횟수
-# 최소화를 위해 5개로 통합되었다. 모든 워크플로우는 기본 active: false. 실제 배포/활성화는
-# TASK-013 완료 후 TASK-008(자동배포 도구, 후순위화)에서 사용자 승인 후 진행한다.
+# Architect Review Round 2 Q4(2026-08-05) / docs/decisions/ADR-007-n8n-workflow-consolidation.md:
+#   11개 워크플로우를 5개로 통합 (Master Pipeline + Source Health + Cost Guard +
+#   Natural Language Admin + Error Handler).
+# Architect Review Round 3 Q1(2026-08-05) / docs/decisions/ADR-008-workflow-id-policy.md:
+#   Workflow ID는 영구 식별자이므로 재배정하지 않는다. Source Health/Cost Guard/
+#   Natural Language Admin은 원래 번호(WF-P08/P09/P10)를 그대로 유지한다. WF-P02~WF-P07은
+#   Master Pipeline에 흡수되어 결번(deprecated) 상태로 영구히 남는다 — 다른 워크플로우에
+#   재사용하지 않는다.
+#
+# 모든 워크플로우는 기본 active: false. 실제 배포/활성화는 TASK-013 완료 후 TASK-008
+# (자동배포 도구, 후순위화)에서 사용자 승인 후 진행한다.
 
 workflows:
   - workflow_id: WF-P01
@@ -12,24 +19,24 @@ workflows:
     depends_on: []
     active: false
     activation_order: 1
-  - workflow_id: WF-P02
-    file: n8n/workflows/WF-P02-source-health.json
+  - workflow_id: WF-P08
+    file: n8n/workflows/WF-P08-source-health.json
     name: LCIP - Source Health
-    role: Source Registry 상태 점검 (舊 WF-P08, 독립 스케줄 유지)
+    role: Source Registry 상태 점검 (원래 번호 유지, 독립 스케줄)
     depends_on: []
     active: false
     activation_order: 2
-  - workflow_id: WF-P03
-    file: n8n/workflows/WF-P03-cost-guard.json
+  - workflow_id: WF-P09
+    file: n8n/workflows/WF-P09-cost-guard.json
     name: LCIP - Cost Guard
-    role: Claude usage 집계 및 70/90/100% 단계 통제 (舊 WF-P09, Sub-workflow로 호출)
+    role: Claude usage 집계 및 70/90/100% 단계 통제 (원래 번호 유지, Sub-workflow로 호출)
     depends_on: []
     active: false
     activation_order: 2
-  - workflow_id: WF-P04
-    file: n8n/workflows/WF-P04-natural-language-admin.json
+  - workflow_id: WF-P10
+    file: n8n/workflows/WF-P10-natural-language-admin.json
     name: LCIP - Natural Language Admin
-    role: 자연어 요청 -> Change Request 초안 생성 (舊 WF-P10, 관리자 수동 실행 전용 — 자동 실행 횟수에 영향 없음)
+    role: 자연어 요청 -> Change Request 초안 생성 (원래 번호 유지, 관리자 수동 실행 전용 — 자동 실행 횟수에 영향 없음)
     depends_on: []
     active: false
     activation_order: 3
@@ -41,8 +48,24 @@ workflows:
     active: false
     activation_order: 0
 
+# 결번(WF-P02~WF-P07)은 Master Pipeline에 흡수된 舊 워크플로우 번호이며, ADR-008에 따라
+# 다른 역할에 재사용하지 않는다. Enterprise 전환 시 원래 의미 그대로 복원한다.
+deprecated_workflow_ids:
+  - id: WF-P02
+    original_role: News Collector
+  - id: WF-P03
+    original_role: Public Source Collector
+  - id: WF-P04
+    original_role: Relevance Classifier
+  - id: WF-P05
+    original_role: Risk Analysis
+  - id: WF-P06
+    original_role: Dashboard Builder
+  - id: WF-P07
+    original_role: Notification
+
 # 활성화 순서 (03_BUILD_SPECIFICATION.md §22 원안을 ADR-007 구조에 맞게 축약):
 # 0. WF-P99 Error Handler
 # 1. WF-P01 Master Pipeline (Config Load 포함)
-# 2. WF-P02 Source Health, WF-P03 Cost Guard
-# 3. WF-P04 Natural Language Admin (관리자 필요 시)
+# 2. WF-P08 Source Health, WF-P09 Cost Guard
+# 3. WF-P10 Natural Language Admin (관리자 필요 시)

@@ -1,0 +1,35 @@
+# LCIP Pilot — Model Registry
+# Architect Review Round 3 Q4(2026-08-05).
+#
+# 모델명 참조 순서: 환경변수(.env) → Registry(이 파일) → Prompt(embedded fallback).
+#   1. .env의 model_env로 지정된 환경변수가 있으면 그 값을 최우선 사용한다 (임시 override 등).
+#   2. 없으면 이 파일의 model_id를 사용한다 (팀 표준 기본값).
+#   3. 그것도 비어 있으면(null) 해당 purpose를 사용하는 대표 prompt 파일의 frontmatter
+#      `default_model_id:` 값을 최후 fallback으로 사용한다.
+#   4. 셋 다 없으면 명시적으로 에러를 낸다 — 임의로 모델을 추측하지 않는다.
+#
+# 실제 모델 ID 문자열은 Config(이 파일)에서만 관리한다 (scripts/claude_client.py 등
+# 코드에는 하드코딩하지 않는다). tier_label은 "어느 급을 쓸지"에 대한 사람이 읽는 라벨이고,
+# model_id가 실제로 API 호출에 쓰이는 값이다.
+
+tiers:
+  classification:
+    tier_label: haiku
+    model_env: LCIP_CLASSIFICATION_MODEL
+    model_id: null  # TODO: Anthropic Console에서 최신 Haiku 계열 모델 ID 확정 후 채운다
+    used_by_prompts: [relevance_filter]
+    note: "1차 관련성 분류 — 저비용, 대량 호출"
+
+  deep_analysis:
+    tier_label: sonnet
+    model_env: LCIP_DEEP_ANALYSIS_MODEL
+    model_id: null  # TODO: Anthropic Console에서 최신 Sonnet 계열 모델 ID 확정 후 채운다
+    used_by_prompts: [risk_analysis, policy_analysis, daily_change, natural_language_admin]
+    note: "심층분석/규제분석/일일요약/자연어 관리자 — 품질과 비용의 균형"
+
+  future:
+    tier_label: opus
+    model_env: LCIP_FUTURE_READINESS_MODEL
+    model_id: null  # TODO: Anthropic Console에서 최신 Opus 계열 모델 ID 확정 후 채운다
+    used_by_prompts: [quick_scan]
+    note: "TASK-004D Quick Company Scan 등 고품질·저빈도 분석 전용. 미래준비 축 핵심 엔진 입력이므로 가장 높은 tier."

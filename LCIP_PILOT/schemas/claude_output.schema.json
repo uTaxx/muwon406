@@ -2,33 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lcip-pilot.local/schemas/claude_output.schema.json",
   "title": "ClaudeOutput",
-  "description": "Master Pipeline의 Rule Filter/AI Analyze 단계(舊 WF-P04 Relevance Classifier / WF-P05 Risk Analysis, ADR-007로 통합됨)에서 나오는 Claude API 응답 검증 스키마 — TASK-011 / DEVELOPMENT_MANUAL_REFERENCE.md §7 Step 4/5 기준. mission_subcategory는 knowledge/MISSION_FRAMEWORK.md 기준.",
+  "description": "Master Pipeline의 Rule Filter/AI Analyze 단계(舊 WF-P04 Relevance Classifier / WF-P05 Risk Analysis, ADR-007로 통합됨)에서 나오는 Claude API 응답 검증 스키마 — TASK-011 / DEVELOPMENT_MANUAL_REFERENCE.md §7 Step 4/5 기준. mission_category/mission_subcategory는 knowledge/MISSION_FRAMEWORK.md 기준, intelligence_categories는 knowledge/INTELLIGENCE_TAXONOMY.md(TASK-004E) 기준이며 전부 Architect Review Round 3에 따라 배열이다.",
   "oneOf": [
     { "$ref": "#/$defs/relevance_output" },
     { "$ref": "#/$defs/risk_analysis_output" }
   ],
   "$defs": {
+    "mission_category": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["future_readiness", "risk_management"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
     "mission_subcategory": {
-      "type": ["string", "null"],
-      "enum": [
-        "ma", "carve_out", "bolt_on", "jv", "venture", "capital_market",
-        "technology", "new_business",
-        "product_liability", "environmental", "safety", "fx", "raw_material",
-        "supply_chain", "regulatory", "litigation", "policy", "esg",
-        null
-      ]
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ma", "carve_out", "bolt_on", "jv", "venture", "capital_market",
+          "technology", "new_business",
+          "product_liability", "environmental", "safety", "fx", "raw_material",
+          "supply_chain", "regulatory", "litigation", "policy", "esg"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "intelligence_categories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "government", "policy", "technology", "investment", "ma", "competitor",
+          "customer", "supplier", "raw_material", "esg", "product", "financial",
+          "capital_market", "risk", "opportunity", "litigation", "regulation",
+          "supply_chain", "macro"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
     },
     "relevance_output": {
       "type": "object",
       "required": [
-        "relevant", "relevance_score", "mission", "related_companies", "reason",
-        "needs_deep_analysis"
+        "relevant", "relevance_score", "mission_category", "intelligence_categories",
+        "related_companies", "reason", "needs_deep_analysis"
       ],
       "properties": {
         "relevant": { "type": "boolean" },
         "relevance_score": { "type": "number", "minimum": 0, "maximum": 1 },
-        "mission": { "type": "string", "enum": ["future_readiness", "risk_management"] },
+        "mission_category": { "$ref": "#/$defs/mission_category" },
         "mission_subcategory": { "$ref": "#/$defs/mission_subcategory" },
+        "intelligence_categories": { "$ref": "#/$defs/intelligence_categories" },
         "related_companies": { "type": "array", "items": { "type": "string" } },
         "reason": { "type": "string" },
         "needs_deep_analysis": { "type": "boolean" }
@@ -44,7 +68,9 @@
       "properties": {
         "facts": { "type": "array", "items": { "type": "string" } },
         "significance": { "type": "string" },
+        "mission_category": { "$ref": "#/$defs/mission_category" },
         "mission_subcategory": { "$ref": "#/$defs/mission_subcategory" },
+        "intelligence_categories": { "$ref": "#/$defs/intelligence_categories" },
         "lx_impact": { "type": "array", "items": { "type": "string" } },
         "actions": { "type": "array", "items": { "type": "string" } },
         "confidence": { "type": "string", "enum": ["low", "medium", "high"] },

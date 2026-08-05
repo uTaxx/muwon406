@@ -37,9 +37,9 @@
     "INTELLIGENCE_DB": {
       "status": "confirmed",
       "columns": [
-        "intelligence_id", "article_id", "mission", "mission_subcategory",
-        "related_company", "related_business", "fact_summary", "significance",
-        "lx_impact", "action", "confidence", "evidence_links", "created_at"
+        "intelligence_id", "article_id", "mission_category", "mission_subcategory",
+        "intelligence_categories", "related_company", "related_business", "fact_summary",
+        "significance", "lx_impact", "action", "confidence", "evidence_links", "created_at"
       ]
     },
     "SOURCE_HEALTH": {

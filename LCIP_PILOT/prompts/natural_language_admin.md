@@ -1,7 +1,7 @@
 ---
 prompt_id: natural_language_admin
 prompt_version: 0.2.0
-used_by: WF-P04-natural-language-admin (舊 WF-P10, ADR-007로 워크플로우 번호 재정렬)
+used_by: WF-P10-natural-language-admin (ADR-008에 따라 원래 번호 유지)
 output_schema: schemas/change_request.schema.json
 max_input_tokens: 8000
 max_output_tokens: 1200
@@ -23,7 +23,7 @@ cache_structure: static_block + dynamic_block (Architect Review Q3)
 2. 변경 전(`before`)/후(`after`) 값을 명확히 대비시킨다.
 3. 영향받는 워크플로우(`affected_workflows`)를 빠짐없이 나열한다 — ADR-007 통합 이후에는
    자동 파이프라인 변경 시 `WF-P01`(Master Pipeline) 하나만 표기한다. Source Health/Cost
-   Guard/Error Handler에 영향을 줄 때만 해당 워크플로우 ID(`WF-P02`/`WF-P03`/`WF-P99`)를
+   Guard/Error Handler에 영향을 줄 때만 해당 워크플로우 ID(`WF-P08`/`WF-P09`/`WF-P99`)를
    추가한다.
 4. 비용에 영향이 있는 변경(Topic 확대, 수집 주기 단축 등)은 `estimated_cost_impact`를
    `low/medium/high`로 표시한다.

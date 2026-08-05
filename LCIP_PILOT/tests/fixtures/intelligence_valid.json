@@ -1,7 +1,9 @@
 {
   "intelligence_id": "INT-20260805-0001",
   "article_ids": ["ART-20260805-0001"],
-  "mission": "risk_management",
+  "mission_category": ["risk_management"],
+  "mission_subcategory": ["litigation"],
+  "intelligence_categories": ["litigation", "product"],
   "fact_summary": "샘플 사실 요약",
   "verified_facts": ["원고 5명이 캘리포니아 법원에 소송을 제기했다."],
   "ai_interpretation": ["이 사건은 기존 소송 패턴과 유사하다."],

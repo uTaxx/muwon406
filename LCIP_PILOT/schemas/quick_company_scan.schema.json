@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/quick_company_scan.schema.json",
+  "title": "QuickCompanyScan",
+  "description": "TASK-004D Quick Company Scan Framework 출력 검증 스키마 (knowledge/QUICK_COMPANY_SCAN_FRAMEWORK.md 기준). 20개 항목 + 메타데이터. investment_recommendation은 투자 조언이 아니라 절차적 스크리닝 신호다. Pilot 범위에서는 아직 파이프라인에 연결되지 않았다 (Sprint 6 확장 대상).",
+  "type": "object",
+  "required": [
+    "target_company", "scan_date", "company_overview", "business_structure",
+    "product_portfolio", "manufacturing", "value_chain", "customer", "competitor",
+    "financial_snapshot", "capital_market", "investment_multiple", "comparable_companies",
+    "growth_strategy", "government_exposure", "risk_assessment", "opportunity_assessment",
+    "lx_strategic_fit", "investment_recommendation", "estimated_valuation",
+    "synergy_analysis", "reference_sources", "unknowns", "confidence"
+  ],
+  "properties": {
+    "target_company": {
+      "type": "string",
+      "minLength": 1,
+      "description": "사용자가 명시적으로 지정한 기업명. 임의 대상 추가 금지."
+    },
+    "scan_date": { "type": "string", "format": "date" },
+
+    "company_overview": { "type": "string" },
+    "business_structure": { "type": "array", "items": { "type": "string" } },
+    "product_portfolio": { "type": "array", "items": { "type": "string" } },
+    "manufacturing": { "type": "array", "items": { "type": "string" } },
+    "value_chain": { "type": "string" },
+    "customer": { "type": "array", "items": { "type": "string" } },
+    "competitor": { "type": "array", "items": { "type": "string" } },
+
+    "financial_snapshot": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "공개된 매출/영업이익/부채 등 스냅샷 사실만. 추정치 금지."
+    },
+    "capital_market": { "type": "string" },
+    "investment_multiple": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["metric", "value", "source_url"],
+        "properties": {
+          "metric": { "type": "string" },
+          "value": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "description": "공개된 배수만. 확인 안 되면 null (QUICK_COMPANY_SCAN_FRAMEWORK.md §3)."
+    },
+    "comparable_companies": { "type": "array", "items": { "type": "string" } },
+    "growth_strategy": { "type": "array", "items": { "type": "string" } },
+    "government_exposure": { "type": "array", "items": { "type": "string" } },
+
+    "risk_assessment": { "type": "array", "items": { "type": "string" } },
+    "opportunity_assessment": { "type": "array", "items": { "type": "string" } },
+    "lx_strategic_fit": { "type": "string" },
+
+    "investment_recommendation": {
+      "type": "object",
+      "required": ["signal", "rationale"],
+      "properties": {
+        "signal": {
+          "type": "string",
+          "enum": [
+            "proceed_to_deep_review", "monitor", "insufficient_public_information",
+            "not_aligned_based_on_available_facts"
+          ]
+        },
+        "rationale": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "estimated_valuation": {
+      "type": ["object", "null"],
+      "properties": {
+        "range_description": { "type": "string" },
+        "basis": { "type": "string" },
+        "source_urls": { "type": "array", "items": { "type": "string", "format": "uri" } }
+      },
+      "required": ["range_description", "basis", "source_urls"],
+      "additionalProperties": false,
+      "description": "공개 비교배수 기반 추정 범위만. 확인 안 되면 최상위에서 null."
+    },
+    "synergy_analysis": { "type": "array", "items": { "type": "string" } },
+
+    "reference_sources": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "minItems": 1
+    },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+  },
+  "additionalProperties": false
+}

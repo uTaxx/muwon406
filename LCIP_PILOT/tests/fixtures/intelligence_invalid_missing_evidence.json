@@ -1,7 +1,8 @@
 {
   "intelligence_id": "INT-20260805-0002",
   "article_ids": ["ART-20260805-0001"],
-  "mission": "risk_management",
+  "mission_category": ["risk_management"],
+  "intelligence_categories": ["litigation"],
   "fact_summary": "근거 없는 요약",
   "verified_facts": [],
   "ai_interpretation": [],

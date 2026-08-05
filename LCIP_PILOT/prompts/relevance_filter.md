@@ -4,6 +4,7 @@ prompt_version: 0.2.0
 used_by: Master Pipeline — Rule Filter/AI Analyze 단계 (舊 WF-P04 Relevance Classifier, ADR-007로 통합)
 output_schema: schemas/claude_output.schema.json#/$defs/relevance_output
 cache_structure: static_block + dynamic_block (Architect Review Q3)
+default_model_id: null
 ---
 
 # Relevance Filter Prompt
@@ -24,7 +25,12 @@ cache_structure: static_block + dynamic_block (Architect Review Q3)
 3. 판단 근거(`reason`)는 한국어로, 원문의 어떤 부분 때문에 그렇게 판단했는지 구체적으로 적는다.
 4. 확신이 없으면 `relevance_score`를 낮게 주고, `needs_deep_analysis`는 신중하게 true로만
    설정한다 (총 배상액/원고 수 추출이 필요하거나 LX 영향 분석이 필요한 신규 중요 건일 때만).
-5. `mission_subcategory`가 명확하지 않으면 `null`로 둔다 — 임의 추정 금지.
+5. `mission_category`는 배열이다 — 기사 하나가 미래준비·리스크관리 두 축에 동시에 해당하면
+   둘 다 포함한다 (Architect Review Round 3 Q3). `mission_subcategory`도 배열이며, 명확하지
+   않은 항목은 넣지 않는다(빈 배열 허용) — 임의 추정 금지.
+6. `intelligence_categories`는 필수다 — `knowledge/INTELLIGENCE_TAXONOMY.md`의 19개 도메인
+   카테고리 중 최소 1개 이상을 반드시 매핑한다 (Architect Review Round 3 추가 지시, TASK-004E).
+   `mission_category`(목적 축)와는 독립적인 축이므로 둘 다 채운다.
 
 ### 출력 형식 (JSON만, 다른 텍스트 없이)
 
@@ -32,8 +38,9 @@ cache_structure: static_block + dynamic_block (Architect Review Q3)
 {
   "relevant": true,
   "relevance_score": 0.0,
-  "mission": "risk_management",
-  "mission_subcategory": null,
+  "mission_category": ["risk_management"],
+  "mission_subcategory": ["litigation"],
+  "intelligence_categories": ["litigation"],
   "related_companies": [],
   "reason": "",
   "needs_deep_analysis": false

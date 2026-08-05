@@ -4,12 +4,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WF_DIR = ROOT / "n8n" / "workflows"
 
-# ADR-007(Architect Review Q4)로 11개 -> 5개 워크플로우로 통합됨.
+# ADR-007(Round 2 Q4)로 11개 -> 5개 워크플로우로 통합. ADR-008(Round 3 Q1)로 Source
+# Health/Cost Guard/NL Admin은 원래 번호(WF-P08/P09/P10)를 유지 (재배정하지 않음).
 EXPECTED_FILES = [
     "WF-P01-master-pipeline.json",
-    "WF-P02-source-health.json",
-    "WF-P03-cost-guard.json",
-    "WF-P04-natural-language-admin.json",
+    "WF-P08-source-health.json",
+    "WF-P09-cost-guard.json",
+    "WF-P10-natural-language-admin.json",
     "WF-P99-error-handler.json",
 ]
 

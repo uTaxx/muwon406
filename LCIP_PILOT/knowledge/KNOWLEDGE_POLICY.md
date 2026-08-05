@@ -47,6 +47,21 @@ LX 관점에서 해석할 수 있게 만드는 구조화된 지식**이다. 모�
 붙는 메타데이터다 — 문서 전체에 한 번만 붙이는 것이 아니라, 각 사실 단위로 근거를 추적할 수
 있어야 한다.
 
+### 2.1 동일 Template 원칙 (Architect Review Round 3 Q5)
+
+회사 프로필류 Knowledge 문서(`LX_HAUSYS_COMPANY_DNA.md`, `LX_HOLDINGS_CONTEXT.md`, 향후
+`QUICK_COMPANY_SCAN_FRAMEWORK.md`로 생성되는 모든 기업 프로필)는 **예외 없이 16계층
+Taxonomy 전체를 동일한 순서로** 포함해야 한다. 특정 계층이 해당 법인에 적용되지 않더라도
+(예: 지주회사에는 Product/Manufacturing/Value Chain/Customer/Competitor/Raw Material이
+해당하지 않음) **그 섹션을 삭제하지 않는다** — 내용에 `Not Applicable (N/A)`를 명시하고
+사유를 한 줄로 남긴 채 구조를 유지한다. 이렇게 해야 여러 회사 문서를 기계적으로 비교·파싱할
+때 항상 동일한 위치에 동일한 계층이 있다는 것을 보장할 수 있다.
+
+메타 문서(`KNOWLEDGE_POLICY.md`, `MISSION_FRAMEWORK.md`, `SOURCE_PRIORITY.md`,
+`ANALYSIS_FRAMEWORK.md`, `INVESTMENT_FRAMEWORK.md`, `PLATFORM_CONSTITUTION.md`)와
+집계형 문서(`GROUP_RISK_MAP.md`, `GROUP_OPPORTUNITY_MAP.md`, `STRATEGY_PLAYBOOK.md`)는
+회사 프로필이 아니므로 이 16계층 템플릿 대상이 아니다 — 각자의 목적에 맞는 구조를 유지한다.
+
 ## 3. 문서별 항목 서식
 
 각 Knowledge 항목은 아래 형식을 따른다.

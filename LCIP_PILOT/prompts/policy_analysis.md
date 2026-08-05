@@ -15,8 +15,9 @@ cache_structure: static_block + dynamic_block (Architect Review Q3)
 
 정책·규제·입법 관련 기사(예: 세이프가드, 관세, 결정형 실리카 규제 강화)를 분석해 규제
 단계와 LX Hausys에 대한 잠재적 영향 경로를 정리한다. `risk_analysis.md`의 일반 규칙을 모두
-따르되, 규제 단계 분류가 추가된다. `mission_subcategory`는 대개 `regulatory`이다
-(`knowledge/MISSION_FRAMEWORK.md` 참고).
+따르되, 규제 단계 분류가 추가된다. `mission_subcategory`(배열)는 대개 `regulatory`를
+포함한다 (`knowledge/MISSION_FRAMEWORK.md` 참고). 규제 강화가 동시에 기술 전환 기회이면
+`mission_category`에 `future_readiness`도 함께 포함한다.
 
 ### 규제 단계 분류 (원문에서 확인 가능한 경우에만 선택)
 
@@ -41,7 +42,8 @@ unknown         - 원문에서 단계를 특정할 수 없음
   "facts": [],
   "regulatory_stage": "unknown",
   "significance": "",
-  "mission_subcategory": "regulatory",
+  "mission_category": ["risk_management"],
+  "mission_subcategory": ["regulatory"],
   "lx_impact": [],
   "actions": [],
   "confidence": "medium",

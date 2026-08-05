@@ -27,7 +27,7 @@ Article 원문
 → (4) Knowledge Taxonomy 매핑 — 이 사실이 Business/Product/Manufacturing/
      Value Chain/Customer/Competitor/Raw Material/Government/Risk/Opportunity/
      Investment Point 중 어디에 해당하는지 식별
-→ (5) Mission 매핑 — MISSION_FRAMEWORK.md 기준 mission + mission_subcategory 결정
+→ (5) Mission 매핑 — MISSION_FRAMEWORK.md 기준 mission_category(배열) + mission_subcategory(배열) 결정
 → (6) LX 영향(lx_impact) 판단 — Knowledge에 실제 근거가 있을 때만
 → (7) 대응/추가조사(actions) 제안
 → (8) 미확인 사항(unknowns) 기록
@@ -47,12 +47,15 @@ Article의 사실이 Knowledge Taxonomy(16계층 중 1~12)의 어느 항목과 �
 
 ## 3. Mission 매핑 규칙
 
-- `MISSION_FRAMEWORK.md`의 두 축(미래준비/리스크관리) 중 하나 이상에 반드시 매핑한다.
-- 서브카테고리가 명확하지 않으면 `mission_subcategory: null` + `unknowns`에 사유 기록.
+- `MISSION_FRAMEWORK.md`의 두 축(미래준비/리스크관리) 중 하나 이상을 `mission_category`
+  배열에 담는다 (Architect Review Round 3 Q3 — Pilot 단계부터 배열, 단일값으로 시작하지
+  않는다).
+- 서브카테고리가 명확하지 않으면 `mission_subcategory`를 빈 배열로 두고 `unknowns`에 사유를
+  기록한다.
 - 하나의 Article이 복수 축에 걸치는 경우(예: 규제 강화가 리스크이자 동시에 경쟁사 대비
-  기회) `mission`은 **가장 중요도가 높은 축 하나**를 선택하고, 다른 축의 시사점은
-  `recommended_actions`에 별도로 남긴다 (Pilot 단계 단순화 — Enterprise에서 다중 태깅
-  검토).
+  기회) `mission_category`에 `risk_management`와 `future_readiness`를 **둘 다** 담고,
+  각 축에 해당하는 근거는 `facts`/`lx_impact`에서 구분해 서술한다. 축을 하나만 고르지
+  않는다.
 
 ## 4. 심각도(significance) 판단 — STRATEGY_PLAYBOOK.md 연동
 
