@@ -115,7 +115,7 @@ def test_pilot_mvp_end_to_end_flow(tmp_path):
         intelligences=stored_intelligences,
     )
     assert len(dashboard_data["today_intelligence"]) == 1
-    assert article["title_original"] in dashboard_data["today_intelligence"][0]["fact_summary"]
+    assert article["title_original"] in dashboard_data["today_intelligence"][0]["핵심 내용"]
     assert len(dashboard_data["critical_risk"]) == 1  # MockProvider가 항상 risk_management로 분류
     html = build_html(dashboard_data)
     assert article["title_original"] in html

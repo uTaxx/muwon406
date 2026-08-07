@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""Scenario 1 — 뉴스 분석 (Architect Review Round 7).
+"""Scenario 1 — 뉴스 분석 (Architect Review Round 7/9).
 
 뉴스수집(Collect)→Rule Filter→Knowledge Retrieval→Claude Analysis→INTELLIGENCE_DB→
-Dashboard까지, Round 6 `demo_pilot.py`의 전반부를 독립 실행 가능한 Scenario로 분리한
-것이다. 다른 Scenario에 의존하지 않고 단독으로 실행된다.
+Dashboard→**Email Preview**까지, Round 6 `demo_pilot.py`의 전반부를 독립 실행 가능한
+Scenario로 분리한 것이다. 다른 Scenario에 의존하지 않고 단독으로 실행된다.
 
 실제 외부 호출 없음: Google RSS는 fixture 주입, Claude는
-`providers.factory.get_default_provider()`(Key/Flag 미충족 시 MockProvider로 자동 귀결).
+`providers.factory.get_default_provider()`(Key/Flag 미충족 시 MockProvider로 자동 귀결),
+Email은 `notifiers.EmailNotifier`(Round 4부터 존재, `test_mode=True` dry-run — 실제 발송
+없음).
 
 Round 8: ARTICLE_DB/INTELLIGENCE_DB를 `output/pilot_data/`(Scenario 3의 COMPANY_SCAN_DB와
 동일한 디렉터리)에 저장한다 — Executive Dashboard가 두 Scenario의 산출물을 하나의
 StorageBackend에서 함께 읽을 수 있어야 하기 때문이다(서로 다른 폴더에 흩어져 있으면
 Dashboard가 한쪽만 보게 된다).
+
+Round 9 지시("뉴스 1건→Rule Filter→AI 분석→Dashboard→Email Preview→완료를 하나의
+Pipeline으로"): Dashboard 다음 단계로 Email Preview를 추가했다. 새 Notifier 구조를
+만들지 않고 Round 4의 `EmailNotifier`+`build_alert_message()`를 그대로 재사용한다.
 
 사용법: python3 scripts/scenarios/scenario_1_news_analysis.py
 """
@@ -32,6 +38,7 @@ from _common import load_yaml, project_root
 from adapters.google_rss_adapter import GoogleRSSAdapter
 from build_dashboard import build_html
 from dashboard_data_provider import PipelineDashboardDataProvider
+from notifiers import EmailNotifier, build_alert_message
 from pipeline.analyze import analyze_risk
 from pipeline.classify import classify_relevance
 from pipeline.generate_intelligence import build_intelligence_record
@@ -47,7 +54,8 @@ ARTICLE_DB, INTELLIGENCE_DB = "ARTICLE_DB", "INTELLIGENCE_DB"
 
 
 def run(verbose: bool = True) -> dict:
-    """Scenario 1을 실행하고 {article, intelligence, dashboard_path}를 반환한다."""
+    """Scenario 1을 실행하고 {article, intelligence, dashboard_path, email_preview}를
+    반환한다. `email_preview`는 `notifiers.NotifierResult`(dry-run, 실제 발송 아님)다."""
 
     def log(msg: str) -> None:
         if verbose:
@@ -64,7 +72,7 @@ def run(verbose: bool = True) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     storage = LocalJSONLStorage(out_dir)
 
-    log("\n[1/6] Collect — Google News RSS (fixture 주입)")
+    log("\n[1/7] Collect — Google News RSS (fixture 주입)")
     rss_text = FIXTURE_RSS.read_text(encoding="utf-8")
     adapter = GoogleRSSAdapter(source_config, enabled=True, http_get=lambda url: rss_text)
     raw_articles = adapter.collect("engineered stone silicosis")
@@ -84,7 +92,7 @@ def run(verbose: bool = True) -> dict:
     )
     validate_article(article)
 
-    log("[2/6] Rule Filter")
+    log("[2/7] Rule Filter")
     if not passes_rule_filter(article, topic):
         raise RuntimeError("Rule Filter에서 탈락 — fixture 기사는 통과하도록 구성되어 있어야 한다")
 
@@ -92,16 +100,16 @@ def run(verbose: bool = True) -> dict:
     validate_claude_output(classify_result.parsed_json, "relevance_output")
     log(f"  relevant={classify_result.parsed_json['relevant']}")
 
-    log("[3/6] Knowledge Retrieval")
+    log("[3/7] Knowledge Retrieval")
     lx_context_excerpt, knowledge_version = retrieve_context(topic["related_lx_companies"])
     log(f"  발췌 길이: {len(lx_context_excerpt)}자")
 
-    log("[4/6] Claude Analysis")
+    log("[4/7] Claude Analysis")
     analyze_result = analyze_risk(provider, article, lx_context_excerpt, "")
     validate_claude_output(analyze_result.parsed_json, "risk_analysis_output")
     log(f"  confidence={analyze_result.parsed_json['confidence']}")
 
-    log("[5/6] INTELLIGENCE_DB")
+    log("[5/7] INTELLIGENCE_DB")
     intelligence = build_intelligence_record(
         article_id=article["article_id"],
         risk_analysis=analyze_result.parsed_json,
@@ -115,7 +123,7 @@ def run(verbose: bool = True) -> dict:
     storage.append(INTELLIGENCE_DB, intelligence)
     log(f"  intelligence_id={intelligence['intelligence_id']}")
 
-    log("[6/6] Dashboard")
+    log("[6/7] Dashboard")
     data_provider = PipelineDashboardDataProvider(
         storage, topic_display_name=topic["display_name"],
         generated_at_kst=now.strftime("%Y-%m-%d %H:%M"),
@@ -125,7 +133,19 @@ def run(verbose: bool = True) -> dict:
     dashboard_path.write_text(html, encoding="utf-8")
     log(f"  {dashboard_path}")
 
-    return {"article": article, "intelligence": intelligence, "dashboard_path": str(dashboard_path)}
+    log("[7/7] Email Preview (dry-run — 실제 발송 없음)")
+    subject, body = build_alert_message(article, intelligence)
+    email_preview = EmailNotifier().send(subject, body)
+    log(f"  To: {email_preview.recipient}")
+    log(f"  Subject: {email_preview.subject}")
+    log(f"  Preview: {email_preview.body_preview[:80]}...")
+
+    return {
+        "article": article,
+        "intelligence": intelligence,
+        "dashboard_path": str(dashboard_path),
+        "email_preview": email_preview,
+    }
 
 
 def main() -> int:

@@ -4,7 +4,7 @@ document_type: framework
 company:
 source_types: []
 reference_date:
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-07
 source_urls: []
 confidence: high
 version: 1.0
@@ -55,5 +55,11 @@ owner: Architect Review (2026-08-05)
 Architect Review Round 5부터 Quick Company Scan이 Pilot의 첫 번째 실제 서비스로
 승격되었고, 그 출력이 `scripts/investment_review.py`(Investment Review Engine)의 입력으로
 연결되었다 (`scripts/quick_company_scan.py:build_investment_review_input()`). Pilot
-범위의 Valuation은 **Comparable(비교기업 배수) 기반으로만** 계산하며, DCF는 Enterprise
-Backlog로 남긴다 — 이 문서의 "최종 투자판단을 내리지 않는다"는 원칙은 그대로 유지된다.
+범위의 Valuation은 **Comparable(비교기업 배수) 기반으로만** 계산한다 — 이 문서의
+"최종 투자판단을 내리지 않는다"는 원칙은 그대로 유지된다.
+
+**Enterprise Backlog(Pilot에서 구현하지 않음)**: DCF(Round 5 명시), LBO/Option/
+PMI(Post-Merger Integration)(Architect Review Round 9 "Pilot에서 사용하지 않는 DCF/LBO/
+Option/PMI 등은 Backlog로 이동한다. 구현하지 않는다" 재확인). 네 항목 모두 지금까지
+구현된 적이 없다 — Comparable 기반만 유지하기로 한 결정을 다시 확인한 것이며, 코드
+변경이 필요한 항목이 아니다.

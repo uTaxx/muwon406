@@ -121,6 +121,33 @@ def test_export_quick_scan_report_writes_json_and_markdown(tmp_path):
     assert "LX Hausys" in paths["md_path"].read_text(encoding="utf-8")
 
 
+def test_export_quick_scan_report_markdown_includes_all_core_7_fields(tmp_path):
+    """Round 9 지시: "실제 전략팀 직원이 바로 사용할 수 있는가?" — 이전에는 Company
+    Overview만 보여줬다. 나머지 Core 필드(Business Structure/Product Portfolio/
+    Financial Snapshot/Competitor/LX Strategic Fit/Unknowns/Reference Sources)도
+    전부 한 페이지에 나와야 한다."""
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    sources = qcs.select_sources_for_company(company, SOURCES)
+    result = qcs.generate_company_intelligence(MockProvider(), company, sources)
+    report = qcs.build_quick_report(company, result)
+    from investment_review import build_investment_review
+
+    review = build_investment_review(qcs.build_investment_review_input(report), [])
+    from company_intelligence_score import compute_score
+
+    score = compute_score(company.company_id, report, sources).as_dict()
+
+    paths = qcs.export_quick_scan_report(company, report, review, score, out_dir=tmp_path)
+    text = paths["md_path"].read_text(encoding="utf-8")
+
+    for heading in (
+        "## Company Overview", "## Business Structure", "## Product Portfolio",
+        "## Financial Snapshot", "## Competitor", "## LX Strategic Fit",
+        "## Investment Review", "## 확인되지 않은 사항 (Unknowns)", "## 참고 출처 (Reference Sources)",
+    ):
+        assert heading in text, f"{heading}가 Export Markdown에 없음"
+
+
 def test_company_registry_has_14_companies_round6_taskk02():
     """Round 6 TASK-K02가 등록한 14개사는 Round 7에서 30개사로 확장된 뒤에도 그대로
     부분집합으로 남아 있어야 한다(기존 등록을 지우지 않았는지 확인)."""

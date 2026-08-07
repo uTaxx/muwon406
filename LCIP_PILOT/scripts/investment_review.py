@@ -1,12 +1,14 @@
-"""Investment Review Engine (Architect Review Round 5).
+"""Investment Review Engine (Architect Review Round 5, Round 9 Backlog 재확인).
 
 Quick Company Scan의 `build_investment_review_input()` 출력 + Comparable Peer 목록을 받아
 Comparable(비교기업 배수) 기반 Valuation과 스크리닝 신호를 만든다.
 
 절대 원칙(`knowledge/INVESTMENT_FRAMEWORK.md`와 동일):
 - 최종 투자판단을 내리지 않는다 — "검토 대상 스크리닝 신호"까지만 제공한다.
-- DCF는 사용하지 않는다 — Pilot 범위는 Comparable 기반만 다루며, DCF는 Enterprise
-  Backlog다(Architect Review Round 5 명시).
+- **Comparable 기반만 유지한다.** DCF/LBO/Option/PMI(Post-Merger Integration)는 전부
+  Enterprise Backlog다 — Round 5가 DCF를, Round 9가 "Pilot에서 사용하지 않는 DCF/LBO/
+  Option/PMI 등은 구현하지 않는다"고 나머지 3개를 명시적으로 재확인했다. 이 파일은
+  지금까지도 그 넷 중 어느 것도 구현한 적이 없다(재확인일 뿐 코드 변경 아님).
 - 확인되지 않은 재무 수치를 임의로 추정하지 않는다 — Peer 데이터가 없으면
   `estimated_valuation`은 null.
 """

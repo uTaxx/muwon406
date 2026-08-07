@@ -74,8 +74,14 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    확장, Technical Debt Registry 신설)를 검증하게 하고, Quality Gate에 Architectural
    Stability/Operational Simplicity/Executive Usability/AI Reasoning Readiness 4개
    지표를 추가했다 — "새로운 Framework는 더 이상 만들지 않는다"는 지시가 이번 라운드부터
-   적용된다. 상세는 아래 "Round 6"/"Round 7"/"Round 8" 절 참고. 외부 API 실제 연결은
-   Round 8까지도 시작하지 않았다.
+   적용된다. Round 9는 Architect가 Platform Architect에서 Product Owner 관점으로
+   전환을 선언하며 "사용 가능한 Pilot"을 목표로 삼았다 — 새 구조/Framework/Registry/
+   Layer를 추가하지 않고, 우선순위 5개 기능(Quick Company Scan/News Intelligence/
+   Investment Review/Executive Dashboard/Email Preview)만 실사용 수준으로 다듬었다.
+   가장 큰 성과는 MockProvider가 Round 6이 이미 리서치해 둔 LX Hausys 실제 Knowledge를
+   그동안 전혀 쓰지 않고 버리고 있었다는 것을 발견하고 고친 것이다. 상세는 아래
+   "Round 6"/"Round 7"/"Round 8"/"Round 9" 절 참고. 외부 API 실제 연결은 Round 9까지도
+   시작하지 않았다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -359,3 +365,47 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     `AIProvider`의 4개 추상 메서드 전부를 실제 Prompt Engine 경로까지 연결했는지 소스
     코드로 확인 — Reasoning Quality와 다른 축).
   - 외부 API 실제 연결은 Round 8도 예외 없이 시작하지 않았다.
+- **Round 9: "사용 가능한 Pilot"** — Architect가 Platform Architect에서 Product Owner
+  관점으로 전환을 선언했다. "이번 Round부터는 새로운 구조, Framework, Registry, Layer를
+  추가하지 않는다." 목표 우선순위 고정: 1) Quick Company Scan, 2) News Intelligence,
+  3) Investment Review, 4) Executive Dashboard, 5) Email Preview — 이 외 기능은 이번
+  Sprint에서 구현하지 않는다. 새 기능보다 삭제/단순화/사용성/완성도를 우선한다.
+  - **MockProvider가 실제 Knowledge Base를 실제로 쓰도록 수정**: Round 6이 LX Hausys에
+    대해 실제로 리서치해 채워둔 Knowledge(`LX_HAUSYS_COMPANY_DNA.md`)를, Round 8까지의
+    MockProvider는 전혀 쓰지 않고 항상 "mock: ... 미확인"만 반환하고 있었다 — Round 9가
+    발견하고 고친 가장 큰 성과다. `company_id`가 있으면 그 회사의 1순위 Knowledge
+    문서(§1 Company/§2 Business/§3 Product/§7 Competitor, `knowledge_quality.py`와
+    동일한 신뢰 가능 판정)를 그대로 노출한다 — Claude는 여전히 호출하지 않는다
+    (confidence는 계속 "low"). 처음에는 `search_by_company()`가 이어붙이는 7개 파일
+    전체에서 Section 번호로만 찾다가, LX_HOLDINGS_CONTEXT.md도 §7을 가진다는 사실 때문에
+    지주회사의 문장이 잘못 노출되는 버그가 있었다 — knowledge_coverage.py가 이미 "(파일,
+    Section 번호) 명시적 쌍"을 쓰는 이유와 동일한 이유로, 1순위 문서 하나만 직접 파싱하는
+    방식으로 수정했다.
+  - **Quick Company Scan Export 전면 재작성**: 이전에는 Company Overview 한 줄만
+    보여주고 Business Structure/Product Portfolio/Financial Snapshot/Competitor/LX
+    Strategic Fit/Unknowns/Reference Sources/Comparable Peer 표를 전부 누락했다 —
+    "실제 전략팀 직원이 바로 사용할 수 있는가?"에 정직하게 답하기 위해 Core 7 필드
+    전부와 Investment Review 세부(추천 사유/Peer 비교표)를 한 페이지에 담도록 재작성했다.
+  - **News Intelligence에 Email Preview 단계 추가**: "뉴스 1건→Rule Filter→AI 분석→
+    Dashboard→Email Preview→완료"를 하나의 Pipeline으로 만들라는 지시에 따라, Scenario
+    1의 마지막 단계로 Round 4의 `notifiers.EmailNotifier`+`build_alert_message()`를
+    그대로 재사용해 Email Preview(dry-run, 실제 발송 없음)를 추가했다(6단계→7단계).
+  - **Investment Review Backlog 재확인**: DCF(Round 5)에 이어 LBO/Option/PMI(Post-Merger
+    Integration)도 Enterprise Backlog로 명시 재확인했다(`knowledge/INVESTMENT_FRAMEWORK.md`
+    §4, `scripts/investment_review.py` 모듈 docstring) — 넷 다 지금까지 구현된 적이
+    없으므로 코드 변경은 없다.
+  - **Executive Dashboard 가독성 개선(새 Widget 없음)**: `scripts/pipeline/
+    dashboard_feed.py`의 행(row) 딕셔너리 키를 원본 필드명(created_at/fact_summary 등)
+    대신 한글 라벨(날짜/핵심 내용/신뢰도/출처 등)로 바꿨다 — `render_generic_list()`가
+    dict key를 그대로 테이블 헤더로 쓰기 때문에 이 접착 함수만 바꿔도 6개 Widget 전부의
+    가독성이 개선된다. 또한 Scenario를 반복 실행할수록 같은 내용이 계속 쌓여 중복
+    표시되는 문제를 실사용 중 발견해, `_most_recent()`로 최신 10건만 노출하도록
+    수정했다(Storage 자체는 감사 목적으로 전체를 그대로 보존한다).
+  - **Company Registry/Knowledge/Coverage는 Pilot에 필요한 수준까지만**: Round 9는
+    "TODO를 모두 채우려고 하지 않는다"고 명시했다 — 이번 라운드는 신규 리서치를 수행하지
+    않고, `config/technical_debt_registry.yaml`(TD-005/007)에 이미 등록된 리서치 과제를
+    "전체 30개사"가 아니라 "TOP-0001 핵심 비교군부터"로 범위를 좁히는 방향을 다음
+    라운드 승인 사항으로 남겼다(Pilot 검증 중 Caesarstone처럼 핵심 비교군인데도
+    Knowledge가 전혀 없는 회사를 직접 확인함).
+  - 외부 API 실제 연결은 Round 9도 예외 없이 시작하지 않았다. 새로운 구조/Framework/
+    Registry/Layer도 추가하지 않았다(지시 그대로 — 기존 코드 수정만 수행).

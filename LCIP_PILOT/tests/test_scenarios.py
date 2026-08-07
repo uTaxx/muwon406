@@ -25,6 +25,17 @@ def test_scenario_1_runs_end_to_end_and_returns_article_and_intelligence():
     assert result["dashboard_path"].endswith("dashboard.html")
 
 
+def test_scenario_1_includes_email_preview_step():
+    """Round 9 지시: "뉴스 1건→Rule Filter→AI 분석→Dashboard→Email Preview→완료"를
+    하나의 Pipeline으로 만든다. dry-run(test_mode)이라 실제 발송은 없어야 한다."""
+    result = scenario_1_news_analysis.run(verbose=False)
+    preview = result["email_preview"]
+    assert preview.sent is False
+    assert preview.test_mode is True
+    assert preview.channel == "email"
+    assert result["article"]["title_original"] in preview.subject
+
+
 def test_scenario_2_runs_independently_of_scenario_1():
     result = scenario_2_quick_company_scan.run("LX Hausys", verbose=False)
     assert result["company"].resolved is True

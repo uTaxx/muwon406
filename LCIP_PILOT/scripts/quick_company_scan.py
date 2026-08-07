@@ -161,6 +161,85 @@ def build_quick_report(company: CompanyIdentifier, provider_result: ProviderResu
     return report
 
 
+def _bullets(items: list[str]) -> str:
+    """`quick_report`의 리스트 필드를 사람이 읽기 좋게 렌더링한다. Provider가 항목 하나당
+    긴 문단을 통째로 넣는 경우(Knowledge Base 발췌, mock 안내문 등)가 흔해서, 1건뿐이면
+    그 문단을 그대로 보여주고(불필요한 "- -" 중첩 방지), 여러 건이면 각각 "- "로 나열한다."""
+    if not items:
+        return "(확인된 내용 없음)"
+    if len(items) == 1:
+        return items[0]
+    return "\n".join(f"- {item}" for item in items)
+
+
+def _render_quick_scan_markdown(quick_report: dict, investment_review: dict, intelligence_score: dict) -> str:
+    """Architect Review Round 9 — "실제 전략팀 직원이 바로 사용할 수 있는가?"에 대한
+    답으로, Quick Report의 Core 7 필드 전체(이전에는 company_overview만 보여줬다)와
+    Investment Review의 Comparable Valuation·추천 사유까지 한 페이지에 담는다. 새 필드나
+    새 계산 로직은 추가하지 않는다 — 이미 있는 값을 빠짐없이 보여주기만 한다."""
+    rec = investment_review["recommendation"]
+    peer_avg = investment_review["peer_average"]
+    comparable = investment_review.get("comparable", [])
+
+    lines = [
+        f"# Quick Company Scan — {quick_report['target_company']}",
+        "",
+        f"- Scan Date: {quick_report['scan_date']}",
+        f"- Confidence: {quick_report['confidence']}",
+        f"- Company Intelligence Score: **{intelligence_score['overall']}/100**",
+        "",
+        "## Company Intelligence Score 세부",
+        *[f"- {k}: {v}" for k, v in intelligence_score.items() if k != "overall"],
+        "",
+        "## Company Overview",
+        quick_report.get("company_overview", "(확인된 내용 없음)"),
+        "",
+        "## Business Structure",
+        _bullets(quick_report.get("business_structure", [])),
+        "",
+        "## Product Portfolio",
+        _bullets(quick_report.get("product_portfolio", [])),
+        "",
+        "## Financial Snapshot",
+        _bullets(quick_report.get("financial_snapshot", [])),
+        "",
+        "## Competitor",
+        _bullets(quick_report.get("competitor", [])),
+        "",
+        "## LX Strategic Fit",
+        quick_report.get("lx_strategic_fit", "(확인된 내용 없음)"),
+        "",
+        "## Investment Review (Comparable 기반)",
+        f"- Recommendation Signal: **{rec['signal']}**",
+        f"- Rationale: {rec.get('rationale', '')}",
+        f"- Deal Killer Found: {investment_review['deal_killer']['found']}",
+    ]
+    if investment_review["deal_killer"]["found"]:
+        lines.append(f"- Deal Killer Reasons: {'; '.join(investment_review['deal_killer']['reasons'])}")
+    lines += [
+        f"- Comparable Peer 수: {peer_avg['peer_count']}건"
+        + ("(전부 예시 데이터 — 실제 재무 데이터 아님)" if comparable else ""),
+    ]
+    if comparable:
+        lines.append("")
+        lines.append("| Peer | EV/EBITDA | PER | PBR |")
+        lines.append("|---|---|---|---|")
+        for peer in comparable:
+            lines.append(f"| {peer['peer_name']} | {peer['ev_ebitda']} | {peer['per']} | {peer['pbr']} |")
+    lines += [
+        "",
+        "## 확인되지 않은 사항 (Unknowns)",
+        _bullets(quick_report.get("unknowns", [])),
+        "",
+        "## 참고 출처 (Reference Sources)",
+        _bullets(quick_report.get("reference_sources", [])),
+        "",
+        "> Confidence가 'low'인 항목은 Mock/미확인 상태다 — 실제 Claude 연동(RC2) 전까지는",
+        "> 초안(draft) 참고용으로만 사용하고, 전략팀 검토자료에는 출처를 재확인한 뒤 반영한다.",
+    ]
+    return "\n".join(lines)
+
+
 def export_quick_scan_report(
     company: CompanyIdentifier,
     quick_report: dict,
@@ -189,27 +268,8 @@ def export_quick_scan_report(
     json_path = out_dir / f"{safe_name}.json"
     json_path.write_text(json.dumps(combined, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    md_lines = [
-        f"# Quick Company Scan — {quick_report['target_company']}",
-        "",
-        f"- Scan Date: {quick_report['scan_date']}",
-        f"- Confidence: {quick_report['confidence']}",
-        f"- Company Intelligence Score: {intelligence_score['overall']}/100",
-        "",
-        "## Company Intelligence Score 세부",
-        *[f"- {k}: {v}" for k, v in intelligence_score.items() if k != "overall"],
-        "",
-        "## Company Overview",
-        quick_report.get("company_overview", ""),
-        "",
-        "## Investment Review",
-        f"- Recommendation Signal: {investment_review['recommendation']['signal']}",
-        f"- Deal Killer Found: {investment_review['deal_killer']['found']}",
-        "",
-        "> Mock 기반 결과 — 실제 Claude/재무 데이터 연동 전까지는 참고용으로만 사용한다.",
-    ]
     md_path = out_dir / f"{safe_name}.md"
-    md_path.write_text("\n".join(md_lines), encoding="utf-8")
+    md_path.write_text(_render_quick_scan_markdown(quick_report, investment_review, intelligence_score), encoding="utf-8")
 
     return {"json_path": json_path, "md_path": md_path}
 

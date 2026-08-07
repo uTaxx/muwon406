@@ -98,6 +98,41 @@ def test_mock_provider_quick_company_scan_matches_core_schema():
     assert result.parsed_json["target_company"] == "LX Hausys"
 
 
+def test_mock_provider_quick_company_scan_uses_real_knowledge_when_company_id_registered():
+    """Round 9 지시("실제 사용 가능한 Pilot"): LX_HAUSYS는 Round 6에서 실제 Knowledge를
+    갖췄으므로, company_id가 주어지면 더 이상 "mock: ... 미확인" placeholder가 아니라
+    LX_HAUSYS_COMPANY_DNA.md의 실제 내용을 반환해야 한다."""
+    result = MockProvider().quick_company_scan(
+        {"display_name": "LX Hausys", "query": "LX Hausys", "company_id": "LX_HAUSYS"}, []
+    )
+    assert "mock" not in result.parsed_json["company_overview"].lower()
+    assert "108670" in result.parsed_json["company_overview"]  # KRX 티커, 실제 Knowledge 근거
+    assert "mock: 사업부 구성 정보 미확인" not in result.parsed_json["business_structure"]
+    assert "mock: 경쟁사 정보 미확인" not in result.parsed_json["competitor"]
+    jsonschema.validate(instance=result.parsed_json, schema=_quick_scan_schema())
+
+
+def test_mock_provider_quick_company_scan_stays_mock_for_unregistered_company():
+    """company_id가 없거나(미등록 회사) Knowledge 파일이 없으면 예전처럼 정직하게
+    mock placeholder를 유지한다 — 임의로 지어내지 않는다."""
+    result = MockProvider().quick_company_scan(
+        {"display_name": "존재하지않는가상회사", "query": "존재하지않는가상회사", "company_id": None}, []
+    )
+    assert result.parsed_json["company_overview"].startswith("존재하지않는가상회사")
+    assert result.parsed_json["business_structure"] == ["mock: 사업부 구성 정보 미확인"]
+
+
+def test_mock_provider_quick_company_scan_does_not_leak_other_files_section_numbers():
+    """Round 9 버그 수정 회귀 감시: `search_by_company()`가 이어붙이는 7개 파일 중
+    LX_HOLDINGS_CONTEXT.md도 §7(Competitor)을 갖고 있어, 파일 우선순위 없이 Section
+    번호로만 찾으면 LX Hausys 고유의 §7 대신 지주회사(LX_HOLDINGS_CONTEXT)의 "직접
+    경쟁하는 대상이 없다"는 문장이 잘못 노출될 수 있었다."""
+    result = MockProvider().quick_company_scan(
+        {"display_name": "LX Hausys", "query": "LX Hausys", "company_id": "LX_HAUSYS"}, []
+    )
+    assert "지주회사는 사업적으로 직접 경쟁하는 대상이 없다" not in result.parsed_json["competitor"][0]
+
+
 def test_claude_provider_quick_company_scan_enabled_with_model_raises_not_implemented(monkeypatch):
     monkeypatch.setenv("LCIP_FUTURE_READINESS_MODEL", "test-model-id")
     provider = ClaudeProvider(enabled=True)

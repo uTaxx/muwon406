@@ -5,6 +5,59 @@
 
 ## [Unreleased]
 
+### Changed — Architect Review Round 9 반영 (2026-08-07, 9차)
+
+ChatGPT Architect Review Round 9 승인 및 반영. "Round 8까지의 결과를 통해 Pilot
+Architecture는 충분히 안정되었다"고 판단하고, Architect가 **Platform Architect에서
+Product Owner 관점**으로 전환을 선언했다. "이번 Round부터는 새로운 구조, Framework,
+Registry, Layer를 추가하지 않는다. 더 이상 설계하지 않는다. 더 이상 확장하지 않는다.
+실제 사용하는 입장에서 완성도를 높인다"가 핵심 지시다. 개발 우선순위를 Quick Company
+Scan → News Intelligence → Investment Review → Executive Dashboard → Email Preview
+5개로 고정하고, 이 외 기능은 이번 Sprint에서 구현하지 않았다.
+
+- **MockProvider 실제 Knowledge 반영(TASK-009)**: Round 6이 실제로 리서치해 채운 LX
+  Hausys Knowledge Base(`LX_HAUSYS_COMPANY_DNA.md`)를, Round 8까지의 MockProvider는
+  전혀 쓰지 않고 항상 제네릭 "mock: ... 미확인" placeholder만 반환하고 있었다는 것을
+  사용자 검증 중 발견했다 — 이번 Sprint의 가장 큰 발견/성과다. `company_id`가 등록되어
+  있고 1순위 Knowledge 문서에 신뢰 가능한 §1(Company)/§2(Business)/§3(Product)/
+  §7(Competitor) Section이 있으면 그 실제 내용을 그대로 노출하도록 고쳤다 — Claude
+  호출은 여전히 하지 않는다(confidence는 계속 "low"). 처음 구현에서는
+  `search_by_company()`가 이어붙이는 7개 파일 전체를 Section 번호로만 찾다가
+  LX_HOLDINGS_CONTEXT.md의 §7이 LX Hausys 고유의 §7을 덮어쓰는 버그가 있었는데, 1순위
+  문서 하나만 직접 파싱하도록 고쳐 해결했다(`knowledge_coverage.py`가 이미 "(파일,
+  Section 번호) 명시적 쌍"을 쓰는 것과 동일한 이유).
+- **Quick Company Scan Export 전면 재작성**: 이전 Export Markdown은 Company Overview
+  한 줄만 보여주고 Business Structure/Product Portfolio/Financial Snapshot/Competitor/
+  LX Strategic Fit/Unknowns/Reference Sources/Comparable Peer 표를 전부 누락했다.
+  "실제 전략팀 직원이 바로 사용할 수 있는가?"라는 Round 9의 사용자 검증 질문에 정직하게
+  답하기 위해 Core 7 필드 전부 + Investment Review 세부(추천 신호/사유/Peer 비교표)를
+  한 페이지에 담도록 재작성했다.
+- **News Intelligence에 Email Preview 추가(TASK-010)**: "뉴스 1건→Rule Filter→AI
+  분석→Dashboard→Email Preview→완료"를 하나의 Pipeline으로 만들라는 지시에 따라
+  Scenario 1에 [7/7] Email Preview 단계를 추가했다. 새 Notifier 구조를 만들지 않고
+  Round 4의 `notifiers.EmailNotifier`+`build_alert_message()`를 그대로 재사용한다
+  (dry-run, 실제 발송 없음).
+- **Investment Review Backlog 재확인(TASK-011)**: DCF(Round 5)에 이어 LBO/Option/
+  PMI(Post-Merger Integration)도 Enterprise Backlog로 명시 재확인했다
+  (`scripts/investment_review.py` 모듈 docstring, `knowledge/INVESTMENT_FRAMEWORK.md`
+  §4) — 넷 다 지금까지 구현된 적이 없어 코드 변경은 없다.
+- **Executive Dashboard 가독성 개선(TASK-012, 새 Widget 없음)**: `scripts/pipeline/
+  dashboard_feed.py`의 row 딕셔너리 key를 원본 필드명(created_at/fact_summary/
+  target_company/recommendation_signal/source_id 등) 대신 한글 라벨(날짜/핵심 내용/
+  신뢰도/출처/회사명/스캔일/종합 점수/추천 신호/검토일/Source/가동 상태/안정성 참고)로
+  바꿨다 — `render_generic_list()`가 dict key를 그대로 테이블 헤더로 쓰기 때문에 이
+  접착 함수만 바꿔도 6개 Widget 전부의 가독성이 개선된다. 또한 Scenario를 반복
+  실행하면 INTELLIGENCE_DB/COMPANY_SCAN_DB에 레코드가 계속 쌓여 같은 내용이 중복
+  표시되는 문제를 실사용 중 발견해, `_most_recent()`로 Today's Intelligence/Critical
+  Risk/Future Opportunity/Quick Company Scan/Investment Review를 최신 10건만 노출
+  하도록 수정했다(Source Health는 로그가 아니라 목록이라 제한하지 않음; Storage 자체는
+  감사 목적으로 전체를 그대로 보존).
+- **Pilot 사용자 검증**: 기능 구현보다 사용자 검증을 우선하라는 지시에 따라 5개 질문에
+  실제 실행 결과(LX Hausys/Caesarstone 비교 등)로 답하고, Product Review 10항목을
+  작성해 별도 보고서로 전달했다.
+- 새로운 구조/Framework/Registry/Layer는 추가하지 않았다(지시 그대로). 외부 API 실제
+  호출은 Round 9도 없다. 전체 테스트 387개(Round 8) → 397개(+10개).
+
 ### Added — Architect Review Round 8 반영 (2026-08-07, 8차)
 
 ChatGPT Architect Review Round 8 승인 및 반영. "현재 LCIP는 Architecture 중심

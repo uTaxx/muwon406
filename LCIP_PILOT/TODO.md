@@ -283,3 +283,39 @@ Round 8 지시: "Architecture 중심 프로젝트에서 Product 중심 프로젝
   Coverage가 25%에 머문다(TD-007).
 - Round 7까지의 한계(Google Drive/Sheets/n8n/이메일/Telegram/Anthropic API 미연결 등)는
   Round 8에서도 동일하게 유지된다 — 위 "Round 7" 절 참고.
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 9 (전부 완료, Mock 기반)
+
+Round 9 지시: "Architect는 이제 Platform Architect가 아니라 Product Owner 관점으로
+프로젝트를 진행한다." 새로운 구조/Framework/Registry/Layer를 추가하지 않는다. 우선순위
+5개(Quick Company Scan/News Intelligence/Investment Review/Executive Dashboard/Email
+Preview)만 실사용 수준으로 완성한다.
+
+- [x] **TASK-009 Quick Company Scan 완성도 개선** — MockProvider가 `company_id`로
+      실제 Knowledge Base 내용(§1/2/3/7)을 반환하도록 수정(이전에는 LX Hausys조차
+      "mock: ... 미확인"만 반환하던 결함 발견·수정). Export Markdown을 Core 7 필드 +
+      Investment Review 세부까지 전부 보여주도록 재작성.
+- [x] **TASK-010 News Intelligence에 Email Preview 추가** — Scenario 1에 [7/7] Email
+      Preview 단계 추가(Round 4 `EmailNotifier` 재사용, dry-run).
+- [x] **TASK-011 Investment Review Backlog 재확인** — DCF/LBO/Option/PMI 전부
+      Enterprise Backlog로 명시(코드 변경 없음, 애초에 구현된 적 없음).
+- [x] **TASK-012 Executive Dashboard 가독성 개선** — 새 Widget 없음. Row 라벨 한글화 +
+      Scenario 반복 실행 시 중복 누적 문제 발견·수정(`_most_recent()`로 최신 10건 제한).
+- [x] **Pilot 사용자 검증** — 5개 질문에 실제 실행 결과로 답변, Product Review 10항목
+      작성(별도 보고서로 전달).
+
+## 이번 라운드(Architect Review Round 9 반영)에서 알려진 한계
+
+- Company Registry 30개사 중 여전히 1개사(LX_HAUSYS)만 실제 Knowledge를 보유한다 —
+  TOP-0001 핵심 비교군(Caesarstone/Cosentino/Wilsonart)도 예외가 아니다. Round 9는
+  "TODO를 모두 채우려 하지 않는다"는 지시에 따라 이번 라운드에 신규 리서치를 수행하지
+  않았다 — 다음 라운드에 "전체 30개사"가 아니라 "핵심 비교군부터"로 범위를 좁히는 안을
+  승인받아야 한다.
+- Investment Review의 Comparable Peer가 회사와 무관하게 항상 동일한 예시 데이터(Peer
+  A/B)다 — 실제 재무 Provider 연결(RC2) 전까지 숫자 자체는 참고용으로도 부적절하다.
+- 뉴스 분석(risk_analysis)은 여전히 고정 mock 문구다 — "사람이 다시 읽지 않아도 될
+  정도"는 구조적으로 RC2(실제 Claude 연동) 이후에나 가능하다(Round 9도 실제 API 호출을
+  금지했으므로 이 한계는 이번 라운드의 실패가 아니라 의도된 경계다).
+- Executive Dashboard의 Scenario별 독립 스냅샷 문제(TD-006)는 이번 라운드에도 그대로
+  남아 있다 — Round 9가 "새 구조를 만들지 않는다"고 못박았으므로, 해결하려면 Architect
+  승인이 있는 설계 결정이 먼저 필요하다.

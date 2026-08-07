@@ -1,128 +1,96 @@
 # Project Status
 
-최종 갱신: 2026-08-07 (Architect Review Round 8 반영)
+최종 갱신: 2026-08-07 (Architect Review Round 9 반영)
 
 ## 요약
 
-TASK-001~007 → Round 2/3/4(Knowledge Layer, Provider/Adapter/Pipeline/Widget) →
-Round 5(Storage/Knowledge Retrieval/Prompt Engine/Dashboard Data Provider + Quick
-Company Scan 실제 서비스 + Investment Review Engine) → Round 6(Knowledge Population/
-Company·Source Registry/Feature Flag/Provider Factory/데모 통합/Quality Gate) →
-Round 7(Registry 통합/Coverage 전환/Scenario화/Connection Readiness 준비) →
-**Round 8("Architecture 중심에서 Product 중심으로 전환 완료 — Pilot RC1을 향한 마지막
-다듬기") 반영** 완료. Architect는 Round 7을 승인하며 이번 라운드부터 "전략팀 시연
-관점에서만 개발한다. 새 기능보다 사용성/품질/완성도를 우선한다. 실제 API 호출은 계속
-금지한다"고 지시했다. Round 8은 (1) RC1 정의를 ADR-010으로 고정하고("실제 API 없이도
-전략팀 데모가 가능한 수준" = Mock+Feature Flag+실제 Pipeline+실제 Registry+실제
-Dashboard), (2) Quick Company Scan을 Architect가 지정한 8단계 전체 파이프라인(Input→
-Company Registry→Knowledge Retrieval→Source Selection→Financial Provider(Mock)→
-Analysis Pipeline→Investment Review→Dashboard Widget→Export)으로 완성하고, (3) Company
-Intelligence Score(7개 하위 점수, 100점 만점)를 신설하고, (4) Dashboard를 "HTML
-Viewer"에서 Architect 지정 6개 Widget 우선순위(Today's Intelligence→Critical Risk→
-Future Opportunity→Quick Company Scan→Investment Review→Source Health)의 Executive
-Dashboard로 재구성하고, (5) Knowledge Coverage에 Company/Country/Industry 3개 지표를
-추가하고, (6) RegistryManager에 Validation/Integrity Check/Dependency Check를 추가해
-Project Boot(`bootstrap_project.py`) 시 8개 Registry 전체를 검증하게 하고, (7) Technical
-Debt Registry를 신설(Severity/Priority/Estimated Time/Owner)하고, (8) Quality Gate에
-Architectural Stability/Operational Simplicity/Executive Usability/AI Reasoning
-Readiness 4개 지표를 추가했다. "새로운 Framework는 더 이상 만들지 않는다"는 지시에 따라
-모든 추가는 기존 패턴(Provider/Registry/Widget Layer) 재사용이며, 외부 API 실제 호출은
-Round 8에서도 없다.
+TASK-001~007 → Round 2~7(Knowledge Layer/Provider·Adapter·Pipeline·Widget/Storage·
+Prompt Engine/Knowledge Population·Registry·Feature Flag·Quality Gate/Registry
+Engine·Coverage·Scenario화) → Round 8(RC1 정의 고정·Quick Company Scan 8단계 완성·
+Company Intelligence Score·Executive Dashboard 6 Widget·Registry 검증·Technical Debt
+Registry·Quality Gate 9종) → **Round 9("사용 가능한 Pilot") 반영** 완료. Architect는
+Round 8까지의 결과로 "Pilot Architecture는 충분히 안정되었다"고 판단하고, 이번 라운드부터
+**Platform Architect가 아니라 Product Owner 관점**으로 전환한다고 선언했다 — "새로운 구조,
+Framework, Registry, Layer를 추가하지 않는다. 더 이상 설계하지 않는다. 더 이상 확장하지
+않는다. 실제 사용하는 입장에서 완성도를 높인다."
 
-## Task 진행 상태
+Sprint 우선순위 5개(Quick Company Scan → News Intelligence → Investment Review →
+Executive Dashboard → Email Preview)만 다뤘고, 이 외 기능은 이번 Sprint에서 구현하지
+않았다. 가장 큰 성과는 **MockProvider가 Round 6이 이미 리서치해 둔 LX Hausys 실제
+Knowledge를 그동안 전혀 쓰지 않고 버리고 있었다는 사실을 발견하고 고친 것**이다 — 코드는
+다 있었지만 실제로 연결되지 않고 있던 결함을, "직접 실행해서 결과물을 읽어보는" 이번
+라운드의 사용자 검증 방식이 아니었다면 찾기 어려웠다. 새로운 구조/Framework/Registry/
+Layer는 추가하지 않았고(지시 그대로), 외부 API 실제 호출도 Round 9에서 없다.
 
-| Task | 상태 | 비고 |
-|---|---|---|
-| TASK-001~007, TASK-004A~E | ✅ 완료·동결 | 변경 없음 |
-| TASK-009~017 (Round 4), Round 5 엔진 4종 | ✅ 완료 | 변경 없음(아키텍처 동결) |
-| Round 6/7 전체 | ✅ 완료 | 변경 없음(아키텍처 동결) |
-| **ADR-010 Release Policy (RC1 정의)** | ✅ 완료 (신규) | `docs/decisions/ADR-010-release-policy.md` |
-| **Quick Company Scan 8단계 파이프라인 완성** | ✅ 완료 (신규) | Knowledge Retrieval/Financial Provider(Mock)/Export 단계 추가 |
-| **Company Intelligence Score** | ✅ 완료 (신규) | `scripts/company_intelligence_score.py` — 7개 하위 점수 |
-| **Executive Dashboard 6개 Widget 재구성** | ✅ 완료 (신규) | `scripts/dashboard_widgets.py` 전면 재작성 |
-| **Knowledge Coverage 3종 추가** | ✅ 완료 (신규) | Company/Country/Industry Coverage |
-| **RegistryManager Validation/Integrity/Dependency Check** | ✅ 완료 (신규) | Project Boot 시 8개 Registry 전체 검증 |
-| **Technical Debt Registry** | ✅ 완료 (신규) | `config/technical_debt_registry.yaml`, 8번째 Registry |
-| **Quality Gate 4종 지표 추가** | ✅ 완료 (신규) | Architectural Stability/Operational Simplicity/Executive Usability/AI Reasoning Readiness |
-| TASK-016 Natural Language Admin | ⏸ 보류 | 유지 |
-| TASK-008 n8n API Deployment | ⏸ 대기 (마지막 순위) | 위 항목 전부 완성 후 진행 |
-| TASK-018 | ⏸ 대기 | 변경 없음 |
+## Round 9에서 다룬 5개 우선순위
+
+| 순위 | 기능 | 상태 | 핵심 변경 |
+|---|---|---|---|
+| 1 | Quick Company Scan | ✅ 완성도 개선 | MockProvider 실제 Knowledge 반영, Export 전체 재작성(Core 7 필드+Investment Review 세부) |
+| 2 | News Intelligence | ✅ 완성 | Scenario 1에 Email Preview 단계 추가(6→7단계, 새 Notifier 구조 없음) |
+| 3 | Investment Review | ✅ Backlog 재확인 | Comparable 기반 유지, DCF/LBO/Option/PMI 전부 Enterprise Backlog로 문서 재확인(코드 변경 없음) |
+| 4 | Executive Dashboard | ✅ 가독성 개선 | Widget 추가 없음. Row 라벨 한글화 + 최신 10건 제한(중복 누적 문제 발견 및 수정) |
+| 5 | Email Preview | ✅ (2번에 포함) | Round 4의 `EmailNotifier` 재사용, dry-run 유지 |
 
 ## 테스트 결과
 
 ```text
-$ pytest tests/ -q                                    -> 전부 PASS (387개 테스트, Round 7: 335개 → +52개)
+$ pytest tests/ -q                                    -> 전부 PASS (397개 테스트, Round 8: 387개 → +10개)
 $ python scripts/validate_config.py                   -> PASS
 $ python scripts/secret_scan.py                        -> PASS
-$ python scripts/bootstrap_project.py --dry-run         -> PASS (Registry 8개 전체 검증 통과, Round 8 신규)
-$ python scripts/scenarios/scenario_1_news_analysis.py  -> PASS
-$ python scripts/scenarios/scenario_2_quick_company_scan.py -> PASS (Knowledge Retrieval 단계 추가)
-$ python scripts/scenarios/scenario_3_investment_review.py  -> PASS (Financial Provider(Mock)+Company Intelligence Score+Export 추가)
-$ python scripts/scenarios/scenario_4_policy_impact.py       -> PASS
-$ python scripts/scenarios/scenario_5_competitor_change_detection.py -> PASS
-$ python scripts/quality_gate.py                        -> Pilot Operational Readiness 100%, Round 7/8 신규 9개 지표 병행 출력(Round 8 4종 전부 100.0)
-$ python scripts/knowledge_coverage.py                  -> 도메인 8종 평균 90.6% + Registry Coverage 3종(Company 3.3%/Country 22.2%/Industry 3.6%, 정직한 실측치)
+$ python scripts/bootstrap_project.py --dry-run         -> PASS (Registry 8개 전체 검증 통과)
+$ python scripts/scenarios/scenario_1_news_analysis.py  -> PASS (Email Preview 단계 포함, 7단계)
+$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys" -> PASS (실제 Knowledge 반영된 Export 생성 확인)
+$ python scripts/scenarios/scenario_3_investment_review.py "Caesarstone" -> PASS (Knowledge 미보유 회사는 정직하게 mock 유지 확인)
 ```
 
-## Round 8에서 새로 생성/수정된 파일
+## Round 9에서 새로 생성/수정된 파일
 
-**신규 모듈**
-- `docs/decisions/ADR-010-release-policy.md` — RC1 정의 고정
-- `scripts/company_intelligence_score.py` — Company Intelligence Score(7개 하위 점수)
-- `scripts/financial_provider.py` — `FinancialDataProvider`(ABC)/`MockFinancialDataProvider`
-  (기존 Provider Layer 패턴 재적용, 새 Framework 아님 — ADR-010에 근거 명시)
-- `scripts/registries/validation.py` — Validation/Integrity Check/Dependency Check
-  순수 함수(`RegistryManager.validate()`/`check_integrity()`/`check_dependencies()`/
-  `validate_all()`이 위임)
-- `config/technical_debt_registry.yaml` — Technical Debt Registry(7건, Severity/
-  Priority/Estimated Time/Owner/Status 필드), `TechnicalDebtRegistry`(기존
-  `YAMLListRegistry` 재사용)로 RegistryManager의 8번째 Registry로 등록
+**신규 파일**: `tests/test_dashboard_feed.py`(5개 테스트, `_most_recent()`/한글 라벨 검증).
 
 **중대 수정**
-- `scripts/quick_company_scan.py`: `retrieve_knowledge_for_company()`,
-  `export_quick_scan_report()` 신규. `generate_company_intelligence()`에
-  `knowledge_excerpt` 파라미터 추가(하위호환 기본값 `""`).
-- `scripts/providers/{base,mock_provider,claude_provider,future_providers}.py`:
-  `quick_company_scan()`에 `knowledge_excerpt` 파라미터 추가.
-- `scripts/scenarios/scenario_2_quick_company_scan.py`: Knowledge Retrieval 단계
-  추가(4단계→5단계).
-- `scripts/scenarios/scenario_3_investment_review.py`: Financial Provider(Mock)→
-  Company Intelligence Score→Dashboard Widget 저장→Export까지 전체 재작성(6~8단계
-  추가). Scenario 1과 동일한 `output/pilot_data/` 디렉터리를 공유하도록 변경(Executive
-  Dashboard가 두 Scenario 산출물을 함께 읽기 위함).
-- `scripts/dashboard_widgets.py`/`scripts/pipeline/dashboard_feed.py`/
-  `scripts/dashboard_data_provider.py`/`scripts/build_dashboard.py`/
-  `dashboard/{template.html,app.js,sample_data.json}`: 기존 소송·규제 특화 Widget
-  6종을 전부 제거하고 Architect 지정 6개 Widget(Today's Intelligence/Critical Risk/
-  Future Opportunity/Quick Company Scan/Investment Review/Source Health)으로 재구성.
-- `scripts/knowledge_coverage.py`: `company_coverage()`/`country_coverage()`/
-  `industry_coverage()`/`registry_coverage()` 추가(기존 8개 도메인 Coverage는 그대로,
-  Quality Gate의 Evidence Quality 계산식은 변경하지 않음).
-- `scripts/registries/{manager,yaml_list_registry,__init__}.py`: `TechnicalDebtRegistry`
-  추가(7→8개 Registry), `RegistryManager.validate()`/`check_integrity()`/
-  `check_dependencies()`/`validate_all()` 추가.
-- `scripts/bootstrap_project.py`: Project Boot 시 `RegistryManager.validate_all()` 호출.
-- `scripts/quality_gate.py`: Architectural Stability(패키지 집합 회귀 감시)/Operational
-  Simplicity(5개 Scenario 서브프로세스 실행 실측)/Executive Usability(6개 Widget 섹션
-  렌더링 실측)/AI Reasoning Readiness(ClaudeProvider 구조적 구현 확인) 4개 지표 추가.
-
-**신규 테스트**: `test_company_intelligence_score.py`(10), `test_financial_provider.py`(4)
-+ 기존 파일 확장(`test_registries.py` +13, `test_knowledge_coverage.py` +6,
-`test_quick_company_scan.py` +5, `test_scenarios.py` +4, `test_dashboard*.py` 전면
-재작성, `test_quality_gate.py` +8, `test_config.py` +1)
+- `scripts/providers/mock_provider.py`: `_real_knowledge_fields()`/`_is_usable_section()`
+  신설. `company_id`가 등록되어 있고 그 회사의 1순위 Knowledge 문서에 신뢰 가능한 §1/2/3/7
+  Section이 있으면 `quick_company_scan()`이 그 실제 내용을 반환한다(Claude 호출은 여전히
+  하지 않음, confidence는 계속 "low"). `search_by_company()`가 이어붙이는 여러 파일 중
+  1순위 문서만 따로 파싱해, 다른 회사/문서의 같은 Section 번호가 잘못 노출되는 버그를
+  피했다.
+- `scripts/quick_company_scan.py`: `_render_quick_scan_markdown()` 신설, `_bullets()`
+  헬퍼 추가. Export Markdown이 Company Overview 한 줄만 보여주던 것을 Core 7 필드 전부 +
+  Investment Review 세부(추천 사유/Peer 비교표)로 확장했다.
+- `scripts/scenarios/scenario_1_news_analysis.py`: `notifiers.EmailNotifier`+
+  `build_alert_message()`(Round 4)를 재사용해 [7/7] Email Preview 단계 추가. `run()`
+  반환값에 `email_preview`(`NotifierResult`, dry-run) 추가.
+- `scripts/investment_review.py`, `knowledge/INVESTMENT_FRAMEWORK.md`: DCF에 이어
+  LBO/Option/PMI도 Enterprise Backlog로 명시(문서만 수정, 애초에 구현된 적 없음).
+- `scripts/pipeline/dashboard_feed.py`: 6개 Widget이 쓰는 row dict의 key를 한글
+  라벨(날짜/핵심 내용/신뢰도/출처/회사명/스캔일/종합 점수/추천 신호/검토일/Source/가동
+  상태/안정성 참고)로 변경. `_most_recent()` 신설 — Today's Intelligence/Critical
+  Risk/Future Opportunity/Quick Company Scan/Investment Review를 최신 10건으로 제한
+  (Source Health는 로그가 아니라 목록이라 제한하지 않음). Storage 자체는 전체를 그대로
+  보존한다.
+- `dashboard/sample_data.json`: 위 한글 라벨 변경에 맞춰 갱신.
+- `tests/test_dashboard_data_provider.py`, `tests/test_mvp_integration.py`,
+  `tests/test_quality_gate.py`: 한글 라벨 변경에 맞춰 단언문 갱신.
 
 ## 알려진 설계 결정 이력 (전체, 상세는 docs/04_DATA_AND_CONFIG_SCHEMA.md §1/§5, 각 ADR)
 
 - ADR-006/007/008/009/010: 문서 우선순위 / n8n 통합 / Workflow ID 정책 / Workflow
   생명주기 / Release Policy(RC1 정의)
-- Round 2~8의 각 Q 항목·추가 지시: `CHANGELOG.md`에 라운드별 상세 기록
+- Round 2~9의 각 Q 항목·추가 지시: `CHANGELOG.md`에 라운드별 상세 기록
 
-## 남은 사용자 작업
+## 남은 사용자 작업 / 알려진 한계
 
-`TODO.md` 참고 — Round 8도 여전히 Mock/dry-run 기반이다. `docs/CONNECTION_READINESS.md`의
-Credential 체크리스트대로 Claude API Key/모델 ID 3종/Google/n8n/Gmail/Telegram 계정을
-준비하고 `config/feature_flags.yaml`을 켜야 "실제 동작"(RC2)으로 전환된다. Company
-Registry의 여러 TODO 필드(products/value_chain/official_website 등), Company/Industry
-Coverage가 아직 낮은 것(LX_HAUSYS 1개사만 Knowledge 보유), `STRATEGY_PLAYBOOK.md`
-(Investment Coverage 25%)도 다음 라운드 리서치 대상이다 — 전부
-`config/technical_debt_registry.yaml`에 실제 항목으로 등록되어 있다.
+`TODO.md` 참고 — Round 9도 여전히 Mock/dry-run 기반이다. 사용자 검증 결과 확인된 핵심
+한계:
+- **Company Registry 30개사 중 1개사(LX_HAUSYS)만 실제 Knowledge 보유** — 나머지는
+  Quick Company Scan을 돌려도 여전히 "mock: ... 미확인"만 나온다. TOP-0001 핵심 비교군
+  (Caesarstone/Cosentino/Wilsonart)조차 예외가 아니다(`config/technical_debt_registry.yaml`
+  TD-005).
+- **Investment Review의 Comparable Peer가 회사와 무관하게 항상 동일한 예시 데이터**
+  (Peer A/B) — 실제 재무 Provider 연결(RC2) 전까지 숫자 자체는 참고용도 되지 않는다.
+- **뉴스 분석(risk_analysis)은 실제 Claude 추론이 아니라 고정 mock 문구** — "사람이
+  다시 읽지 않아도 될 정도"는 RC2(실제 API 연결) 이후에나 가능하다.
+- `docs/CONNECTION_READINESS.md`의 Credential 체크리스트대로 Claude API Key/모델 ID
+  3종/Google/n8n/Gmail/Telegram 계정을 준비하고 `config/feature_flags.yaml`을 켜야
+  "실제 동작"(RC2)으로 전환된다.

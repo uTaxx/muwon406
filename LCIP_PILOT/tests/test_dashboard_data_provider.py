@@ -47,7 +47,7 @@ def test_pipeline_dashboard_data_provider_reads_intelligence_from_storage(tmp_pa
     assert data["topic_display_name"] == "테스트 Topic"
     assert len(data["today_intelligence"]) == 1
     assert len(data["critical_risk"]) == 1
-    assert data["today_intelligence"][0]["fact_summary"] == "샘플 기사 관련 사실 요약"
+    assert data["today_intelligence"][0]["핵심 내용"] == "샘플 기사 관련 사실 요약"
 
 
 def test_pipeline_dashboard_data_provider_reads_company_scan_from_storage(tmp_path):
@@ -66,9 +66,9 @@ def test_pipeline_dashboard_data_provider_reads_company_scan_from_storage(tmp_pa
     provider = PipelineDashboardDataProvider(storage, "Topic", "2026-08-05 09:00")
     data = provider.get_data()
     assert len(data["quick_company_scan"]) == 1
-    assert data["quick_company_scan"][0]["intelligence_score"] == 42.3
+    assert data["quick_company_scan"][0]["종합 점수"] == "42.3/100"
     assert len(data["investment_review"]) == 1
-    assert data["investment_review"][0]["recommendation_signal"] == "monitor"
+    assert data["investment_review"][0]["추천 신호"] == "monitor"
 
 
 def test_pipeline_dashboard_data_provider_includes_source_health_from_config(tmp_path):
