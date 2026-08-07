@@ -125,8 +125,38 @@ table.lcip-table a:hover {
   margin-top: 48px;
 }
 
+/* Round 11 — Home Dashboard(Priority 1). 새 Widget이 아니라 이미 있던 .lcip-today-change
+   카드 스타일을 그대로 재사용해, 5개 카드를 2열 그리드로 배치하는 레이아웃만 추가한다. */
+.lcip-home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.lcip-home-grid .lcip-today-change {
+  margin-bottom: 0;
+}
+
+.lcip-home-command {
+  display: block;
+  background: #f5f6f8;
+  border: 1px solid var(--lcip-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8125rem;
+  margin-top: 8px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
 @media (max-width: 640px) {
   .lcip-container {
     padding: 20px 12px 60px;
+  }
+
+  .lcip-home-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,49 +1,62 @@
 # Project Status
 
-최종 갱신: 2026-08-07 (Architect Review Round 10 반영)
+최종 갱신: 2026-08-07 (Architect Review Round 11 반영)
 
 ## 요약
 
-TASK-001~007 → Round 2~9(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 정의/
-Quick Company Scan·News Intelligence·Investment Review·Dashboard 완성도 개선) →
-**Round 10("Data Sprint") 반영** 완료. Architect는 "이번 Round를 기점으로 개발
-Sprint를 종료한다. 다음 Sprint는 Data Sprint다"라고 선언하며 **새로운 기능/구조/
-Registry/Framework/추상화/Enterprise 기능을 절대 금지**하고, 대신 "Pilot에서 실제
-사용할 데이터를 채운다"를 유일한 목표로 지정했다.
+TASK-001~007 → Round 2~10(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 정의/
+Data Sprint) → **Round 11("Pilot RC1 User Validation" UX Sprint) 반영** 완료.
+Architect는 "전체 검토 결과를 승인한다. Round 10을 기점으로 Data Sprint도
+종료한다. Pilot은 이제 '개발 프로젝트'가 아니라 '사용성 검증 프로젝트'로
+전환한다"고 선언하며 **새로운 회사 리서치/Registry/Layer/Engine/Framework/
+Dashboard Widget/Enterprise 기능을 절대 금지**하고, "실제 전략팀 직원이 사용하는
+흐름을 만든다"를 유일한 목표로 지정했다.
 
-이번 Round는 코드 구조를 전혀 바꾸지 않고 **데이터만** 채웠다: Company Registry
-TOP10(LX Hausys 외 9개사)에 실제 WebSearch 리서치 기반 Knowledge 문서를 신설하고,
-Investment Review의 Comparable Peer를 회사마다 다른 실제 기업으로 교체했다(기존
-"Peer A/B" 예시 삭제). 그 결과 Company Coverage가 3.3%→33.3%, Industry Coverage가
-3.6%→35.7%로 실측 개선되었다 — 코드를 한 줄도 늘리지 않고 Quick Company Scan/
-Investment Review의 실사용 품질이 가장 크게 좋아진 라운드다.
+이번 Round는 새 구조를 하나도 추가하지 않고 **이미 있는 기능을 연결·다듬었다**:
+Home Dashboard(5개 카드로 첫 화면 완성), Quick Company Scan 실행 후 터미널에
+바로 뜨는 "결과 요약"(파일을 열지 않아도 핵심이 보임), Executive Report(HTML,
+임원 보고용 1페이지 자동 생성), Pilot Demo Package(실제 시연 대본), User Guide
+(전략팀 관점 재작성) 5가지를 완성했다.
 
-## Round 10 Priority 5개 처리 결과
+## Round 11 Priority 5개 처리 결과
 
 | 순위 | 항목 | 상태 | 핵심 내용 |
 |---|---|---|---|
-| 1 | Knowledge Population | ✅ 완료 | TOP10 기업(LX Hausys 외 9개사) 실제 리서치 Knowledge 문서 9건 신설, `COMPANY_KNOWLEDGE_FILES` 매핑·`company_registry.yaml` products/value_chain 갱신 |
-| 2 | Investment Review Peer 실제화 | ✅ 완료 | `financial_provider.py` 전면 재작성 — "Peer A/B" 삭제, 회사별 실제 Comparable(예: LX Hausys→KCC/한샘/LIXIL/YKK AP/Saint-Gobain) 등록. 배수는 확인된 값만, 미확인은 정직하게 `None` |
-| 3 | Quick Company Scan Demo 5개사 | ✅ 검증 완료 | LX Hausys/KCC/Hanssem/Caesarstone/Cosentino 실제 품질 확인(Company Intelligence Score 42~45점, 이전 대비 상승). 나머지 20개사는 Mock 유지 확인(WILSONART로 회귀 테스트) |
-| 4 | Scenario 5개 발표 순서 | ✅ 검증 완료 | 발표 순서(1=LX Hausys, 2=KCC, 3=Caesarstone Quick Company Scan/Investment Review, 4=정책, 5=뉴스) 전부 실행 검증. 기존 5개 Scenario 스크립트 구조는 변경 없음(새 구조 금지) |
-| 5 | Dashboard 단순화 | ✅ 완료 | 죽은 CSS 5개 클래스 삭제(Technical Debt TD-001 해소), 6개 Widget 구조는 그대로 유지 |
+| 1 | Home Dashboard | ✅ 완료 | `dashboard/template.html`에 새 `<section id="home">` 추가 — 5개 카드(오늘의 핵심 Intelligence/Quick Company Scan 실행/Investment Review 실행/최근 분석 결과/최근 뉴스). 새 Widget 클래스 없이 기존 6개 Widget 데이터의 상위 1건만 재사용(`HOME_*` 토큰 4개, `build_dashboard.py`). 이전까지 미사용이던 `articles` 인자를 `recent_news` 키로 처음 활용(`dashboard_feed.py`) |
+| 2 | Quick Company Scan UX 개선 | ✅ 완료 | `scenario_3_investment_review.py` `main()` 실행 마지막에 "결과 요약"(회사명/점수/추천신호/근거/파일 경로 3종) 블록을 터미널에 바로 출력 — Export 파일을 열지 않아도 핵심 확인 가능 |
+| 3 | Executive Report 자동 생성 | ✅ 완료 | `quick_company_scan.py`에 `build_executive_report_html()`/Export 단계 확장 — 점수·투자시그널·근거·Top3 미확인사항만 담은 1페이지 HTML을 `{회사명}_executive_report.html`로 자동 생성(HTML만 지원, PDF 미구현) |
+| 4 | Pilot Demo Package | ✅ 완료 | `docs/PILOT_DEMO_PACKAGE.md` 신설 — Demo Dataset(LX Hausys/KCC/Caesarstone), Demo Scenario(명령어 표), 시연 순서(단계별 대본), 예상 질문 6개, Demo Script |
+| 5 | User Guide 재작성 | ✅ 완료 | `docs/USER_GUIDE.md` 신설 — 개발자 관점(README.md)과 분리, 전략팀 직원이 5분 안에 "회사 조사 → 결과 보기 → Dashboard 보기"를 끝낼 수 있도록 재작성 |
 
 ## 테스트 결과
 
 ```text
-$ pytest tests/ -q                                    -> 전부 PASS (402개 테스트, Round 9: 397개 → +5개)
-$ python scripts/validate_config.py                   -> PASS
-$ python scripts/secret_scan.py                        -> PASS
-$ python scripts/bootstrap_project.py --dry-run         -> PASS (Registry 8개 전체 검증 통과)
-$ python scripts/knowledge_coverage.py                  -> Company Coverage 33.3%(3.3%→), Industry Coverage 35.7%(3.6%→)
-$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"    -> PASS (Peer: KCC/한샘/LIXIL/YKK AP/Saint-Gobain, Score 42.3)
-$ python scripts/scenarios/scenario_3_investment_review.py "KCC"         -> PASS (Score 45.0)
-$ python scripts/scenarios/scenario_3_investment_review.py "Caesarstone" -> PASS (Score 43.1)
-$ python scripts/scenarios/scenario_4_policy_impact.py                   -> PASS (예시 시나리오임을 명시)
-$ python scripts/scenarios/scenario_1_news_analysis.py                   -> PASS
+$ pytest tests/ -q                                    -> 전부 PASS (409개 테스트, Round 10: 402개 → +7개)
+$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"    -> PASS (결과 요약 + Executive Report HTML 생성 확인)
+$ python scripts/scenarios/scenario_1_news_analysis.py                    -> PASS (Home Dashboard "최근 뉴스" 반영 확인, {{ 토큰 누락 없음)
+$ python scripts/build_dashboard.py --data dashboard/sample_data.json     -> PASS (Home 5개 카드 렌더링 확인)
 ```
 
-## Round 10에서 새로 생성/수정된 파일
+## Round 11에서 새로 생성/수정된 파일
+
+**신규**: `docs/PILOT_DEMO_PACKAGE.md`, `docs/USER_GUIDE.md`
+
+**수정**
+- `dashboard/template.html`: `<section id="home">` 신설(5개 카드).
+- `dashboard/styles.css`: `.lcip-home-grid`/`.lcip-home-command` 추가 — 기존
+  미사용 `.lcip-today-change` 카드 스타일을 재사용.
+- `scripts/build_dashboard.py`: `_render_common_tokens()`에 `HOME_*` 토큰 4개 추가.
+- `scripts/pipeline/dashboard_feed.py`: `_news_row()`/`recent_news` 키 추가 —
+  기존에 받기만 하고 안 쓰던 `articles` 인자를 처음 활용.
+- `dashboard/sample_data.json`: `recent_news` 예시 1건 추가.
+- `scripts/scenarios/scenario_3_investment_review.py`: `main()`에 "결과 요약"
+  출력 블록 추가.
+- `scripts/quick_company_scan.py`: `build_executive_report_html()` 신설,
+  `export_quick_scan_report()`가 반환하는 dict에 `executive_report_path` 추가.
+- 테스트: `test_dashboard.py`(+2)/`test_dashboard_feed.py`(+2)/`test_scenarios.py`(+1)/
+  `test_quick_company_scan.py`(+2) 총 7건 추가.
+
+## Round 10에서 새로 생성/수정된 파일 (과거 기록)
 
 **신규 Knowledge 문서(9건, `knowledge/`)**: `KCC_COMPANY_PROFILE.md`,
 `HANSSEM_COMPANY_PROFILE.md`, `CAESARSTONE_COMPANY_PROFILE.md`,
@@ -82,9 +95,15 @@ $ python scripts/scenarios/scenario_1_news_analysis.py                   -> PASS
 
 ## 남은 사용자 작업 / 알려진 한계
 
-`TODO.md` 참고 — Round 10도 여전히 Mock/dry-run 기반이며 코드 구조는 동결 상태다
-(Architect 지시: "새로운 기능/구조는 구현하지 않는다"). 사용자 검증 결과 확인된 핵심
-한계:
+`TODO.md` 참고 — Round 11도 여전히 Mock/dry-run 기반이며 코드 구조는 동결 상태다
+(Architect 지시: "새로운 기능/구조는 구현하지 않는다"). Round 11이 새로 확인한 한계:
+- **Home Dashboard의 "실행" 카드는 클릭할 수 없다** — Pilot이 서버 없는 정적
+  HTML+CLI 구조라 명령어 텍스트로만 안내한다. 실제 클릭 실행이 필요하면 RC2 이후
+  경량 로컬 서버 도입을 Architect 승인 사항으로 검토해야 한다.
+- **Executive Report(HTML)는 PDF가 아니다** — 이번 Sprint 지시("PDF는 구현하지
+  않는다")대로 HTML만 지원한다. 브라우저 인쇄 기능으로 PDF 변환은 가능하다.
+
+사용자 검증 결과 확인된 기존 핵심 한계(Round 10 이전, 계속 유효):
 - **Company Registry 30개사 중 10개사만 실제 Knowledge 보유** — TOP10 완성 이후에도
   나머지 20개사(LG전자·LG화학, AGC·NSG·Guardian·Vitro, Rehau·Deceuninck·Andersen·
   Pella·Marvin, PPG·Corning·Owens Corning, Wilsonart 등)는 여전히 Mock이다. 다음

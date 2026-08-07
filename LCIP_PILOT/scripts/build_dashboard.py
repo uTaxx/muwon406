@@ -29,10 +29,28 @@ DASHBOARD_DIR = project_root() / "dashboard"
 def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[str, str]:
     """Round 4 지시(Widget 기반 대시보드)에 따라, 각 Widget이 자신의 토큰만 책임지고 채운다.
     `widgets` 목록에서 항목을 빼거나 추가하면 해당 섹션만 독립적으로 켜지거나 꺼진다 —
-    나머지 Widget/토큰에는 영향을 주지 않는다."""
+    나머지 Widget/토큰에는 영향을 주지 않는다.
+
+    Round 11 지시("Home Dashboard 첫 화면 완성" + "새 Dashboard Widget은 추가하지
+    않는다"): HOME_* 토큰 4개는 새 Widget 클래스가 아니라, 이미 있는 6개 Widget과
+    같은 `data` dict에서 상위 1건만 뽑아 기존 `render_generic_list()`로 그대로
+    렌더링한 것이다 — 상세는 아래 각 섹션(1~6번)에서 계속 볼 수 있다.
+    """
     tokens = {
         "{{TOPIC_DISPLAY_NAME}}": escape(data.get("topic_display_name") or "엔지니어드스톤·실리코시스"),
         "{{GENERATED_AT_KST}}": escape(data.get("generated_at_kst") or ""),
+        "{{HOME_TODAY_INTELLIGENCE_HTML}}": render_generic_list(
+            (data.get("today_intelligence") or [])[:1], "오늘 등록된 Intelligence 없음"
+        ),
+        "{{HOME_RECENT_SCAN_HTML}}": render_generic_list(
+            (data.get("quick_company_scan") or [])[:1], "최근 실행된 Quick Company Scan 없음"
+        ),
+        "{{HOME_RECENT_INVESTMENT_HTML}}": render_generic_list(
+            (data.get("investment_review") or [])[:1], "최근 실행된 Investment Review 없음"
+        ),
+        "{{HOME_RECENT_NEWS_HTML}}": render_generic_list(
+            (data.get("recent_news") or [])[:1], "최근 수집된 뉴스 없음"
+        ),
     }
     for widget in widgets:
         tokens[f"{{{{{widget.token}}}}}"] = widget.render(data)

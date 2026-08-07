@@ -21,6 +21,38 @@ def test_build_html_with_sample_data_contains_all_required_sections():
     assert "{{" not in html, "치환되지 않은 템플릿 토큰이 남아있음"
 
 
+def test_build_html_contains_home_section_with_five_required_items():
+    """Round 11 지시: Home 화면은 1)오늘의 핵심 Intelligence 2)Quick Company Scan 실행
+    3)Investment Review 실행 4)최근 분석 결과 5)최근 뉴스를 반드시 포함해야 한다."""
+    data = json.loads((ROOT / "dashboard" / "sample_data.json").read_text(encoding="utf-8"))
+    html = build_dashboard.build_html(data)
+
+    assert 'id="home"' in html
+    assert "오늘의 핵심 Intelligence" in html
+    assert "Quick Company Scan 실행" in html
+    assert "Investment Review 실행" in html
+    assert "최근 분석 결과" in html
+    assert "최근 뉴스" in html
+    assert "scenario_3_investment_review.py" in html
+    assert "{{" not in html, "치환되지 않은 HOME_* 토큰이 남아있음"
+
+
+def test_build_html_home_section_falls_back_when_recent_news_missing():
+    data = {
+        "topic_display_name": "테스트",
+        "generated_at_kst": "2026-08-05 09:00",
+        "today_intelligence": [],
+        "critical_risk": [],
+        "future_opportunity": [],
+        "quick_company_scan": [],
+        "investment_review": [],
+        "source_health": [],
+    }
+    html = build_dashboard.build_html(data)
+    assert "최근 수집된 뉴스 없음" in html
+    assert "{{" not in html
+
+
 def test_build_html_shows_empty_placeholders_when_data_is_empty():
     data = {
         "topic_display_name": "테스트",

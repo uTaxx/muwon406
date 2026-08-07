@@ -12,6 +12,12 @@ Pilot 원칙(Round 8 지시 그대로): Financial Provider만 Mock이고 나머�
 "모든 Scenario는 독립 실행 가능해야 한다"는 지시를 만족시키기 위해 Scenario 2를 내부
 호출한다 — 이 스크립트 하나만 실행해도 전체 흐름이 끝까지 돈다.
 
+Round 11 지시("입력 -> 결과 -> Export까지 클릭 수를 최소화한다. 사용자가 '어떻게
+사용하는지' 설명 없이 이해할 수 있어야 한다"): `main()` 실행 한 번으로 Export 파일을
+열어보지 않고도 핵심 결과(점수/추천신호/근거/파일 경로)를 터미널에서 바로 확인할 수
+있도록 실행 마지막에 "결과 요약" 블록을 출력한다 — `run()`이 이미 반환하던 값을 그대로
+출력만 할 뿐, 새 단계나 새 산출물을 추가하지 않는다.
+
 사용법: python3 scripts/scenarios/scenario_3_investment_review.py ["회사명"]
 """
 from __future__ import annotations
@@ -78,10 +84,11 @@ def run(query: str = "LX Hausys", verbose: bool = True) -> dict:
     )
     log(f"  {COMPANY_SCAN_DB}.jsonl에 1건 추가")
 
-    log("\nExport — JSON/Markdown 산출물 생성")
+    log("\nExport — JSON/Markdown/Executive Report(HTML) 산출물 생성")
     export_paths = export_quick_scan_report(company, quick_report, review, score_dict)
     log(f"  {export_paths['json_path']}")
     log(f"  {export_paths['md_path']}")
+    log(f"  {export_paths['executive_report_path']}")
 
     return {
         "quick_report": quick_report,
@@ -96,7 +103,25 @@ def main() -> int:
     print("=" * 70)
     print(f"Scenario 3 — Quick Company Scan 전체 파이프라인 ('{query}', Scenario 2 자동 실행 포함)")
     print("=" * 70)
-    run(query, verbose=True)
+    result = run(query, verbose=True)
+
+    # Round 11 지시("입력→결과→Export까지 클릭 수를 최소화한다"): Export 파일을 열어야만
+    # 보이던 핵심 결과(점수·추천신호·근거·파일 경로)를 실행 직후 터미널에 바로 보여준다 —
+    # 새 Engine/Framework가 아니라 이미 run()이 반환하는 값을 그대로 출력만 한다.
+    quick_report = result["quick_report"]
+    review = result["review"]
+    score = result["intelligence_score"]
+    export = result["export"]
+    print("\n" + "=" * 70)
+    print("결과 요약")
+    print("=" * 70)
+    print(f"회사명: {quick_report['target_company']}")
+    print(f"Company Intelligence Score: {score['overall']}/100")
+    print(f"추천 신호: {review['recommendation']['signal']}")
+    print(f"추천 사유: {review['recommendation']['rationale']}")
+    print(f"보고서(Markdown, 상세): {export['md_path']}")
+    print(f"보고서(JSON): {export['json_path']}")
+    print(f"Executive Report(HTML, 임원 보고용 1~2페이지): {export['executive_report_path']}")
     print("\nScenario 3 완료.")
     return 0
 

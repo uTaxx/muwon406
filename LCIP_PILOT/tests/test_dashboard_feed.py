@@ -84,3 +84,33 @@ def test_source_health_row_uses_korean_labels_and_is_not_capped():
     assert len(data["source_health"]) == 14  # Source Registry는 로그가 아니라 목록이라 자르지 않는다
     assert set(data["source_health"][0].keys()) == {"Source", "가동 상태", "안정성 참고"}
     assert data["source_health"][0]["가동 상태"] in ("가동중", "미가동")
+
+
+def _article(n: int) -> dict:
+    return {
+        "collected_at": f"2026-08-{n:02d}T00:00:00Z",
+        "title_original": f"뉴스 제목 {n}",
+        "source_url": f"https://example.com/news/{n}",
+    }
+
+
+def test_recent_news_row_uses_korean_labels_and_is_capped():
+    """Round 11 지시: Home Dashboard '최근 뉴스' 섹션 — 새 Widget 없이 기존 articles
+    인자를 recent_news 키로 가공한다."""
+    articles = [_article(n) for n in range(1, 15)]
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=articles, intelligences=[],
+    )
+    assert len(data["recent_news"]) == MAX_ROWS_PER_WIDGET
+    assert set(data["recent_news"][0].keys()) == {"날짜", "제목", "출처"}
+    # 가장 마지막에 추가된(14번) 기사가 맨 위(최신)로 와야 한다.
+    assert data["recent_news"][0]["제목"] == "뉴스 제목 14"
+
+
+def test_recent_news_empty_when_no_articles():
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[],
+    )
+    assert data["recent_news"] == []

@@ -83,8 +83,13 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    Sprint를 종료하고 "Data Sprint"로 전환해, Company Registry TOP10(LX Hausys 외
    9개사)의 Knowledge를 실제로 채우고 Investment Review의 Comparable Peer를
    "Peer A/B" 예시에서 회사별 실제 기업으로 교체했다 — 코드 구조는 전혀 바꾸지 않고
-   데이터만 추가했다. 상세는 아래 "Round 6"/"Round 7"/"Round 8"/"Round 9"/"Round 10"
-   절 참고. 외부 API 실제 연결은 Round 10까지도 시작하지 않았다.
+   데이터만 추가했다. Round 11은 Data Sprint도 종료하고 "사용성 검증 프로젝트"로
+   전환했다 — 새 회사 리서치/Registry/Layer/Engine/Framework/Dashboard Widget/
+   Enterprise 기능을 전부 금지하고, Home Dashboard 완성/Quick Company Scan 결과
+   요약 출력/Executive Report(HTML) 자동 생성/Pilot Demo Package/User Guide
+   재작성 5가지로 "실제 사용 흐름"만 다듬었다. 상세는 아래 "Round 6"/"Round 7"/
+   "Round 8"/"Round 9"/"Round 10"/"Round 11" 절 참고. 외부 API 실제 연결은 Round 11
+   까지도 시작하지 않았다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -444,3 +449,42 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     유지했다.
   - 새로운 Engine/Layer/Registry/Framework/추상화/Enterprise 기능은 일절 추가하지
     않았다. 외부 API 실제 호출도 Round 10에서 없다.
+- **Round 11: "Pilot RC1 User Validation"** — "Round 10을 기점으로 Data Sprint도
+  종료한다. Pilot은 이제 '개발 프로젝트'가 아니라 '사용성 검증 프로젝트'로
+  전환한다. 새로운 코드보다 실제 사용 경험을 개선한다. 새로운 Knowledge 작성보다
+  기존 기능을 연결한다. 새로운 회사 리서치보다 기존 TOP10을 활용한다." 목표는
+  "실제 전략팀 직원이 사용하는 흐름을 만든다"였고, 새 회사 리서치/Registry/Layer/
+  Engine/Framework/Dashboard Widget/Enterprise 기능은 전부 절대 금지였다.
+  - **Home Dashboard(Priority 1)**: `dashboard/template.html`에 새 `<section
+    id="home">`을 추가해 Pilot 첫 화면을 완성했다 — 1) 오늘의 핵심 Intelligence,
+    2) Quick Company Scan 실행, 3) Investment Review 실행, 4) 최근 분석 결과,
+    5) 최근 뉴스. "새 Dashboard Widget 금지"를 "새 `Widget` 클래스 금지"로 좁게
+    해석해, `build_dashboard.py:_render_common_tokens()`에 `HOME_*` 토큰 4개만
+    추가하고 기존 6개 Widget과 같은 `data` dict 상위 1건을 `render_generic_list()`
+    로 재사용했다. Pilot이 백엔드 서버 없는 정적 HTML+CLI 구조라는 사실을 정직하게
+    반영해, "실행" 카드는 클릭형 버튼 대신 명령어를 그대로 보여주는 CTA로
+    구현했다. `dashboard_feed.py`에 `_news_row()`/`recent_news` 키를 추가했는데,
+    이는 Round 8부터 `build_dashboard_data()`가 인자로만 받고 어떤 Widget도 쓰지
+    않던 `articles`를 처음 활용한 것이다. CSS는 새로 만들지 않고 Round 8 이후
+    미사용 상태였던 `.lcip-today-change` 카드 스타일을 재사용했다.
+  - **Quick Company Scan UX 개선(Priority 2)**: `scenario_3_investment_review.py`
+    의 `main()` 실행 마지막에 "결과 요약"(회사명/점수/추천신호/근거/파일 경로)
+    출력 블록을 추가해, Export 파일을 열지 않아도 핵심 결과를 터미널에서 바로
+    확인할 수 있게 했다 — `run()`이 이미 반환하던 값을 출력만 할 뿐 새 단계를
+    추가하지 않았다.
+  - **Executive Report(Priority 3)**: `quick_company_scan.py`에
+    `build_executive_report_html()`을 신설해, 기존 상세 Markdown과 별개로 임원이
+    3분 안에 볼 수 있는 1페이지 HTML 요약(점수·투자 시그널·근거·Top 3 미확인
+    사항)을 자동 생성한다. `export_quick_scan_report()`의 같은 Export 단계에서
+    세 번째 파일로 함께 내보낸다(`executive_report_path`). HTML만 지원하며 PDF는
+    구현하지 않았다(지시 그대로).
+  - **Pilot Demo Package(Priority 4)**: `docs/PILOT_DEMO_PACKAGE.md`를 신설해
+    Demo Dataset(LX Hausys/KCC/Caesarstone)·Demo Scenario(명령어 표)·시연
+    순서(단계별 대본)·예상 질문 6개·Demo Script를 정리했다 — 새 리서치 없이 기존
+    Scenario 5종과 Round 11 산출물의 사용 순서만 정리한 문서다.
+  - **User Guide 재작성(Priority 5)**: `docs/USER_GUIDE.md`를 신설해 개발자 관점
+    (`README.md`)과 분리하고, 전략팀 직원이 5분 안에 "회사 조사 → 결과 보기 →
+    Dashboard 보기"를 끝낼 수 있도록 재작성했다.
+  - 전체 테스트 402개(Round 10) → 409개(+7개), 전부 PASS. 새로운 Engine/Layer/
+    Registry/Framework/Widget/Enterprise 기능은 일절 추가하지 않았다. 외부 API
+    실제 호출도 Round 11에서 없다.

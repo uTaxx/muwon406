@@ -13,6 +13,13 @@ Round 9 지시("Executive가 3분 안에 상황을 이해할 수 있어야 한�
 COMPANY_SCAN_DB에 레코드가 계속 쌓여 같은 내용이 수십 건 중복 표시되는 문제(실사용 중
 직접 확인함 — Pilot 검증 5번 질문 "가장 불편한 부분"의 근거)를 `_most_recent()`로
 최신 N건만 보이게 줄였다 — Storage 자체는 그대로 전체를 남긴다(감사·이력 목적).
+
+Round 11 지시("Home Dashboard 첫 화면에 최근 뉴스도 보여준다", "새 Dashboard Widget은
+추가하지 않는다"): 지금까지 `articles`는 인자로만 받고 어떤 Widget도 쓰지 않았다(위
+docstring 참고) — 새 Widget 클래스를 만들지 않고, 이미 받고 있던 `articles`를
+`recent_news`라는 새 dict 키로 가공해 반환값에 추가했다. `build_dashboard.py`의 Home
+섹션이 기존 `render_generic_list()`로 이 값을 직접 렌더링한다(6개 Widget 목록에는
+들어가지 않는다).
 """
 from __future__ import annotations
 
@@ -61,6 +68,14 @@ def _source_health_row(source: dict) -> dict:
     }
 
 
+def _news_row(article: dict) -> dict:
+    return {
+        "날짜": (article.get("collected_at") or "")[:10] or "-",
+        "제목": article.get("title_original") or "-",
+        "출처": article.get("source_url") or "-",
+    }
+
+
 def build_dashboard_data(
     *,
     topic_display_name: str,
@@ -73,9 +88,11 @@ def build_dashboard_data(
     """articles/intelligences/company_scans(Store 단계에서 읽어온 레코드 목록)와
     sources(Source Registry)를 Executive Dashboard 6개 Widget 입력 shape으로 변환한다.
 
-    `articles`는 현재 위젯 어디에도 직접 쓰이지 않지만(Round 8부터 Today's
+    `articles`는 6개 Widget 중 어디에도 쓰이지 않지만(Round 8부터 Today's
     Intelligence/Critical Risk/Future Opportunity는 INTELLIGENCE_DB 기준으로 재정의됨),
-    호출부(Scenario 1)와의 시그니처 호환을 위해 인자로 남겨둔다.
+    Round 11의 Home Dashboard "최근 뉴스" 섹션이 `recent_news` 키로 그대로 소비한다 —
+    AI가 해석한 Intelligence(사실 요약)와 원문 뉴스 목록은 서로 다른 것이라 구분해서
+    보여준다.
     """
     company_scans = company_scans or []
     sources = sources or []
@@ -103,4 +120,5 @@ def build_dashboard_data(
             _investment_review_row(s) for s in company_scans if s.get("recommendation_signal")
         ]),
         "source_health": [_source_health_row(s) for s in sources],
+        "recent_news": _most_recent([_news_row(a) for a in articles]),
     }

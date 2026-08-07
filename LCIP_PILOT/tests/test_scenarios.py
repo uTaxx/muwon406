@@ -95,6 +95,25 @@ def test_scenario_3_stores_result_for_dashboard_widget(tmp_path, monkeypatch):
     assert "company_intelligence_score" in records[0]
 
 
+def test_scenario_3_main_prints_result_summary_without_opening_files(tmp_path, monkeypatch, capsys):
+    """Round 11 지시: "입력 -> 결과 -> Export까지 클릭 수를 최소화한다." CLI 실행 한 번으로
+    파일을 열지 않고도 핵심 결과(점수/추천신호/근거/경로)를 바로 확인할 수 있어야 한다."""
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+    monkeypatch.setattr("sys.argv", ["scenario_3_investment_review.py", "LX Hausys"])
+
+    scenario_3_investment_review.main()
+
+    out = capsys.readouterr().out
+    assert "결과 요약" in out
+    assert "회사명: LX Hausys" in out
+    assert "Company Intelligence Score:" in out
+    assert "추천 신호:" in out
+    assert "추천 사유:" in out
+    assert "보고서(Markdown, 상세):" in out
+    assert "보고서(JSON):" in out
+    assert "Executive Report(HTML" in out
+
+
 def test_scenario_4_runs_independently_and_matches_policy_schema():
     import json as _json
     from pathlib import Path

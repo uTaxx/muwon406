@@ -16,6 +16,36 @@
     <div class="lcip-meta">최종 갱신: {{GENERATED_AT_KST}} (KST) · LCIP Pilot · LX홀딩스 전략팀 참고용 · 공개정보 기반 · Mock/dry-run 결과 포함 가능</div>
   </header>
 
+  <section class="lcip-section" id="home">
+    <h2>Home — 오늘 확인할 것</h2>
+    <div class="lcip-home-grid">
+      <div class="lcip-today-change">
+        <h2>1. 오늘의 핵심 Intelligence</h2>
+        <div class="lcip-table-scroll">{{HOME_TODAY_INTELLIGENCE_HTML}}</div>
+      </div>
+      <div class="lcip-today-change">
+        <h2>2. Quick Company Scan 실행</h2>
+        <p>회사명 하나로 회사 개요·경쟁사·투자 스크리닝까지 한 번에 생성한다.</p>
+        <code class="lcip-home-command">python3 scripts/scenarios/scenario_3_investment_review.py "회사명"</code>
+      </div>
+      <div class="lcip-today-change">
+        <h2>3. Investment Review 실행</h2>
+        <p>위 명령 하나에 Investment Review까지 함께 실행된다 — 별도 명령이 필요 없다.</p>
+        <code class="lcip-home-command">→ output/quick_company_scan_exports/{회사명}.md 에서 확인</code>
+      </div>
+      <div class="lcip-today-change">
+        <h2>4. 최근 분석 결과</h2>
+        <div class="lcip-table-scroll">{{HOME_RECENT_SCAN_HTML}}</div>
+        <div class="lcip-table-scroll">{{HOME_RECENT_INVESTMENT_HTML}}</div>
+      </div>
+      <div class="lcip-today-change">
+        <h2>5. 최근 뉴스</h2>
+        <div class="lcip-table-scroll">{{HOME_RECENT_NEWS_HTML}}</div>
+      </div>
+    </div>
+    <p class="lcip-empty">상세 내역은 아래 1~6번 섹션에서 계속 볼 수 있다.</p>
+  </section>
+
   <section class="lcip-section">
     <h2>1. Today's Intelligence</h2>
     <div class="lcip-table-scroll">{{TODAY_INTELLIGENCE_HTML}}</div>

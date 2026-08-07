@@ -5,6 +5,64 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 11 "Pilot RC1 User Validation" 반영 (2026-08-07, 11차)
+
+ChatGPT Architect Review Round 11 승인 및 반영. "Round 10을 기점으로 Data Sprint도
+종료한다. Pilot은 이제 '개발 프로젝트'가 아니라 '사용성 검증 프로젝트'로 전환한다.
+새로운 코드보다 실제 사용 경험을 개선한다. 새로운 Knowledge 작성보다 기존 기능을
+연결한다. 새로운 회사 리서치보다 기존 TOP10을 활용한다"가 핵심 지시다. 목표는
+"실제 전략팀 직원이 사용하는 흐름을 만든다"였다 — 새 회사 리서치/Registry/Layer/
+Engine/Framework/Dashboard Widget/Enterprise 기능은 전부 절대 금지였다.
+
+- **Home Dashboard(Priority 1)**: `dashboard/template.html`에 새 `<section
+  id="home">`을 추가해 Pilot 첫 화면을 완성했다 — 1) 오늘의 핵심 Intelligence,
+  2) Quick Company Scan 실행, 3) Investment Review 실행, 4) 최근 분석 결과,
+  5) 최근 뉴스 5개 카드. "새 Dashboard Widget 금지" 지시를 "새 `Widget` 클래스
+  금지"로 좁게 해석해, `scripts/build_dashboard.py:_render_common_tokens()`에
+  `HOME_*` 토큰 4개만 추가하고 기존 6개 Widget과 같은 `data` dict에서 상위 1건만
+  `render_generic_list()`로 재사용했다. "Quick Company Scan 실행"/"Investment
+  Review 실행" 카드는 Pilot이 백엔드 서버 없는 정적 HTML+CLI 구조라는 사실을
+  정직하게 반영해, 클릭형 버튼 대신 실행 명령어를 그대로 보여주는 CTA로 구현했다.
+  `scripts/pipeline/dashboard_feed.py`에 `_news_row()`와 `recent_news` 키를
+  추가했는데, 이는 Round 8부터 `build_dashboard_data()`가 인자로만 받고 어떤
+  Widget도 쓰지 않던 `articles`를 처음으로 활용한 것이다. CSS는 새로 만들지 않고
+  Round 8 Widget 재구성 이후 미사용 상태였던 `.lcip-today-change` 카드 스타일을
+  재사용해 `.lcip-home-grid`/`.lcip-home-command`만 추가했다. `dashboard/
+  sample_data.json`에 `recent_news` 예시 1건을 추가했다.
+- **Quick Company Scan UX 개선(Priority 2)**: "입력 → 결과 → Export까지 클릭 수를
+  최소화한다" 지시에 따라, `scripts/scenarios/scenario_3_investment_review.py`의
+  `main()` 실행 마지막에 "결과 요약" 블록(회사명/Company Intelligence Score/추천
+  신호/추천 사유/보고서 3종 경로)을 터미널에 바로 출력하도록 했다 — `run()`이 이미
+  반환하던 값을 출력만 할 뿐 새 단계나 새 산출물은 추가하지 않았다. 이제 Export
+  파일을 열어보지 않아도 핵심 결과를 즉시 확인할 수 있다.
+- **Executive Report 자동 생성(Priority 3)**: "Quick Company Scan 결과를 임원
+  보고용 1~2페이지 요약본으로 자동 생성한다. HTML 또는 Markdown 둘 중 하나만
+  지원한다. PDF는 구현하지 않는다" 지시에 따라, `scripts/quick_company_scan.py`에
+  `build_executive_report_html()`을 신설했다. 기존 상세 Markdown 보고서(Core 7
+  필드 전체)와 달리, 임원이 3분 안에 볼 수 있도록 점수·투자 시그널·근거·Top 3
+  미확인 사항만 추린 1페이지 HTML을 만든다. `export_quick_scan_report()`가 같은
+  Export 단계에서 세 번째 파일(`{회사명}_executive_report.html`)로 함께 내보내도록
+  확장했다(반환 dict에 `executive_report_path` 키 추가) — 새 파이프라인 단계를
+  추가하지 않고 기존 Export 단계의 산출물 종류만 늘렸다. HTML만 지원하며 PDF는
+  구현하지 않았다(브라우저 인쇄 기능으로 대체 가능).
+- **Pilot Demo Package(Priority 4)**: `docs/PILOT_DEMO_PACKAGE.md`를 신설했다.
+  Demo Dataset(LX Hausys/KCC/Caesarstone — Round 10이 검증한 발표 순서 그대로),
+  Demo Scenario(실행 명령어 표), 시연 순서(Step 0 Home Dashboard부터 Step 5 뉴스
+  분석까지 단계별 대본), 예상 질문과 답변 6개, Demo Script(발표자용 대본 요약)를
+  담았다 — 새 리서치나 기능 없이 기존 5개 Scenario와 Round 11 산출물의 사용
+  순서만 정리했다.
+- **User Guide 재작성(Priority 5)**: `docs/USER_GUIDE.md`를 신설했다. 기존
+  `README.md`(개발자 관점 — venv/pytest 등)와 분리해, 전략팀 직원이 5분 안에
+  "회사 하나 조사하기 → 결과 보기(Executive Report/Markdown/JSON 중 무엇을 볼지)
+  → Dashboard로 오늘 상황 보기"를 끝낼 수 있도록 작성했다. TOP10 회사 목록과 FAQ
+  6개, "하지 않는 것"(정직하게 밝히는 한계) 절도 포함했다.
+- **테스트**: `test_dashboard.py`(+2, Home 섹션/토큰 검증)/`test_dashboard_
+  feed.py`(+2, `_news_row`/`recent_news`)/`test_scenarios.py`(+1, `main()` 결과
+  요약 출력)/`test_quick_company_scan.py`(+2, Executive Report HTML) 총 7건
+  추가. 전체 402개(Round 10) → 409개, 전부 PASS. 새로운 Engine/Layer/Registry/
+  Framework/Widget/Enterprise 기능은 일절 추가하지 않았다. 외부 API 실제 호출도
+  Round 11에서 없다.
+
 ### Added — Architect Review Round 10 "Data Sprint" 반영 (2026-08-07, 10차)
 
 ChatGPT Architect Review Round 10 승인 및 반영. "이번 Round를 기점으로 개발 Sprint를

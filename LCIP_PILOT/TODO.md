@@ -358,3 +358,39 @@ Sprint다. 새로운 기능/구조/Registry는 만들지 않는다." 목표는 �
   Round 10도 실제 API 호출을 금지했으므로 의도된 경계다.
 - Round 9까지의 한계(Executive Dashboard 스냅샷 분리 TD-006 등)는 Round 10에서도
   동일하게 유지된다 — "새 구조 금지" 지시상 이번 라운드에서 다루지 않았다.
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 11 "Pilot RC1 User Validation" (전부 완료)
+
+Round 11 지시: "Round 10을 기점으로 Data Sprint도 종료한다. Pilot은 이제 '개발
+프로젝트'가 아니라 '사용성 검증 프로젝트'로 전환한다. 새로운 코드보다 실제 사용
+경험을 개선한다. 새로운 Knowledge 작성보다 기존 기능을 연결한다. 새로운 회사
+리서치보다 기존 TOP10을 활용한다." 이번 Sprint에서 하지 않은 것(절대 제약): 새
+회사 리서치, 새 Registry, 새 Layer, 새 Engine, 새 Framework, 새 Dashboard
+Widget, Enterprise 기능.
+
+- [x] **Priority 1: Home Dashboard** — `dashboard/template.html`에 `<section
+      id="home">` 신설, 5개 카드(오늘의 핵심 Intelligence/Quick Company Scan
+      실행/Investment Review 실행/최근 분석 결과/최근 뉴스) 완성. 새 Widget
+      클래스 없이 기존 6개 Widget 데이터 재사용(`HOME_*` 토큰 4개). 이전까지
+      받기만 하고 안 쓰던 `articles` 인자를 `recent_news` 키로 처음 활용.
+- [x] **Priority 2: Quick Company Scan UX 개선** — `scenario_3_investment_
+      review.py` `main()`에 "결과 요약"(회사명/점수/추천신호/근거/파일 경로) 출력
+      블록 추가 — Export 파일을 열지 않아도 핵심 확인 가능.
+- [x] **Priority 3: Executive Report** — `build_executive_report_html()` 신설,
+      Export 단계에서 `{회사명}_executive_report.html`(1페이지 임원 요약) 자동
+      생성. HTML만 지원, PDF 미구현(지시 그대로).
+- [x] **Priority 4: Pilot Demo Package** — `docs/PILOT_DEMO_PACKAGE.md` 신설
+      (Demo Dataset/Demo Scenario/시연 순서/예상 질문 6개/Demo Script).
+- [x] **Priority 5: User Guide** — `docs/USER_GUIDE.md` 신설, 전략팀 직원 관점
+      재작성(5분 안에 "회사 조사 → 결과 보기 → Dashboard 보기" 완료 가능).
+- [x] **Product Validation** — 5개 질문 답변 + 보고서 10항목 작성(별도 보고서로 전달).
+
+## 이번 라운드(Architect Review Round 11 반영)에서 알려진 한계
+
+- Home Dashboard의 "실행" 카드는 클릭할 수 없다 — Pilot이 서버 없는 정적
+  HTML+CLI 구조라 명령어 텍스트로만 안내한다. 클릭 실행이 필요하면 RC2 이후
+  경량 로컬 서버 도입 여부를 Architect가 별도로 승인해야 한다.
+- Executive Dashboard 스냅샷 분리 문제(TD-006)는 Round 11에서도 다루지 않았다 —
+  "새 구조 금지" 지시상 이번 라운드 범위 밖이다.
+- Company Registry 30개사 중 10개사(TOP10)만 실제 Knowledge를 보유한다 — 이번
+  Round는 "새 회사 리서치 금지"였으므로 나머지 20개사는 그대로 Mock이다.

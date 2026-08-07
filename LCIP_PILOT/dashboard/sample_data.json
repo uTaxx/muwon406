@@ -39,5 +39,12 @@
       "가동 상태": "가동중",
       "안정성 참고": "Pilot 자체 연동 이력 없음(feature_flags.real_network_calls=false)"
     }
+  ],
+  "recent_news": [
+    {
+      "날짜": "2026-08-07",
+      "제목": "표본 뉴스 제목 (실제 데이터 아님 — 샘플 fixture)",
+      "출처": "https://example.com/sample-news"
+    }
   ]
 }

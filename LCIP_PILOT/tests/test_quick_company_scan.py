@@ -123,6 +123,55 @@ def test_export_quick_scan_report_writes_json_and_markdown(tmp_path):
     assert "LX Hausys" in paths["md_path"].read_text(encoding="utf-8")
 
 
+def test_export_quick_scan_report_also_writes_executive_report_html(tmp_path):
+    """Round 11 Priority 3: "Quick Company Scan 결과를 임원 보고용 1~2페이지 요약본으로
+    자동 생성한다. HTML 또는 Markdown 둘 중 하나만 지원한다. PDF는 구현하지 않는다."""
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    sources = qcs.select_sources_for_company(company, SOURCES)
+    result = qcs.generate_company_intelligence(MockProvider(), company, sources)
+    report = qcs.build_quick_report(company, result)
+    from investment_review import build_investment_review
+
+    review = build_investment_review(qcs.build_investment_review_input(report), [])
+    from company_intelligence_score import compute_score
+
+    score = compute_score(company.company_id, report, sources).as_dict()
+
+    paths = qcs.export_quick_scan_report(company, report, review, score, out_dir=tmp_path)
+
+    assert paths["executive_report_path"].exists()
+    assert paths["executive_report_path"].suffix == ".html"
+    html = paths["executive_report_path"].read_text(encoding="utf-8")
+    assert "LX Hausys" in html
+    assert f"{score['overall']}/100" in html
+    assert review["recommendation"]["signal"] in html
+    assert "<!DOCTYPE html>" in html
+
+
+def test_build_executive_report_html_escapes_and_limits_to_top_3_unknowns():
+    quick_report = {
+        "target_company": "<Test> Co",
+        "scan_date": "2026-08-07",
+        "confidence": "low",
+        "company_overview": "개요",
+        "lx_strategic_fit": "적합성",
+        "unknowns": ["미확인1", "미확인2", "미확인3", "미확인4"],
+    }
+    investment_review = {
+        "recommendation": {"signal": "monitor", "rationale": "근거"},
+        "deal_killer": {"found": False, "reasons": []},
+        "peer_average": {"peer_count": 2},
+    }
+    intelligence_score = {"overall": 42.3}
+
+    html = qcs.build_executive_report_html(quick_report, investment_review, intelligence_score)
+
+    assert "&lt;Test&gt; Co" in html
+    assert "<Test> Co" not in html.replace("&lt;Test&gt; Co", "")
+    assert "미확인1" in html and "미확인2" in html and "미확인3" in html
+    assert "미확인4" not in html
+
+
 def test_export_quick_scan_report_markdown_includes_all_core_7_fields(tmp_path):
     """Round 9 지시: "실제 전략팀 직원이 바로 사용할 수 있는가?" — 이전에는 Company
     Overview만 보여줬다. 나머지 Core 필드(Business Structure/Product Portfolio/
