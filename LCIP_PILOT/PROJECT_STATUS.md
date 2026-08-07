@@ -74,7 +74,7 @@ $ python scripts/knowledge_coverage.py                  -> 도메인 8종 평균
 - `scripts/registries/validation.py` — Validation/Integrity Check/Dependency Check
   순수 함수(`RegistryManager.validate()`/`check_integrity()`/`check_dependencies()`/
   `validate_all()`이 위임)
-- `config/technical_debt_registry.yaml` — Technical Debt Registry(8건, Severity/
+- `config/technical_debt_registry.yaml` — Technical Debt Registry(7건, Severity/
   Priority/Estimated Time/Owner/Status 필드), `TechnicalDebtRegistry`(기존
   `YAMLListRegistry` 재사용)로 RegistryManager의 8번째 Registry로 등록
 

@@ -60,7 +60,7 @@ ChatGPT Architect Review Round 8 승인 및 반영. "현재 LCIP는 Architecture
   Company Registry에 실재하는 company_id를 참조하는지 확인). `bootstrap_project.py`
   (Project Boot)가 `validate_all()`을 호출하도록 연결했다. 13개 테스트.
 - **Technical Debt Registry**: `config/technical_debt_registry.yaml` 신설 — 코드
-  감사로 실제 확인한 8건의 기술 부채(죽은 CSS, Knowledge 신뢰 판정 로직 3중 중복,
+  감사로 실제 확인한 7건의 기술 부채(죽은 CSS, Knowledge 신뢰 판정 로직 3중 중복,
   가격표 placeholder, Scenario별 Dashboard 스냅샷 충돌 등)를 Severity/Priority/
   Estimated Time/Owner/Status 필드로 기록했다("실제 프로젝트 관리가 가능해야 한다"
   지시 반영). 새 Registry 어댑터를 만들지 않고 기존 `YAMLListRegistry`를 재사용해
