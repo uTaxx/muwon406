@@ -5,6 +5,55 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 10 "Data Sprint" 반영 (2026-08-07, 10차)
+
+ChatGPT Architect Review Round 10 승인 및 반영. "이번 Round를 기점으로 개발 Sprint를
+종료한다. 다음 Sprint는 Data Sprint다. 새로운 기능은 구현하지 않는다. 새로운 구조는
+만들지 않는다. 새로운 Registry는 만들지 않는다"가 핵심 지시다. 목표는 오직 "Pilot에서
+실제 사용할 데이터를 채운다"였다 — 이번 라운드는 코드 구조를 전혀 바꾸지 않고 데이터만
+추가했다.
+
+- **Knowledge Population TOP10(Priority 1)**: Company Registry 30개사를 모두 채우지
+  않고, Architect가 지정한 TOP10(LX Hausys 외 KCC/Hanssem/Caesarstone/Cosentino/
+  Shaw Industries/LIXIL/YKK AP/Schüco/Saint-Gobain)만 완성했다. `knowledge/`에 9개
+  신규 Company Profile 문서를 WebSearch 실제 리서치(원문 URL 포함)로 작성했다 — 16계층
+  Taxonomy를 그대로 따르며, §10 Risk 항목에는 TOP-0001(엔지니어드스톤·실리코시스) 소송
+  노출 여부를 회사별로 "확인됨"(Caesarstone/Cosentino — 실제 배심원 평결·스페인 법원
+  유죄 판결 등 구체적 사례) 또는 "확인 안 됨"(KCC/Hanssem/Shaw/LIXIL/YKK AP/Schüco/
+  Saint-Gobain — 증거 부재이지 무혐의 확정 아님)으로 정직하게 구분했다. LIXIL(일본)과
+  LX Hausys(한국)의 명칭 혼동 위험도 문서에 명시적으로 경고했다.
+  `pipeline/knowledge_retrieve.py:COMPANY_KNOWLEDGE_FILES`에 9개사를 매핑했고(각자
+  자기 프로필 문서 1개만 참조 — LX 그룹 맥락과 섞이지 않도록), `company_registry.yaml`의
+  `products`/`value_chain` 필드를 실제 값으로 채웠다. Company Coverage
+  3.3%→33.3%, Industry Coverage 3.6%→35.7%로 실측 개선됐다(Knowledge Coverage 계산
+  로직은 전혀 바꾸지 않았다 — 데이터만 늘었을 뿐이다).
+- **Investment Review Peer 실제화(Priority 2)**: `scripts/financial_provider.py`의
+  `MockFinancialDataProvider`가 회사와 무관하게 항상 반환하던 고정 "Peer A (예시)/
+  Peer B (예시)"를 완전히 삭제했다. 이제 회사별로 실제 업종 인접 기업을 Comparable
+  Peer로 반환한다 — LX Hausys는 Architect가 직접 지정한 5개사(KCC/한샘/LIXIL/YKK AP/
+  Saint-Gobain), 나머지는 업종 인접성 기준으로 매핑했다(예: Caesarstone↔Cosentino).
+  배수(EV/EBITDA·PER·PBR)는 WebSearch로 실제 확인된 값만 채우고, 비상장이거나 확인하지
+  못한 값은 `None`으로 정직하게 남겼다(`investment_review.py:_avg()`가 이미 `None`을
+  평균 계산에서 제외하므로 코드 변경 없이 동작). Export Markdown의 Peer 비교표도
+  `None`을 "-"로 표시하도록 다듬었다.
+- **Quick Company Scan Demo 5개사 검증(Priority 3)**: LX Hausys/KCC/Hanssem/
+  Caesarstone/Cosentino가 실제 Knowledge 기반으로 Company Intelligence Score
+  42~45점을 받는 것을 실행 검증했다(Round 9까지는 LX Hausys만 42.3점, 나머지는 전부
+  30점대 Mock 수준이었다). 나머지 20개사는 의도대로 Mock 수준을 유지한다(Wilsonart로
+  회귀 확인).
+- **Scenario 5개 발표 순서 검증(Priority 4)**: Architect가 지정한 발표 순서(1=LX
+  Hausys, 2=KCC, 3=Caesarstone Quick Company Scan/Investment Review, 4=정부정책
+  분석, 5=뉴스 분석)를 전부 실행해 확인했다. 기존 5개 Scenario 스크립트의 내부 구조·
+  파일명·역할은 전혀 바꾸지 않았다(새 구조 금지 지시).
+- **Dashboard 단순화(Priority 5)**: `dashboard/styles.css`에서 Round 8부터 미사용
+  상태였던 죽은 CSS 5개 클래스(`.lcip-trend-chart`, `.lcip-stat-grid`,
+  `.lcip-stat-value`, `.lcip-stat-label`, `.lcip-stat-total`)를 삭제했다 — Technical
+  Debt Registry TD-001을 `resolved`로 갱신. 6개 Widget 구조는 그대로 유지했다(새
+  Widget 추가 금지 지시).
+- 새로운 Engine/Layer/Registry/Framework/추상화/Enterprise 기능은 일절 추가하지
+  않았다(지시 그대로). 외부 API 실제 호출도 Round 10에서 없다. 전체 테스트 397개
+  (Round 9) → 402개(+5개, 회귀 테스트를 CAESARSTONE→WILSONART로 갱신한 것이 대부분).
+
 ### Changed — Architect Review Round 9 반영 (2026-08-07, 9차)
 
 ChatGPT Architect Review Round 9 승인 및 반영. "Round 8까지의 결과를 통해 Pilot

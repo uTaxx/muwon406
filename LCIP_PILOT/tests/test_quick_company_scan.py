@@ -58,7 +58,9 @@ def test_retrieve_knowledge_for_company_returns_nonempty_for_lx_hausys():
 
 
 def test_retrieve_knowledge_for_company_returns_empty_for_company_without_knowledge_files():
-    company = qcs.resolve_company_input("Caesarstone", REGISTRY)
+    """WILSONART는 Round 10 TOP10 Knowledge Population 대상에 포함되지 않아 여전히
+    Knowledge 파일이 없다."""
+    company = qcs.resolve_company_input("Wilsonart", REGISTRY)
     assert qcs.retrieve_knowledge_for_company(company) == ""
 
 

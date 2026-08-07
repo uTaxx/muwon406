@@ -319,3 +319,42 @@ Preview)만 실사용 수준으로 완성한다.
 - Executive Dashboard의 Scenario별 독립 스냅샷 문제(TD-006)는 이번 라운드에도 그대로
   남아 있다 — Round 9가 "새 구조를 만들지 않는다"고 못박았으므로, 해결하려면 Architect
   승인이 있는 설계 결정이 먼저 필요하다.
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 10 "Data Sprint" (전부 완료)
+
+Round 10 지시: "이번 Round를 기점으로 개발 Sprint를 종료한다. 다음 Sprint는 Data
+Sprint다. 새로운 기능/구조/Registry는 만들지 않는다." 목표는 오직 "Pilot에서 실제
+사용할 데이터를 채운다."
+
+- [x] **Priority 1: Knowledge Population TOP10** — LX Hausys(기완료) 외 9개사(KCC/
+      Hanssem/Caesarstone/Cosentino/Shaw Industries/LIXIL/YKK AP/Schüco/Saint-Gobain)
+      실제 WebSearch 리서치 기반 Knowledge 문서 신설, `COMPANY_KNOWLEDGE_FILES` 매핑
+      추가, `company_registry.yaml` products/value_chain 갱신. Company Coverage
+      3.3%→33.3%, Industry Coverage 3.6%→35.7%.
+- [x] **Priority 2: Investment Review Peer 실제화** — `MockFinancialDataProvider`의
+      고정 "Peer A/B (예시)"를 삭제하고 회사별 실제 Comparable(LX Hausys→KCC/한샘/
+      LIXIL/YKK AP/Saint-Gobain 등)로 교체. 확인 못한 배수는 정직하게 `None`.
+- [x] **Priority 3: Quick Company Scan Demo 5개사** — LX Hausys/KCC/Hanssem/
+      Caesarstone/Cosentino 실제 품질 검증 완료(Company Intelligence Score 42~45점).
+      나머지 20개사 Mock 유지 확인.
+- [x] **Priority 4: Scenario 5개 발표 순서 검증** — 1=LX Hausys, 2=KCC, 3=Caesarstone
+      (Quick Company Scan/Investment Review), 4=정책, 5=뉴스 — 전부 실행 검증. 기존
+      Scenario 스크립트 구조는 변경 없음.
+- [x] **Priority 5: Dashboard 단순화** — Technical Debt TD-001(죽은 CSS 5개 클래스)
+      삭제. 6개 Widget 구조는 그대로 유지.
+- [x] **Product Validation** — 5개 질문 답변 + 보고서 10항목 작성(별도 보고서로 전달).
+
+## 이번 라운드(Architect Review Round 10 반영)에서 알려진 한계
+
+- Company Registry 30개사 중 10개사만 실제 Knowledge를 보유한다 — 나머지 20개사(LG전자/
+  LG화학, 글로벌 유리 제조사 4개사, 글로벌 창호 제조사 5개사, PPG/Corning/Owens
+  Corning, Wilsonart)는 여전히 Mock이다. 다음 Data Sprint 후보군으로
+  `config/technical_debt_registry.yaml` TD-005에 이미 등록되어 있다.
+- Investment Review 배수(EV/EBITDA·PER·PBR)가 부분적으로만 채워진다 — 비상장 기업
+  (Cosentino/YKK AP/Schüco/Shaw)은 구조적으로 배수가 없어 `None`이 유지되고, 일부
+  상장사 배수도 이번 세션 네트워크 제한으로 재무데이터 사이트 직접 대조를 못해 검색
+  스니펫 기반 저신뢰 값이다.
+- 뉴스/정책 분석은 여전히 고정 mock 문구다 — RC2(실제 Claude 연동) 이후에나 해소되며,
+  Round 10도 실제 API 호출을 금지했으므로 의도된 경계다.
+- Round 9까지의 한계(Executive Dashboard 스냅샷 분리 TD-006 등)는 Round 10에서도
+  동일하게 유지된다 — "새 구조 금지" 지시상 이번 라운드에서 다루지 않았다.

@@ -99,9 +99,9 @@ companies:
     dart_name: "KCC"
     country: KR
     industry: "건축자재(도료·단열재·석고보드·바닥재)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
-    official_website: null  # TODO: source required
+    products: ["유리·강화유리·창호 시스템", "단열재·석고보드·바닥재", "KCC글라스 Interior Stone(엔지니어드 쿼츠)", "장식용·자동차용·선박용·산업용 도료", "실리콘 엘라스토머(Momentive 인수분 포함)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(실리카·수지 등 미확인) → 국내 3개 실리콘 공장(대덕/전주/화성) + KCC글라스 생산거점 → 건설사·유통 대리점 → 건축·자동차·조선 등 전방산업"
+    official_website: null  # TODO: source required (공식 도메인 미검증 — Round 10 리서치에서 확인 못함)
     primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
     is_lx_group_company: false
 
@@ -112,9 +112,9 @@ companies:
     dart_name: "한샘"
     country: KR
     industry: "가구·인테리어"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
-    official_website: null  # TODO: source required
+    products: ["주방가구", "침실·거실·욕실 가구", "가전", "직물제품", "인테리어 리모델링 자재(인조대리석/쿼츠 상판 포함)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(목재·인조대리석 등 미확인) → 국내 3개 공장(경기 시흥/안산 원시/안산 성곡) → 한샘 직영매장·대리점·온라인몰 → B2C 소비자 및 B2B 건설사"
+    official_website: null  # TODO: source required (mall.hanssem.com은 확인되나 기업 공식 루트 도메인은 미검증)
     primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
     is_lx_group_company: false
 
@@ -126,9 +126,9 @@ companies:
     dart_name: null
     country: IL
     industry: "엔지니어드스톤·포슬린 표면재"
-    products: []  # TODO: source required (Caesarstone 브랜드 라인 세부 미확인)
-    value_chain: "TODO: source required"
-    official_website: null  # TODO: source required
+    products: ["Caesarstone 쿼츠 표면재(천연 쿼츠 최대 약 93%+수지·안료)", "포슬린 슬랩 라인(브랜드명 미확인)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "천연 쿼츠 원재료 → 이스라엘 Sdot-Yam 자사 생산 + 제3자 위탁생산(2025년 구조조정) → 글로벌 유통(50개국+) → Fabricator·시공업체"
+    official_website: null  # TODO: source required (공식 도메인 미검증)
     primary_disclosure_source: "SEC(EDGAR) — 미국 NASDAQ 상장 외국기업"
     is_lx_group_company: false
 
@@ -139,9 +139,9 @@ companies:
     dart_name: null
     country: ES
     industry: "쿼츠·포슬린 표면재(Silestone, Dekton 브랜드)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
-    official_website: null  # TODO: source required
+    products: ["Silestone(쿼츠 표면재, 1991년 출시)", "Dekton(초박형 소결 표면재, 2013년 출시)", "Sensa(천연석/화강암)", "Eco by Cosentino, Scalea(천연석)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "천연 쿼츠/광물 원재료 → 스페인 알메리아(핵심)+브라질(화강암)+미국 잭슨빌(건설 중, 2027년까지 착공) → 글로벌 유통(80개국+) → Fabricator·시공업체"
+    official_website: "https://www.cosentino.com"  # WebSearch 확인(Round 10, 2026-08-07)
     primary_disclosure_source: "TODO: source required (비상장, 스페인 상업등기소 공시 여부 미확인)"
     is_lx_group_company: false
 
@@ -152,8 +152,8 @@ companies:
     dart_name: null
     country: US
     industry: "바닥재(Flooring)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
+    products: ["Anderson Tuftex(원목마루)", "COREtec/Floorte(LVT·라미네이트)", "Shaw Floors, Patcraft(카펫)", "Shaw Contract(상업용 카펫)", "세라믹/천연석 타일", "Shaw Sports Turf(인조잔디)", "Watershed Geo(지오신세틱)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(폴리프로필렌·목재·세라믹 등) → 미국 내 다수 공장(조지아·앨라배마·사우스캐롤라이나 등) → 유통업체·시공업체 → 주거/상업 건축 최종 소비자"
     official_website: "https://shawinc.com"
     primary_disclosure_source: "모회사 Berkshire Hathaway(NYSE: BRK.A/BRK.B) SEC 공시에 일부 반영 — Shaw 자체 별도 공시 의무 없음(비상장 완전자회사)"
     is_lx_group_company: false
@@ -179,8 +179,8 @@ companies:
     dart_name: null
     country: JP
     industry: "위생도기·주택건축자재(Water/Housing/Building Technology)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
+    products: ["INAX(위생도기·배관)", "GROHE(수전)", "American Standard(위생도기)", "TOSTEM(창호/새시/외장재)"]  # WebSearch 확인(Round 10, 2026-08-07). 주의: 한국 LX Hausys와 무관한 별개 법인
+    value_chain: "원재료(도자기 원료·금속·PVC 등 미확인) → 일본/베트남/태국/필리핀/유럽 생산거점(80개 공장, 150개국+) → 글로벌 유통 → 건설사·시공업체"
     official_website: "https://www.lixil.com"
     primary_disclosure_source: "EDINET(일본 금융청 전자공시시스템)"
     is_lx_group_company: false
@@ -192,8 +192,8 @@ companies:
     dart_name: null
     country: JP
     industry: "건축용 창호·파사드(Architectural Products)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
+    products: ["개폐식/고정식 창호 시스템", "커튼월 시스템", "슬라이딩/테라스 도어 시스템", "고층빌딩용 구조독립형 파사드 시스템", "상업용 스토어프론트 도어/프레임"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(알루미늄·PVC 등 미확인) → 일본(다수 공장)+북미(조지아 2곳·캐나다 1곳) 생산거점 → 건축시공사·유통망 → 상업/주거 건축 최종 고객"
     official_website: "https://www.ykkap.com"
     primary_disclosure_source: "TODO: source required (비상장, 일본 법인 공시 의무 제한적)"
     is_lx_group_company: false
@@ -238,8 +238,8 @@ companies:
     dart_name: null
     country: FR
     industry: "건축자재 제조(유리·단열재·배관자재 등)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
+    products: ["유리·글레이징(Saint-Gobain Glass/Sekurit)", "단열재(Isover)", "석고보드/플라스터보드(CertainTeed, Gyproc, Placo)", "외장재(사이딩·지붕재)", "배관·모르타르·고성능 소재"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(유리 원료·석고·플라스틱 등 미확인) → 80개국 생산망 → 건설사·유통업체·시공업체 → 건축/모빌리티/헬스케어 최종 고객"
     official_website: "https://www.saint-gobain.com"
     primary_disclosure_source: "AMF(프랑스 금융시장청) — Universal Registration Document 제출"
     is_lx_group_company: false
@@ -304,8 +304,8 @@ companies:
     dart_name: null
     country: DE
     industry: "창호·파사드 시스템(알루미늄·PVC·강재)"
-    products: []  # TODO: source required
-    value_chain: "TODO: source required"
+    products: ["알루미늄/스틸/PVC-U 창호 시스템", "도어 시스템", "커튼월/파사드 시스템", "환기·보안·차양 시스템", "Schüco E2(스마트빌딩 통합)"]  # WebSearch 확인(Round 10, 2026-08-07)
+    value_chain: "원재료(알루미늄·PVC-U·강재 등 미확인) → 자사 부품/시스템 생산(독일 중심) → 1만개+ 인증 가공업체 파트너 네트워크(최종 조립) → 건축시공사"
     official_website: "https://www.schueco.com"
     primary_disclosure_source: "TODO: source required (비상장, 공식 증권 공시 의무 없음) — 소유구조는 Otto Fuchs 그룹 계열로 알려져 있으나(schueco.com) 상세는 미확인"
     is_lx_group_company: false

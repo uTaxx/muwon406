@@ -74,7 +74,10 @@ def test_full_report_has_full_business_understanding():
 
 
 def test_knowledge_coverage_is_zero_for_company_without_knowledge_files():
-    score = cis.compute_score("CAESARSTONE", FULL_REPORT, SOURCES)
+    """WILSONART는 Round 10 TOP10 Knowledge Population 대상에 포함되지 않아 여전히
+    Knowledge 파일이 없다 — Company Registry에는 있지만 COMPANY_KNOWLEDGE_FILES에는
+    없는 회사의 정직한 케이스로 쓴다."""
+    score = cis.compute_score("WILSONART", FULL_REPORT, SOURCES)
     assert score.knowledge_coverage == 0.0
 
 

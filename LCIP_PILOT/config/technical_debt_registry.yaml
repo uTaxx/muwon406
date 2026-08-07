@@ -31,7 +31,7 @@ technical_debt:
     priority: P2
     estimated_time: "15분"
     owner: "다음 Architect Review 라운드 담당"
-    status: open
+    status: resolved  # Round 10 Priority 5(Dashboard 단순화)에서 5개 클래스 전부 삭제 완료
     identified_in_round: 8
 
   - debt_id: TD-002

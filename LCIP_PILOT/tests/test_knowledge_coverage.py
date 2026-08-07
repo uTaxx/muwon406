@@ -75,13 +75,16 @@ def test_company_coverage_returns_percentage_within_range():
     assert 0.0 <= kc.company_coverage() <= 100.0
 
 
-def test_company_coverage_reflects_only_lx_hausys_has_knowledge_today():
-    """Company Registry는 30개사지만 COMPANY_KNOWLEDGE_FILES에는 LX_HAUSYS만 매핑되어
-    있다 — 회귀 시 이 값이 부풀려진 100%로 잘못 올라가지 않았는지 감시(정직성 원칙)."""
+def test_company_coverage_reflects_knowledge_populated_companies_only():
+    """Round 10 TOP10 Knowledge Population 이후 10개사(LX_HAUSYS + TOP10 신규 9개사)만
+    실제 Knowledge를 갖는다 — 나머지 20개사는 Company Registry에만 존재한다(회귀 시
+    이 값이 부풀려진 100%로 잘못 올라가지 않았는지 감시, 정직성 원칙)."""
     from registries.manager import RegistryManager
 
-    total_companies = len(RegistryManager().get_registry("company").list_entries())
-    expected = (1 / total_companies) * 100
+    companies = RegistryManager().get_registry("company").list_entries()
+    covered = sum(1 for c in companies if kc._company_has_reliable_knowledge(c["company_id"]))
+    expected = (covered / len(companies)) * 100
+    assert covered == 10
     assert kc.company_coverage() == pytest.approx(expected)
 
 
@@ -106,13 +109,17 @@ def test_industry_coverage_returns_percentage_within_range():
 
 
 def test_industry_coverage_uses_exact_string_match_not_keyword_similarity():
-    """industry는 자유 텍스트라 지금은 LX_HAUSYS의 정확한 industry 문자열 1개만
-    커버된다 — 키워드 유사 매칭으로 뭉뚱그려 값이 부풀려지지 않았는지 감시."""
+    """industry는 자유 텍스트라, Knowledge를 가진 회사들의 정확한 industry 문자열만
+    커버된 것으로 센다 — 키워드 유사 매칭으로 뭉뚱그려 값이 부풀려지지 않았는지 감시."""
     from registries.manager import RegistryManager
 
     companies = RegistryManager().get_registry("company").list_entries()
     distinct_industries = {c["industry"] for c in companies if c.get("industry")}
-    expected = (1 / len(distinct_industries)) * 100
+    covered_industries = {
+        c["industry"] for c in companies
+        if c.get("industry") and kc._company_has_reliable_knowledge(c["company_id"])
+    }
+    expected = (len(covered_industries) / len(distinct_industries)) * 100
     assert kc.industry_coverage() == pytest.approx(expected)
 
 

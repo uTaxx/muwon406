@@ -218,14 +218,17 @@ def _render_quick_scan_markdown(quick_report: dict, investment_review: dict, int
         lines.append(f"- Deal Killer Reasons: {'; '.join(investment_review['deal_killer']['reasons'])}")
     lines += [
         f"- Comparable Peer 수: {peer_avg['peer_count']}건"
-        + ("(전부 예시 데이터 — 실제 재무 데이터 아님)" if comparable else ""),
+        + ("(회사명은 실제 기업 — 배수는 확인된 값만 표시, 미확인은 '-')" if comparable else ""),
     ]
     if comparable:
         lines.append("")
         lines.append("| Peer | EV/EBITDA | PER | PBR |")
         lines.append("|---|---|---|---|")
         for peer in comparable:
-            lines.append(f"| {peer['peer_name']} | {peer['ev_ebitda']} | {peer['per']} | {peer['pbr']} |")
+            ev_ebitda = peer["ev_ebitda"] if peer["ev_ebitda"] is not None else "-"
+            per = peer["per"] if peer["per"] is not None else "-"
+            pbr = peer["pbr"] if peer["pbr"] is not None else "-"
+            lines.append(f"| {peer['peer_name']} | {ev_ebitda} | {per} | {pbr} |")
     lines += [
         "",
         "## 확인되지 않은 사항 (Unknowns)",

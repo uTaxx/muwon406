@@ -79,9 +79,12 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    Layer를 추가하지 않고, 우선순위 5개 기능(Quick Company Scan/News Intelligence/
    Investment Review/Executive Dashboard/Email Preview)만 실사용 수준으로 다듬었다.
    가장 큰 성과는 MockProvider가 Round 6이 이미 리서치해 둔 LX Hausys 실제 Knowledge를
-   그동안 전혀 쓰지 않고 버리고 있었다는 것을 발견하고 고친 것이다. 상세는 아래
-   "Round 6"/"Round 7"/"Round 8"/"Round 9" 절 참고. 외부 API 실제 연결은 Round 9까지도
-   시작하지 않았다.
+   그동안 전혀 쓰지 않고 버리고 있었다는 것을 발견하고 고친 것이다. Round 10은 개발
+   Sprint를 종료하고 "Data Sprint"로 전환해, Company Registry TOP10(LX Hausys 외
+   9개사)의 Knowledge를 실제로 채우고 Investment Review의 Comparable Peer를
+   "Peer A/B" 예시에서 회사별 실제 기업으로 교체했다 — 코드 구조는 전혀 바꾸지 않고
+   데이터만 추가했다. 상세는 아래 "Round 6"/"Round 7"/"Round 8"/"Round 9"/"Round 10"
+   절 참고. 외부 API 실제 연결은 Round 10까지도 시작하지 않았다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -409,3 +412,35 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     Knowledge가 전혀 없는 회사를 직접 확인함).
   - 외부 API 실제 연결은 Round 9도 예외 없이 시작하지 않았다. 새로운 구조/Framework/
     Registry/Layer도 추가하지 않았다(지시 그대로 — 기존 코드 수정만 수행).
+- **Round 10: "Data Sprint"** — "이번 Round를 기점으로 개발 Sprint를 종료한다. 다음
+  Sprint는 Data Sprint다. 새로운 기능/구조/Registry는 만들지 않는다." 목표는 오직
+  "Pilot에서 실제 사용할 데이터를 채운다"였다 — 코드 구조는 전혀 바꾸지 않고 데이터만
+  추가한 라운드다.
+  - **Knowledge Population TOP10**: 30개사를 모두 채우지 않고 Architect가 지정한
+    TOP10(LX Hausys + KCC/Hanssem/Caesarstone/Cosentino/Shaw Industries/LIXIL/
+    YKK AP/Schüco/Saint-Gobain)만 완성했다. `knowledge/`에 9개 신규 Company Profile
+    문서를 WebSearch 실제 리서치(원문 URL 포함)로 작성했다 — 16계층 Taxonomy를 그대로
+    따르고, §10 Risk에는 TOP-0001(실리코시스) 소송 노출 여부를 회사별로 정직하게
+    구분했다(Caesarstone/Cosentino는 실제 배심원 평결·법원 판결 등 구체적 사례 확인,
+    나머지는 "확인 안 됨 — 무혐의 확정 아님"). LIXIL(일본)과 LX Hausys(한국)의 명칭
+    혼동 위험도 문서에 명시했다. `pipeline/knowledge_retrieve.py:COMPANY_KNOWLEDGE_FILES`
+    에 9개사를 추가(각자 자기 프로필 문서 1개만 참조)하고 `company_registry.yaml`의
+    products/value_chain을 실제 값으로 채웠다. Company Coverage 3.3%→33.3%, Industry
+    Coverage 3.6%→35.7%(계산 로직은 그대로, 데이터만 늘었다).
+  - **Investment Review Peer 실제화**: `MockFinancialDataProvider`가 항상 반환하던
+    고정 "Peer A/B (예시)"를 삭제하고, 회사별 실제 업종 인접 기업을 Comparable Peer로
+    반환하도록 바꿨다 — LX Hausys는 Architect가 직접 지정한 5개사(KCC/한샘/LIXIL/
+    YKK AP/Saint-Gobain). 배수는 WebSearch로 확인된 값만 채우고 나머지는 `None`으로
+    정직하게 남겼다(`investment_review.py:_avg()`가 이미 `None`을 제외하므로 코드
+    변경 없이 그대로 동작).
+  - **Quick Company Scan Demo 5개사 검증**: LX Hausys/KCC/Hanssem/Caesarstone/
+    Cosentino가 실제 Knowledge 기반으로 Company Intelligence Score 42~45점을 받는
+    것을 확인했다(Round 9까지는 LX Hausys만 42.3점, 나머지는 30점대 Mock 수준).
+  - **Scenario 5개 발표 순서 검증**: Architect 지정 순서(1=LX Hausys, 2=KCC,
+    3=Caesarstone, 4=정부정책, 5=뉴스)를 전부 실행 확인했다 — 기존 5개 Scenario
+    스크립트의 내부 구조·파일명·역할은 전혀 바꾸지 않았다.
+  - **Dashboard 단순화**: `dashboard/styles.css`의 죽은 CSS 5개 클래스(Technical Debt
+    TD-001, `.lcip-trend-chart`/`.lcip-stat-*`)를 삭제했다. 6개 Widget 구조는 그대로
+    유지했다.
+  - 새로운 Engine/Layer/Registry/Framework/추상화/Enterprise 기능은 일절 추가하지
+    않았다. 외부 API 실제 호출도 Round 10에서 없다.

@@ -16,8 +16,11 @@ from _common import project_root
 
 KNOWLEDGE_DIR = project_root() / "knowledge"
 
-# 회사별로 참고할 Knowledge 문서 (우선순위 순). Pilot 범위상 LX_HAUSYS만 채워져 있다 —
-# 다른 계열사가 추가되면 이 매핑만 확장하면 된다.
+# 회사별로 참고할 Knowledge 문서 (우선순위 순). LX_HAUSYS는 LX 계열사라 Group 전체
+# Knowledge(GROUP_RISK_MAP.md 등)까지 참고하지만, Round 10이 추가한 TOP10 비교군(경쟁사·
+# 협력사 등 LX 계열이 아닌 회사)은 자기 자신의 프로필 문서 1개만 참고한다 — LX 그룹
+# 맥락을 다른 회사에 섞으면 안 되기 때문이다(Architect Review Round 10 — Knowledge
+# Population TOP10).
 COMPANY_KNOWLEDGE_FILES: dict[str, list[str]] = {
     "LX_HAUSYS": [
         "LX_HAUSYS_COMPANY_DNA.md",
@@ -28,6 +31,15 @@ COMPANY_KNOWLEDGE_FILES: dict[str, list[str]] = {
         "LX_HOLDINGS_CONTEXT.md",
         "PLATFORM_CONSTITUTION.md",
     ],
+    "KCC": ["KCC_COMPANY_PROFILE.md"],
+    "HANSSEM": ["HANSSEM_COMPANY_PROFILE.md"],
+    "CAESARSTONE": ["CAESARSTONE_COMPANY_PROFILE.md"],
+    "COSENTINO": ["COSENTINO_COMPANY_PROFILE.md"],
+    "SHAW_INDUSTRIES": ["SHAW_INDUSTRIES_COMPANY_PROFILE.md"],
+    "LIXIL": ["LIXIL_COMPANY_PROFILE.md"],
+    "YKK_AP": ["YKK_AP_COMPANY_PROFILE.md"],
+    "SCHUCO": ["SCHUCO_COMPANY_PROFILE.md"],
+    "SAINT_GOBAIN": ["SAINT_GOBAIN_COMPANY_PROFILE.md"],
 }
 
 _VERSION_RE = re.compile(r"^version:\s*(?P<version>\S+)\s*$", re.MULTILINE)
