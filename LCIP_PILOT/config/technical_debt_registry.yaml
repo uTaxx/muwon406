@@ -1,0 +1,132 @@
+# LCIP Pilot — Technical Debt Registry
+# Architect Review Round 8 신설: "Technical Debt에 Severity/Priority/Estimated Time/
+# Owner를 추가한다 — 실제 프로젝트 관리가 가능해야 한다."
+#
+# 이 Registry는 각 라운드가 스스로 발견했지만 "지금 당장 고칠 범위는 아니다"라고 판단해
+# 미룬 실제 코드/데이터 이슈만 담는다 — 임의로 지어낸 개선 아이디어가 아니라, 코드베이스를
+# 직접 확인해 존재를 검증한 항목만 등록한다(CLAUDE.md 절대 원칙 5 "임의 사실 금지"와 동일한
+# 정신을 코드 감사에도 적용한다).
+#
+# 필드 정의:
+#   severity — 방치 시 실제로 발생하는 문제의 심각도. critical(정확성/보안 문제) |
+#     high(사용자가 체감하는 결함) | medium(품질/유지보수성 저하) | low(미관/정리 수준)
+#   priority — 다음에 손댈 순서. P0(다음 커밋에서 즉시) | P1(다음 Round 내) |
+#     P2(RC1 이후 여유 있을 때)
+#   estimated_time — 사람이 직접 작업할 경우의 대략적 소요 시간(정직한 추정치, SLA 아님)
+#   owner — 이 Pilot은 1인 프로젝트라 실제 인명이 아니라 "누가 해결 가능한가"를 명시한다
+#     (예: "다음 Architect Review 라운드 담당" = 사용자 승인 후 Claude Code가 수행)
+#   status — open | in_progress | resolved
+#   identified_in_round — 이 항목을 처음 발견한 Architect Review 라운드 번호
+
+technical_debt:
+  - debt_id: TD-001
+    title: "dashboard/styles.css의 죽은 CSS 클래스"
+    description: >
+      Round 8에서 TimelineWidget/StatisticsWidget을 제거하며 6개 Widget으로 재구성했지만,
+      그 Widget들이 쓰던 .lcip-trend-chart/.lcip-stat-grid/.lcip-stat-value/
+      .lcip-stat-label/.lcip-stat-total 클래스 정의는 styles.css에 그대로 남아 있다.
+      template.html/scripts/*.py 어디에서도 더 이상 참조하지 않는다(grep으로 확인).
+    location: "dashboard/styles.css"
+    severity: low
+    priority: P2
+    estimated_time: "15분"
+    owner: "다음 Architect Review 라운드 담당"
+    status: open
+    identified_in_round: 8
+
+  - debt_id: TD-002
+    title: "Knowledge 신뢰 가능 판정 로직이 3곳에 유사하지만 다르게 중복됨"
+    description: >
+      knowledge_quality.py(_is_na/_is_unset/_is_fresh), knowledge_coverage.py(_is_reliable,
+      freshness 포함), company_intelligence_score.py(_section_is_reliable, freshness
+      미포함) 세 곳이 "신뢰 가능"을 서로 다른 기준으로 판정한다. 셋 다 낮은 값을 정직하게
+      보고하는 방향이라 지금 당장 틀린 결과를 내지는 않지만, 세 곳 중 하나만 기준을
+      바꾸면 나머지와 조용히 어긋날 위험이 있다.
+    location: "scripts/knowledge_quality.py, scripts/knowledge_coverage.py, scripts/company_intelligence_score.py"
+    severity: medium
+    priority: P1
+    estimated_time: "2~3시간(공통 함수로 통합 + 회귀 테스트)"
+    owner: "다음 Architect Review 라운드 담당"
+    status: open
+    identified_in_round: 8
+
+  - debt_id: TD-003
+    title: "config/model_pricing.yaml 단가가 전부 placeholder 0.0"
+    description: >
+      실제 Claude 모델 확정 전까지 usd_per_million_input_tokens/output_tokens가 세
+      tier(classification/deep_analysis/future) 모두 0.0으로 남아 있다. cost_guard.py가
+      계산하는 비용은 지금 실제로는 항상 0으로 나온다 — feature_flags.claude_api_enabled가
+      false인 한 사실과 다르지 않지만, RC2에서 실제 API를 켜는 순간 이 placeholder부터
+      먼저 채워야 한다.
+    location: "config/model_pricing.yaml"
+    severity: medium
+    priority: P1
+    estimated_time: "모델 확정 후 30분(Anthropic 공식 가격표 대조)"
+    owner: "RC2 담당(실제 API 연결 승인 이후)"
+    status: open
+    identified_in_round: 6
+
+  - debt_id: TD-004
+    title: "validate_config.py가 Company/Model/Prompt Registry를 검사 범위에서 빠뜨림"
+    description: >
+      TASK-002 시절 만들어진 validate_config.py는 topics/sources/workflow_registry 등
+      8개 파일만 검사한다. Round 8에서 RegistryManager.validate_all()이 Company/Model/
+      Prompt Registry까지 포함한 7개 전체를 검증하게 되면서, 두 스크립트의 책임 범위가
+      부분적으로 겹친다 — 다음 라운드에서 validate_config.py를 RegistryManager 기반으로
+      흡수하거나 역할을 명확히 분리해야 한다.
+    location: "scripts/validate_config.py, scripts/registries/validation.py"
+    severity: low
+    priority: P2
+    estimated_time: "1시간(역할 분리 문서화 또는 흡수)"
+    owner: "다음 Architect Review 라운드 담당"
+    status: open
+    identified_in_round: 8
+
+  - debt_id: TD-005
+    title: "Company Registry 30개사 중 다수 필드가 TODO placeholder"
+    description: >
+      official_website/primary_disclosure_source/products/value_chain 등 다수 필드가
+      "TODO: source required"로 남아 있다(비상장사·해외법인 다수 포함). 임의로 채우지
+      않는 것은 CLAUDE.md 원칙상 올바르지만, RC1 시연에서 이 회사들을 Quick Company
+      Scan으로 조회하면 Company Intelligence Score의 business_understanding/
+      financial_visibility 하위 점수가 낮게 나오는 원인이 된다.
+    location: "config/company_registry.yaml"
+    severity: medium
+    priority: P1
+    estimated_time: "회사당 30분 내외 리서치(WebSearch), 전체는 4~6시간"
+    owner: "리서치 담당(WebSearch 필요)"
+    status: open
+    identified_in_round: 7
+
+  - debt_id: TD-006
+    title: "Scenario별 dashboard.html 스냅샷이 서로를 덮어씀"
+    description: >
+      Scenario 1과 Scenario 3은 output/pilot_data/를 공유하지만, 각 Scenario의 run()이
+      끝나면서 스스로 dashboard.html을 그 시점 데이터로 다시 쓴다. 두 Scenario를 순서대로
+      실행하면 최종 dashboard.html은 "마지막에 실행한 Scenario 기준" 스냅샷만 반영하고,
+      먼저 실행한 Scenario의 산출물은 (COMPANY_SCAN_DB/INTELLIGENCE_DB에는 남아 있어도)
+      화면에는 함께 보이지 않을 수 있다 — 별도로 Dashboard만 다시 빌드하면 둘 다 보인다.
+      버그는 아니지만(각 Scenario "독립 실행 가능" 원칙의 자연스러운 결과), 전략팀 시연
+      순서에 따라 오해를 유발할 수 있어 설계 결정이 필요하다.
+    location: "scripts/scenarios/scenario_1_news_analysis.py, scripts/scenarios/scenario_3_investment_review.py"
+    severity: low
+    priority: P2
+    estimated_time: "설계 결정 필요(예: 시연 직전 Dashboard만 별도 재빌드하는 절차 문서화) — 30분"
+    owner: "다음 Architect Review 라운드 담당(설계 승인 필요)"
+    status: open
+    identified_in_round: 8
+
+  - debt_id: TD-007
+    title: "Investment 도메인 Knowledge Coverage가 낮음(STRATEGY_PLAYBOOK.md 미착수)"
+    description: >
+      STRATEGY_PLAYBOOK.md §1/§2가 여전히 confidence: draft라 Investment Coverage가
+      25%에 머문다(8개 도메인 중 최저). Investment Review Engine의 Comparable 분석
+      자체는 정상 동작하지만, "LX 관점에서 왜 이 투자가 중요한가"를 뒷받침하는 Knowledge
+      근거가 아직 얇다.
+    location: "knowledge/STRATEGY_PLAYBOOK.md"
+    severity: medium
+    priority: P1
+    estimated_time: "리서치 3~4시간(WebSearch 기반 실제 사실 확인)"
+    owner: "리서치 담당(WebSearch 필요)"
+    status: open
+    identified_in_round: 7

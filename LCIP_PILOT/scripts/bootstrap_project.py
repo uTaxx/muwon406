@@ -5,6 +5,12 @@
 검사하고 보고한다. 아무것도 쓰지 않는다.
 --apply: 누락된 "빈 폴더"만 생성한다 (기존 파일은 절대 덮어쓰지 않음. 충돌 시 `.generated`
 접미사로 별도 생성 후 보고).
+
+Architect Review Round 8: "RegistryManager는 Project Boot 시 전체 Registry를 검증한다."
+이 스크립트가 Pilot의 "Project Boot" 지점이므로, 폴더/파일 스캐폴드 점검 뒤에
+`RegistryManager.validate_all()`(Validation + Integrity Check + Dependency Check)을
+호출한다 — 폴더 구조와 무관한 별개의 검사이므로 실패해도 스캐폴드 결과 자체는 그대로
+보고한다.
 """
 from __future__ import annotations
 
@@ -82,11 +88,32 @@ def main() -> int:
     else:
         print("\n결과: 누락 항목 있음 (위 목록 참고)")
 
+    registry_errors = run_registry_validation()
+
     # dry-run은 항상 보고만 하고 성공(0)으로 종료한다. --apply는 폴더 생성 후에도
     # 파일 누락이 남아있을 수 있으므로 그 경우에만 비정상 종료(1)로 알린다.
     if args.apply:
-        return 1 if missing_files else 0
+        return 1 if (missing_files or registry_errors) else 0
     return 0
+
+
+def run_registry_validation() -> list[str]:
+    """RegistryManager 전체(Company/Source/Model/Prompt/Workflow/Config/Storage/
+    Technical Debt)에 Validation + Integrity Check + Dependency Check를 수행하고
+    결과를 출력한다."""
+    from registries.manager import RegistryManager
+
+    manager = RegistryManager()
+    errors = manager.validate_all()
+
+    print("\n=== Registry 검증 (Architect Review Round 8) ===")
+    if errors:
+        print(f"Registry 검증 실패: {len(errors)}건")
+        for e in errors:
+            print(f"  - {e}")
+    else:
+        print(f"Registry {len(manager.registry_ids())}개 전체 통과 — Validation/Integrity/Dependency 오류 없음")
+    return errors
 
 
 if __name__ == "__main__":

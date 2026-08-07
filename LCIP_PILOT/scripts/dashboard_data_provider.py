@@ -12,6 +12,7 @@ import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from _common import load_yaml
 from pipeline.dashboard_feed import build_dashboard_data
 from storage.base import StorageBackend
 
@@ -36,8 +37,14 @@ class StaticJSONDataProvider(DashboardDataProvider):
 
 
 class PipelineDashboardDataProvider(DashboardDataProvider):
-    """StorageBackend(ARTICLE_DB/INTELLIGENCE_DB)에서 실제 Pipeline 결과를 읽어 대시보드
-    입력 형태로 변환한다 (`pipeline/dashboard_feed.py` 재사용)."""
+    """StorageBackend(ARTICLE_DB/INTELLIGENCE_DB/COMPANY_SCAN_DB)와 Source Registry에서
+    실제 Pipeline 결과를 읽어 Executive Dashboard 입력 형태로 변환한다
+    (`pipeline/dashboard_feed.py` 재사용). Round 8부터 Quick Company Scan/Investment
+    Review/Source Health 3개 Widget이 추가되어 COMPANY_SCAN_DB와
+    `config/sources.yaml`도 함께 읽는다 — `storage`가 COMPANY_SCAN_DB 컬렉션을 아직
+    갖고 있지 않아도(예: Scenario 1만 실행한 경우) `load_all()`은 빈 리스트를 반환하므로
+    에러 없이 동작한다.
+    """
 
     def __init__(self, storage: StorageBackend, topic_display_name: str, generated_at_kst: str):
         self.storage = storage
@@ -50,4 +57,6 @@ class PipelineDashboardDataProvider(DashboardDataProvider):
             generated_at_kst=self.generated_at_kst,
             articles=self.storage.load_all("ARTICLE_DB"),
             intelligences=self.storage.load_all("INTELLIGENCE_DB"),
+            company_scans=self.storage.load_all("COMPANY_SCAN_DB"),
+            sources=load_yaml("config/sources.yaml")["sources"],
         )

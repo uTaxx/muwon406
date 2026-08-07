@@ -46,6 +46,35 @@ def test_generate_company_intelligence_via_mock_provider():
     assert result.parsed_json["target_company"] == "LX Hausys"
 
 
+# --- Round 8: Knowledge Retrieval 단계 (Input -> Company Registry -> Knowledge
+# Retrieval -> Source Selection -> ...) ---
+
+
+def test_retrieve_knowledge_for_company_returns_nonempty_for_lx_hausys():
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    excerpt = qcs.retrieve_knowledge_for_company(company)
+    assert len(excerpt) > 0
+    assert "LX_HAUSYS_COMPANY_DNA.md" in excerpt
+
+
+def test_retrieve_knowledge_for_company_returns_empty_for_company_without_knowledge_files():
+    company = qcs.resolve_company_input("Caesarstone", REGISTRY)
+    assert qcs.retrieve_knowledge_for_company(company) == ""
+
+
+def test_retrieve_knowledge_for_company_returns_empty_for_unresolved_company():
+    company = qcs.resolve_company_input("존재하지 않는 회사 XYZ", REGISTRY)
+    assert qcs.retrieve_knowledge_for_company(company) == ""
+
+
+def test_generate_company_intelligence_passes_knowledge_excerpt_through():
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    sources = qcs.select_sources_for_company(company, SOURCES)
+    excerpt = qcs.retrieve_knowledge_for_company(company)
+    result = qcs.generate_company_intelligence(MockProvider(), company, sources, excerpt)
+    assert "Knowledge Base 발췌 없음" not in str(result.parsed_json["unknowns"])
+
+
 def test_build_quick_report_is_schema_valid():
     company = qcs.resolve_company_input("LX Hausys", REGISTRY)
     sources = qcs.select_sources_for_company(company, SOURCES)
@@ -66,6 +95,30 @@ def test_build_investment_review_input_extracts_expected_fields():
     assert "financial_snapshot" in review_input
     assert "competitor" in review_input
     assert "confidence" in review_input
+
+
+def test_export_quick_scan_report_writes_json_and_markdown(tmp_path):
+    company = qcs.resolve_company_input("LX Hausys", REGISTRY)
+    sources = qcs.select_sources_for_company(company, SOURCES)
+    result = qcs.generate_company_intelligence(MockProvider(), company, sources)
+    report = qcs.build_quick_report(company, result)
+    from investment_review import build_investment_review
+
+    review = build_investment_review(qcs.build_investment_review_input(report), [])
+    from company_intelligence_score import compute_score
+
+    score = compute_score(company.company_id, report, sources).as_dict()
+
+    paths = qcs.export_quick_scan_report(company, report, review, score, out_dir=tmp_path)
+
+    assert paths["json_path"].exists()
+    assert paths["md_path"].exists()
+    import json
+
+    exported = json.loads(paths["json_path"].read_text(encoding="utf-8"))
+    assert exported["company_id"] == "LX_HAUSYS"
+    assert exported["company_intelligence_score"]["overall"] == score["overall"]
+    assert "LX Hausys" in paths["md_path"].read_text(encoding="utf-8")
 
 
 def test_company_registry_has_14_companies_round6_taskk02():

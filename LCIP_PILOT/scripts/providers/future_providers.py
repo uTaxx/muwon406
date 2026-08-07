@@ -27,7 +27,9 @@ class OpenAIProvider(AIProvider):
     ) -> ProviderResult:
         raise NotImplementedError("OpenAIProvider는 아직 구현되지 않았다 (Future).")
 
-    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+    def quick_company_scan(
+        self, company: dict, sources: list[dict], knowledge_excerpt: str = ""
+    ) -> ProviderResult:
         raise NotImplementedError("OpenAIProvider는 아직 구현되지 않았다 (Future).")
 
     def analyze_policy_impact(
@@ -47,7 +49,9 @@ class GeminiProvider(AIProvider):
     ) -> ProviderResult:
         raise NotImplementedError("GeminiProvider는 아직 구현되지 않았다 (Future).")
 
-    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+    def quick_company_scan(
+        self, company: dict, sources: list[dict], knowledge_excerpt: str = ""
+    ) -> ProviderResult:
         raise NotImplementedError("GeminiProvider는 아직 구현되지 않았다 (Future).")
 
     def analyze_policy_impact(

@@ -107,15 +107,16 @@ def test_pilot_mvp_end_to_end_flow(tmp_path):
     assert len(stored_intelligences) == 1
     assert stored_intelligences[0]["article_ids"] == [article["article_id"]]
 
-    # 9. Dashboard 반영
+    # 9. Dashboard 반영 (Round 8: Executive Dashboard — Today's Intelligence/Critical Risk)
     dashboard_data = build_dashboard_data(
         topic_display_name=topic["display_name"],
         generated_at_kst="2026-08-05 09:00",
         articles=stored_articles,
         intelligences=stored_intelligences,
     )
-    assert len(dashboard_data["tracker_rows"]) == 1
-    assert dashboard_data["tracker_rows"][0]["title"] == article["title_original"]
+    assert len(dashboard_data["today_intelligence"]) == 1
+    assert article["title_original"] in dashboard_data["today_intelligence"][0]["fact_summary"]
+    assert len(dashboard_data["critical_risk"]) == 1  # MockProvider가 항상 risk_management로 분류
     html = build_html(dashboard_data)
     assert article["title_original"] in html
     assert "{{" not in html

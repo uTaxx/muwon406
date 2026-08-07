@@ -84,6 +84,23 @@ def resolve_company_input(query: str, registry: list[dict] | None = None) -> Com
     )
 
 
+def retrieve_knowledge_for_company(company: CompanyIdentifier) -> str:
+    """Architect Review Round 8 — Quick Company Scan 파이프라인에 Knowledge Retrieval
+    단계를 추가한다(Input -> Company Registry -> **Knowledge Retrieval** -> Source
+    Selection -> ...). `knowledge_engine.search_by_company()`를 재사용한다 — 새 검색
+    로직을 만들지 않는다. Knowledge 파일이 등록되지 않은 회사(현재 LX Hausys 외 대부분)는
+    빈 문자열을 정직하게 반환한다(임의로 지어내지 않는다).
+    """
+    if not company.company_id:
+        return ""
+    from knowledge_engine import search_by_company
+
+    sections = search_by_company(company.company_id)
+    if not sections:
+        return ""
+    return "\n\n".join(f"[{s.file} §{s.section_number} {s.section_title}]\n{s.content}" for s in sections)
+
+
 def select_sources_for_company(
     company: CompanyIdentifier, sources_config: list[dict] | None = None
 ) -> list[dict]:
@@ -111,16 +128,19 @@ def select_sources_for_company(
 
 
 def generate_company_intelligence(
-    provider: AIProvider, company: CompanyIdentifier, sources: list[dict]
+    provider: AIProvider,
+    company: CompanyIdentifier,
+    sources: list[dict],
+    knowledge_excerpt: str = "",
 ) -> ProviderResult:
     """Provider(Mock/Claude)를 호출해 Company Intelligence(quick_company_scan_output)를
-    생성한다."""
+    생성한다. `knowledge_excerpt`는 `retrieve_knowledge_for_company()`의 산출물이다."""
     company_payload = {
         "display_name": company.display_name,
         "query": company.query,
         "company_id": company.company_id,
     }
-    return provider.quick_company_scan(company_payload, sources)
+    return provider.quick_company_scan(company_payload, sources, knowledge_excerpt)
 
 
 def validate_quick_report(report: dict) -> None:
@@ -139,6 +159,59 @@ def build_quick_report(company: CompanyIdentifier, provider_result: ProviderResu
     report.setdefault("scan_date", date.today().isoformat())
     validate_quick_report(report)
     return report
+
+
+def export_quick_scan_report(
+    company: CompanyIdentifier,
+    quick_report: dict,
+    investment_review: dict,
+    intelligence_score: dict,
+    out_dir=None,
+) -> dict:
+    """Architect Review Round 8 — 파이프라인의 마지막 단계(Export). Quick Report +
+    Investment Review + Company Intelligence Score를 하나로 묶어 JSON(기계 판독용)과
+    Markdown(사람이 읽는 요약) 두 파일로 내보낸다. `output/`(gitignore 대상)에 쓰므로
+    Git에는 포함되지 않는다 — 시연 시 그 자리에서 생성해 보여주는 산출물이다.
+    """
+    out_dir = out_dir if out_dir is not None else project_root() / "output" / "quick_company_scan_exports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = (company.company_id or company.query).strip().replace(" ", "_").upper()
+    combined = {
+        "company_id": company.company_id,
+        "target_company": quick_report["target_company"],
+        "scan_date": quick_report["scan_date"],
+        "quick_report": quick_report,
+        "investment_review": investment_review,
+        "company_intelligence_score": intelligence_score,
+    }
+
+    json_path = out_dir / f"{safe_name}.json"
+    json_path.write_text(json.dumps(combined, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    md_lines = [
+        f"# Quick Company Scan — {quick_report['target_company']}",
+        "",
+        f"- Scan Date: {quick_report['scan_date']}",
+        f"- Confidence: {quick_report['confidence']}",
+        f"- Company Intelligence Score: {intelligence_score['overall']}/100",
+        "",
+        "## Company Intelligence Score 세부",
+        *[f"- {k}: {v}" for k, v in intelligence_score.items() if k != "overall"],
+        "",
+        "## Company Overview",
+        quick_report.get("company_overview", ""),
+        "",
+        "## Investment Review",
+        f"- Recommendation Signal: {investment_review['recommendation']['signal']}",
+        f"- Deal Killer Found: {investment_review['deal_killer']['found']}",
+        "",
+        "> Mock 기반 결과 — 실제 Claude/재무 데이터 연동 전까지는 참고용으로만 사용한다.",
+    ]
+    md_path = out_dir / f"{safe_name}.md"
+    md_path.write_text("\n".join(md_lines), encoding="utf-8")
+
+    return {"json_path": json_path, "md_path": md_path}
 
 
 def build_investment_review_input(quick_report: dict) -> dict:

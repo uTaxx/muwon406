@@ -28,7 +28,8 @@ import argparse
 from datetime import date
 
 import knowledge_quality
-from knowledge_engine import KnowledgeSection, parse_knowledge_sections
+from knowledge_engine import KnowledgeSection, parse_knowledge_sections, search_by_company
+from registries.manager import RegistryManager
 
 # 도메인 -> [(파일명, Section 번호), ...]. 순서는 보고 시 가독성을 위한 것일 뿐 채점에는
 # 영향을 주지 않는다.
@@ -145,12 +146,90 @@ def all_coverage() -> dict[str, float]:
     return {domain: coverage_for_domain(domain) for domain in DOMAIN_SECTIONS}
 
 
+# --- Round 8: Company/Country/Industry Coverage ---
+#
+# 위 8개 도메인 Coverage는 "Knowledge 문서 안에서 어떤 관점이 채워져 있는가"를 본다.
+# Round 8이 요구한 3개 지표는 그와 다른 축이다 — "Company Registry에 등록된 30개사
+# 전체 중 실제로 Knowledge를 갖춘 회사가 몇 개인가"(Company Registry의 폭 대비 실측
+# Knowledge 폭). 새 Engine을 만들지 않고 Round 7의 RegistryManager와
+# `knowledge_engine.search_by_company()`(단일 진실 공급원인
+# `pipeline/knowledge_retrieve.py:COMPANY_KNOWLEDGE_FILES` 재사용)만 조합한다.
+#
+# `industry`는 자유 텍스트 필드라 도메인 Coverage와 달리 "정확 매칭"만 쓴다 — 키워드
+# 유사 매칭으로 서로 다른 산업을 하나로 묶으면 이 파일 상단에서 경계한 오분류를
+# 반복하게 된다.
+
+
+def _company_has_reliable_knowledge(company_id: str) -> bool:
+    sections = search_by_company(company_id)
+    return any(_is_reliable(s) for s in sections)
+
+
+def company_coverage() -> float:
+    """Company Registry 전체 대비, 신뢰 가능한 Knowledge Section을 1개 이상 가진 회사 비율."""
+    companies = RegistryManager().get_registry("company").list_entries()
+    if not companies:
+        return 0.0
+    covered = sum(1 for c in companies if _company_has_reliable_knowledge(c["company_id"]))
+    return (covered / len(companies)) * 100
+
+
+def country_coverage() -> float:
+    """Company Registry에 등장하는 국가 중, 실제 `active: true` Source가 있는 국가 비율.
+
+    Source Registry의 `country: multi` 항목(SRC-0010/0011)은 둘 다 `active: false`
+    카테고리 placeholder이므로 실질 커버리지로 세지 않는다 — 켜지지 않은 placeholder를
+    "모든 국가 커버"로 부풀리면 정직성 원칙에 어긋난다.
+    """
+    companies = RegistryManager().get_registry("company").list_entries()
+    countries = {c["country"] for c in companies if c.get("country")}
+    if not countries:
+        return 0.0
+    sources = RegistryManager().get_registry("source").list_entries()
+    active_source_countries = {
+        s["country"] for s in sources if s.get("active") and s.get("country") != "multi"
+    }
+    covered = sum(1 for country in countries if country in active_source_countries)
+    return (covered / len(countries)) * 100
+
+
+def industry_coverage() -> float:
+    """Company Registry에 등장하는 서로 다른 `industry` 문자열 중, 그 산업에 속한 회사가
+    1개 이상 신뢰 가능한 Knowledge를 가진 산업의 비율(정확 문자열 매칭만 사용)."""
+    companies = RegistryManager().get_registry("company").list_entries()
+    industries = {c["industry"] for c in companies if c.get("industry")}
+    if not industries:
+        return 0.0
+    covered_industries = {
+        c["industry"]
+        for c in companies
+        if c.get("industry") and _company_has_reliable_knowledge(c["company_id"])
+    }
+    return (len(covered_industries) / len(industries)) * 100
+
+
+REGISTRY_COVERAGE_LABELS: dict[str, str] = {
+    "company": "Company Coverage",
+    "country": "Country Coverage",
+    "industry": "Industry Coverage",
+}
+
+
+def registry_coverage() -> dict[str, float]:
+    """Round 8이 추가한 Company/Country/Industry Coverage 3종을 한 번에 반환한다."""
+    return {
+        "company": company_coverage(),
+        "country": country_coverage(),
+        "industry": industry_coverage(),
+    }
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LCIP Pilot Knowledge Coverage (Round 7)")
+    parser = argparse.ArgumentParser(description="LCIP Pilot Knowledge Coverage (Round 7/8)")
     parser.add_argument("--verbose", action="store_true", help="도메인별 매칭 Section 상세 출력")
     args = parser.parse_args()
 
-    print("=== Knowledge Coverage (Architect Review Round 7) ===")
+    print("=== Knowledge Coverage — 도메인 8종 (Architect Review Round 7) ===")
     coverage = all_coverage()
     for domain, label in DOMAIN_LABELS.items():
         print(f"{label:22s}: {coverage[domain]:5.1f}%")
@@ -160,7 +239,12 @@ def main() -> int:
                 print(f"    - {section.file} §{section.section_number} [{status}]")
 
     overall = sum(coverage.values()) / len(coverage) if coverage else 0.0
-    print(f"\n전체 평균: {overall:.1f}%")
+    print(f"\n도메인 8종 평균: {overall:.1f}%")
+
+    print("\n=== Registry Coverage — Company/Country/Industry (Architect Review Round 8) ===")
+    reg_coverage = registry_coverage()
+    for key, label in REGISTRY_COVERAGE_LABELS.items():
+        print(f"{label:22s}: {reg_coverage[key]:5.1f}%")
     return 0
 
 

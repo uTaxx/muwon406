@@ -8,6 +8,11 @@ Dashboard까지, Round 6 `demo_pilot.py`의 전반부를 독립 실행 가능한
 실제 외부 호출 없음: Google RSS는 fixture 주입, Claude는
 `providers.factory.get_default_provider()`(Key/Flag 미충족 시 MockProvider로 자동 귀결).
 
+Round 8: ARTICLE_DB/INTELLIGENCE_DB를 `output/pilot_data/`(Scenario 3의 COMPANY_SCAN_DB와
+동일한 디렉터리)에 저장한다 — Executive Dashboard가 두 Scenario의 산출물을 하나의
+StorageBackend에서 함께 읽을 수 있어야 하기 때문이다(서로 다른 폴더에 흩어져 있으면
+Dashboard가 한쪽만 보게 된다).
+
 사용법: python3 scripts/scenarios/scenario_1_news_analysis.py
 """
 from __future__ import annotations
@@ -55,7 +60,7 @@ def run(verbose: bool = True) -> dict:
     source_config = load_yaml("config/sources.yaml")["sources"][0]
     now = datetime.now(timezone.utc)
 
-    out_dir = project_root() / "output" / "scenario_1_news_analysis"
+    out_dir = project_root() / "output" / "pilot_data"
     out_dir.mkdir(parents=True, exist_ok=True)
     storage = LocalJSONLStorage(out_dir)
 

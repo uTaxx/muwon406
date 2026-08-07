@@ -39,11 +39,16 @@ class AIProvider(ABC):
         """schemas/claude_output.schema.json의 risk_analysis_output 형태를 반환해야 한다."""
 
     @abstractmethod
-    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+    def quick_company_scan(
+        self, company: dict, sources: list[dict], knowledge_excerpt: str = ""
+    ) -> ProviderResult:
         """schemas/quick_company_scan.schema.json의 Core 필드(최소)를 반환해야 한다.
 
         Architect Review Round 5: Quick Company Scan을 Pilot의 첫 번째 실제 서비스로
         승격 — `scripts/quick_company_scan.py`의 Pipeline이 이 메서드를 호출한다.
+        Architect Review Round 8: `knowledge_excerpt`(Knowledge Retrieval 단계 산출물)를
+        선택 인자로 추가 — 기본값이 빈 문자열이라 기존 호출부는 수정 없이 그대로
+        동작한다(하위 호환).
         """
 
     @abstractmethod

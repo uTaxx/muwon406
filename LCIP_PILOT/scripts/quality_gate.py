@@ -23,6 +23,21 @@ Round 6 지표 정의:
 - **Mock Dependency**: `config/feature_flags.yaml`의 플래그 중 아직 `false`인 비율.
 - **Pilot Operational Readiness**: 구조적 점검 항목 통과율(테스트 스위트 실제 실행 포함).
 
+Round 8 신규 지표 정의(전부 100점 만점) — "새 기능보다 사용성/품질/완성도를 우선한다":
+- **Architectural Stability**: "새로운 Framework는 더 이상 만들지 않는다"(Round 7/8)는
+  제약을 직접 계측한다. `scripts/` 아래 패키지(`__init__.py`가 있는 디렉터리) 집합이
+  Round 7/8이 확정한 기준 집합과 정확히 같은지 비교 — 새 패키지가 생기거나 있던 패키지가
+  사라지면 감점된다.
+- **Operational Simplicity**: "전략팀 시연 관점" 지표. 5개 Scenario가 추가 인자·설정 없이
+  `python3 scripts/scenarios/<name>.py` 한 줄만으로 끝까지 실행되는지 실제 서브프로세스
+  실행으로 측정한다(가정이 아니다).
+- **Executive Usability**: `dashboard/sample_data.json` 기준으로 실제 `build_html()`을
+  호출해, Architect가 지정한 6개 Widget 섹션이 전부 렌더링되는지 실측한다.
+- **AI Reasoning Readiness**: Reasoning Quality(Round 7, 프롬프트 출력 계약)와는 다른
+  축이다 — `ClaudeProvider`가 `AIProvider`의 4개 추상 메서드 전부를 실제 Prompt
+  Engine 경로(`PromptBuilder`+`_call_anthropic`)까지 연결해 구현했는지 소스 코드
+  기준으로 확인한다(RC2에서 Feature Flag만 켜면 즉시 쓸 수 있는 상태인지).
+
 Round 7 신규 지표 정의(전부 100점 만점):
 - **Registry Quality**: `registries.RegistryManager`의 7개 Registry가 전부 비어있지
   않은지(구조) + Registry Completion + Public Source Coverage의 평균(내용).
@@ -84,6 +99,36 @@ EXPECTED_FEATURE_FLAG_KEYS = {
 REASONING_ANALYSIS_PROMPTS = ["risk_analysis", "policy_analysis"]
 REASONING_REQUIRED_MARKERS = ["confidence", "evidence", "unknowns"]
 
+# Architectural Stability(Round 8)의 기준선 — Round 7/8까지 확정된 `scripts/` 하위
+# 패키지 집합. "새로운 Framework는 더 이상 만들지 않는다"는 지시를 그대로 계측 대상으로
+# 옮긴 것이다. 이 집합을 늘리는 것 자체가 "새 Framework를 만들었다"는 뜻이므로, 정말
+# Architect 승인을 받은 구조 변경이 아니면 건드리지 않는다.
+KNOWN_ARCHITECTURE_PACKAGES = {
+    "adapters", "pipeline", "providers", "storage", "prompt_engine", "registries", "scenarios",
+}
+
+SCENARIO_SCRIPT_NAMES = [
+    "scenario_1_news_analysis",
+    "scenario_2_quick_company_scan",
+    "scenario_3_investment_review",
+    "scenario_4_policy_impact",
+    "scenario_5_competitor_change_detection",
+]
+
+EXPECTED_DASHBOARD_SECTIONS = [
+    "Today's Intelligence",
+    "Critical Risk",
+    "Future Opportunity",
+    "Quick Company Scan",
+    "Investment Review",
+    "Source Health",
+]
+
+# AI Reasoning Readiness 채점 대상 — AIProvider의 추상 메서드 전부. ClaudeProvider가 이
+# 메서드들을 실제 Prompt Engine 경로까지 연결했는지(단순 NotImplementedError stub이
+# 아닌지)를 소스 코드로 확인한다.
+AI_REASONING_READINESS_MARKERS = ["PromptBuilder", "_call_anthropic"]
+
 
 def _is_filled(value) -> bool:
     """null / 빈 리스트 / "TODO: source required" 계열 placeholder는 미확인으로 취급한다."""
@@ -110,6 +155,10 @@ class QualityGateReport:
     evidence_quality: float
     reasoning_quality: float
     maintainability: float
+    architectural_stability: float
+    operational_simplicity: float
+    executive_usability: float
+    ai_reasoning_readiness: float
 
 
 def knowledge_quality_score() -> float:
@@ -157,7 +206,8 @@ def mock_dependency() -> float:
 
 
 def registry_quality_score() -> float:
-    """Round 7 신설. `RegistryManager`의 7개 Registry가 전부 비어있지 않은지(구조)와
+    """Round 7 신설(Round 8부터 Technical Debt Registry 포함 8개). `RegistryManager`의
+    전체 Registry가 비어있지 않은지(구조)와
     Registry Completion/Public Source Coverage(내용)를 함께 본다 — 새 계산 로직을
     만들지 않고 기존 함수를 재사용한다."""
     from registries import RegistryManager
@@ -223,6 +273,84 @@ def maintainability_score() -> float:
     return (documented / len(py_files)) * 100
 
 
+def architectural_stability_score() -> float:
+    """Round 8 신설. `scripts/` 하위 패키지 집합이 `KNOWN_ARCHITECTURE_PACKAGES`와
+    정확히 같은지 비교한다 — 새 패키지가 생기거나 기존 패키지가 사라지면 감점된다."""
+    scripts_dir = project_root() / "scripts"
+    current_packages = {
+        p.name
+        for p in scripts_dir.iterdir()
+        if p.is_dir() and p.name != "__pycache__" and (p / "__init__.py").exists()
+    }
+    total_relevant = KNOWN_ARCHITECTURE_PACKAGES | current_packages
+    if not total_relevant:
+        return 100.0
+    unexpected_new = current_packages - KNOWN_ARCHITECTURE_PACKAGES
+    missing = KNOWN_ARCHITECTURE_PACKAGES - current_packages
+    stable = len(total_relevant) - len(unexpected_new) - len(missing)
+    return (stable / len(total_relevant)) * 100
+
+
+def operational_simplicity_score(run_scenarios: bool = True) -> float:
+    """Round 8 신설. 5개 Scenario가 추가 인자 없이 `python3 <script>.py` 한 줄로 끝까지
+    실행되는지 실제 서브프로세스로 측정한다. `run_scenarios=False`는 테스트에서 매번
+    5개 서브프로세스를 재실행하지 않기 위한 스킵 모드다(구조적 존재 확인은
+    `_readiness_checks()`가 이미 별도로 한다)."""
+    if not run_scenarios:
+        return 100.0
+    scenarios_dir = project_root() / "scripts" / "scenarios"
+    results = []
+    for name in SCENARIO_SCRIPT_NAMES:
+        path = scenarios_dir / f"{name}.py"
+        if not path.exists():
+            results.append(False)
+            continue
+        result = subprocess.run(
+            [sys.executable, str(path)],
+            cwd=project_root(),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        results.append(result.returncode == 0)
+    return (sum(results) / len(results)) * 100 if results else 0.0
+
+
+def executive_usability_score() -> float:
+    """Round 8 신설. `dashboard/sample_data.json`으로 실제 `build_html()`을 호출해
+    Architect가 지정한 6개 Widget 섹션이 전부 렌더링되는지 실측한다."""
+    import json
+
+    from build_dashboard import build_html
+
+    sample_path = project_root() / "dashboard" / "sample_data.json"
+    data = json.loads(sample_path.read_text(encoding="utf-8"))
+    html = build_html(data)
+    found = sum(1 for section in EXPECTED_DASHBOARD_SECTIONS if section in html)
+    return (found / len(EXPECTED_DASHBOARD_SECTIONS)) * 100
+
+
+def ai_reasoning_readiness_score() -> float:
+    """Round 8 신설. `ClaudeProvider`가 `AIProvider`의 추상 메서드 전부를 실제 Prompt
+    Engine 경로(PromptBuilder + _call_anthropic)까지 연결했는지 소스 코드로 확인한다 —
+    Reasoning Quality(Round 7, 프롬프트 출력 계약)와 다른 축이다."""
+    import inspect
+
+    from providers.base import AIProvider
+    from providers.claude_provider import ClaudeProvider
+
+    abstract_methods = sorted(AIProvider.__abstractmethods__)
+    if not abstract_methods:
+        return 0.0
+    ready = 0
+    for name in abstract_methods:
+        method = getattr(ClaudeProvider, name)
+        source = inspect.getsource(method)
+        if all(marker in source for marker in AI_REASONING_READINESS_MARKERS):
+            ready += 1
+    return (ready / len(abstract_methods)) * 100
+
+
 def _run_full_test_suite() -> bool:
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-q"],
@@ -269,7 +397,7 @@ def pilot_operational_readiness(readiness_checks: dict[str, bool]) -> float:
     return (passed / len(readiness_checks)) * 100
 
 
-def build_report(run_tests: bool = True) -> QualityGateReport:
+def build_report(run_tests: bool = True, run_scenarios: bool = True) -> QualityGateReport:
     checks = _readiness_checks(run_tests=run_tests)
     return QualityGateReport(
         knowledge_quality_score=knowledge_quality_score(),
@@ -284,19 +412,28 @@ def build_report(run_tests: bool = True) -> QualityGateReport:
         evidence_quality=evidence_quality_score(),
         reasoning_quality=reasoning_quality_score(),
         maintainability=maintainability_score(),
+        architectural_stability=architectural_stability_score(),
+        operational_simplicity=operational_simplicity_score(run_scenarios=run_scenarios),
+        executive_usability=executive_usability_score(),
+        ai_reasoning_readiness=ai_reasoning_readiness_score(),
     )
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LCIP Pilot Quality Gate (Round 6/7)")
+    parser = argparse.ArgumentParser(description="LCIP Pilot Quality Gate (Round 6/7/8)")
     parser.add_argument(
         "--skip-tests", action="store_true", help="전체 테스트 스위트 재실행을 생략한다(빠른 확인용)"
     )
+    parser.add_argument(
+        "--skip-scenarios",
+        action="store_true",
+        help="Operational Simplicity의 5개 Scenario 서브프로세스 실행을 생략한다(빠른 확인용)",
+    )
     args = parser.parse_args()
 
-    report = build_report(run_tests=not args.skip_tests)
+    report = build_report(run_tests=not args.skip_tests, run_scenarios=not args.skip_scenarios)
 
-    print("=== LCIP Pilot Quality Gate (Round 6/7) ===")
+    print("=== LCIP Pilot Quality Gate (Round 6/7/8) ===")
     print(f"Knowledge Quality Score:      {report.knowledge_quality_score:.1f}%")
     print(f"Registry Completion:         {report.registry_completion:.1f}% (참고 지표 — TODO 허용)")
     print(f"Public Source Coverage:      {report.public_source_coverage:.1f}%")
@@ -312,6 +449,12 @@ def main() -> int:
     print(f"Evidence Quality:    {report.evidence_quality:.1f}")
     print(f"Reasoning Quality:   {report.reasoning_quality:.1f}  (설계 proxy — 실제 출력 품질 아님)")
     print(f"Maintainability:     {report.maintainability:.1f}")
+
+    print("\n--- Round 8 신규 지표 (100점 만점) ---")
+    print(f"Architectural Stability:  {report.architectural_stability:.1f}")
+    print(f"Operational Simplicity:   {report.operational_simplicity:.1f}")
+    print(f"Executive Usability:      {report.executive_usability:.1f}")
+    print(f"AI Reasoning Readiness:   {report.ai_reasoning_readiness:.1f}")
     return 0
 
 

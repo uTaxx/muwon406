@@ -100,7 +100,7 @@ def test_build_report_skip_tests_never_invokes_subprocess(monkeypatch):
     calls = []
     monkeypatch.setattr(quality_gate, "_run_full_test_suite", lambda: calls.append(1) or True)
 
-    report = quality_gate.build_report(run_tests=False)
+    report = quality_gate.build_report(run_tests=False, run_scenarios=False)
 
     assert calls == []
     assert isinstance(report, quality_gate.QualityGateReport)
@@ -110,7 +110,7 @@ def test_build_report_skip_tests_never_invokes_subprocess(monkeypatch):
 
 def test_build_report_all_six_metrics_present(monkeypatch):
     monkeypatch.setattr(quality_gate, "_run_full_test_suite", lambda: True)
-    report = quality_gate.build_report(run_tests=False)
+    report = quality_gate.build_report(run_tests=False, run_scenarios=False)
     for field in (
         "knowledge_quality_score",
         "registry_completion",
@@ -129,9 +129,9 @@ def test_registry_quality_score_is_between_0_and_100():
     assert 0.0 <= quality_gate.registry_quality_score() <= 100.0
 
 
-def test_registry_quality_score_uses_all_7_registries_structurally():
-    """RegistryManager의 7개 Registry 중 하나라도 비어있지 않은 한 구조 점수는 100이어야
-    한다(현재 상태 기준 회귀 감시)."""
+def test_registry_quality_score_uses_all_registries_structurally():
+    """RegistryManager의 Registry(Round 8부터 Technical Debt 포함 8개) 중 하나라도
+    비어있지 않은 한 구조 점수는 100이어야 한다(현재 상태 기준 회귀 감시)."""
     from registries import RegistryManager
 
     summary = RegistryManager().summary()
@@ -192,10 +192,92 @@ def test_maintainability_score_reflects_module_docstring_convention():
 
 def test_build_report_includes_all_5_round7_metrics(monkeypatch):
     monkeypatch.setattr(quality_gate, "_run_full_test_suite", lambda: True)
-    report = quality_gate.build_report(run_tests=False)
+    report = quality_gate.build_report(run_tests=False, run_scenarios=False)
     for field in (
         "registry_quality", "report_quality", "evidence_quality",
         "reasoning_quality", "maintainability",
+    ):
+        assert hasattr(report, field)
+        assert 0.0 <= getattr(report, field) <= 100.0
+
+
+# --- Round 8 신규 4개 지표 ---
+
+
+def test_architectural_stability_score_is_100_for_current_known_packages():
+    """지금 상태(Round 8까지 확정된 패키지 집합)는 100%여야 한다 — 새 패키지가 몰래
+    추가되면(=새 Framework) 이 값이 떨어지는 회귀 감시용."""
+    assert quality_gate.architectural_stability_score() == 100.0
+
+
+def test_architectural_stability_score_penalizes_unexpected_new_package(tmp_path, monkeypatch):
+    fake_scripts_dir = tmp_path / "scripts"
+    fake_scripts_dir.mkdir()
+    for name in quality_gate.KNOWN_ARCHITECTURE_PACKAGES:
+        pkg = fake_scripts_dir / name
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("")
+    # 기준선에 없는 새 패키지를 하나 추가한다 — "새 Framework"를 흉내낸다.
+    new_pkg = fake_scripts_dir / "brand_new_framework"
+    new_pkg.mkdir()
+    (new_pkg / "__init__.py").write_text("")
+
+    monkeypatch.setattr(quality_gate, "project_root", lambda: tmp_path)
+    score = quality_gate.architectural_stability_score()
+    assert score < 100.0
+
+
+def test_architectural_stability_score_penalizes_missing_known_package(tmp_path, monkeypatch):
+    fake_scripts_dir = tmp_path / "scripts"
+    fake_scripts_dir.mkdir()
+    packages = list(quality_gate.KNOWN_ARCHITECTURE_PACKAGES)[:-1]  # 하나 빠뜨린다
+    for name in packages:
+        pkg = fake_scripts_dir / name
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("")
+
+    monkeypatch.setattr(quality_gate, "project_root", lambda: tmp_path)
+    score = quality_gate.architectural_stability_score()
+    assert score < 100.0
+
+
+def test_operational_simplicity_score_skip_mode_returns_100_without_subprocess(monkeypatch):
+    calls = []
+    monkeypatch.setattr(quality_gate.subprocess, "run", lambda *a, **k: calls.append(1))
+    assert quality_gate.operational_simplicity_score(run_scenarios=False) == 100.0
+    assert calls == []
+
+
+def test_operational_simplicity_score_runs_real_subprocess_for_each_scenario():
+    """실제로 5개 Scenario를 서브프로세스로 실행해 현재 상태에서 100%가 나오는지 확인한다
+    (Scenario가 실제로 깨지면 이 테스트가 잡아낸다) — 느리지만 실측이 목적이다."""
+    score = quality_gate.operational_simplicity_score(run_scenarios=True)
+    assert score == 100.0
+
+
+def test_executive_usability_score_is_100_with_current_sample_data():
+    assert quality_gate.executive_usability_score() == 100.0
+
+
+def test_executive_usability_score_detects_missing_section(monkeypatch):
+    monkeypatch.setattr(
+        quality_gate, "EXPECTED_DASHBOARD_SECTIONS", quality_gate.EXPECTED_DASHBOARD_SECTIONS + ["이런 섹션은 없음"]
+    )
+    assert quality_gate.executive_usability_score() < 100.0
+
+
+def test_ai_reasoning_readiness_score_is_100_for_current_claude_provider():
+    """ClaudeProvider의 4개 메서드가 전부 PromptBuilder + _call_anthropic 경로로
+    구현되어 있는 현재 상태를 회귀 감시한다."""
+    assert quality_gate.ai_reasoning_readiness_score() == 100.0
+
+
+def test_build_report_includes_all_4_round8_metrics(monkeypatch):
+    monkeypatch.setattr(quality_gate, "_run_full_test_suite", lambda: True)
+    report = quality_gate.build_report(run_tests=False, run_scenarios=False)
+    for field in (
+        "architectural_stability", "operational_simplicity",
+        "executive_usability", "ai_reasoning_readiness",
     ):
         assert hasattr(report, field)
         assert 0.0 <= getattr(report, field) <= 100.0

@@ -5,6 +5,76 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 8 반영 (2026-08-07, 8차)
+
+ChatGPT Architect Review Round 8 승인 및 반영. "현재 LCIP는 Architecture 중심
+프로젝트에서 Product 중심 프로젝트로 성공적으로 전환되었다"고 평가하고, 이번 라운드부터
+**Pilot RC1(Release Candidate)**를 목표로 개발하도록 지시했다. "새로운 Framework는 더
+이상 만들지 않는다", "전략팀 시연 관점에서만 개발한다. 새 기능보다 사용성/품질/완성도를
+우선한다. 실제 API 호출은 계속 금지한다"가 이번 라운드의 핵심 제약이다.
+
+- **ADR-010 Release Policy**: RC1을 "실제 API를 사용하지 않아도 전략팀 데모가 가능한
+  수준" = Mock 기반 + Feature Flag + 실제 Pipeline + 실제 Registry + 실제 Dashboard로
+  정의 고정. RC2(실제 API 연결)로의 경계와, `FinancialDataProvider`가 새 Framework가
+  아니라 기존 Provider Layer 패턴의 재적용임을 명시했다.
+- **Quick Company Scan 8단계 파이프라인 완성**: Architect가 지정한 순서(Input→Company
+  Registry→Knowledge Retrieval→Source Selection→Financial Provider(Mock)→Analysis
+  Pipeline→Investment Review→Dashboard Widget→Export)를 전부 실제 코드로 연결했다.
+  "Pilot에서는 Financial Provider만 Mock, 나머지는 실제 코드" 지시대로
+  `scripts/financial_provider.py`(`FinancialDataProvider` ABC +
+  `MockFinancialDataProvider`)만 Mock이고, Knowledge Retrieval
+  (`quick_company_scan.retrieve_knowledge_for_company()`)/Export
+  (`export_quick_scan_report()`)는 전부 실동작이다. `AIProvider.quick_company_scan()`에
+  `knowledge_excerpt` 파라미터를 하위호환 방식(기본값 `""`)으로 추가했다. 5개 테스트 +
+  4개 테스트(Financial Provider).
+- **Company Intelligence Score**: `scripts/company_intelligence_score.py` 신설 —
+  Business Understanding/Market Position/Financial Visibility/Strategic
+  Importance/Risk Visibility/Source Reliability/Knowledge Coverage 7개 하위 점수(각
+  100점 만점, 완성도 기반 — 정확도가 아니라 "필드가 채워져 있는가"를 본다)와 그 평균인
+  `overall`을 계산한다. Scenario 3(Investment Review)이 실행 시마다 계산해
+  `COMPANY_SCAN_DB`에 함께 저장한다. 10개 테스트.
+- **Executive Dashboard 6개 Widget 재구성**: "Dashboard는 HTML Viewer가 아니라
+  Executive Dashboard가 되어야 한다" 지시에 따라 기존 소송·규제 특화 Widget 6종(Today's
+  Change/Risk Tracker/Litigation/Regulation/Statistics/Timeline)을 전부 제거하고,
+  Architect 지정 우선순위 그대로 6개 Widget(Today's Intelligence→Critical
+  Risk→Future Opportunity→Quick Company Scan→Investment Review→Source Health)으로
+  재구성했다. `scripts/pipeline/dashboard_feed.py`가 `COMPANY_SCAN_DB`와
+  `config/sources.yaml`도 함께 읽도록 확장했다. Scenario 1/3이 같은
+  `output/pilot_data/` 디렉터리를 공유하도록 통일해 하나의 Executive Dashboard가 두
+  Scenario의 산출물을 함께 반영할 수 있게 했다. `render_generic_list()`가 `None`을
+  문자열 "None"으로 렌더링하던 기존 버그(Round 4부터 존재, 이번에 처음 load-bearing이
+  되며 발견)도 함께 고쳤다.
+- **Knowledge Coverage 3종 추가**: 기존 8개 도메인 Coverage에 더해 Company
+  Coverage(Company Registry 30개사 중 신뢰 가능한 Knowledge를 실제로 가진 비율,
+  3.3%)/Country Coverage(Company Registry 국가 중 `active: true` Source가 있는 비율,
+  22.2% — `country: multi` placeholder 2건은 둘 다 `active: false`라 실질 커버리지로
+  세지 않음)/Industry Coverage(정확 문자열 매칭만 사용, 3.6%) 추가. Quality Gate의
+  Evidence Quality 계산식은 기존 8개 도메인 평균 그대로 유지했다(조용히 바뀌지 않도록).
+  RegistryManager를 재사용해 새 조회 로직을 만들지 않았다. 6개 테스트.
+- **RegistryManager Validation/Integrity/Dependency Check**: "Registry는 조회만 하지
+  않는다" 지시에 따라 `scripts/registries/validation.py` 신설 —
+  `RegistryManager.validate()`(각 항목의 id 필드 존재 확인)/`check_integrity()`(Registry
+  내부 id 중복 검사, 기존 `validate_config.py`가 다루지 않던 Company/Model/Prompt
+  Registry의 공백을 메움)/`check_dependencies()`(`topics.yaml`의
+  `related_lx_companies`, `pipeline/knowledge_retrieve.COMPANY_KNOWLEDGE_FILES`가
+  Company Registry에 실재하는 company_id를 참조하는지 확인). `bootstrap_project.py`
+  (Project Boot)가 `validate_all()`을 호출하도록 연결했다. 13개 테스트.
+- **Technical Debt Registry**: `config/technical_debt_registry.yaml` 신설 — 코드
+  감사로 실제 확인한 8건의 기술 부채(죽은 CSS, Knowledge 신뢰 판정 로직 3중 중복,
+  가격표 placeholder, Scenario별 Dashboard 스냅샷 충돌 등)를 Severity/Priority/
+  Estimated Time/Owner/Status 필드로 기록했다("실제 프로젝트 관리가 가능해야 한다"
+  지시 반영). 새 Registry 어댑터를 만들지 않고 기존 `YAMLListRegistry`를 재사용해
+  RegistryManager의 8번째 Registry(`technical_debt`)로 등록했다.
+- **Quality Gate 4종 지표 추가**(전부 100점 만점): Architectural Stability("새로운
+  Framework는 더 이상 만들지 않는다"는 제약을 `scripts/` 패키지 집합 비교로 직접
+  계측), Operational Simplicity(5개 Scenario가 추가 인자 없이 단일 명령으로 끝까지
+  실행되는지 실제 서브프로세스로 실측), Executive Usability(`sample_data.json` 기준
+  실제 `build_html()` 호출로 6개 Widget 섹션이 전부 렌더링되는지 실측), AI Reasoning
+  Readiness(`ClaudeProvider`가 `AIProvider`의 4개 추상 메서드 전부를 실제 Prompt
+  Engine 경로까지 연결했는지 소스 코드로 확인 — Reasoning Quality와는 다른 축). 8개
+  테스트.
+- 전체 테스트 335개(Round 7) → 387개(+52개).
+
 ### Added — Architect Review Round 7 반영 (2026-08-07, 7차)
 
 ChatGPT Architect Review Round 7 승인 및 반영("이번 라운드는 지금까지 중 가장 품질이

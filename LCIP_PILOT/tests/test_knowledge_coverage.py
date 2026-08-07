@@ -8,6 +8,8 @@ Technology/Risk/Opportunity/Investment)이 실제 knowledge/*.md의 올바른 Se
 """
 from __future__ import annotations
 
+import pytest
+
 import knowledge_coverage as kc
 import knowledge_quality
 
@@ -64,3 +66,58 @@ def test_unknown_domain_raises():
 
     with pytest.raises(ValueError):
         kc.coverage_for_domain("no_such_domain")
+
+
+# --- Round 8: Company/Country/Industry Coverage ---
+
+
+def test_company_coverage_returns_percentage_within_range():
+    assert 0.0 <= kc.company_coverage() <= 100.0
+
+
+def test_company_coverage_reflects_only_lx_hausys_has_knowledge_today():
+    """Company Registry는 30개사지만 COMPANY_KNOWLEDGE_FILES에는 LX_HAUSYS만 매핑되어
+    있다 — 회귀 시 이 값이 부풀려진 100%로 잘못 올라가지 않았는지 감시(정직성 원칙)."""
+    from registries.manager import RegistryManager
+
+    total_companies = len(RegistryManager().get_registry("company").list_entries())
+    expected = (1 / total_companies) * 100
+    assert kc.company_coverage() == pytest.approx(expected)
+
+
+def test_country_coverage_returns_percentage_within_range():
+    assert 0.0 <= kc.country_coverage() <= 100.0
+
+
+def test_country_coverage_excludes_inactive_multi_placeholder_sources():
+    """SRC-0010/0011(country: multi)은 둘 다 active: false 카테고리 placeholder다 —
+    이걸 '모든 국가 커버'로 세면 정직성 원칙 위반이라 실제로는 KR/US만 커버된다."""
+    from registries.manager import RegistryManager
+
+    companies = RegistryManager().get_registry("company").list_entries()
+    distinct_countries = {c["country"] for c in companies if c.get("country")}
+    covered = {"KR", "US"} & distinct_countries
+    expected = (len(covered) / len(distinct_countries)) * 100
+    assert kc.country_coverage() == pytest.approx(expected)
+
+
+def test_industry_coverage_returns_percentage_within_range():
+    assert 0.0 <= kc.industry_coverage() <= 100.0
+
+
+def test_industry_coverage_uses_exact_string_match_not_keyword_similarity():
+    """industry는 자유 텍스트라 지금은 LX_HAUSYS의 정확한 industry 문자열 1개만
+    커버된다 — 키워드 유사 매칭으로 뭉뚱그려 값이 부풀려지지 않았는지 감시."""
+    from registries.manager import RegistryManager
+
+    companies = RegistryManager().get_registry("company").list_entries()
+    distinct_industries = {c["industry"] for c in companies if c.get("industry")}
+    expected = (1 / len(distinct_industries)) * 100
+    assert kc.industry_coverage() == pytest.approx(expected)
+
+
+def test_registry_coverage_returns_all_3_metrics():
+    coverage = kc.registry_coverage()
+    assert set(coverage.keys()) == {"company", "country", "industry"}
+    for value in coverage.values():
+        assert 0.0 <= value <= 100.0

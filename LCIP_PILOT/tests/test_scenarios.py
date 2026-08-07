@@ -30,6 +30,14 @@ def test_scenario_2_runs_independently_of_scenario_1():
     assert result["company"].resolved is True
     assert result["quick_report"]["target_company"] == "LX Hausys"
     assert "financial_snapshot" in result["review_input"]
+    assert result["sources"]  # Round 8: Source Selection 결과도 반환한다
+
+
+def test_scenario_2_includes_knowledge_retrieval_step():
+    """Round 8 지시: Input -> Company Registry -> Knowledge Retrieval -> Source
+    Selection 순서를 실제로 거치는지 확인한다."""
+    result = scenario_2_quick_company_scan.run("LX Hausys", verbose=False)
+    assert "Knowledge Base 발췌 없음" not in str(result["quick_report"].get("unknowns", []))
 
 
 def test_scenario_2_handles_unregistered_company_honestly():
@@ -42,6 +50,38 @@ def test_scenario_3_runs_independently_and_internally_calls_scenario_2():
     assert "peer_average" in result["review"]
     assert result["review"]["recommendation"]["signal"]
     assert result["quick_report"]["target_company"] == "LX Hausys"
+
+
+def test_scenario_3_computes_company_intelligence_score():
+    result = scenario_3_investment_review.run("LX Hausys", verbose=False)
+    score = result["intelligence_score"]
+    assert 0.0 <= score["overall"] <= 100.0
+    for key in (
+        "business_understanding", "market_position", "financial_visibility",
+        "strategic_importance", "risk_visibility", "source_reliability",
+        "knowledge_coverage",
+    ):
+        assert key in score
+
+
+def test_scenario_3_exports_json_and_markdown():
+    result = scenario_3_investment_review.run("LX Hausys", verbose=False)
+    assert result["export"]["json_path"].exists()
+    assert result["export"]["md_path"].exists()
+
+
+def test_scenario_3_stores_result_for_dashboard_widget(tmp_path, monkeypatch):
+    """Dashboard Widget 반영 단계 — COMPANY_SCAN_DB에 실제로 저장되는지 확인한다."""
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+    scenario_3_investment_review.run("LX Hausys", verbose=False)
+
+    from storage.local_jsonl_storage import LocalJSONLStorage
+
+    storage = LocalJSONLStorage(tmp_path / "output" / "pilot_data")
+    records = storage.load_all(scenario_3_investment_review.COMPANY_SCAN_DB)
+    assert len(records) == 1
+    assert records[0]["company_id"] == "LX_HAUSYS"
+    assert "company_intelligence_score" in records[0]
 
 
 def test_scenario_4_runs_independently_and_matches_policy_schema():

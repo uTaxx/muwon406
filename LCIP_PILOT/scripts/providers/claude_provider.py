@@ -81,13 +81,16 @@ class ClaudeProvider(AIProvider):
         )
         return self._call_anthropic(model, messages, "policy_analysis_output")
 
-    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+    def quick_company_scan(
+        self, company: dict, sources: list[dict], knowledge_excerpt: str = ""
+    ) -> ProviderResult:
         self._require_enabled()
         model = claude_client.get_model_name("future")
         builder = PromptBuilder(PromptTemplate("quick_scan"), cache=self._prompt_cache)
         source_names = ", ".join(s.get("source_name", "") for s in sources) or "(등록된 Source 없음)"
         messages = builder.build(
             {"target_company": company.get("display_name") or company.get("query")},
+            knowledge_block=knowledge_excerpt,
             source_block=f"자동 선택된 Source: {source_names}",
         )
         return self._call_anthropic(model, messages, "quick_company_scan_output")

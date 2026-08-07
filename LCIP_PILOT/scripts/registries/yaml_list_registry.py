@@ -54,3 +54,16 @@ class WorkflowRegistry(YAMLListRegistry):
             top_level_key="workflows",
             id_field="workflow_id",
         )
+
+
+class TechnicalDebtRegistry(YAMLListRegistry):
+    """Architect Review Round 8 신설 — 새 Engine이 아니라 이미 있는 YAMLListRegistry
+    어댑터를 그대로 재사용한다(Company/Source/Workflow와 동일한 패턴)."""
+
+    def __init__(self):
+        super().__init__(
+            registry_id="technical_debt",
+            yaml_path="config/technical_debt_registry.yaml",
+            top_level_key="technical_debt",
+            id_field="debt_id",
+        )

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{TOPIC_DISPLAY_NAME}} 리스크 대시보드 — LCIP Pilot</title>
+<title>{{TOPIC_DISPLAY_NAME}} Executive Dashboard — LCIP Pilot</title>
 <style>
 {{INLINE_STYLES}}
 </style>
@@ -12,79 +12,48 @@
 <div class="lcip-container">
 
   <header class="lcip-header">
-    <h1>{{TOPIC_DISPLAY_NAME}} 리스크 대시보드</h1>
-    <div class="lcip-meta">최종 갱신: {{GENERATED_AT_KST}} (KST) · LCIP Pilot · LX홀딩스 전략팀 참고용 · 공개정보 기반</div>
+    <h1>{{TOPIC_DISPLAY_NAME}} Executive Dashboard</h1>
+    <div class="lcip-meta">최종 갱신: {{GENERATED_AT_KST}} (KST) · LCIP Pilot · LX홀딩스 전략팀 참고용 · 공개정보 기반 · Mock/dry-run 결과 포함 가능</div>
   </header>
 
-  <section class="lcip-today-change">
-    <h2>오늘의 주요변화</h2>
-    <div>{{TODAY_CHANGES_HTML}}</div>
+  <section class="lcip-section">
+    <h2>1. Today's Intelligence</h2>
+    <div class="lcip-table-scroll">{{TODAY_INTELLIGENCE_HTML}}</div>
   </section>
 
   <section class="lcip-section">
-    <h2>통계 요약</h2>
-    {{STATISTICS_HTML}}
+    <h2>2. Critical Risk</h2>
+    <div class="lcip-table-scroll">{{CRITICAL_RISK_HTML}}</div>
   </section>
 
   <section class="lcip-section">
-    <h2>1. 실리코시스 소송 Tracker</h2>
-    <div class="lcip-table-scroll">
-      <table class="lcip-table">
-        <thead>
-          <tr>
-            <th>게시일</th><th>지역</th><th>사건·기사명</th><th>피고·관련기업</th>
-            <th>사건유형</th><th>총 배상액</th><th>원고 수</th><th>인당 평균배상액</th>
-            <th>상태</th><th>원문</th><th>비고</th>
-          </tr>
-        </thead>
-        <tbody>
-{{TRACKER_ROWS_HTML}}
-        </tbody>
-      </table>
-    </div>
+    <h2>3. Future Opportunity</h2>
+    <div class="lcip-table-scroll">{{FUTURE_OPPORTUNITY_HTML}}</div>
   </section>
 
   <section class="lcip-section">
-    <h2>2. 미국 외 실리코시스 이슈 현황</h2>
-    <div class="lcip-table-scroll">
-{{NON_US_ISSUES_HTML}}
-    </div>
+    <h2>4. Quick Company Scan</h2>
+    <div class="lcip-table-scroll">{{QUICK_COMPANY_SCAN_HTML}}</div>
   </section>
 
   <section class="lcip-section">
-    <h2>3. 미국 주별 규제·입법 현황</h2>
-    <div class="lcip-table-scroll">
-{{US_STATE_REGULATIONS_HTML}}
-    </div>
+    <h2>5. Investment Review</h2>
+    <div class="lcip-table-scroll">{{INVESTMENT_REVIEW_HTML}}</div>
   </section>
 
   <section class="lcip-section">
-    <h2>4. 글로벌 규제·생산금지 현황</h2>
-    <div class="lcip-table-scroll">
-{{GLOBAL_REGULATIONS_HTML}}
-    </div>
-  </section>
-
-  <section class="lcip-section">
-    <h2>5. 세이프가드 관련 소식</h2>
-    <div class="lcip-table-scroll">
-{{SAFEGUARD_NEWS_HTML}}
-    </div>
-  </section>
-
-  <section class="lcip-section">
-    <h2>소송금액 추이</h2>
-    <svg class="lcip-trend-chart" id="lcip-trend-svg" viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-label="소송금액 추이 그래프"></svg>
+    <h2>6. Source Health</h2>
+    <div class="lcip-table-scroll">{{SOURCE_HEALTH_HTML}}</div>
   </section>
 
   <footer class="lcip-footer">
     본 대시보드는 공개정보만을 근거로 생성되었으며, 모든 항목은 원문 링크를 포함한다. AI 해석·추론은
     사실과 구분하여 표기한다. LCIP Pilot — LX홀딩스 전략팀 개인용 참고자료 (사내 공식 문서 아님).
+    Mock/dry-run 기반 결과가 섞여 있을 수 있다(각 Scenario 출력의 표시 참고).
   </footer>
 
 </div>
 
-<script id="lcip-trend-data" type="application/json">{{TREND_DATA_JSON}}</script>
 <script>
 {{INLINE_APP_JS}}
 </script>

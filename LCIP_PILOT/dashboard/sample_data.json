@@ -1,26 +1,44 @@
 {
-  "generated_at_kst": "2026-08-05 09:00",
+  "generated_at_kst": "2026-08-07 09:00",
   "topic_display_name": "엔지니어드스톤·실리코시스",
-  "today_changes": [],
-  "today_changes_summary": "신규 주요 변화 없음",
-  "tracker_rows": [
+  "today_intelligence": [
     {
-      "published_at": "2026-07-30",
-      "region": "미국 캘리포니아",
-      "title": "표본 사건명 (실제 데이터 아님 — WF-P05 실행 전 예시)",
-      "defendant": "표본 기업명",
-      "event_type": "소송",
-      "total_amount_usd": null,
-      "claimant_count": null,
-      "avg_amount_per_person_usd": null,
-      "status": "진행중",
-      "source_url": "https://example.com/sample-source",
-      "note": "샘플 fixture — 실제 수집 전"
+      "created_at": "2026-08-07",
+      "fact_summary": "표본 사실 요약 (실제 데이터 아님 — 샘플 fixture)",
+      "confidence": "medium",
+      "source_url": "https://example.com/sample-source"
     }
   ],
-  "non_us_issues": [],
-  "us_state_regulations": [],
-  "global_regulations": [],
-  "safeguard_news": [],
-  "litigation_amount_trend": []
+  "critical_risk": [
+    {
+      "created_at": "2026-08-07",
+      "fact_summary": "표본 리스크 요약 (샘플 fixture)",
+      "confidence": "medium",
+      "source_url": "https://example.com/sample-source"
+    }
+  ],
+  "future_opportunity": [],
+  "quick_company_scan": [
+    {
+      "target_company": "LX Hausys (예시)",
+      "scan_date": "2026-08-07",
+      "confidence": "low",
+      "intelligence_score": 42.3
+    }
+  ],
+  "investment_review": [
+    {
+      "target_company": "LX Hausys (예시)",
+      "recommendation_signal": "monitor",
+      "scan_date": "2026-08-07"
+    }
+  ],
+  "source_health": [
+    {
+      "source_id": "SRC-0001",
+      "source_name": "Google News RSS (English)",
+      "active": true,
+      "historical_stability": "Pilot 자체 연동 이력 없음(feature_flags.real_network_calls=false)"
+    }
+  ]
 }

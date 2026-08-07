@@ -98,7 +98,9 @@ class MockProvider(AIProvider):
             usage=ProviderUsage(input_tokens=800, output_tokens=300, model="mock-policy-analyzer"),
         )
 
-    def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
+    def quick_company_scan(
+        self, company: dict, sources: list[dict], knowledge_excerpt: str = ""
+    ) -> ProviderResult:
         self.call_count += 1
         display_name = company.get("display_name") or company.get("query") or "알 수 없는 회사"
         source_names = [s.get("source_name", "") for s in sources] or ["등록된 Source 없음"]
@@ -116,7 +118,8 @@ class MockProvider(AIProvider):
             "unknowns": [
                 "실제 Claude 미연동 상태 — mock 결과이므로 신뢰하지 말 것",
                 f"조회된 Source: {', '.join(source_names)}",
-            ],
+            ]
+            + ([] if knowledge_excerpt else ["Knowledge Base 발췌 없음(등록된 Knowledge 파일 없는 회사)"]),
             "confidence": "low",
         }
         return ProviderResult(

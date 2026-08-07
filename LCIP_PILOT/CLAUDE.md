@@ -66,8 +66,16 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    Engine(RegistryManager)/Knowledge Coverage/Company Registry 30개사 확장/Scenario
    5종/Quality Gate 5개 지표 추가/Connection Readiness 준비를 더했으며, 최종 목표를
    **Pilot Release Candidate(RC1)**로 명시했다 — 이후 라운드는 새 기능보다 Release
-   품질에 집중한다. 상세는 아래 "Round 6"/"Round 7" 절 참고. 외부 API 실제 연결은
-   Round 7까지도 시작하지 않았다.
+   품질에 집중한다. Round 8은 ADR-010으로 RC1 정의를 고정하고, Quick Company Scan을
+   Architect 지정 8단계 전체 파이프라인으로 완성하고, Company Intelligence Score를
+   신설하고, Dashboard를 Architect 지정 6개 Widget의 Executive Dashboard로 재구성하고,
+   Knowledge Coverage에 Company/Country/Industry 3종을 추가하고, RegistryManager에
+   Validation/Integrity/Dependency Check를 추가해 Project Boot 시 전체 Registry(8개로
+   확장, Technical Debt Registry 신설)를 검증하게 하고, Quality Gate에 Architectural
+   Stability/Operational Simplicity/Executive Usability/AI Reasoning Readiness 4개
+   지표를 추가했다 — "새로운 Framework는 더 이상 만들지 않는다"는 지시가 이번 라운드부터
+   적용된다. 상세는 아래 "Round 6"/"Round 7"/"Round 8" 절 참고. 외부 API 실제 연결은
+   Round 8까지도 시작하지 않았다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -301,3 +309,53 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     승인 이후 시작한다 — Round 7도 예외 없이 외부 API를 한 건도 호출하지 않았다.
   - Investment Review Engine은 Round 5와 동일하게 Comparable 기반만 유지한다(DCF/
     LBO/Option은 계속 Enterprise Backlog).
+- **Round 8: "Architecture 중심에서 Product 중심으로 전환 완료 — Pilot RC1을 향한 마지막
+  다듬기"** — "새로운 Framework는 더 이상 만들지 않는다"와 "전략팀 시연 관점에서만
+  개발한다. 새 기능보다 사용성/품질/완성도를 우선한다"가 이번 라운드부터 적용되는 절대
+  제약이다.
+  - **ADR-010 Release Policy**: RC1 = "실제 API 없이도 전략팀 데모가 가능한 수준"
+    (Mock+Feature Flag+실제 Pipeline+실제 Registry+실제 Dashboard)로 정의를 고정했다.
+    RC2(실제 API 연결)로 넘어가는 경계와, `FinancialDataProvider`가 새 Framework가
+    아니라 기존 Provider Layer 패턴의 재적용임을 명시한다.
+  - **Quick Company Scan 8단계 완성**: Input→Company Registry→Knowledge Retrieval→
+    Source Selection→**Financial Provider(Mock)**→Analysis Pipeline→Investment
+    Review→Dashboard Widget→Export. Financial Provider(`scripts/financial_provider.py`)
+    만 Mock이고 나머지는 전부 실제 코드다. `retrieve_knowledge_for_company()`가
+    `knowledge_engine.search_by_company()`를 통해 Knowledge Base 발췌를
+    `AIProvider.quick_company_scan()`(신규 `knowledge_excerpt` 파라미터, 하위호환)에
+    전달한다. `export_quick_scan_report()`가 JSON/Markdown 산출물을 생성한다.
+  - **Company Intelligence Score** (`scripts/company_intelligence_score.py`): Business
+    Understanding/Market Position/Financial Visibility/Strategic Importance/Risk
+    Visibility/Source Reliability/Knowledge Coverage 7개 하위 점수(완성도 기반, 각
+    100점 만점)와 평균인 `overall`. Scenario 3이 실행할 때마다 계산해 저장한다.
+  - **Executive Dashboard 6개 Widget**: 기존 소송·규제 특화 Widget 6종을 전부 제거하고,
+    Architect 지정 우선순위(Today's Intelligence→Critical Risk→Future Opportunity→
+    Quick Company Scan→Investment Review→Source Health) 그대로 재구성했다(`scripts/
+    dashboard_widgets.py`). Scenario 1/3이 `output/pilot_data/`를 공유해 하나의
+    Executive Dashboard가 두 Scenario 산출물을 함께 반영한다("각 Scenario가 실행 시점
+    데이터로 독립적으로 dashboard.html을 다시 쓴다"는 특성은 알려진 한계로 Technical
+    Debt Registry에 등록됨 — TD-006).
+  - **Knowledge Coverage 3종 추가** (`scripts/knowledge_coverage.py`): 기존 8개 도메인
+    Coverage에 Company/Country/Industry Coverage를 추가했다. Company Coverage는
+    Company Registry 30개사 중 신뢰 가능한 Knowledge를 실제로 가진 비율(3.3% —
+    LX_HAUSYS 1개사뿐), Country Coverage는 등장 국가 중 `active: true` Source가 있는
+    비율(22.2%, `country: multi` placeholder는 실질 커버리지로 세지 않음), Industry
+    Coverage는 정확 문자열 매칭만 쓴다(3.6%). 전부 부풀리지 않은 실측치다. Quality
+    Gate의 Evidence Quality 계산식(8개 도메인 평균)은 조용히 바꾸지 않았다.
+  - **RegistryManager Validation/Integrity/Dependency Check**: "Registry는 조회만
+    하지 않는다" 지시에 따라 `scripts/registries/validation.py`를 신설하고
+    `RegistryManager`에 `validate()`/`check_integrity()`/`check_dependencies()`/
+    `validate_all()`을 추가했다. `bootstrap_project.py`(Project Boot)가
+    `validate_all()`을 호출해 매 부트마다 전체 Registry를 검증한다.
+  - **Technical Debt Registry** (`config/technical_debt_registry.yaml`): 코드 감사로
+    실제 확인한 부채 항목을 Severity/Priority/Estimated Time/Owner/Status 필드로
+    관리한다("실제 프로젝트 관리가 가능해야 한다"). 새 Registry 어댑터를 만들지 않고
+    기존 `YAMLListRegistry`를 재사용해 RegistryManager의 8번째 Registry로 등록했다.
+  - **Quality Gate 4종 지표 추가**(전부 100점 만점): Architectural Stability(`scripts/`
+    패키지 집합이 Round 7/8 기준선과 정확히 같은지 비교 — "새 Framework 금지"를 직접
+    계측), Operational Simplicity(5개 Scenario가 단일 명령으로 끝까지 실행되는지 실제
+    서브프로세스로 실측), Executive Usability(`sample_data.json` 기준 `build_html()`
+    호출로 6개 Widget 섹션 렌더링 실측), AI Reasoning Readiness(`ClaudeProvider`가
+    `AIProvider`의 4개 추상 메서드 전부를 실제 Prompt Engine 경로까지 연결했는지 소스
+    코드로 확인 — Reasoning Quality와 다른 축).
+  - 외부 API 실제 연결은 Round 8도 예외 없이 시작하지 않았다.

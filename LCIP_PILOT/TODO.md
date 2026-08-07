@@ -232,3 +232,54 @@ Release 품질에 집중한다.
   상위 루프는 아직 없다(n8n Master Pipeline이 TASK-008에서 그 역할을 맡을 예정).
 - Scenario 5(경쟁사 변화 감지)의 "변화 감지"는 Mock 응답 기반이라 실제 시장 변화를
   반영하지 못한다 — Connection Readiness 완료 후 실제 데이터가 들어와야 의미가 생긴다.
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 8 (전부 완료, Mock 기반)
+
+Round 8 지시: "Architecture 중심 프로젝트에서 Product 중심 프로젝트로 성공적으로
+전환되었다. 이번 Round부터는 'Pilot RC1'를 목표로 개발한다. 새로운 Framework는 더 이상
+만들지 않는다. 전략팀 시연 관점에서만 개발한다. 새 기능보다 사용성/품질/완성도를
+우선한다. 실제 API 호출은 계속 금지한다."
+
+- [x] **ADR-010 Release Policy** — RC1 = "실제 API 없이도 전략팀 데모가 가능한 수준"
+      (Mock+Feature Flag+실제 Pipeline+실제 Registry+실제 Dashboard)로 정의 고정. RC2는
+      실제 API 연결 전부.
+- [x] **Quick Company Scan 8단계 파이프라인 완성** — Input→Company Registry→Knowledge
+      Retrieval→Source Selection→Financial Provider(Mock)→Analysis Pipeline→
+      Investment Review→Dashboard Widget→Export. "Pilot에서는 Financial Provider만
+      Mock, 나머지는 전부 실제 코드" 지시 그대로 구현.
+- [x] **Company Intelligence Score** — `scripts/company_intelligence_score.py`: Business
+      Understanding/Market Position/Financial Visibility/Strategic Importance/Risk
+      Visibility/Source Reliability/Knowledge Coverage 7개 하위 점수(각 100점 만점,
+      완성도 기반).
+- [x] **Executive Dashboard 6개 Widget 재구성** — 기존 소송·규제 특화 Widget 6종 제거,
+      Architect 지정 우선순위 그대로(Today's Intelligence→Critical Risk→Future
+      Opportunity→Quick Company Scan→Investment Review→Source Health) 재구성.
+- [x] **Knowledge Coverage 3종 추가** — Company Coverage(3.3%)/Country Coverage
+      (22.2%)/Industry Coverage(3.6%) — 전부 실측치, 부풀리지 않음.
+- [x] **RegistryManager Validation/Integrity/Dependency Check** — Project Boot
+      (`bootstrap_project.py`)이 8개 Registry 전체를 검증한다.
+- [x] **Technical Debt Registry** — `config/technical_debt_registry.yaml`: Severity/
+      Priority/Estimated Time/Owner/Status 필드로 실제 프로젝트 관리 가능한 형태.
+      RegistryManager의 8번째 Registry로 등록.
+- [x] **Quality Gate 4종 지표 추가** — Architectural Stability(패키지 집합 회귀
+      감시)/Operational Simplicity(5개 Scenario 서브프로세스 실행 실측)/Executive
+      Usability(6개 Widget 렌더링 실측)/AI Reasoning Readiness(ClaudeProvider 구조적
+      구현 확인).
+
+## 이번 라운드(Architect Review Round 8 반영)에서 알려진 한계
+
+- Company/Industry Coverage가 아직 낮다(각 3.3%/3.6%) — LX_HAUSYS 1개사만 실제
+  Knowledge 파일을 보유하기 때문이다. 나머지 29개사는 Company Registry에는 있지만
+  Knowledge Base 연결은 아직 없다(`config/technical_debt_registry.yaml` TD-005).
+- Country Coverage(22.2%)도 KR/US 2개국만 `active: true` Source가 있어서다 — Source
+  Registry의 `country: multi` 항목 2건은 둘 다 `active: false` 카테고리 placeholder라
+  실질 커버리지로 세지 않았다(정직성 원칙).
+- Executive Dashboard는 각 Scenario가 자신이 실행되는 시점의 데이터로 `dashboard.html`을
+  독립적으로 다시 쓴다 — Scenario 1과 3을 순서대로 실행하면 마지막에 실행한 Scenario
+  기준 스냅샷만 화면에 반영된다(TD-006, 설계 결정 필요).
+- `config/model_pricing.yaml` 단가가 여전히 placeholder 0.0이다(TD-003, RC2에서 모델
+  확정 후 채워야 함).
+- `STRATEGY_PLAYBOOK.md`가 Round 8에서도 `confidence: draft`로 남아 Investment
+  Coverage가 25%에 머문다(TD-007).
+- Round 7까지의 한계(Google Drive/Sheets/n8n/이메일/Telegram/Anthropic API 미연결 등)는
+  Round 8에서도 동일하게 유지된다 — 위 "Round 7" 절 참고.

@@ -21,18 +21,9 @@ from html import escape
 
 from _common import project_root
 from dashboard_data_provider import StaticJSONDataProvider
-from dashboard_widgets import (
-    DEFAULT_WIDGETS,
-    render_generic_list,
-    render_today_changes,
-    render_tracker_rows,
-)
+from dashboard_widgets import DEFAULT_WIDGETS, render_generic_list
 
 DASHBOARD_DIR = project_root() / "dashboard"
-
-# render_tracker_rows/render_generic_list/render_today_changes는 dashboard_widgets.py로
-# 이전되었다 — 기존 호출부(tests/test_dashboard.py 등)와의 하위 호환을 위해 이 모듈에서도
-# 그대로 재노출한다.
 
 
 def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[str, str]:
