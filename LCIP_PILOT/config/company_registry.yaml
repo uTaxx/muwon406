@@ -197,3 +197,222 @@ companies:
     official_website: "https://www.ykkap.com"
     primary_disclosure_source: "TODO: source required (비상장, 일본 법인 공시 의무 제한적)"
     is_lx_group_company: false
+
+  # --- Round 7 TASK 확장: Architect Review Round 7 지정 14개사 + Claude 추가 선정 2개사
+  # (목표 30개사 달성용, 아래 CORNING/OWENS_CORNING에 각각 표시) — 리서치는 WebSearch
+  # 기준(2026-08-07)이며, 확인되지 않은 필드는 기존 원칙대로 null/TODO로 남긴다. ---
+
+  # --- LG 그룹 (2개사) — 주의: 2021년 LG그룹에서 계열 분리된 LX그룹과는 별개 법인이다.
+  # 사명이 유사해 혼동하기 쉬우나 LX Holdings 계열사가 아니다. ---
+  - company_id: LG_ELECTRONICS
+    display_name: LG Electronics
+    aliases: ["LG Electronics", "LG전자", "엘지전자"]
+    ticker: "066570"  # KRX, 확인됨(stockanalysis.com/LG IR, 2026-08-07)
+    dart_name: "LG전자"
+    country: KR
+    industry: "가전·전자제품"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.lg.com"
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: false
+
+  - company_id: LG_CHEM
+    display_name: LG Chem
+    aliases: ["LG Chem", "LG화학", "엘지화학"]
+    ticker: "051910"  # KRX, 확인됨(stockanalysis.com, 2026-08-07)
+    dart_name: "LG화학"
+    country: KR
+    industry: "화학(석유화학·배터리소재·생명과학)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.lgchem.com"
+    primary_disclosure_source: "DART(전자공시시스템, 금융감독원)"
+    is_lx_group_company: false
+
+  # --- 글로벌 유리 제조사 (5개사) ---
+  - company_id: SAINT_GOBAIN
+    display_name: Saint-Gobain
+    aliases: ["Saint-Gobain", "Compagnie de Saint-Gobain", "생고뱅"]
+    ticker: "SGO"  # Euronext Paris, ISIN FR0000125007, CAC 40 구성종목 — 확인됨(Euronext, 2026-08-07)
+    dart_name: null
+    country: FR
+    industry: "건축자재 제조(유리·단열재·배관자재 등)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.saint-gobain.com"
+    primary_disclosure_source: "AMF(프랑스 금융시장청) — Universal Registration Document 제출"
+    is_lx_group_company: false
+
+  - company_id: AGC
+    display_name: AGC Inc.
+    aliases: ["AGC", "AGC Inc.", "Asahi Glass", "아사히글라스", "에이지씨"]
+    ticker: "5201"  # TSE, 확인됨(Investing.com/AGC IR, 2026-08-07). 2018-07-01 Asahi Glass -> AGC Inc. 사명 변경.
+    dart_name: null
+    country: JP
+    industry: "유리 제조(건축·자동차용) 및 화학·전자소재"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.agc.com"
+    primary_disclosure_source: "EDINET(일본 금융청 전자공시) + 도쿄증권거래소 공시"
+    is_lx_group_company: false
+
+  - company_id: NSG_GROUP
+    display_name: NSG Group (Nippon Sheet Glass)
+    aliases: ["NSG Group", "NSG", "Nippon Sheet Glass", "닛폰시트글라스"]
+    ticker: "5202"  # TSE, 확인됨(Investing.com/nsg.com, 2026-08-07). "NSG Group"은 Nippon Sheet Glass Co., Ltd.의 국제 사업명 — 동일 법인(중복 등록 아님).
+    dart_name: null
+    country: JP
+    industry: "유리 제조(건축·자동차·기능성 유리)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.nsg.com"
+    primary_disclosure_source: "EDINET(일본 금융청 전자공시) + 도쿄증권거래소 공시"
+    is_lx_group_company: false
+
+  - company_id: GUARDIAN_INDUSTRIES
+    display_name: Guardian Industries (Guardian Glass)
+    aliases: ["Guardian Industries", "Guardian Glass", "가디언글라스"]
+    ticker: null  # 비상장 — 2017-02 Koch Industries가 완전 인수(Business Wire, 2026-08-07 확인)
+    dart_name: null
+    country: US
+    industry: "유리 제조(판유리·코팅유리·가공유리)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.guardianglass.com"
+    primary_disclosure_source: "TODO: source required (모회사 Koch Industries도 비상장(개인 소유)이라 SEC 공시 의무 없음)"
+    is_lx_group_company: false
+
+  - company_id: VITRO
+    display_name: Vitro, S.A.B. de C.V.
+    aliases: ["Vitro", "비트로"]
+    ticker: "VITROA"  # BMV(멕시코 증권거래소), 확인됨(BMV 발행사 페이지, 2026-08-07)
+    dart_name: null
+    country: MX
+    industry: "유리 제조(판유리·용기유리)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.vitro.com"
+    primary_disclosure_source: "CNBV(멕시코 국가은행증권위원회)/BMV 발행사 공시 — 과거(2007~2010년경) 미국 채권 발행으로 SEC EDGAR 이력도 있으나 현재 SEC 등록 상태는 TODO: source required"
+    is_lx_group_company: false
+
+  # --- 글로벌 창호(Windows/Doors) 제조사 (6개사) ---
+  - company_id: SCHUCO
+    display_name: Schüco International
+    aliases: ["Schüco", "Schuco", "슈코"]
+    ticker: null  # 비상장(합자회사 KG 형태) — 확인됨(schueco.com, 2026-08-07)
+    dart_name: null
+    country: DE
+    industry: "창호·파사드 시스템(알루미늄·PVC·강재)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.schueco.com"
+    primary_disclosure_source: "TODO: source required (비상장, 공식 증권 공시 의무 없음) — 소유구조는 Otto Fuchs 그룹 계열로 알려져 있으나(schueco.com) 상세는 미확인"
+    is_lx_group_company: false
+
+  - company_id: REHAU
+    display_name: REHAU Group
+    aliases: ["Rehau", "REHAU", "레하우"]
+    ticker: null  # 비상장(가족 소유) — 확인됨(Wikipedia, REHAU 공식 Fact Sheet, 2026-08-07)
+    dart_name: null
+    country: DE  # 주의: 창업지·주요 사업거점은 독일(Rehau)이나, 관리 지주법인은 스위스(Muri bei Bern) 소재라는 자료도 있어 "본사" 표기가 출처마다 다름 — TODO: source required로 확정 필요
+    industry: "고분자 소재 기반 건축자재(창호 프로파일·배관 시스템)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.rehau.com"
+    primary_disclosure_source: "TODO: source required (비상장, 공시 의무 없음)"
+    is_lx_group_company: false
+
+  - company_id: DECEUNINCK
+    display_name: Deceuninck NV
+    aliases: ["Deceuninck", "데슈닝크"]
+    ticker: "DECB"  # Euronext Brussels, ISIN BE0003789063, 확인됨(Euronext, 2026-08-07)
+    dart_name: null
+    country: BE
+    industry: "PVC·알루미늄 창호 및 건축자재"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.deceuninck.com"
+    primary_disclosure_source: "FSMA(벨기에 금융서비스시장청)/Euronext Brussels 공시"
+    is_lx_group_company: false
+
+  - company_id: ANDERSEN
+    display_name: Andersen Corporation
+    aliases: ["Andersen Corporation", "Andersen Windows", "앤더슨"]
+    ticker: null  # 비상장 — 창업자 후손 소유 + 일부 종업원 지분(ESOP), 확인됨(Wikipedia, 2026-08-07)
+    dart_name: null
+    country: US
+    industry: "창호(Windows/Doors) 제조"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.andersenwindows.com"
+    primary_disclosure_source: "TODO: source required (비상장, 공시 의무 없음)"
+    is_lx_group_company: false
+
+  - company_id: PELLA
+    display_name: Pella Corporation
+    aliases: ["Pella Corporation", "Pella", "펠라"]
+    ticker: null  # 비상장(창업 가문 소유) — 확인됨(Pella 공식 연혁, 2026-08-07)
+    dart_name: null
+    country: US
+    industry: "창호(Windows/Doors) 제조"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.pella.com"
+    primary_disclosure_source: "TODO: source required (비상장, 공시 의무 없음)"
+    is_lx_group_company: false
+
+  - company_id: MARVIN
+    display_name: Marvin Windows and Doors
+    aliases: ["Marvin", "Marvin Windows and Doors", "마빈"]
+    ticker: null  # 비상장(4대째 가족 100% 소유) — 확인됨(Marvin 공식 연혁/Star Tribune, 2026-08-07)
+    dart_name: null
+    country: US
+    industry: "창호(Windows/Doors) 제조"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.marvin.com"
+    primary_disclosure_source: "TODO: source required (비상장, 공시 의무 없음)"
+    is_lx_group_company: false
+
+  # --- 글로벌 도료·특수유리소재 (3개사, 이 중 CORNING/OWENS_CORNING 2개사는 Architect가
+  # 지정하지 않았으나 30개사 목표 달성을 위해 Claude가 추가 선정함 — LX Hausys의
+  # 유리/건축자재 비교군과 관련성이 높은 미국 상장사를 우선했다) ---
+  - company_id: PPG
+    display_name: PPG Industries
+    aliases: ["PPG Industries", "PPG", "피피지"]
+    ticker: "PPG"  # NYSE, SEC CIK 0000079879, 확인됨(SEC EDGAR, 2026-08-07)
+    dart_name: null
+    country: US
+    industry: "도료·코팅제 및 특수소재 제조"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.ppg.com"
+    primary_disclosure_source: "SEC EDGAR(CIK 0000079879)"
+    is_lx_group_company: false
+
+  - company_id: CORNING
+    display_name: Corning Incorporated
+    aliases: ["Corning", "Corning Incorporated", "코닝"]
+    ticker: "GLW"  # NYSE, 확인됨(WebSearch: investing.com/stockanalysis.com, 2026-08-07) — Claude 추가 선정(30개사 목표)
+    dart_name: null
+    country: US
+    industry: "특수유리·세라믹·소재과학"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.corning.com"
+    primary_disclosure_source: "SEC EDGAR"
+    is_lx_group_company: false
+
+  - company_id: OWENS_CORNING
+    display_name: Owens Corning
+    aliases: ["Owens Corning", "오웬스코닝"]
+    ticker: "OC"  # NYSE, 확인됨(WebSearch: investing.com/stockanalysis.com, 2026-08-07) — Claude 추가 선정(30개사 목표)
+    dart_name: null
+    country: US
+    industry: "건축자재(단열재·지붕재·복합소재)"
+    products: []  # TODO: source required
+    value_chain: "TODO: source required"
+    official_website: "https://www.owenscorning.com"
+    primary_disclosure_source: "SEC EDGAR"
+    is_lx_group_company: false

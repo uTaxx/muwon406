@@ -60,6 +60,14 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    고도화하는 라운드이며, Quick Company Scan을 Pilot의 첫 번째 실제 서비스로 승격하고
    그 출력을 Investment Review Engine 입력으로 연결한다. Round 5부터도 새 Framework
    문서는 만들지 않고 ADR만 추가하며, 외부 API 실제 연결은 계속 시작하지 않는다.
+   Round 6은 "Engine Development에서 Working Product로" 전환해 TASK-K01(Knowledge
+   Population)/K02(Company Registry)/K03(Source Registry)로 실제 데이터를 채우고,
+   Feature Flag·Provider Factory·Quality Gate를 신설했다. Round 7은 그 위에 Registry
+   Engine(RegistryManager)/Knowledge Coverage/Company Registry 30개사 확장/Scenario
+   5종/Quality Gate 5개 지표 추가/Connection Readiness 준비를 더했으며, 최종 목표를
+   **Pilot Release Candidate(RC1)**로 명시했다 — 이후 라운드는 새 기능보다 Release
+   품질에 집중한다. 상세는 아래 "Round 6"/"Round 7" 절 참고. 외부 API 실제 연결은
+   Round 7까지도 시작하지 않았다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -77,7 +85,8 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
 3. `docs/DEVELOPMENT_MANUAL_REFERENCE.md`
 4. `docs/01_PROJECT_CONTEXT.md`
 5. `docs/04_DATA_AND_CONFIG_SCHEMA.md`, `docs/decisions/ADR-006-document-priority-policy.md`,
-   `docs/decisions/ADR-007-n8n-workflow-consolidation.md`
+   `docs/decisions/ADR-007-n8n-workflow-consolidation.md`, `docs/CONNECTION_READINESS.md`
+   (Round 7 — 실제 API 연결 전 준비사항, 실제 호출은 하지 않음)
 6. `knowledge/KNOWLEDGE_POLICY.md`, `knowledge/MISSION_FRAMEWORK.md`,
    `knowledge/SOURCE_PRIORITY.md`, `knowledge/ANALYSIS_FRAMEWORK.md`,
    `knowledge/INVESTMENT_FRAMEWORK.md` — Corporate Intelligence Framework (TASK-004B)
@@ -162,7 +171,9 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     `http_get` 주입으로 테스트)/Naver·DART·정부·IR은 `NotImplementedError` stub.
   - **Analysis Pipeline** (`scripts/pipeline/`): Collect→Normalize→Rule Filter→
     Classify→Knowledge Retrieve→Analyze→Validate→Generate Intelligence→Store를
-    분리된 순수 함수로 구현. 오케스트레이션은 `scripts/demo_mvp.py`가 담당한다.
+    분리된 순수 함수로 구현. 오케스트레이션은 당시 `scripts/demo_mvp.py`가 담당했다
+    (Round 6에서 `demo_pilot.py`로 통합, Round 7부터 `scripts/scenarios/*.py` 5종
+    Scenario로 대체 — 아래 Round 7 절 참고).
   - **Dashboard Widget** (`scripts/dashboard_widgets.py`): Today's Change/Risk
     Tracker/Litigation/Regulation(재사용 가능한 단일 클래스)/**Statistics(신규)**/
     Timeline을 독립된 `Widget` 클래스로 분리 — `DEFAULT_WIDGETS` 목록에서 추가/제거해도
@@ -171,10 +182,11 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     `run_health_check()`)/Cost Guard(`scripts/cost_tracking.py`)도 각각 test_mode
     dry-run, Adapter 실제 호출 결과 기반 판정, Provider 사용량 기반 비용 추정으로
     연동되었다 — 전부 Mock/dry-run 기반이며 실제 발송·과금은 발생하지 않는다.
-  - `scripts/demo_mvp.py`가 위 전체를 하나의 흐름으로 실행하는 CLI 데모이며,
+  - 당시 `scripts/demo_mvp.py`가 위 전체를 하나의 흐름으로 실행하는 CLI 데모였으며,
     `tests/test_mvp_integration.py`가 Pilot MVP 성공 기준(Round 4 정의: Google RSS→
     수집→Rule Filter→Claude 분석→INTELLIGENCE_DB 저장→Dashboard 반영→Test Email→
-    Test Telegram)을 그대로 검증한다.
+    Test Telegram)을 그대로 검증한다(이 통합 테스트 자체는 지금도 유효 — 파일 삭제
+    이력과 무관하게 동일 흐름을 자체 재구현해 검증한다).
 - **Round 5: "Pilot을 실제 사용할 수 있는 방향으로 고도화"** — Round 4 구조를 유지한 채
   4개 하위 엔진을 추가하고, Quick Company Scan을 Pilot 첫 실제 서비스로 승격했다.
   - **Storage Backend** (`scripts/storage/`): `StorageBackend`(추상) →
@@ -223,3 +235,69 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
     반복 생성을 설정 목록 기반으로 정리. `scripts/health_tracking.py`를
     `scripts/source_health_check.py`로 병합(파일명은 `03_BUILD_SPECIFICATION.md` 원문
     기준 유지).
+- **Round 6: "Engine Development에서 Working Product로 전환"** — 새 Engine/Framework/
+  Layer 추가를 절대 금지하고, 실제 데이터를 채우는 데 집중했다. 아키텍처는 Round 4/5에서
+  동결.
+  - **TASK-K01/K02/K03**: `knowledge/*.md` 5개 문서에 WebSearch로 확인한 실제 공개정보
+    작성(Knowledge Quality Score 25%→95.8%), `config/company_registry.yaml` 1→14개사,
+    `config/sources.yaml` 4→11개 Source(authentication/rate_limit 필드 신설).
+  - **Feature Flag** (`config/feature_flags.yaml`, `scripts/feature_flags.py`): 개별
+    `enabled=` 인자보다 상위의 전역 안전장치. 4개 스위치(`real_network_calls`/
+    `claude_api_enabled`/`google_sheets_enabled`/`notification_send_enabled`) 전부
+    다음 Architect 승인 전까지 `false`.
+  - **TASK-009/010 실체화**: `ClaudeProvider._call_anthropic()`이 실제 `anthropic` SDK
+    호출 코드를 갖되 `feature_flags.claude_api_enabled`가 `false`인 한 SDK import조차
+    하지 않고 멈춘다(2중 게이트). `scripts/providers/factory.py:get_default_provider()`
+    신설 — API Key + Flag 둘 다 있어야 `ClaudeProvider`, 아니면 `MockProvider`.
+    `GoogleRSSAdapter.enabled` 기본값도 `real_network_calls` 플래그를 따르도록 전환.
+  - **데모 통합(2→1)**: `demo_mvp.py`+`demo_quick_scan.py`를 `scripts/demo_pilot.py`
+    하나로 통합(Round 7에서 다시 Scenario 5종으로 대체 — 아래 참고).
+  - **Quality Gate** (`scripts/quality_gate.py`): Coverage 대신 품질을 측정한다.
+    Knowledge Quality/Registry Completion/Public Source Coverage/Source Freshness/
+    Mock Dependency/Pilot Operational Readiness 6개 지표(Round 7이 5개 추가 — 아래 참고).
+  - **데드코드/중복 구조 정리**: `scripts/pipeline/store.py`(실제 호출자가 자기
+    테스트뿐이었음), `claude_client.build_cached_messages()`(Prompt Engine으로 완전
+    대체되어 미사용) 삭제. `build_dashboard.py`의 중복 JSON 로딩을
+    `dashboard_data_provider.StaticJSONDataProvider` 재사용으로 교체.
+    `future_providers.py`/`future_adapters.py`/`future_storage.py`(Round 4/5가 승인한
+    확장 지점 stub)에는 "Pilot이 호출하지 않는다"는 감사 표시만 추가하고 삭제하지
+    않았다 — Provider/Adapter/Storage 교체 가능성의 증거이기 때문이다.
+- **Round 7: "Registry 통합 + Coverage 전환 + Scenario화 + Connection Readiness 준비"**
+  — 최종 목표는 **Pilot Release Candidate(RC1)**이며, 이후 라운드는 새 기능보다 Release
+  품질에 집중한다.
+  - **RegistryManager** (`scripts/registries/`): Company/Source/Model/Prompt/Workflow/
+    Config/Storage 7개 Registry에 동일 Interface(`list_entries`/`get`/`count`)를
+    씌우는 얇은 어댑터 계층 — 새 Engine이 아니라 각 Registry의 원본 파일(YAML/파일
+    목록)은 그대로 두고 조회 방식만 통일한다. 기존 호출부(`quick_company_scan.py`가
+    `config/company_registry.yaml`을 직접 읽는 것 등)는 그대로 유지된다.
+  - **Knowledge Coverage** (`scripts/knowledge_coverage.py`): Knowledge Quality를
+    "문서 개수"가 아니라 "도메인 커버리지"로 전환 — Corporate/Market/Competitor/
+    Government/Technology/Risk/Opportunity/Investment 8개 도메인을 (파일, Section
+    번호) 명시적 매핑으로 채점한다(키워드 유사 매칭이 아니다 — 같은 단어가 다른
+    도메인을 가리키는 경우가 있어서다). `knowledge_quality.py`의 12계층 채점 로직을
+    그대로 재사용한다.
+  - **Company Registry 14→30개사**: LG전자/LG화학(별도 그룹사 — LX와 혼동 주의)/
+    글로벌 유리 제조사(Saint-Gobain/AGC/NSG/Guardian/Vitro)/글로벌 창호 제조사(Schüco/
+    Rehau/Deceuninck/Andersen/Pella/Marvin)/PPG + Claude가 30개사 목표 달성을 위해
+    추가 선정한 Corning/Owens Corning.
+  - **Source Registry**: 11개 Source 전부에 `estimated_update_delay`/
+    `typical_reliability`/`historical_stability` 필드 추가(전부 "Pilot 자체 연동
+    이력 없음"으로 정직하게 표시 — feature flag가 꺼져 있는 한 사실이다).
+  - **Scenario 5종** (`scripts/scenarios/`): "하나의 통합 데모" 대신 독립 실행 가능한
+    5개 Scenario로 전환 — 뉴스 분석(1)/Quick Company Scan(2)/Investment Review(3,
+    내부적으로 2를 호출)/정부 정책 영향 분석(4, `AIProvider.analyze_policy_impact()`
+    신규 메서드 + `policy_analysis_output` 스키마 신설, 기존 `prompts/policy_analysis.md`를
+    처음으로 실제 연결)/경쟁사 변화 감지(5, 스냅샷 diff — 최초 실행은 "최초 스냅샷"으로
+    정직하게 보고). `scripts/demo_pilot.py`는 삭제됐다.
+  - **Quality Gate 5개 지표 추가**(전부 100점 만점): Registry Quality(RegistryManager
+    구조+내용), Report Quality(Scenario 2/3를 실제로 실행해 스키마 검증 실측),
+    Evidence Quality(Knowledge Coverage+Registry Completion 평균), Reasoning
+    Quality(**설계 proxy임을 반드시 유지 — 실제 출력 품질 아님**, risk_analysis/
+    policy_analysis 프롬프트가 confidence/evidence/unknowns를 요구하는지만 확인),
+    Maintainability(`scripts/` 모듈 docstring 비율).
+  - **Connection Readiness** (`docs/CONNECTION_READINESS.md`): 실제 API 연결 없이
+    Credential 체크리스트/환경변수(`.env.example`에 Naver/모델 3종/테스트 수신 이메일
+    보강)/Connection Test Plan/Rollback Plan만 준비한다. 실제 호출은 다음 Architect
+    승인 이후 시작한다 — Round 7도 예외 없이 외부 API를 한 건도 호출하지 않았다.
+  - Investment Review Engine은 Round 5와 동일하게 Comparable 기반만 유지한다(DCF/
+    LBO/Option은 계속 Enterprise Backlog).

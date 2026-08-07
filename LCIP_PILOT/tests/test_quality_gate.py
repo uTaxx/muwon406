@@ -120,3 +120,82 @@ def test_build_report_all_six_metrics_present(monkeypatch):
         "pilot_operational_readiness",
     ):
         assert hasattr(report, field)
+
+
+# --- Round 7 신규 5개 지표 ---
+
+
+def test_registry_quality_score_is_between_0_and_100():
+    assert 0.0 <= quality_gate.registry_quality_score() <= 100.0
+
+
+def test_registry_quality_score_uses_all_7_registries_structurally():
+    """RegistryManager의 7개 Registry 중 하나라도 비어있지 않은 한 구조 점수는 100이어야
+    한다(현재 상태 기준 회귀 감시)."""
+    from registries import RegistryManager
+
+    summary = RegistryManager().summary()
+    assert all(count > 0 for count in summary.values())
+
+
+def test_report_quality_score_is_100_when_scenarios_succeed():
+    """Scenario 2/3가 정상 동작하는 현재 상태에서는 100%여야 한다."""
+    assert quality_gate.report_quality_score() == 100.0
+
+
+def test_report_quality_score_drops_when_a_scenario_raises(monkeypatch):
+    """Scenario 3만 실패하도록(Scenario 2는 정상 유지) investment_review 호출부만
+    깨뜨려 1/2 = 50%가 나오는지 확인한다."""
+    import scenarios.scenario_3_investment_review as s3
+
+    def _raise(*args, **kwargs):
+        raise RuntimeError("시뮬레이션된 실패")
+
+    monkeypatch.setattr(s3, "build_investment_review", _raise)
+    assert quality_gate.report_quality_score() == 50.0
+
+
+def test_evidence_quality_score_is_between_0_and_100():
+    assert 0.0 <= quality_gate.evidence_quality_score() <= 100.0
+
+
+def test_evidence_quality_score_averages_knowledge_coverage_and_registry_completion():
+    from knowledge_coverage import all_coverage
+
+    coverage_values = list(all_coverage().values())
+    expected_knowledge = sum(coverage_values) / len(coverage_values)
+    expected = (expected_knowledge + quality_gate.registry_completion()) / 2
+    assert quality_gate.evidence_quality_score() == expected
+
+
+def test_reasoning_quality_score_is_100_for_current_compliant_prompts():
+    """risk_analysis.md/policy_analysis.md는 둘 다 confidence/evidence/unknowns를
+    요구한다 — 회귀하면 이 테스트가 잡아낸다."""
+    assert quality_gate.reasoning_quality_score() == 100.0
+
+
+def test_reasoning_quality_score_is_a_design_proxy_not_output_measurement():
+    """모집단이 risk_analysis/policy_analysis 2개뿐임을 명시적으로 검증 — quick_scan
+    등 다른 출력 계약의 프롬프트를 잘못 포함시키지 않았는지 확인."""
+    assert quality_gate.REASONING_ANALYSIS_PROMPTS == ["risk_analysis", "policy_analysis"]
+
+
+def test_maintainability_score_is_between_0_and_100():
+    assert 0.0 <= quality_gate.maintainability_score() <= 100.0
+
+
+def test_maintainability_score_reflects_module_docstring_convention():
+    """이 리포지토리는 지금까지 모든 라운드에서 모듈 docstring을 관례로 지켜왔다 —
+    큰 폭으로 떨어지면 회귀다."""
+    assert quality_gate.maintainability_score() >= 90.0
+
+
+def test_build_report_includes_all_5_round7_metrics(monkeypatch):
+    monkeypatch.setattr(quality_gate, "_run_full_test_suite", lambda: True)
+    report = quality_gate.build_report(run_tests=False)
+    for field in (
+        "registry_quality", "report_quality", "evidence_quality",
+        "reasoning_quality", "maintainability",
+    ):
+        assert hasattr(report, field)
+        assert 0.0 <= getattr(report, field) <= 100.0

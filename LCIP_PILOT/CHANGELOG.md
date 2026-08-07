@@ -5,6 +5,79 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 7 반영 (2026-08-07, 7차)
+
+ChatGPT Architect Review Round 7 승인 및 반영("이번 라운드는 지금까지 중 가장 품질이
+높았다" — Architecture A+/Code Quality A/Knowledge A/Scalability A+/Pilot Readiness A-).
+최종 목표를 **Pilot Release Candidate(RC1)**로 명시했다 — 이후 라운드는 새 기능보다
+Release 품질에 집중한다.
+
+- **RegistryManager**: `scripts/registries/` 신설 — Company/Source/Model/Prompt/
+  Workflow/Config/Storage 7개 Registry에 동일 Interface(`Registry.list_entries()`/
+  `get()`/`count()`)를 씌우는 얇은 어댑터 계층. Architect 지시("새로운 Engine을 만드는
+  것이 아니라 Registry 관리 방식을 통일한다")대로 각 Registry의 원본 파일/파싱 로직은
+  전혀 바꾸지 않았다 — `quick_company_scan.py`가 `config/company_registry.yaml`을
+  직접 읽는 기존 호출부도 그대로 유지된다. 17개 테스트.
+- **Knowledge Coverage**: `scripts/knowledge_coverage.py` 신설 — Knowledge Quality를
+  "문서 개수"가 아니라 "8개 도메인(Corporate/Market/Competitor/Government/
+  Technology/Risk/Opportunity/Investment) Coverage"로 재정의했다. 키워드 유사
+  매칭이 아니라 (파일, Section 번호) 명시적 목록으로 매핑한다 — 같은 단어("Manufacturing")
+  가 `LX_HAUSYS_COMPANY_DNA.md`(기술 관점)와 `LX_HAUSYS_VALUE_CHAIN.md`(시장 관점)에서
+  다른 의미로 쓰이기 때문이다. 신뢰 가능 여부 판정은 `knowledge_quality.py`의 기존
+  로직을 재사용했다. 전체 평균 90.6%(Investment Coverage만 25% — `STRATEGY_PLAYBOOK.md`
+  미착수가 원인, 회귀 감시용 테스트로 고정). 8개 테스트.
+- **Company Registry 14→30개사**: LG전자/LG화학(2021년 LG그룹에서 계열 분리된 LX그룹과
+  별개 법인임을 명시), 글로벌 유리 제조사 5개사(Saint-Gobain/AGC/NSG Group/Guardian
+  Industries/Vitro), 글로벌 창호 제조사 6개사(Schüco/REHAU/Deceuninck/Andersen/Pella/
+  Marvin), PPG + 30개사 목표 달성을 위해 Claude가 추가 선정한 Corning/Owens Corning
+  (WebSearch로 티커 재확인, 추가 선정 사실을 코드 주석에 명시). 리서치는 서브에이전트로
+  병렬 확인 후 반영. 4개 테스트.
+- **Source Registry 필드 3종**: `config/sources.yaml` 11개 Source 전부에
+  `estimated_update_delay`/`typical_reliability`/`historical_stability` 추가.
+  `historical_stability`는 전부 "Pilot 자체 연동 이력 없음"으로 정직하게 표시했다
+  (`feature_flags.real_network_calls=false`인 동안은 사실이다). 2개 테스트.
+- **Scenario 5종 (TASK-017 변경)**: `scripts/demo_pilot.py`(Round 6의 "1개 통합 데모")를
+  삭제하고 `scripts/scenarios/` 5개 독립 실행 스크립트로 전환 — 뉴스 분석/Quick Company
+  Scan/Investment Review(Scenario 2를 내부 호출해 단독 실행 가능)/정부 정책 영향
+  분석(신규)/경쟁사 변화 감지(신규). 정책 영향 분석을 위해 `AIProvider.
+  analyze_policy_impact()` 신규 추상 메서드(+MockProvider/ClaudeProvider 구현체) 및
+  `schemas/claude_output.schema.json`의 `policy_analysis_output` 정의를 추가해,
+  Round 2부터 존재했지만 실제 호출자가 없었던 `prompts/policy_analysis.md`를 처음으로
+  연결했다. 경쟁사 변화 감지는 스냅샷을 저장하고 직전 스냅샷과 비교하는 방식으로
+  "변화 감지"를 정직하게 구현했다 — 최초 실행은 변화가 있었다고 지어내지 않고 "최초
+  스냅샷"이라고 그대로 보고한다. 9개 테스트.
+- **Quality Gate 5종 지표 추가**: Registry Quality(RegistryManager 구조+Registry
+  Completion+Public Source Coverage 평균), Report Quality(Scenario 2/3를 실제로
+  실행해 스키마 검증 실측 — 가정이 아니다), Evidence Quality(Knowledge Coverage+
+  Registry Completion 평균), Reasoning Quality(**설계 proxy** — Mock Dependency
+  100%인 현재 실제 출력 품질은 채점 불가, `risk_analysis`/`policy_analysis` 프롬프트가
+  confidence/evidence/unknowns를 요구하는 설계인지만 확인하며 이를 코드 docstring에
+  명시), Maintainability(`scripts/` 모듈 docstring 비율). 전부 100점 만점, 13개 테스트.
+- **Connection Readiness**: `docs/CONNECTION_READINESS.md` 신설 — 실제 API 연결 없이
+  Credential 체크리스트(시스템별), 환경변수 목록, OAuth 흐름 안내, Connection Test
+  Plan(8단계, 위험이 낮은 순), Rollback Plan(Feature Flag를 되돌리는 것이 유일하고
+  가장 빠른 킬스위치)을 문서화했다. `.env.example`에 그동안 코드는 참조하지만 예시
+  파일에 없었던 `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET`/`LCIP_TEST_EMAIL_RECIPIENT`/
+  모델 3종 환경변수를 보강했다.
+- Investment Review Engine은 Round 5와 동일하게 Comparable 기반만 유지(DCF/LBO/
+  Option은 계속 Enterprise Backlog) — 이번 라운드는 변경 없이 확인만 했다.
+- 테스트: 총 **335개 테스트 전부 PASS**(Round 6: 284개 → +51개).
+- 문서: `CLAUDE.md`(Round 6/7 절 신설, `demo_mvp.py`/`demo_pilot.py` 관련 서술을
+  현재 상태로 갱신), `PROJECT_STATUS.md`/`TODO.md`(Round 7 반영으로 전면 갱신),
+  `docs/CONNECTION_READINESS.md`(신규).
+
+### Notes
+
+- 이번 라운드도 외부 API를 전혀 호출하지 않았다 — `config/feature_flags.yaml`의 4개
+  플래그가 전부 `false`인 한, Scenario 4가 새로 연결한 `analyze_policy_impact()`를
+  포함해 모든 실제 호출 경로가 안전하게 도달 불가능한 상태로 남는다.
+- Reasoning Quality(100점)는 "실제 추론 결과가 우수하다"는 뜻이 아니라 "프롬프트가
+  추론 근거를 요구하도록 설계되어 있다"는 뜻이다 — 다음 라운드 이후 실제 API 연결이
+  시작되면 이 지표의 정의 자체를 재검토해야 한다.
+- Company Registry의 여러 필드(products/value_chain/official_website/
+  primary_disclosure_source)는 여전히 TODO다 — 30개사로 확대된 만큼 리서치 부담도
+  늘었다.
+
 ### Added — Architect Review Round 6 반영 (2026-08-05, 6차)
 
 ChatGPT Architect Review Round 6 승인 및 반영. "Engine Development"에서 "Working

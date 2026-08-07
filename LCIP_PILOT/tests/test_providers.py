@@ -42,6 +42,11 @@ def _quick_scan_schema():
     return json.loads((SCHEMAS_DIR / "quick_company_scan.schema.json").read_text(encoding="utf-8"))
 
 
+def _policy_schema():
+    schema = json.loads((SCHEMAS_DIR / "claude_output.schema.json").read_text(encoding="utf-8"))
+    return {**schema["$defs"]["policy_analysis_output"], "$defs": schema["$defs"]}
+
+
 def test_mock_provider_is_an_ai_provider():
     assert isinstance(MockProvider(), AIProvider)
 
@@ -65,6 +70,15 @@ def test_mock_provider_analyze_risk_matches_schema():
     assert result.ok is True
     jsonschema.validate(instance=result.parsed_json, schema=_risk_schema())
     assert isinstance(result.usage, ProviderUsage)
+
+
+def test_mock_provider_analyze_policy_impact_matches_schema():
+    result = MockProvider().analyze_policy_impact(SILICA_ARTICLE, "LX Hausys 발췌", "기존 타임라인")
+    assert result.ok is True
+    jsonschema.validate(instance=result.parsed_json, schema=_policy_schema())
+    assert result.parsed_json["regulatory_stage"] in (
+        "proposed", "public_comment", "passed", "in_effect", "enforcement", "unknown",
+    )
 
 
 def test_mock_provider_call_count_increments():
@@ -102,6 +116,8 @@ def test_claude_provider_disabled_by_default():
         provider.classify_relevance(SILICA_ARTICLE, TOPIC)
     with pytest.raises(ClaudeProviderDisabledError):
         provider.analyze_risk(SILICA_ARTICLE, "", "")
+    with pytest.raises(ClaudeProviderDisabledError):
+        provider.analyze_policy_impact(SILICA_ARTICLE, "", "")
 
 
 def test_claude_provider_enabled_but_no_model_configured_raises_before_network(monkeypatch):
@@ -125,6 +141,13 @@ def test_claude_provider_analyze_risk_enabled_with_model_raises_not_implemented(
     provider = ClaudeProvider(enabled=True)
     with pytest.raises(NotImplementedError):
         provider.analyze_risk(SILICA_ARTICLE, "LX Hausys 발췌", "기존 타임라인")
+
+
+def test_claude_provider_analyze_policy_impact_enabled_with_model_raises_not_implemented(monkeypatch):
+    monkeypatch.setenv("LCIP_DEEP_ANALYSIS_MODEL", "test-model-id")
+    provider = ClaudeProvider(enabled=True)
+    with pytest.raises(NotImplementedError):
+        provider.analyze_policy_impact(SILICA_ARTICLE, "LX Hausys 발췌", "기존 타임라인")
 
 
 def test_claude_provider_build_source_block_includes_reliability_score():
@@ -165,6 +188,8 @@ def test_future_providers_are_ai_providers_but_not_implemented(provider_cls):
         provider.analyze_risk(SILICA_ARTICLE, "", "")
     with pytest.raises(NotImplementedError):
         provider.quick_company_scan({"display_name": "샘플"}, [])
+    with pytest.raises(NotImplementedError):
+        provider.analyze_policy_impact(SILICA_ARTICLE, "", "")
 
 
 def test_providers_are_interchangeable_same_call_signature():

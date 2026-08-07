@@ -66,6 +66,21 @@ class ClaudeProvider(AIProvider):
         )
         return self._call_anthropic(model, messages, "risk_analysis_output")
 
+    def analyze_policy_impact(
+        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+    ) -> ProviderResult:
+        self._require_enabled()
+        model = claude_client.get_model_name("deep_analysis")  # policy_analysis도 deep_analysis tier(config/model_registry.yaml)
+        builder = PromptBuilder(PromptTemplate("policy_analysis"), cache=self._prompt_cache)
+        source_block = self._build_source_block(article)
+        messages = builder.build(
+            {"article": article},
+            knowledge_block=lx_context_excerpt,
+            source_block=source_block,
+            context_block=existing_timeline_excerpt,
+        )
+        return self._call_anthropic(model, messages, "policy_analysis_output")
+
     def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
         self._require_enabled()
         model = claude_client.get_model_name("future")

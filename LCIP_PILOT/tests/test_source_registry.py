@@ -54,6 +54,24 @@ def test_dart_and_naver_confirmed_rate_limits():
     assert "25,000" in naver["rate_limit"]
 
 
+def test_every_source_has_round7_fields():
+    """Round 7 지시: 각 Source마다 Estimated Update Delay/Typical Reliability/
+    Historical Stability를 추가한다."""
+    required_keys = {"estimated_update_delay", "typical_reliability", "historical_stability"}
+    for source in SOURCES:
+        missing = required_keys - source.keys()
+        assert not missing, f"{source['source_id']}에 누락된 Round 7 필드: {missing}"
+        for key in required_keys:
+            assert source[key], f"{source['source_id']}의 {key}가 비어있다"
+
+
+def test_historical_stability_honestly_reports_no_pilot_history():
+    """feature_flags.real_network_calls가 여전히 false인 동안, Pilot 자체 연동 이력은
+    존재할 수 없다 — 임의로 안정적이라고 추정하지 않는다."""
+    for source in SOURCES:
+        assert "이력 없음" in source["historical_stability"]
+
+
 def test_reliability_grade_still_uses_single_source_of_truth():
     """Round 6 지시: 중복 구조를 만들지 않는다 — 세분화된 1~5점 점수는
     scripts/source_priority.py가 source_type 기준으로 동적으로 계산하며, 이 YAML에

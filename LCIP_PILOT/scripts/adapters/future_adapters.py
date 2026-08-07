@@ -5,9 +5,9 @@
 남겨둔다. 나중에 실제 연동이 필요해지면 scripts/pipeline/*을 전혀 건드리지 않고 이 Adapter들만
 채우면 된다는 것을 보여준다 (providers/future_providers.py와 동일한 설계 원칙).
 
-Round 6 감사 표시: `scripts/demo_pilot.py`는 이 4개 Adapter를 전혀 호출하지 않는다 —
-`tests/test_adapters.py`에서만 "SourceAdapter 계약을 지키는지"를 확인한다. 삭제 후보가
-아니라 Round 4가 승인한 "Adapter 교체 가능성" 증거이므로 그대로 둔다.
+Round 6/7 감사 표시: `scripts/scenarios/*.py` 어느 것도 이 4개 Adapter를 전혀 호출하지
+않는다 — `tests/test_adapters.py`에서만 "SourceAdapter 계약을 지키는지"를 확인한다.
+삭제 후보가 아니라 Round 4가 승인한 "Adapter 교체 가능성" 증거이므로 그대로 둔다.
 """
 from __future__ import annotations
 

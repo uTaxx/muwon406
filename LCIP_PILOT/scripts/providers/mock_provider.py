@@ -73,6 +73,31 @@ class MockProvider(AIProvider):
             usage=ProviderUsage(input_tokens=800, output_tokens=300, model="mock-analyzer"),
         )
 
+    def analyze_policy_impact(
+        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+    ) -> ProviderResult:
+        self.call_count += 1
+        title = article.get("title_original", "샘플 정책 기사")
+        parsed = {
+            "facts": [f"원문 제목: {title}"],
+            "regulatory_stage": "unknown",
+            "significance": "중요 — mock 정책 영향 분석 (실제 Claude 미연동)",
+            "mission_category": ["risk_management"],
+            "mission_subcategory": ["regulatory"],
+            "intelligence_categories": ["regulation", "government"],
+            "lx_impact": [] if not lx_context_excerpt else ["LX Hausys Knowledge Base 발췌 근거로 규제 영향 가능성 있음 (mock)"],
+            "actions": ["규제 단계 추가 모니터링 필요 (mock 제안)"],
+            "confidence": "low",
+            "evidence": [article.get("source_url", "https://example.com/mock-policy-source")],
+            "unknowns": ["실제 Claude 미연동 상태 — mock 결과이므로 신뢰하지 말 것"],
+        }
+        return ProviderResult(
+            ok=True,
+            parsed_json=parsed,
+            raw_text=str(parsed),
+            usage=ProviderUsage(input_tokens=800, output_tokens=300, model="mock-policy-analyzer"),
+        )
+
     def quick_company_scan(self, company: dict, sources: list[dict]) -> ProviderResult:
         self.call_count += 1
         display_name = company.get("display_name") or company.get("query") or "알 수 없는 회사"

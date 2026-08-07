@@ -78,6 +78,31 @@
         "unknowns": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
+    },
+    "policy_analysis_output": {
+      "description": "prompts/policy_analysis.md 기준 — risk_analysis_output에 regulatory_stage를 추가한 확장 형태 (Round 7 Scenario 4: 정부 정책 영향 분석).",
+      "type": "object",
+      "required": [
+        "facts", "regulatory_stage", "significance", "intelligence_categories", "lx_impact",
+        "actions", "confidence", "evidence", "unknowns"
+      ],
+      "properties": {
+        "facts": { "type": "array", "items": { "type": "string" } },
+        "regulatory_stage": {
+          "type": "string",
+          "enum": ["proposed", "public_comment", "passed", "in_effect", "enforcement", "unknown"]
+        },
+        "significance": { "type": "string" },
+        "mission_category": { "$ref": "#/$defs/mission_category" },
+        "mission_subcategory": { "$ref": "#/$defs/mission_subcategory" },
+        "intelligence_categories": { "$ref": "#/$defs/intelligence_categories" },
+        "lx_impact": { "type": "array", "items": { "type": "string" } },
+        "actions": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+        "evidence": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
     }
   }
 }

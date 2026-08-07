@@ -45,3 +45,13 @@ class AIProvider(ABC):
         Architect Review Round 5: Quick Company Scan을 Pilot의 첫 번째 실제 서비스로
         승격 — `scripts/quick_company_scan.py`의 Pipeline이 이 메서드를 호출한다.
         """
+
+    @abstractmethod
+    def analyze_policy_impact(
+        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+    ) -> ProviderResult:
+        """schemas/claude_output.schema.json의 policy_analysis_output 형태를 반환해야 한다.
+
+        Architect Review Round 7 Scenario 4(정부 정책 영향 분석) — `analyze_risk()`와
+        동일한 입력을 받되 `prompts/policy_analysis.md`(regulatory_stage 포함)를 쓴다.
+        """

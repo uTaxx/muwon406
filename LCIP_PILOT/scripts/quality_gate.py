@@ -1,38 +1,48 @@
 #!/usr/bin/env python3
-"""Quality Gate — Architect Review Round 6.
+"""Quality Gate — Architect Review Round 6/7.
 
 Round 6 지시: "Coverage보다 품질 측정으로 전환." 이 모듈은 "기사를 몇 건 처리했는가"가
-아니라 "Pilot이 지금 실제로 신뢰할 수 있는 상태인가"를 6개 지표로 측정한다.
+아니라 "Pilot이 지금 실제로 신뢰할 수 있는 상태인가"를 측정한다. Round 7이 5개 지표
+(Report/Evidence/Reasoning/Registry Quality, Maintainability, 전부 100점 만점)를
+추가했다.
 
 각 지표는 이미 존재하는 단일 진실 공급원을 그대로 재사용하며 계산 로직을 중복 구현하지
-않는다 — Knowledge Quality Score는 `knowledge_quality.py`, Source Reliability 등급은
-`config/sources.yaml`/`source_priority.py`, Mock 의존도는 `feature_flags.py`를 그대로
-읽는다. 이 파일은 그 값들을 모아 하나의 Quality Gate 리포트로 조립하는 역할만 한다.
+않는다 — Knowledge Quality Score는 `knowledge_quality.py`, Knowledge Coverage는
+`knowledge_coverage.py`, Registry는 `registries.RegistryManager`, Source Reliability
+등급은 `config/sources.yaml`/`source_priority.py`, Mock 의존도는 `feature_flags.py`를
+그대로 읽는다. 이 파일은 그 값들을 모아 하나의 Quality Gate 리포트로 조립하는 역할만 한다.
 
-지표 정의:
+Round 6 지표 정의:
 - **Knowledge Quality Score**: `knowledge_quality.score_document()`의 Company Profile
-  문서(12계층 Taxonomy 적용 대상) 평균 — 기존 Round 5 정의 그대로.
-- **Registry Completion**: `config/company_registry.yaml`의 K02 필수 필드
-  (ticker/industry/products/value_chain/official_website/primary_disclosure_source)
-  중 실제 값이 채워진(= null도 아니고 "TODO: source required"도 아닌) 비율. 미상장·TODO는
-  Pilot 단계에서 정직하게 허용되므로 100%가 목표치는 아니다(참고 지표).
-- **Public Source Coverage**: TASK-K03이 요구한 필수 공개정보 시스템
-  (Google RSS/Naver/DART/KRX/SEC/EDINET/SEDAR+/Companies House)이 `config/sources.yaml`에
-  전부 등록되어 있는지의 비율 — 목표 100%.
-- **Source Freshness**: 등록된 Source 중 현재 `active: true`(실제로 살아있는 수집 대상)인
-  비율. Public Source Coverage("등록은 됐는가")와 달리 "지금 당장 신선한 데이터를 가져올
-  수 있는가"를 측정한다 — 두 지표를 하나로 합치면 "등록만 되어 있고 꺼져 있는 상태"를
-  가릴 수 있어 의도적으로 분리했다.
-- **Mock Dependency**: `config/feature_flags.yaml`의 플래그 중 아직 `false`인 비율 —
-  다음 Architect 승인 전까지는 100%가 정상이며 "낮아져야 좋은" 지표가 아니라 "현재 상태를
-  숨기지 않고 드러내는" 지표다.
-- **Pilot Operational Readiness**: 아래 `_readiness_checks()`의 구조적 점검 항목 통과율.
-  임의의 목표 수치가 아니라 리포지토리에 실제로 존재하는 파일/설정/테스트 결과를 그대로
-  확인한다(테스트 스위트는 실제로 실행해 통과 여부를 본다 — 임의 판정 없음).
+  문서(12계층 Taxonomy 적용 대상) 평균.
+- **Registry Completion**: `config/company_registry.yaml`의 K02 필수 필드 중 실제 값이
+  채워진 비율. 미상장·TODO는 Pilot 단계에서 정직하게 허용되므로 100%가 목표치는
+  아니다(참고 지표).
+- **Public Source Coverage**: TASK-K03 필수 공개정보 시스템의 등록 비율 — 목표 100%.
+- **Source Freshness**: 등록된 Source 중 현재 `active: true`인 비율.
+- **Mock Dependency**: `config/feature_flags.yaml`의 플래그 중 아직 `false`인 비율.
+- **Pilot Operational Readiness**: 구조적 점검 항목 통과율(테스트 스위트 실제 실행 포함).
+
+Round 7 신규 지표 정의(전부 100점 만점):
+- **Registry Quality**: `registries.RegistryManager`의 7개 Registry가 전부 비어있지
+  않은지(구조) + Registry Completion + Public Source Coverage의 평균(내용).
+- **Report Quality**: Quick Company Scan/Investment Review Scenario(2/3)를 실제로
+  실행해 각 Report가 스키마 검증을 통과하는지 실측한다 — 가정이 아니라 실행 결과다.
+- **Evidence Quality**: Knowledge Coverage 8개 도메인 평균 + Registry Completion의
+  평균 — "주장에 실제 출처가 붙어 있는가"를 지식/레지스트리 양쪽에서 본다.
+- **Reasoning Quality**: **주의 — 실제 출력 품질이 아니라 설계 proxy다.** Mock
+  Dependency가 100%인 동안은 Claude의 실제 추론 결과를 채점할 방법이 없다 — 대신
+  `risk_analysis`/`policy_analysis`(claude_output.schema.json의 risk_analysis_output
+  계열, 추론 근거를 명시적으로 요구하는 출력 계약) 프롬프트가 confidence/evidence/
+  unknowns 필드를 실제로 요구하는 설계인지만 확인한다. `quick_scan`/`daily_change`/
+  `relevance_filter`/`natural_language_admin`은 다른 출력 계약을 쓰므로 이 지표의
+  모집단에서 제외한다(제외가 곧 통과 처리라는 뜻이 아니다).
+- **Maintainability**: `scripts/` 전체 `.py` 파일 중 모듈 docstring이 있는 비율.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -69,6 +79,11 @@ EXPECTED_FEATURE_FLAG_KEYS = {
     "notification_send_enabled",
 }
 
+# Reasoning Quality 채점 대상 — claude_output.schema.json의 risk_analysis_output 계열
+# (confidence/evidence/unknowns를 명시적으로 요구하는 출력 계약)을 쓰는 프롬프트만.
+REASONING_ANALYSIS_PROMPTS = ["risk_analysis", "policy_analysis"]
+REASONING_REQUIRED_MARKERS = ["confidence", "evidence", "unknowns"]
+
 
 def _is_filled(value) -> bool:
     """null / 빈 리스트 / "TODO: source required" 계열 placeholder는 미확인으로 취급한다."""
@@ -90,6 +105,11 @@ class QualityGateReport:
     mock_dependency: float
     pilot_operational_readiness: float
     readiness_checks: dict[str, bool]
+    registry_quality: float
+    report_quality: float
+    evidence_quality: float
+    reasoning_quality: float
+    maintainability: float
 
 
 def knowledge_quality_score() -> float:
@@ -136,6 +156,73 @@ def mock_dependency() -> float:
     return (still_mocked / len(flags)) * 100
 
 
+def registry_quality_score() -> float:
+    """Round 7 신설. `RegistryManager`의 7개 Registry가 전부 비어있지 않은지(구조)와
+    Registry Completion/Public Source Coverage(내용)를 함께 본다 — 새 계산 로직을
+    만들지 않고 기존 함수를 재사용한다."""
+    from registries import RegistryManager
+
+    summary = RegistryManager().summary()
+    structural = (sum(1 for count in summary.values() if count > 0) / len(summary)) * 100
+    return (structural + registry_completion() + public_source_coverage()) / 3
+
+
+def report_quality_score() -> float:
+    """Round 7 신설. Quick Company Scan(Scenario 2)과 Investment Review(Scenario 3)를
+    실제로 실행해 각 Report가 스키마 검증을 실제로 통과하는지 실측한다 — 가정이 아니다."""
+    from scenarios import scenario_2_quick_company_scan, scenario_3_investment_review
+
+    checks = []
+    for runner in (
+        lambda: scenario_2_quick_company_scan.run("LX Hausys", verbose=False),
+        lambda: scenario_3_investment_review.run("LX Hausys", verbose=False),
+    ):
+        try:
+            runner()
+            checks.append(True)
+        except Exception:
+            checks.append(False)
+    return (sum(checks) / len(checks)) * 100 if checks else 0.0
+
+
+def evidence_quality_score() -> float:
+    """Round 7 신설. Knowledge Coverage(지식 쪽 출처 충실도) + Registry Completion
+    (레지스트리 쪽 출처 충실도)의 평균 — 둘 다 기존 계산을 재사용한다."""
+    from knowledge_coverage import all_coverage
+
+    coverage_values = list(all_coverage().values())
+    knowledge_evidence = sum(coverage_values) / len(coverage_values) if coverage_values else 0.0
+    return (knowledge_evidence + registry_completion()) / 2
+
+
+def reasoning_quality_score() -> float:
+    """Round 7 신설 — 실제 출력 품질이 아니라 설계 proxy다(모듈 docstring 참고)."""
+    prompts_dir = project_root() / "prompts"
+    compliant = 0
+    for prompt_name in REASONING_ANALYSIS_PROMPTS:
+        text = (prompts_dir / f"{prompt_name}.md").read_text(encoding="utf-8")
+        if all(marker in text for marker in REASONING_REQUIRED_MARKERS):
+            compliant += 1
+    return (compliant / len(REASONING_ANALYSIS_PROMPTS)) * 100 if REASONING_ANALYSIS_PROMPTS else 0.0
+
+
+def maintainability_score() -> float:
+    """Round 7 신설 — `scripts/` 전체 `.py` 파일 중 모듈 docstring이 있는 비율."""
+    scripts_dir = project_root() / "scripts"
+    py_files = [p for p in scripts_dir.rglob("*.py") if "__pycache__" not in p.parts]
+    if not py_files:
+        return 0.0
+    documented = 0
+    for path in py_files:
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        if ast.get_docstring(tree):
+            documented += 1
+    return (documented / len(py_files)) * 100
+
+
 def _run_full_test_suite() -> bool:
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-q"],
@@ -153,10 +240,19 @@ def _readiness_checks(run_tests: bool = True) -> dict[str, bool]:
     checks = {
         "knowledge_quality_score >= 90%": knowledge_quality_score() >= 90.0,
         "public_source_coverage == 100%": public_source_coverage() == 100.0,
-        "company_registry >= 14개사": len(companies) >= 14,
+        "company_registry >= 30개사": len(companies) >= 30,
         "source_registry >= 11개 Source": len(sources) >= 11,
         "feature_flags.yaml 4개 스위치 구조 정상": set(flags.keys()) == EXPECTED_FEATURE_FLAG_KEYS,
-        "통합 데모(scripts/demo_pilot.py) 존재": (project_root() / "scripts" / "demo_pilot.py").exists(),
+        "Scenario 5종 스크립트 존재": all(
+            (project_root() / "scripts" / "scenarios" / f"{name}.py").exists()
+            for name in [
+                "scenario_1_news_analysis",
+                "scenario_2_quick_company_scan",
+                "scenario_3_investment_review",
+                "scenario_4_policy_impact",
+                "scenario_5_competitor_change_detection",
+            ]
+        ),
     }
     # 이 함수 자체가 tests/test_quality_gate.py에서 실행되므로, run_tests=True로 pytest를
     # 서브프로세스로 재귀 호출하면 스스로를 무한히 다시 실행하게 된다 — CLI(`--skip-tests`
@@ -183,11 +279,16 @@ def build_report(run_tests: bool = True) -> QualityGateReport:
         mock_dependency=mock_dependency(),
         pilot_operational_readiness=pilot_operational_readiness(checks),
         readiness_checks=checks,
+        registry_quality=registry_quality_score(),
+        report_quality=report_quality_score(),
+        evidence_quality=evidence_quality_score(),
+        reasoning_quality=reasoning_quality_score(),
+        maintainability=maintainability_score(),
     )
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LCIP Pilot Quality Gate (Round 6)")
+    parser = argparse.ArgumentParser(description="LCIP Pilot Quality Gate (Round 6/7)")
     parser.add_argument(
         "--skip-tests", action="store_true", help="전체 테스트 스위트 재실행을 생략한다(빠른 확인용)"
     )
@@ -195,7 +296,7 @@ def main() -> int:
 
     report = build_report(run_tests=not args.skip_tests)
 
-    print("=== LCIP Pilot Quality Gate (Round 6) ===")
+    print("=== LCIP Pilot Quality Gate (Round 6/7) ===")
     print(f"Knowledge Quality Score:      {report.knowledge_quality_score:.1f}%")
     print(f"Registry Completion:         {report.registry_completion:.1f}% (참고 지표 — TODO 허용)")
     print(f"Public Source Coverage:      {report.public_source_coverage:.1f}%")
@@ -204,6 +305,13 @@ def main() -> int:
     print(f"\nPilot Operational Readiness: {report.pilot_operational_readiness:.1f}%")
     for name, ok in report.readiness_checks.items():
         print(f"  [{'OK' if ok else 'FAIL'}] {name}")
+
+    print("\n--- Round 7 신규 지표 (100점 만점) ---")
+    print(f"Registry Quality:    {report.registry_quality:.1f}")
+    print(f"Report Quality:      {report.report_quality:.1f}")
+    print(f"Evidence Quality:    {report.evidence_quality:.1f}")
+    print(f"Reasoning Quality:   {report.reasoning_quality:.1f}  (설계 proxy — 실제 출력 품질 아님)")
+    print(f"Maintainability:     {report.maintainability:.1f}")
     return 0
 
 

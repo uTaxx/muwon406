@@ -69,13 +69,34 @@ def test_build_investment_review_input_extracts_expected_fields():
 
 
 def test_company_registry_has_14_companies_round6_taskk02():
-    assert len(REGISTRY) == 14
+    """Round 6 TASK-K02가 등록한 14개사는 Round 7에서 30개사로 확장된 뒤에도 그대로
+    부분집합으로 남아 있어야 한다(기존 등록을 지우지 않았는지 확인)."""
     ids = {c["company_id"] for c in REGISTRY}
-    assert ids == {
+    round6_ids = {
         "LX_HOLDINGS", "LX_HAUSYS", "LX_MMA", "LX_SEMICON", "LX_PANTOS", "LX_INTERNATIONAL",
         "KCC", "HANSSEM", "CAESARSTONE", "COSENTINO", "SHAW_INDUSTRIES", "WILSONART",
         "LIXIL", "YKK_AP",
     }
+    assert round6_ids <= ids
+
+
+def test_company_registry_has_30_companies_round7():
+    assert len(REGISTRY) == 30
+    ids = {c["company_id"] for c in REGISTRY}
+    round7_new_ids = {
+        "LG_ELECTRONICS", "LG_CHEM", "SAINT_GOBAIN", "AGC", "NSG_GROUP",
+        "GUARDIAN_INDUSTRIES", "VITRO", "SCHUCO", "REHAU", "DECEUNINCK", "ANDERSEN",
+        "PELLA", "MARVIN", "PPG", "CORNING", "OWENS_CORNING",
+    }
+    assert round7_new_ids <= ids
+
+
+def test_lg_electronics_and_lg_chem_are_not_flagged_as_lx_group():
+    """LG전자/LG화학은 2021년 LG그룹에서 계열 분리된 LX그룹과는 별개 법인이다 —
+    사명 유사성으로 인한 오분류를 방지하는 회귀 테스트."""
+    by_id = {c["company_id"]: c for c in REGISTRY}
+    assert by_id["LG_ELECTRONICS"]["is_lx_group_company"] is False
+    assert by_id["LG_CHEM"]["is_lx_group_company"] is False
 
 
 @pytest.mark.parametrize(

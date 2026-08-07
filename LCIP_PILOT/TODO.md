@@ -1,14 +1,18 @@
 # TODO
 
-> 2026-08-05 Architect Review Round 6 반영 후 갱신. Round 6는 "Engine Development"에서
-> "Working Product"로 방향을 전환 — 새 Engine/Framework/Layer 추가를 절대 금지하고,
-> Knowledge Base 실제 내용(5개 문서, Quality Score 95.8%)/Company Registry(14개사)/
-> Source Registry(11개 Source)를 채우고, News Adapter/Claude Provider를 "구조만"에서
-> "실제 코드 존재 + Feature Flag(`config/feature_flags.yaml`)로 안전하게 차단"으로
-> 전환했다. 데모는 2개(`demo_mvp.py`+`demo_quick_scan.py`)에서 1개(`demo_pilot.py`)로
-> 통합했고, Coverage 대신 품질을 재는 `scripts/quality_gate.py`를 신설했다. 여전히
-> Mock/dry-run 기반이며, 남은 것은 TASK-016(보류)과 TASK-008(n8n 자동배포, 마지막) —
-> 나머지는 사용자가 API Key/계정을 준비하고 Feature Flag를 켜야 "실동작"으로 전환된다.
+> 2026-08-07 Architect Review Round 7 반영 후 갱신. Round 7은 Round 6 구조(Knowledge
+> Base 실제 내용/Company·Source Registry/Feature Flag/Provider Factory/Quality Gate)
+> 위에 (1) 7개 Registry를 동일 Interface로 묶는 `scripts/registries/`(RegistryManager),
+> (2) Knowledge Quality를 "문서 개수"에서 8개 도메인 Coverage로 재정의하는
+> `scripts/knowledge_coverage.py`, (3) Company Registry 14→30개사 확장, (4) Source
+> Registry 필드 3종(Estimated Update Delay/Typical Reliability/Historical Stability)
+> 추가, (5) "하나의 통합 데모"(`demo_pilot.py`, 삭제됨)를 5개 독립 Scenario
+> (`scripts/scenarios/`)로 전환, (6) Quality Gate에 Registry/Report/Evidence/Reasoning
+> Quality·Maintainability 5개 지표를 추가하고, (7) 실제 API 연결 없이 Connection
+> Readiness(`docs/CONNECTION_READINESS.md`)를 문서화했다. 최종 목표는 **Pilot Release
+> Candidate(RC1)**. 여전히 Mock/dry-run 기반이며, 남은 것은 TASK-016(보류)과
+> TASK-008(n8n 자동배포, 마지막) — 나머지는 사용자가 API Key/계정을 준비하고 Feature
+> Flag를 켜야 "실동작"으로 전환된다(순서는 `docs/CONNECTION_READINESS.md` §5 참고).
 
 ## 사용자가 해야 할 작업 (Claude Code가 추정/대신 수행하지 않음)
 
@@ -37,16 +41,20 @@ TASK-009~017의 구조/테스트는 Mock 기반으로 이미 완료됐다 — �
 - [ ] Gmail OAuth 연결 계정 — `EmailNotifier`를 `test_mode=False` 실제 발송으로 전환할 때 필요
 - [ ] Telegram Bot Token / Chat ID 준비 여부 — `TelegramNotifier`를 `test_mode=False` 실제
       발송으로 전환할 때 필요
-- [ ] 테스트 수신 이메일 주소(`.env`의 `LCIP_TEST_EMAIL_RECIPIENT`) — 지금도 dry-run
-      데모(`scripts/demo_mvp.py`)에서 미설정 시 "(미설정)"으로만 표시됨
+- [ ] 테스트 수신 이메일 주소(`.env`의 `LCIP_TEST_EMAIL_RECIPIENT`, Round 7에서
+      `.env.example`에 보강) — 지금도 dry-run Scenario(`scripts/scenarios/
+      scenario_1_news_analysis.py`)에서 미설정 시 "(미설정)"으로만 표시됨
+- [ ] Naver API Key(Client ID/Secret, `.env.example`에 Round 7에서 보강) — DART와
+      함께 §24 질문 항목
 - [ ] DART API Key 보유 여부 (Sprint 6 확장 대상)
 - [ ] Google Drive Desktop 동기화 사용 여부
-- [x] Quick Company Scan 대상 회사 등록 확대 (Round 6 TASK-K02) — `config/
-      company_registry.yaml`에 14개사(LX Group 6/국내 경쟁사 2/해외 엔지니어드스톤
-      경쟁사 4/일본 경쟁사 2) 등록 완료. LX Hausys(108670) 등 확인된 Ticker는 채웠으나,
+- [x] Quick Company Scan 대상 회사 등록 확대 (Round 6 TASK-K02 → Round 7에서 30개사로
+      재확대) — `config/company_registry.yaml`에 30개사(LX Group 6/국내 경쟁사 2/해외
+      엔지니어드스톤 경쟁사 4/일본 경쟁사 2/LG 그룹 2/글로벌 유리 제조사 5/글로벌 창호
+      제조사 6/도료·특수유리소재 3) 등록 완료. 확인된 Ticker는 채웠으나
       `products`/`value_chain`/`official_website`/`primary_disclosure_source`의 여러
       TODO 항목은 다음 라운드 리서치 대상 — `python scripts/quality_gate.py`의
-      Registry Completion으로 진행률 확인 가능(현재 48.8%).
+      Registry Completion으로 진행률 확인 가능(현재 51.7%).
 
 ### Knowledge Base — 출처 필요 (우선순위 확정, Architect Review Round 2 Q6)
 
@@ -169,25 +177,58 @@ Framework/Layer 추가를 절대 금지하고, 실제 데이터를 사용하는 
 - [x] 중복/데드코드 감사 — `pipeline/store.py`, `claude_client.build_cached_messages()`
       삭제. `build_dashboard.py`의 중복 JSON 로딩을 `StaticJSONDataProvider`로 통합.
 
-## 이번 라운드(Architect Review Round 6 반영)에서 알려진 한계
+## Claude Code가 다음에 할 작업 — Architect Review Round 7 (전부 완료, Mock 기반)
+
+Round 7 평가: Architecture A+/Code Quality A/Knowledge A/Scalability A+/Pilot
+Readiness A-. 최종 목표는 Pilot Release Candidate(RC1) — 이후 라운드는 새 기능보다
+Release 품질에 집중한다.
+
+- [x] **RegistryManager** — `scripts/registries/`: Company/Source/Model/Prompt/
+      Workflow/Config/Storage 7개 Registry에 동일 Interface(`list_entries`/`get`/
+      `count`). 새 Engine이 아니라 기존 파일을 감싸는 어댑터 — 원본 조회 경로는
+      그대로 유지된다.
+- [x] **Knowledge Coverage** — `scripts/knowledge_coverage.py`: Corporate/Market/
+      Competitor/Government/Technology/Risk/Opportunity/Investment 8개 도메인을
+      (파일, Section 번호) 명시적 매핑으로 채점. 전체 평균 90.6%(Investment만 25%).
+- [x] **Company Registry 14→30개사** — LG전자/LG화학(별도 그룹사)/글로벌 유리
+      제조사 5/글로벌 창호 제조사 6/PPG + Claude 추가 선정 Corning/Owens Corning.
+- [x] **Source Registry 필드 3종** — `estimated_update_delay`/`typical_reliability`/
+      `historical_stability`(전부 "Pilot 자체 연동 이력 없음"으로 정직하게 표시).
+- [x] **TASK-017 변경(Scenario화)** — `scripts/demo_pilot.py` 삭제, `scripts/
+      scenarios/` 5종(뉴스 분석/Quick Company Scan/Investment Review/정부 정책
+      영향 분석/경쟁사 변화 감지)으로 전환. 정책 분석은 `AIProvider.
+      analyze_policy_impact()` 신규 메서드로 기존 `prompts/policy_analysis.md`를
+      처음 실제 연결. 경쟁사 변화 감지는 스냅샷 diff(최초 실행은 "최초 스냅샷"으로
+      정직하게 보고 — 변화를 지어내지 않는다).
+- [x] **Quality Gate 5종 지표 추가** — Registry/Report/Evidence/Reasoning Quality,
+      Maintainability(전부 100점 만점). Reasoning Quality는 실제 출력 품질이 아니라
+      프롬프트 설계 proxy임을 명시.
+- [x] **Connection Readiness** — `docs/CONNECTION_READINESS.md`: Credential
+      체크리스트/Connection Test Plan/Rollback Plan. 실제 호출은 하지 않았다.
+
+## 이번 라운드(Architect Review Round 7 반영)에서 알려진 한계
 
 - Google Drive/Sheets/n8n/이메일/Telegram/Anthropic API 어떤 것도 실제로 연결·호출되지
   않았다 — `config/feature_flags.yaml`의 4개 플래그가 전부 `false`인 한, `ClaudeProvider`/
   `GoogleRSSAdapter`/`GoogleSheetsStorage`/Notifier는 실제 호출 직전에서 명시적으로
-  멈춘다(코드는 실제로 존재하지만 도달하지 않는다).
+  멈춘다(코드는 실제로 존재하지만 도달하지 않는다). `docs/CONNECTION_READINESS.md`가
+  준비 단계까지만 다룬다.
 - `config/model_registry.yaml`의 모든 `model_id`가 아직 `null`이고, `config/model_pricing.yaml`
   단가도 TODO placeholder(0.0)다 — 실제 모델 확정 전까지 Cost Guard가 계산하는 비용은
   항상 0이다 (임의 추정 금지 원칙에 따른 의도된 동작).
 - ARTICLE_DB/INTELLIGENCE_DB는 아직 Google Sheets가 아니라 `LocalJSONLStorage`(로컬
   JSONL)다 — `GoogleSheetsStorage`는 구조만 있고 `enabled=False`다.
 - Naver/DART/정부/IR Adapter는 API Key/소스 미등록으로 아직 stub이다(`scripts/adapters/
-  future_adapters.py`, Round 6 감사에서 "Pilot 데모 미호출" 표시 추가).
-- `config/company_registry.yaml`은 14개사로 확대됐지만 `products`/`value_chain`/
+  future_adapters.py`, "Pilot Scenario 미호출" 표시 추가).
+- `config/company_registry.yaml`은 30개사로 확대됐지만 `products`/`value_chain`/
   `official_website`/`primary_disclosure_source`의 다수 필드가 여전히 TODO다
-  (`python scripts/quality_gate.py`의 Registry Completion 48.8%로 정량 확인 가능).
+  (`python scripts/quality_gate.py`의 Registry Completion 51.7%로 정량 확인 가능).
 - Investment Review Engine의 Deal Killer 판정은 `risk_assessment` 원문의 키워드 매칭
   수준이다(소송/제재/형사/파산/상장폐지/회계부정) — 고도화는 Enterprise 확장 대상.
-- `STRATEGY_PLAYBOOK.md`는 Round 6에서 손대지 않아 여전히 `confidence: draft`다.
-- `scripts/demo_pilot.py`/통합 테스트는 TOP-0001 1개 Topic, SRC-0001(Google RSS 영문) 1개
-  소스만 다룬다 — 여러 Topic/여러 소스를 동시에 오케스트레이션하는 상위 루프는 아직 없다
-  (n8n Master Pipeline이 TASK-008에서 그 역할을 맡을 예정).
+- `STRATEGY_PLAYBOOK.md`는 Round 7에서도 손대지 않아 여전히 `confidence: draft`다 —
+  Investment Coverage가 25%로 낮은 주된 원인.
+- Scenario 5종/Quality Gate 실측(Report Quality)은 TOP-0001 1개 Topic, LX Hausys
+  1개 회사 기준으로만 검증했다 — 여러 Topic/여러 회사를 동시에 오케스트레이션하는
+  상위 루프는 아직 없다(n8n Master Pipeline이 TASK-008에서 그 역할을 맡을 예정).
+- Scenario 5(경쟁사 변화 감지)의 "변화 감지"는 Mock 응답 기반이라 실제 시장 변화를
+  반영하지 못한다 — Connection Readiness 완료 후 실제 데이터가 들어와야 의미가 생긴다.
