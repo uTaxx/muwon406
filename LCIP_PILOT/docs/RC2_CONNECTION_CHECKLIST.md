@@ -69,28 +69,33 @@ Secret 값은 이 문서(또는 어떤 Markdown/코드/Git)에도 절대 기록�
 
 | # | 항목 | 상태 | 필요 시점 | 필수/선택 | 입력 위치(`.env` 키) | Secret 여부 | Claude에게 값을 직접 알려줘야 하는가 |
 |---|---|---|---|---|---|---|---|
-| 1 | Anthropic API Key | 미준비 | RC2 1단계(최우선) | 필수 | `ANTHROPIC_API_KEY` | 예 | 아니오 — 준비 완료 여부만 |
+| 1 | Anthropic API Key | 준비됨 | RC2 1단계(최우선) | 필수 | `ANTHROPIC_API_KEY` | 예 | 아니오 — 준비 완료 여부만 |
 | 2 | Claude model IDs 3종 | 미준비(`model_registry.yaml`에 `null`) | RC2 1단계, API Key와 함께 | 필수 | `LCIP_CLASSIFICATION_MODEL` / `LCIP_DEEP_ANALYSIS_MODEL` / `LCIP_FUTURE_READINESS_MODEL` | 아니오(모델 ID 문자열 자체는 비밀 아님) | 예 — 정확한 모델 ID는 Registry에 반영해야 하므로 문자열을 알려준다 |
-| 3 | Google OAuth(Drive/Sheets/Gmail 공용) | 미준비 | RC2 2단계 | 필수(Drive/Sheets/Gmail 중 하나라도 켤 경우) | `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_OAUTH_TOKEN_PATH` 또는 `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` | 예 | 아니오 |
+| 3 | Google OAuth(Drive/Sheets/Gmail 공용) | 준비됨(Desktop OAuth 방식 — Client ID/Secret 확인) | RC2 2단계 | 필수(Drive/Sheets/Gmail 중 하나라도 켤 경우) | `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_OAUTH_TOKEN_PATH` 또는 `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` | 예 | 아니오 |
 | 4 | Google Drive Root Folder ID | 미준비 | RC2 2단계 | 필수(Drive 저장 시) | `GOOGLE_DRIVE_ROOT_FOLDER_ID` | 아니오(식별자, 비밀 아님) | 예 — 폴더 ID 문자열은 알려줘도 된다 |
 | 5 | Google Sheets Master Spreadsheet ID | 미준비 | RC2 2단계 | 필수(Sheets 저장 시) | `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID` | 아니오(식별자, 비밀 아님) | 예 — Spreadsheet ID는 알려줘도 된다 |
 | 6 | Google News RSS | 준비 불필요(공개 RSS, 인증 없음) | RC2 3단계 | 필수 | 해당 없음 | 아니오 | 해당 없음 |
-| 7 | DART API Key | 미준비 | RC2 4단계 | 선택(국내 공시 확장 시) | `DART_API_KEY` | 예 | 아니오 |
+| 7 | DART API Key | 준비됨(Credential만 — 코드는 아직 stub) | RC2 4단계 | 선택(국내 공시 확장 시) | `DART_API_KEY` | 예 | 아니오 |
 | 8 | n8n Base URL | 미준비 | RC2 5단계(마지막) | 필수(자동배포 시) | `N8N_BASE_URL` | 아니오(URL, 비밀 아님) | 예 |
-| 9 | n8n API Key | 미준비 | RC2 5단계 | 필수(자동배포 시) | `N8N_API_KEY` | 예 | 아니오 |
+| 9 | n8n API Key | 준비됨 | RC2 5단계 | 필수(자동배포 시) | `N8N_API_KEY` | 예 | 아니오 |
 | 10 | Gmail Credential | 미준비 | RC2 6단계 | 선택(이메일 발송 시) | `GMAIL_SENDER_ADDRESS`/`GMAIL_OAUTH_CLIENT_ID`/`GMAIL_OAUTH_CLIENT_SECRET`/`GMAIL_OAUTH_TOKEN_PATH` | 예(Client Secret/Token) | 아니오 |
-| 11 | Telegram Bot Token / Chat ID | 미준비 | RC2 7단계 | 선택(Telegram 발송 시) | `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` | Bot Token은 예, Chat ID는 아니오 | Chat ID만 예, Token은 아니오 |
-| 12 | Naver API Client ID/Secret | 미준비 | RC2 8단계(마지막) | 선택(국내 뉴스 확장 시) | `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET` | 예 | 아니오 |
+| 11 | Telegram Bot Token / Chat ID | 준비됨(LX그룹 봇) | RC2 7단계 | 선택(Telegram 발송 시) | `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` | Bot Token은 예, Chat ID는 아니오 | Chat ID만 예, Token은 아니오 |
+| 12 | Naver API Client ID/Secret | 준비됨(Credential만 — 코드는 아직 stub) | RC2 8단계(마지막) | 선택(국내 뉴스 확장 시) | `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET` | 예 | 아니오 |
 
-"상태"는 Credential 준비 여부만 나타낸다(Round 12 작성 시점 기준, `.env.example`의
-모든 값이 비어 있는 현재 상태를 그대로 반영) — 실제 준비 여부는 사용자가 §A-2로
-갱신해 알려준다. **코드 준비 상태는 별개다**: Round 13(RC2 실체화)이 #1(Claude
-API)/#3~5(Drive/Sheets)/#8~9(n8n)/#10(Gmail)/#11(Telegram)의 실제 호출 코드를
-전부 완성했다 — Credential만 채워지면 즉시 동작한다. #7(DART)/#12(Naver)는 코드
-자체가 아직 stub(`scripts/adapters/future_adapters.py`)이라 Credential이 갖춰져도
-추가 구현이 먼저 필요하다(§4 Vision Backlog 아님 — RC2 우선순위에는 포함되지만
-DART는 회사명→corp_code 매핑이라는 별도 설계 결정이 선행돼야 해서 이번 Round는
-보류했다).
+(참고) `KRX_API_KEY`는 위 12개 우선순위 항목에 포함되지 않는다 — 사용자가 제공한
+Credential Sheet에 있어 `.env`에 값만 보관했을 뿐, `config/sources.yaml`
+SRC-0005용 어댑터 자체가 아직 없다(Vision Backlog 아님, 단순 미착수).
+
+"상태"는 이번 Round(13, RC2 실체화 이어서 진행된 Credential 반영)에 사용자가
+Google Drive Sheet "Activate" 탭에서 제공한 값을 `.env`에 반영한 결과를 나타낸다.
+**코드 준비 상태는 별개다**: Round 13(RC2 실체화)이 #1(Claude API)/#3~5(Drive/
+Sheets)/#8~9(n8n)/#10(Gmail)/#11(Telegram)의 실제 호출 코드를 전부 완성했다 —
+Credential만 채워지면 즉시 동작한다(단, #1은 아래 #2 모델 ID 확정 전까지는
+`claude_api_enabled` Flag를 켜도 Provider가 여전히 비활성 상태다). #7(DART)/
+#12(Naver)는 코드 자체가 아직 stub(`scripts/adapters/future_adapters.py`)이라
+Credential이 갖춰져도 추가 구현이 먼저 필요하다(§4 Vision Backlog 아님 — RC2
+우선순위에는 포함되지만 DART는 회사명→corp_code 매핑이라는 별도 설계 결정이
+선행돼야 해서 이번 Round는 보류했다).
 
 ## 2. RC2 연결 우선순위 (Architect 지정 순서)
 
