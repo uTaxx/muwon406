@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import google_auth
+import googleapiclient.discovery
 import gspread
 from create_google_sheets import apply_plan, build_plan
 
@@ -61,6 +62,57 @@ def test_apply_plan_creates_only_missing_tabs(monkeypatch):
     # (동일 title 중복 없음으로 이미 확인됨) — 헤더 행도 새로 추가되지 않았어야 한다.
     config_master_ws = next(ws for ws in fake_spreadsheet.worksheets() if ws.title == "CONFIG_MASTER")
     assert config_master_ws.appended_rows == []
+
+
+class _FakeFilesCreate:
+    def __init__(self, service, body):
+        self._service = service
+        self._body = body
+
+    def execute(self) -> dict:
+        new_id = f"spreadsheet-{len(self._service.created)}"
+        self._service.created.append({"id": new_id, **self._body})
+        return {"id": new_id}
+
+
+class _FakeFiles:
+    def __init__(self, service):
+        self._service = service
+
+    def create(self, body=None, fields=None):
+        return _FakeFilesCreate(self._service, body)
+
+
+class _FakeDriveService:
+    def __init__(self):
+        self.created: list[dict] = []
+
+    def files(self):
+        return _FakeFiles(self)
+
+
+def test_apply_plan_creates_master_spreadsheet_when_missing(monkeypatch):
+    """뉴스 수집 실체화 라운드 이어서(2026-08-08) — GOOGLE_SHEETS_MASTER_SPREADSHEET_ID가
+    없어도 더 이상 즉시 실패하지 않고, GOOGLE_DRIVE_ROOT_FOLDER_ID 안에 새로 만든다."""
+    monkeypatch.delenv("GOOGLE_SHEETS_MASTER_SPREADSHEET_ID", raising=False)
+    monkeypatch.setenv("GOOGLE_DRIVE_ROOT_FOLDER_ID", "fake-drive-folder-id")
+    monkeypatch.setattr(google_auth, "load_credentials", lambda auth_mode, scopes: object())
+
+    fake_drive_service = _FakeDriveService()
+    monkeypatch.setattr(
+        googleapiclient.discovery, "build", lambda *a, **kw: fake_drive_service
+    )
+
+    fake_spreadsheet = _FakeSpreadsheet(existing_tab_names=[])
+    monkeypatch.setattr(gspread, "authorize", lambda creds: _FakeGspreadClient(fake_spreadsheet))
+
+    plan = build_plan(existing_tabs=[])
+    apply_plan(plan, auth_mode="oauth_desktop")
+
+    assert len(fake_drive_service.created) == 1
+    created_file = fake_drive_service.created[0]
+    assert created_file["mimeType"] == "application/vnd.google-apps.spreadsheet"
+    assert created_file["parents"] == ["fake-drive-folder-id"]
 
 
 def test_apply_plan_writes_header_row_and_freezes(monkeypatch):

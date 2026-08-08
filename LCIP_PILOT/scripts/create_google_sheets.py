@@ -67,12 +67,36 @@ def print_plan(plan: dict) -> None:
         )
 
 
+def _create_master_spreadsheet(creds) -> str:
+    """`GOOGLE_SHEETS_MASTER_SPREADSHEET_ID`가 아직 없을 때 새 Spreadsheet를 만든다
+    (뉴스 수집 실체화 라운드 이어서, 2026-08-08 신설). `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+    가 설정돼 있으면 그 폴더 안에 만들고, 없으면 Drive 루트에 만든다 — 임의로 새
+    폴더를 만들지 않는다(사용자가 이미 만들어 둔 폴더만 사용한다)."""
+    from googleapiclient.discovery import build
+
+    drive_service = build("drive", "v3", credentials=creds)
+    metadata = {
+        "name": "LCIP Master Spreadsheet",
+        "mimeType": "application/vnd.google-apps.spreadsheet",
+    }
+    parent_folder_id = env_or_none("GOOGLE_DRIVE_ROOT_FOLDER_ID")
+    if parent_folder_id:
+        metadata["parents"] = [parent_folder_id]
+    created = drive_service.files().create(body=metadata, fields="id").execute()
+    return created["id"]
+
+
 def apply_plan(plan: dict, auth_mode: str) -> None:
     """실제 Google Sheets API 호출(gspread 경유). dry-run이 아닐 때만 실행된다.
 
     Architect Review Round 13(RC2 실체화) — 탭 생성 apply 로직을 완성했다. 기존 탭은
     절대 건드리지 않고(`plan["tabs_to_create"]`만 대상), 각 탭 생성 직후 헤더 행을
     쓰고 `freeze_rows`만큼 고정한다.
+
+    뉴스 수집 실체화 라운드 이어서(2026-08-08) — `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID`
+    가 없어도 더 이상 즉시 실패하지 않는다. `GOOGLE_DRIVE_ROOT_FOLDER_ID`(사용자가
+    이미 만들어 둔 Drive 폴더) 안에 새 Master Spreadsheet를 만든 뒤 이어서 탭을
+    생성한다.
     """
     try:
         import gspread  # type: ignore
@@ -83,21 +107,21 @@ def apply_plan(plan: dict, auth_mode: str) -> None:
         )
         raise SystemExit(1) from exc
 
+    from google_auth import DRIVE_SCOPES, GoogleAuthError, SHEETS_SCOPES, load_credentials
+
     spreadsheet_id = env_or_none("GOOGLE_SHEETS_MASTER_SPREADSHEET_ID")
-    if not spreadsheet_id:
-        raise SystemExit(
-            "GOOGLE_SHEETS_MASTER_SPREADSHEET_ID가 .env에 설정되어 있지 않다 — 기존 "
-            "Master Spreadsheet가 있다면 그 ID를, 없다면 먼저 빈 Spreadsheet를 하나 "
-            "만들어 ID를 채워야 한다(이 스크립트는 Spreadsheet 자체는 생성하지 않고 "
-            "탭만 추가한다)."
-        )
-
-    from google_auth import GoogleAuthError, SHEETS_SCOPES, load_credentials
-
     try:
-        creds = load_credentials(auth_mode, SHEETS_SCOPES)
+        creds = load_credentials(auth_mode, DRIVE_SCOPES + SHEETS_SCOPES)
     except GoogleAuthError as exc:
         raise SystemExit(str(exc)) from exc
+
+    if not spreadsheet_id:
+        spreadsheet_id = _create_master_spreadsheet(creds)
+        print(
+            f"Master Spreadsheet 신규 생성됨 (id={spreadsheet_id}) — .env의 "
+            "GOOGLE_SHEETS_MASTER_SPREADSHEET_ID에 이 값을 저장해야 다음 실행부터 "
+            "재사용된다(임의로 .env를 대신 수정하지 않는다)."
+        )
 
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(spreadsheet_id)
