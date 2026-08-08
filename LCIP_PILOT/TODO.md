@@ -22,17 +22,18 @@ TASK-009~017의 구조/테스트는 Mock 기반으로 이미 완료됐다 — �
 전환(`ClaudeProvider.enabled=True`, `GoogleRSSAdapter.enabled=True`, `test_mode=False`
 등)하기 위해 사용자가 준비해야 하는 것들이며, 아래 중 Claude API 관련 항목이 가장 시급하다.
 
-- [ ] Claude API Key 준비 여부 (Anthropic Console) — **`ClaudeProvider.enabled=True` 전환
-      전 필수**
-- [ ] 사용할 Claude 모델 ID 3종 확정 — `config/model_registry.yaml`에서 관리 (Architect
-      Review Round 3 Q4):
-      - 1차 분류(`classification`, Haiku 계열) → `.env`의 `LCIP_CLASSIFICATION_MODEL`
-      - 심층분석(`deep_analysis`, Sonnet 계열) → `.env`의 `LCIP_DEEP_ANALYSIS_MODEL`
-      - 미래준비/Quick Company Scan(`future`, Opus 계열) → `.env`의
-        `LCIP_FUTURE_READINESS_MODEL`
-      → `config/model_pricing.yaml`의 placeholder 단가도 함께 갱신 필요
-- [ ] Google OAuth 방식 선택: Desktop OAuth / Service Account / n8n Credential only
-      (현재 기본값은 `n8n_only` — 로컬에서 실제 쓰기 없음) — TASK-008(마지막 순위)에서 필요
+- [x] Claude API Key 준비 여부 (Anthropic Console) — Round 13 이어서 사용자가 제공,
+      `.env`에 반영 완료. **단, `feature_flags.yaml`의 `claude_api_enabled`는 아직 켜지
+      않았다** — 다음 Priority 1 질문(실제 비용 발생 결정이라 자동 진행 대상 아님).
+- [x] 사용할 Claude 모델 ID 3종 확정 — `config/model_registry.yaml`에서 관리 (Architect
+      Review Round 3 Q4), Round 13 이어서 Priority 1 질문 답변으로 확정:
+      - 1차 분류(`classification`) → `claude-haiku-4-5`(`.env`의 `LCIP_CLASSIFICATION_MODEL`)
+      - 심층분석(`deep_analysis`) → `claude-sonnet-5`(`.env`의 `LCIP_DEEP_ANALYSIS_MODEL`)
+      - 미래준비/Quick Company Scan(`future`) → `claude-sonnet-5`(원래 Opus 계열 권장이었으나
+        비용 통제를 위해 사용자가 Sonnet으로 결정, `.env`의 `LCIP_FUTURE_READINESS_MODEL`)
+      → `config/model_pricing.yaml`의 placeholder 단가도 실제 값으로 함께 갱신 완료
+- [x] Google OAuth 방식 선택: Desktop OAuth — Round 13 이어서 사용자가 제공한 Credential이
+      Desktop OAuth Client ID/Secret 형식이라 확정, `.env`에 반영 완료
 - [ ] 기존 Google Drive Root Folder ID 존재 여부 확인 → 있다면 `.env`의
       `GOOGLE_DRIVE_ROOT_FOLDER_ID`에 입력
 - [ ] 기존 Master Spreadsheet ID 존재 여부 확인 → 있다면 `.env`의

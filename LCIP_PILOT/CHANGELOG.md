@@ -46,6 +46,50 @@ ChatGPT Architect Review Round 13 승인 및 반영. "LCIP는 설계 단계를 �
   외부 API 호출/실제 발송은 이번 Round도 0건이다(Credential이 없어 모든 실제 호출
   경로가 명확한 에러로 멈춘다).
 
+### Added — Round 13 이어서: Credential 반영 + 모델 티어 결정 (2026-08-08)
+
+사용자가 "필요한 API와 KEY 값들을 구글 드라이브에 저장하고 위치 주소 알려줄테니
+참조해"라고 요청, Google Drive Sheet의 "Activate" 탭에만 있는 정보를 사용하라는
+명시적 범위 제한과 함께 실제 Credential을 제공했다.
+
+- **`.env` 실제 값 반영**(Git에 포함되지 않음): `ANTHROPIC_API_KEY`/
+  `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`(Desktop OAuth 방식)/
+  `N8N_API_KEY`/`TELEGRAM_BOT_TOKEN`+`TELEGRAM_CHAT_ID`(LX그룹 봇)/`DART_API_KEY`/
+  `NAVER_CLIENT_ID`+`NAVER_CLIENT_SECRET`를 채웠다. "Activate" 탭에 없던
+  `N8N_BASE_URL`(같은 응답의 "Total" 탭에는 있었으나 사용자가 지정한 범위 밖이라
+  의도적으로 제외)/Google Drive·Sheets 식별자/Gmail 자격증명은 비워 두었다.
+  `scripts/secret_scan.py` 재검사 통과, `.env`는 `.gitignore`로 계속 제외됨을
+  확인했다.
+- **`KRX_API_KEY` 신규 항목**: Activate 탭에 있었으나 `.env.example`/
+  `docs/RC2_CONNECTION_CHECKLIST.md` 어디에도 없던 항목이라 문서 일관성을 위해
+  추가했다(어댑터 코드는 아직 없음 — Credential만 보관).
+- **`docs/RC2_CONNECTION_CHECKLIST.md` §1 상태 갱신**: 값 자체는 노출하지 않고
+  "준비됨/미준비" 상태만 반영(6개 항목 준비됨: Anthropic/Google OAuth/n8n API Key/
+  Telegram/DART/Naver).
+- **Claude 모델 티어 결정(Priority 1 질문 답변)**: WHY(비용 vs 품질 트레이드오프는
+  사람만 결정 가능)/WHAT(3개 티어에 어떤 모델)/HOW(3가지 선택지) 형식으로 질문,
+  사용자가 "분류=Haiku, 심층분석/미래준비=Sonnet"을 선택했다. `.env`의 `LCIP_
+  CLASSIFICATION_MODEL=claude-haiku-4-5`/`LCIP_DEEP_ANALYSIS_MODEL=claude-sonnet-5`/
+  `LCIP_FUTURE_READINESS_MODEL=claude-sonnet-5`와 `config/model_registry.yaml`의
+  `model_id` 3종(팀 표준 기본값)에 함께 반영했다. `future` tier의 `tier_label`은
+  원래 설계(opus)에서 사용자 결정에 따라 sonnet으로 갱신하고, 근거(Pilot 단계
+  비용 통제, 추후 재검토 가능)를 주석으로 남겼다.
+- **`config/model_pricing.yaml` 실제 단가 반영**: 모델 티어가 확정됨에 따라 placeholder
+  0.0을 Anthropic 공식 요금표 기준 실제 값(Haiku 4.5 $1/$5, Sonnet 5 $3/$15 per 1M
+  tokens — Sonnet 5의 2026-08-31까지 introductory $2/$10 할인은 보수적으로 미반영)으로
+  갱신했다. 이제 `scripts/cost_tracking.py`가 실제 비용을 계산할 수 있다.
+- **테스트**: `test_claude_client.py::test_get_model_name_raises_when_nothing_
+  configured`가 "Registry의 model_id가 전부 null"이라는, 이제는 사실이 아닌
+  가정에 의존하고 있어 실패했다 — Registry/Prompt 양쪽을 가짜로 비우는 방식으로
+  "정말 아무것도 설정되지 않았을 때" 케이스만 검증하도록 수정했다.
+  `test_cost_tracking.py::test_evaluate_after_calls_with_placeholder_pricing_is_
+  zero_cost`도 같은 이유(단가가 더 이상 0.0이 아님)로 실패해, 실제 계산값을
+  검증하는 테스트로 교체했다. 전체 449개(Round 13) → 449개(동일, 2건 수정),
+  전부 PASS.
+- 외부 API 실제 호출은 여전히 0건이다 — `feature_flags.yaml`의 4개 스위치가
+  전부 `false`로 유지되어 있고, 이를 켤지는 이번 Round의 다음 Priority 1
+  질문으로 남겼다(실제 비용이 발생하는 결정이라 자동 진행 대상이 아니다).
+
 ### Added — Architect Review Round 12 "RC1 승인 + RC2 준비" 반영 (2026-08-08, 12차)
 
 ChatGPT Architect Review Round 12 승인 및 반영. "Round 11 결과를 승인한다. LCIP

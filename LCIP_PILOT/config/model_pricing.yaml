@@ -10,20 +10,23 @@
 # 통일하면서 그 매핑 자체를 제거했다(config/model_registry.yaml의 purpose를 그대로
 # 이 파일의 키로 조회한다).
 #
-# 아래 단가는 참고용 placeholder다. 실제 배포 전 Anthropic Console의 최신 가격표로 갱신해야
-# 한다 (TASK-009에서 Claude API Key 준비 시 확인).
+# Round 13 이어서(2026-08-08): Priority 1 질문 답변으로 config/model_registry.yaml의
+# model_id 3종이 확정됨에 따라(classification=claude-haiku-4-5, deep_analysis/future=
+# claude-sonnet-5), 아래 단가를 Anthropic 공식 요금표 기준 실제 값으로 갱신했다.
+# Sonnet 5는 2026-08-31까지 $2/$10 introductory 단가가 적용되지만, Cost Guard는 그
+# 기간 이후에도 안전하도록 표준 단가($3/$15)로 보수적으로 계산한다.
 
 # usd_per_million_tokens: {input, output}
 pricing:
   classification:
-    usd_per_million_input_tokens: 0.0
-    usd_per_million_output_tokens: 0.0
-    note: "TODO: 1차 분류(Haiku 계열) 모델 확정 후 단가 갱신"
+    usd_per_million_input_tokens: 1.0
+    usd_per_million_output_tokens: 5.0
+    note: "claude-haiku-4-5 표준 단가"
   deep_analysis:
-    usd_per_million_input_tokens: 0.0
-    usd_per_million_output_tokens: 0.0
-    note: "TODO: 심층분석(Sonnet 계열) 모델 확정 후 단가 갱신"
+    usd_per_million_input_tokens: 3.0
+    usd_per_million_output_tokens: 15.0
+    note: "claude-sonnet-5 표준 단가(2026-08-31까지 $2/$10 introductory 할인 있음 — 보수적으로 표준가 사용)"
   future:
-    usd_per_million_input_tokens: 0.0
-    usd_per_million_output_tokens: 0.0
-    note: "TODO: 미래준비/Quick Company Scan(Opus 계열) 모델 확정 후 단가 갱신"
+    usd_per_million_input_tokens: 3.0
+    usd_per_million_output_tokens: 15.0
+    note: "claude-sonnet-5 표준 단가 — 원래 opus 계열 권장이었으나 Round 13 Priority 1 질문에서 사용자가 비용 통제를 위해 sonnet으로 결정"

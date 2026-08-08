@@ -58,9 +58,9 @@ def test_evaluate_after_calls_reaches_warning_state():
     assert result.state == "RESTRICTED"  # 18/20 = 90%
 
 
-def test_evaluate_after_calls_with_placeholder_pricing_is_zero_cost():
-    """실제 model_pricing.yaml은 아직 TODO(0.0)이므로, 명시적으로 넘기지 않으면 비용이
-    0으로 계산되어야 한다 — 모델 단가 미확정 상태를 정직하게 반영한다."""
+def test_evaluate_after_calls_with_real_pricing_computes_actual_cost():
+    """Round 13 이어서 config/model_pricing.yaml이 실제 단가(claude-haiku-4-5
+    표준가 $1/$5 per 1M)로 갱신됐다 — 더 이상 0.0이 아니라 실제 계산값이어야 한다."""
     calls = [(ProviderUsage(1_000_000, 1_000_000, "mock-classifier"), "classification")]
     cost = cost_tracking.track_provider_calls(calls)  # loads real config/model_pricing.yaml
-    assert cost == 0.0
+    assert cost == 6.0

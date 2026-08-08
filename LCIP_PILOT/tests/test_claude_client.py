@@ -35,10 +35,25 @@ def test_model_registry_has_three_tiers():
         assert "used_by_prompts" in tier
 
 
-def test_get_model_name_raises_when_nothing_configured(monkeypatch):
-    # 현재 저장소 상태: .env 없음, model_registry.yaml의 model_id는 전부 null,
-    # prompts의 default_model_id도 전부 null -> 명시적으로 에러가 나야 한다.
+def test_get_model_name_raises_when_nothing_configured(monkeypatch, tmp_path):
+    # Round 13 Priority 1 질문 답변 이후 model_registry.yaml의 model_id 3종은
+    # 실제 값으로 채워졌다(더 이상 null이 아니다) — 이 테스트는 그 실제 상태가
+    # 아니라 "환경변수도, Registry도, Prompt fallback도 전부 없는" 최후 케이스를
+    # 검증해야 하므로 Registry와 Prompt 둘 다 가짜로 비운다.
     monkeypatch.delenv("LCIP_CLASSIFICATION_MODEL", raising=False)
+    fake_prompt_dir = tmp_path
+    (fake_prompt_dir / "relevance_filter.md").write_text(
+        "---\nprompt_version: 0.1.0\n---\n# X\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(claude_client, "PROMPTS_DIR", fake_prompt_dir)
+    fake_registry = {
+        "classification": {
+            "model_env": "LCIP_CLASSIFICATION_MODEL",
+            "model_id": None,
+            "used_by_prompts": ["relevance_filter"],
+        }
+    }
+    monkeypatch.setattr(claude_client, "load_model_registry", lambda: fake_registry)
     with pytest.raises(RuntimeError):
         claude_client.get_model_name("classification")
 

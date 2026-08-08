@@ -70,7 +70,7 @@ Secret 값은 이 문서(또는 어떤 Markdown/코드/Git)에도 절대 기록�
 | # | 항목 | 상태 | 필요 시점 | 필수/선택 | 입력 위치(`.env` 키) | Secret 여부 | Claude에게 값을 직접 알려줘야 하는가 |
 |---|---|---|---|---|---|---|---|
 | 1 | Anthropic API Key | 준비됨 | RC2 1단계(최우선) | 필수 | `ANTHROPIC_API_KEY` | 예 | 아니오 — 준비 완료 여부만 |
-| 2 | Claude model IDs 3종 | 미준비(`model_registry.yaml`에 `null`) | RC2 1단계, API Key와 함께 | 필수 | `LCIP_CLASSIFICATION_MODEL` / `LCIP_DEEP_ANALYSIS_MODEL` / `LCIP_FUTURE_READINESS_MODEL` | 아니오(모델 ID 문자열 자체는 비밀 아님) | 예 — 정확한 모델 ID는 Registry에 반영해야 하므로 문자열을 알려준다 |
+| 2 | Claude model IDs 3종 | 준비됨(분류=`claude-haiku-4-5`, 심층분석/미래준비=`claude-sonnet-5` — 사용자 결정, `config/model_registry.yaml`에 반영) | RC2 1단계, API Key와 함께 | 필수 | `LCIP_CLASSIFICATION_MODEL` / `LCIP_DEEP_ANALYSIS_MODEL` / `LCIP_FUTURE_READINESS_MODEL` | 아니오(모델 ID 문자열 자체는 비밀 아님) | 예 — 정확한 모델 ID는 Registry에 반영해야 하므로 문자열을 알려준다 |
 | 3 | Google OAuth(Drive/Sheets/Gmail 공용) | 준비됨(Desktop OAuth 방식 — Client ID/Secret 확인) | RC2 2단계 | 필수(Drive/Sheets/Gmail 중 하나라도 켤 경우) | `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_OAUTH_TOKEN_PATH` 또는 `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` | 예 | 아니오 |
 | 4 | Google Drive Root Folder ID | 미준비 | RC2 2단계 | 필수(Drive 저장 시) | `GOOGLE_DRIVE_ROOT_FOLDER_ID` | 아니오(식별자, 비밀 아님) | 예 — 폴더 ID 문자열은 알려줘도 된다 |
 | 5 | Google Sheets Master Spreadsheet ID | 미준비 | RC2 2단계 | 필수(Sheets 저장 시) | `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID` | 아니오(식별자, 비밀 아님) | 예 — Spreadsheet ID는 알려줘도 된다 |

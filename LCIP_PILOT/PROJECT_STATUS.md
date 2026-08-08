@@ -1,6 +1,6 @@
 # Project Status
 
-최종 갱신: 2026-08-08 (Architect Review Round 13 반영)
+최종 갱신: 2026-08-08 (Architect Review Round 13 + Credential 반영/모델 티어 결정)
 
 ## 요약
 
@@ -16,6 +16,15 @@ Claude가 독립적으로 수행 가능한 코드 작업은 승인 없이 계속
 n8n 워크플로우 배포, Gmail/Telegram 실제 발송. Credential만 입력하면 즉시 동작한다
 (현재는 전부 미입력 상태라 실제 호출은 여전히 0건). DART/Naver Adapter는 추가 설계
 결정(회사명→corp_code 매핑 등)이 필요해 이번 Round에서는 보류했다.
+
+## Round 13 이어서: Credential 반영 + 모델 티어 결정
+
+사용자가 Google Drive Sheet("Activate" 탭 한정)에서 실제 Credential을 제공했다.
+`.env`(Git 미포함)에 Anthropic/Google OAuth/n8n API Key/Telegram/DART/Naver
+6개 항목을 반영했고(값은 어디에도 노출하지 않음), Claude 모델 3개 티어는
+WHY/WHAT/HOW 질문에 사용자가 "분류=Haiku, 심층분석/미래준비=Sonnet"으로 답해
+`config/model_registry.yaml`/`.env`에 반영했다. `feature_flags.yaml`(실제 호출
+스위치)은 아직 전부 `false`다 — 켤지 여부는 다음 Priority 1 질문이다.
 
 ## Round 13 실체화 처리 결과
 

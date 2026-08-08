@@ -16,20 +16,20 @@ tiers:
   classification:
     tier_label: haiku
     model_env: LCIP_CLASSIFICATION_MODEL
-    model_id: null  # TODO: Anthropic Console에서 최신 Haiku 계열 모델 ID 확정 후 채운다
+    model_id: claude-haiku-4-5  # Round 13 Priority 1 질문 답변(사용자 결정) 반영
     used_by_prompts: [relevance_filter]
     note: "1차 관련성 분류 — 저비용, 대량 호출"
 
   deep_analysis:
     tier_label: sonnet
     model_env: LCIP_DEEP_ANALYSIS_MODEL
-    model_id: null  # TODO: Anthropic Console에서 최신 Sonnet 계열 모델 ID 확정 후 채운다
+    model_id: claude-sonnet-5  # Round 13 Priority 1 질문 답변(사용자 결정) 반영
     used_by_prompts: [risk_analysis, policy_analysis, daily_change, natural_language_admin]
     note: "심층분석/규제분석/일일요약/자연어 관리자 — 품질과 비용의 균형"
 
   future:
-    tier_label: opus
+    tier_label: sonnet  # 원래 opus로 설계됐으나 Pilot 단계 비용 상한($15 목표/$20 상한) 고려해 사용자가 sonnet으로 결정
     model_env: LCIP_FUTURE_READINESS_MODEL
-    model_id: null  # TODO: Anthropic Console에서 최신 Opus 계열 모델 ID 확정 후 채운다
+    model_id: claude-sonnet-5  # Round 13 Priority 1 질문 답변(사용자 결정) 반영
     used_by_prompts: [quick_scan]
-    note: "TASK-004D Quick Company Scan 등 고품질·저빈도 분석 전용. 미래준비 축 핵심 엔진 입력이므로 가장 높은 tier."
+    note: "TASK-004D Quick Company Scan 등 고품질·저빈도 분석 전용. 미래준비 축 핵심 엔진 입력이므로 가장 높은 tier였으나, Pilot 단계에서는 opus 대신 sonnet으로 비용을 통제한다(추후 RC2/RC3에서 실사용 비용 데이터 확인 후 opus 상향 재검토 가능)."
