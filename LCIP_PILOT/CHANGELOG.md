@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+### Deployed — n8n 워크플로우 5개 실제 배포 실행 (2026-08-08, 로컬 세션)
+
+사용자 지시 "N8N 재배포"에 따라 `scripts/n8n_deploy.py --apply`를 실제 n8n Cloud
+인스턴스(`https://sondullab.app.n8n.cloud`, 손덜Lab/LXGroup와 동일 인스턴스)에 최초
+실행했다. 5개 워크플로우(WF-P01/P08/P09/P10/P99) 전부 신규 생성, 전부 `active:false`,
+기존 운영 워크플로우는 삭제·변경 없음. 배포 코드의 페이로드 계약(`name`/`nodes`/
+`connections`/`settings`)이 실제 인스턴스에서 정상 동작함을 확인 — 그동안의 "미검증"
+리스크와 `N8N_BASE_URL` Blocker가 해소됐다. 배포된 워크플로우 ID는
+`PROJECT_STATUS.md`의 "n8n 실제 배포 실행" 절에 기록. (문서만 갱신, 코드 변경 없음.)
+
 ### Added — 뉴스 수집 실체화 (2026-08-08)
 
 사용자 지시: "N8N 적용해서 뉴스 수집하는 것부터 실체화 하자." Google/Naver News를

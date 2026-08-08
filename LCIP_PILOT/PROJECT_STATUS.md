@@ -1,6 +1,27 @@
 # Project Status
 
-최종 갱신: 2026-08-08 (뉴스 수집 실체화 — n8n 네이티브 재구현 + Keyword Group + 중요도 판정)
+최종 갱신: 2026-08-08 (n8n 워크플로우 5개 실제 배포 실행 + 페이로드 계약 검증)
+
+## n8n 실제 배포 실행 (2026-08-08, 로컬 세션)
+
+사용자 지시 "N8N 재배포"에 따라 `scripts/n8n_deploy.py --apply`를 **실제 n8n Cloud
+인스턴스에 최초로 실행**했다. 대상 인스턴스는 `https://sondullab.app.n8n.cloud`
+(손덜Lab/LXGroup 워크플로우가 이미 운영 중인 그 인스턴스와 동일 — 사용자 확인).
+
+- **결과**: 5개 워크플로우 전부 신규 생성(POST), 전부 `active:false`. 기존 운영
+  워크플로우(LXGroup_* 4개, Sondullab_* 6개)는 삭제·변경 없이 그대로.
+  - `LCIP - Master Pipeline (WF-P01)` → id `pIBUQlxurc8EVOa0`
+  - `LCIP - Source Health (WF-P08)` → id `SakyzFgM9d8FUN1R`
+  - `LCIP - Cost Guard (WF-P09)` → id `irZ4sPGuNq1HKatH`
+  - `LCIP - Natural Language Admin (WF-P10)` → id `QPjThtVINHyuCC9o`
+  - `LCIP - Error Handler (WF-P99)` → id `9O5cvmcs5Qs0W6RV`
+- **해소된 리스크**: `n8n_deploy.py` 주석에 명시돼 있던 "실제 n8n 인스턴스로 미검증,
+  `name`/`nodes`/`connections`/`settings` 페이로드 계약 미확인"이 이번 실행으로
+  검증됐다 — 해당 계약이 그대로 정상 동작함(400 없음). `N8N_BASE_URL` Blocker도
+  해소(위 인스턴스로 확정).
+- **아직 남은 것**: 배포된 5개는 비활성 + n8n Credential(Google Sheets/Telegram/
+  Anthropic) 미연결 상태라 아직 실제로 실행되지 않는다. 활성화 전 n8n UI에서
+  Credential을 붙여야 한다. `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID`는 여전히 미확보.
 
 ## 요약
 
