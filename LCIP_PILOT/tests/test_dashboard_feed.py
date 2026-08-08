@@ -184,3 +184,32 @@ def test_reference_library_rows_summarizes_top_companies_and_counts():
     assert rows[0]["회사별 자료 수(상위)"] == "LX_HAUSYS 3건, KCC 2건"
     assert rows[0]["최신 자료"] == "최신 문서"
     assert rows[0]["공식자료 수"] == "4건"
+
+
+def test_keyword_groups_summary_empty_when_not_provided():
+    """뉴스 수집 실체화 라운드 신설 — keyword_groups를 넘기지 않아도(기본 None) 정직하게
+    빈 카드가 되어야 한다."""
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[],
+    )
+    assert data["keyword_groups_summary"] == []
+
+
+def test_keyword_groups_summary_renders_group_fields():
+    groups = [{
+        "group_id": "GRP-0001", "topic_id": "TOP-0001",
+        "group_name": "실리코시스", "include_keywords": ["a", "b", "c"],
+        "exclude_keywords": [], "ai_instructions": "", "sources": ["SRC-0001", "SRC-0003"],
+        "enabled": True,
+    }]
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[], keyword_groups=groups,
+    )
+    rows = data["keyword_groups_summary"]
+    assert len(rows) == 1
+    assert rows[0]["그룹명"] == "실리코시스"
+    assert rows[0]["포함 키워드 수"] == 3
+    assert rows[0]["소스"] == "SRC-0001, SRC-0003"
+    assert rows[0]["상태"] == "활성"

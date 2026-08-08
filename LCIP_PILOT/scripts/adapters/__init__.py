@@ -3,9 +3,9 @@ from .future_adapters import (
     DartFilingAdapter,
     GovernmentPressReleaseAdapter,
     IRPageAdapter,
-    NaverNewsAdapter,
 )
 from .google_rss_adapter import GoogleRSSAdapter
+from .naver_news_adapter import NaverNewsAdapter
 
 __all__ = [
     "RawArticle",

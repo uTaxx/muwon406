@@ -34,6 +34,7 @@ def build_intelligence_record(
         "intelligence_categories": risk_analysis["intelligence_categories"],
         "fact_summary": " ".join(risk_analysis["facts"]) if risk_analysis["facts"] else "",
         "verified_facts": risk_analysis["facts"],
+        "importance_level": risk_analysis["importance_level"],
         "ai_interpretation": [risk_analysis["significance"]],
         "ai_inference": [],
         "lx_impact": risk_analysis["lx_impact"],

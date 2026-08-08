@@ -134,3 +134,32 @@ technical_debt:
     owner: "리서치 담당(WebSearch 필요)"
     status: open
     identified_in_round: 7
+
+  - debt_id: TD-008
+    title: "WF-P01 n8n JS 로직이 Python 파이프라인을 수동 이식한 것 — 실제 n8n 미검증"
+    description: >
+      뉴스 수집 실체화 라운드(2026-08-08)에서 n8n Cloud가 이 코드저장소(Python)를 직접
+      실행할 수 없다는 제약 때문에, scripts/pipeline/rule_filter.py·
+      scripts/adapters/{google_rss,naver_news}_adapter.py·
+      scripts/providers/claude_provider.py(마크다운 JSON 코드펜스 스트립)·
+      scripts/pipeline/build_digest.py의 로직을 n8n Code/HTTP 노드 JS로 손으로
+      이식했다. 알려진 구체적 한계 4가지: (1) prompts/relevance_filter.md·
+      risk_analysis.md가 바뀌면 n8n 노드의 인라인 텍스트도 수동으로 동기화해야
+      한다 — 자동 동기화 없음. (2) Config Load의 컨텍스트(group_id 등)를 HTTP
+      Request/XML 노드를 거쳐 되찾을 때 n8n의 pairedItem/itemMatching() 메커니즘에
+      의존하는데, 실제 n8n 인스턴스로 이 동작을 검증하지 못했다. (3) 이번 실행에서
+      분석 대상이 0건이면 Aggregate 노드가 아예 실행되지 않아 "신규 주요 변화
+      없음" 다이제스트조차 발송되지 않을 수 있다(Python 배치 스크립트는 항상
+      발송한다 — 동작 차이). (4) 수집 주기(08:00/12:00/16:30)는 Schedule Trigger
+      노드에 고정 cron으로 박혀 있어, KEYWORD_GROUPS/CONFIG_MASTER를 Sheets에서
+      바꿔도 실행 주기 자체는 바뀌지 않는다 — 주기를 바꾸려면 n8n UI에서 이 노드를
+      직접 재배포해야 한다. Python 쪽(scripts/run_news_collection.py)은 이 4가지
+      한계가 없는 "정답 스펙"이며, n8n_deploy.py --apply로 실제 배포한 뒤 n8n UI에서
+      1회 실행 결과를 Python 배치 결과와 대조 검증하는 절차가 필요하다.
+    location: "n8n/workflows/WF-P01-master-pipeline.json"
+    severity: medium
+    priority: P1
+    estimated_time: "실제 n8n Cloud 배포 후 1회 실행 검증 1~2시간(N8N_BASE_URL 확보 후)"
+    owner: "N8N_BASE_URL 확보 후 다음 Architect Review 라운드 담당"
+    status: open
+    identified_in_round: 13

@@ -41,6 +41,11 @@
       "minItems": 1,
       "uniqueItems": true
     },
+    "importance_level": {
+      "description": "뉴스 수집 실체화 라운드(2026-08-08) 신설. knowledge/STRATEGY_PLAYBOOK.md §2 '리스크 대응 우선순위 판단 기준'의 기존 3단계를 그대로 구조화된 필드로 승격한 것 — 새 기준 창작 아님. 긴급/중요만 알림 발송 대상이고 참고는 축적만 한다(scripts/pipeline/build_digest.py).",
+      "type": "string",
+      "enum": ["긴급", "중요", "참고"]
+    },
     "relevance_output": {
       "type": "object",
       "required": [
@@ -62,12 +67,13 @@
     "risk_analysis_output": {
       "type": "object",
       "required": [
-        "facts", "significance", "intelligence_categories", "lx_impact", "actions",
-        "confidence", "evidence", "unknowns"
+        "facts", "significance", "importance_level", "intelligence_categories", "lx_impact",
+        "actions", "confidence", "evidence", "unknowns"
       ],
       "properties": {
         "facts": { "type": "array", "items": { "type": "string" } },
         "significance": { "type": "string" },
+        "importance_level": { "$ref": "#/$defs/importance_level" },
         "mission_category": { "$ref": "#/$defs/mission_category" },
         "mission_subcategory": { "$ref": "#/$defs/mission_subcategory" },
         "intelligence_categories": { "$ref": "#/$defs/intelligence_categories" },
@@ -83,8 +89,8 @@
       "description": "prompts/policy_analysis.md 기준 — risk_analysis_output에 regulatory_stage를 추가한 확장 형태 (Round 7 Scenario 4: 정부 정책 영향 분석).",
       "type": "object",
       "required": [
-        "facts", "regulatory_stage", "significance", "intelligence_categories", "lx_impact",
-        "actions", "confidence", "evidence", "unknowns"
+        "facts", "regulatory_stage", "significance", "importance_level",
+        "intelligence_categories", "lx_impact", "actions", "confidence", "evidence", "unknowns"
       ],
       "properties": {
         "facts": { "type": "array", "items": { "type": "string" } },
@@ -93,6 +99,7 @@
           "enum": ["proposed", "public_comment", "passed", "in_effect", "enforcement", "unknown"]
         },
         "significance": { "type": "string" },
+        "importance_level": { "$ref": "#/$defs/importance_level" },
         "mission_category": { "$ref": "#/$defs/mission_category" },
         "mission_subcategory": { "$ref": "#/$defs/mission_subcategory" },
         "intelligence_categories": { "$ref": "#/$defs/intelligence_categories" },

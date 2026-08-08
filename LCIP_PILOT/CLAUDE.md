@@ -93,7 +93,24 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    설계됐지만 `NotImplementedError`로 막혀 있던 Google Drive/Sheets/n8n/Gmail/
    Telegram 실제 연결 코드를 전부 완성했다(Credential 대기 상태로 여전히 실제
    호출은 0건). 상세는 아래 "Round 6"~"Round 13" 절 참고. 외부 API 실제 연결은
-   Round 13까지도 시작하지 않았다(코드는 준비됐으나 Credential이 없다).
+   Round 13까지도 시작하지 않았다(코드는 준비됐으나 Credential이 없다). Round 13
+   이어서(2026-08-08) 사용자가 Google Drive Sheet에서 실제 Credential을 제공해
+   `.env`에 반영했고(Anthropic/Google OAuth/n8n API Key/Telegram/DART/Naver),
+   Claude 모델 3티어(분류=Haiku, 심층분석/미래준비=Sonnet)를 확정했으며,
+   `claude_api_enabled`를 1회 켜 최초 실제 Claude API 연결을 검증했다(성공, 비용
+   $0.01 미만) — 이 과정에서 Haiku가 JSON을 마크다운 코드펜스로 감싸는 실제 버그를
+   발견해 수정했다. 검증 후 Flag는 안전 기본값(false)으로 복원했다. 같은 날 이어서
+   사용자가 "N8N 적용해서 뉴스 수집하는 것부터 실체화 하자"고 지시해, Plan Mode로
+   설계 후 Keyword Group 스키마/Naver 실제 어댑터/`importance_level`(긴급/중요/
+   참고) 신설/실제 배치 파이프라인(`scripts/run_news_collection.py`)/n8n WF-P01
+   네이티브 재구현(n8n Cloud가 이 코드저장소를 직접 실행할 수 없어 Python 로직을
+   n8n Code/HTTP 노드로 재구현, 실제 n8n 인스턴스 미검증은 TD-008로 기록)/Home
+   Dashboard "뉴스 수집 설정 현황" 카드까지 완성했다. DART/정부보도자료는 사용자가
+   이번 범위에서 명시적으로 제외했다. 그룹/키워드/AI지침 편집은 정적 HTML
+   대시보드가 아니라 Google Sheets(KEYWORD_GROUPS 탭, 신설)에서 한다 — 새 서버를
+   만들지 않는 대신, 직전에 확정한 "대시보드는 CLI로 유지" 결정과 일관된 선택이다.
+   전체 테스트 487개, 전부 PASS. `N8N_BASE_URL`/`GOOGLE_SHEETS_MASTER_
+   SPREADSHEET_ID`가 여전히 없어 실제 n8n 배포·실제 Sheets 연동은 다음 단계다.
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.

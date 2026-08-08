@@ -4,6 +4,11 @@
 # status: confirmed = Blueprint/Build Spec에 문서화되었거나 Architect Review(2026-08-05, Q2)로
 #                      확정된 컬럼. 이전에는 SENT_HISTORY/ERROR_LOG/CHANGE_REQUEST/CHANGE_LOG
 #                      4개 탭이 draft였으나 Architect Review에서 컬럼을 추가 확정했다.
+# KEYWORD_GROUPS(status: draft)는 뉴스 수집 "실체화" 라운드(2026-08-08)에 12번째 탭으로
+# 신설됐다 — TOPIC_CONFIG의 include_keywords/exclude_keywords가 Topic당 평면 리스트
+# 1개뿐이라 "키워드 그룹별 AI 지침" 요구를 담지 못해 별도 탭으로 분리했다(기존 confirmed
+# 컬럼은 변경하지 않음). 사용자가 실제로 그룹을 운영해본 뒤 컬럼을 확정하면 confirmed로
+# 승격한다.
 
 master_spreadsheet_id_env: GOOGLE_SHEETS_MASTER_SPREADSHEET_ID
 
@@ -13,6 +18,9 @@ tabs:
     freeze_rows: 1
   - name: TOPIC_CONFIG
     status: confirmed
+    freeze_rows: 1
+  - name: KEYWORD_GROUPS
+    status: draft
     freeze_rows: 1
   - name: SOURCE_REGISTRY
     status: confirmed

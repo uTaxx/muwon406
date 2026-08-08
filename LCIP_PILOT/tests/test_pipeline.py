@@ -7,7 +7,7 @@ from pipeline.generate_intelligence import build_intelligence_record
 from pipeline.ids import next_id
 from pipeline.knowledge_retrieve import retrieve_context
 from pipeline.normalize import normalize
-from pipeline.rule_filter import passes_rule_filter
+from pipeline.rule_filter import passes_rule_filter, passes_rule_filter_groups
 from pipeline.validate import validate_article, validate_claude_output, validate_intelligence
 from providers.mock_provider import MockProvider
 
@@ -88,6 +88,42 @@ def test_rule_filter_passes_everything_when_no_include_keywords_configured():
     assert passes_rule_filter(article, {"exclude_keywords": []}) is True
 
 
+GROUPS = [
+    {
+        "group_id": "GRP-0001", "topic_id": "TOP-0001", "group_name": "실리코시스",
+        "include_keywords": ["silicosis"], "exclude_keywords": ["sports"],
+        "ai_instructions": "", "sources": ["SRC-0001"], "enabled": True,
+    },
+    {
+        "group_id": "GRP-0002", "topic_id": "TOP-0001", "group_name": "기타",
+        "include_keywords": ["engineered stone"], "exclude_keywords": [],
+        "ai_instructions": "", "sources": ["SRC-0001"], "enabled": True,
+    },
+    {
+        "group_id": "GRP-0003", "topic_id": "TOP-0001", "group_name": "비활성",
+        "include_keywords": ["silicosis"], "exclude_keywords": [],
+        "ai_instructions": "", "sources": ["SRC-0001"], "enabled": False,
+    },
+]
+
+
+def test_rule_filter_groups_returns_all_matching_group_ids():
+    article = {"title_original": "Engineered stone silicosis lawsuit filed"}
+    matched = passes_rule_filter_groups(article, GROUPS)
+    assert matched == ["GRP-0001", "GRP-0002"]
+
+
+def test_rule_filter_groups_excludes_disabled_group():
+    article = {"title_original": "silicosis update"}
+    matched = passes_rule_filter_groups(article, GROUPS)
+    assert "GRP-0003" not in matched
+
+
+def test_rule_filter_groups_returns_empty_when_nothing_matches():
+    article = {"title_original": "Local weather forecast update"}
+    assert passes_rule_filter_groups(article, GROUPS) == []
+
+
 def test_classify_relevance_via_mock_provider_matches_schema():
     article = {"title_original": RAW_RELATED.title_original, "source_url": RAW_RELATED.source_url}
     result = classify_relevance(MockProvider(), article, TOPIC)
@@ -110,6 +146,17 @@ def test_retrieve_context_returns_empty_for_unknown_company():
 def test_analyze_risk_via_mock_provider_matches_schema():
     article = {"title_original": "Engineered stone silicosis lawsuit", "source_url": "https://example.com/a"}
     result = analyze_risk(MockProvider(), article, "LX Hausys 발췌", "")
+    validate_claude_output(result.parsed_json, "risk_analysis_output")
+    assert result.parsed_json["importance_level"] in ("긴급", "중요", "참고")
+
+
+def test_analyze_risk_accepts_optional_group_ai_instructions():
+    """뉴스 수집 실체화 라운드 신설 — 그룹별 AI 지침이 있어도 하위호환으로 동작해야 한다."""
+    article = {"title_original": "Engineered stone silicosis lawsuit", "source_url": "https://example.com/a"}
+    result = analyze_risk(
+        MockProvider(), article, "LX Hausys 발췌", "",
+        group_ai_instructions="LX하우시스 관점에서 판단한다.",
+    )
     validate_claude_output(result.parsed_json, "risk_analysis_output")
 
 

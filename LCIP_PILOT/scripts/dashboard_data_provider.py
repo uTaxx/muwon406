@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from _common import load_yaml
+from keyword_groups import load_keyword_groups
 from pipeline.dashboard_feed import build_dashboard_data
 from reference_library import reference_library_summary
 from storage.base import StorageBackend
@@ -51,6 +52,10 @@ class PipelineDashboardDataProvider(DashboardDataProvider):
     유일하게 실제 파일시스템(reference_library/)을 읽는 지점이다 —
     `pipeline/dashboard_feed.py`와 `build_dashboard.py`는 전달받은 값만 그대로
     가공/렌더링한다(계층 분리, 테스트 격리 유지).
+
+    뉴스 수집 실체화 라운드(2026-08-08) — 같은 원칙으로 "뉴스 수집 설정 현황" 카드용
+    `keyword_groups.load_keyword_groups()`도 함께 조회한다(기본 local_yaml 모드 —
+    Google Sheets 모드는 GOOGLE_SHEETS_MASTER_SPREADSHEET_ID가 준비된 뒤 전환한다).
     """
 
     def __init__(self, storage: StorageBackend, topic_display_name: str, generated_at_kst: str):
@@ -67,4 +72,5 @@ class PipelineDashboardDataProvider(DashboardDataProvider):
             company_scans=self.storage.load_all("COMPANY_SCAN_DB"),
             sources=load_yaml("config/sources.yaml")["sources"],
             reference_library_summary=reference_library_summary(),
+            keyword_groups=load_keyword_groups(),
         )

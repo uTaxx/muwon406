@@ -1,6 +1,6 @@
 # Project Status
 
-최종 갱신: 2026-08-08 (Architect Review Round 13 + Credential 반영/모델 티어 결정)
+최종 갱신: 2026-08-08 (뉴스 수집 실체화 — n8n 네이티브 재구현 + Keyword Group + 중요도 판정)
 
 ## 요약
 
@@ -16,6 +16,31 @@ Claude가 독립적으로 수행 가능한 코드 작업은 승인 없이 계속
 n8n 워크플로우 배포, Gmail/Telegram 실제 발송. Credential만 입력하면 즉시 동작한다
 (현재는 전부 미입력 상태라 실제 호출은 여전히 0건). DART/Naver Adapter는 추가 설계
 결정(회사명→corp_code 매핑 등)이 필요해 이번 Round에서는 보류했다.
+
+## 뉴스 수집 실체화 (2026-08-08)
+
+사용자 지시 "N8N 적용해서 뉴스 수집하는 것부터 실체화 하자"에 따라 Plan Mode로
+설계 후 실행했다. 핵심 결정 3가지(사용자 승인): (1) n8n Cloud가 이 코드저장소를
+직접 실행할 수 없어 Python 파이프라인 로직을 n8n Code/HTTP 노드로 네이티브
+재구현, (2) 키워드 그룹/AI지침/수집주기 편집은 정적 HTML 대시보드가 아니라 Google
+Sheets(KEYWORD_GROUPS 탭)에서, (3) 이번 라운드 소스 범위는 Google News+Naver
+News만(DART/정부보도자료 제외).
+
+- **완료**: Keyword Group 스키마(Sheets+로컬 YAML), Naver 실제 어댑터,
+  `importance_level`(긴급/중요/참고) 신설, 실제 배치 파이프라인
+  `scripts/run_news_collection.py`, n8n WF-P01 네이티브 재구현(cron 3개, Naver
+  연동, AI Analyze/Notification 활성화), Home Dashboard "설정 현황" 카드(읽기
+  전용).
+- **알려진 한계**(TD-008): n8n JS 로직은 Python을 수동 이식한 것이라 실제 n8n
+  인스턴스 미검증, 프롬프트 변경 시 수동 동기화 필요, 분석 대상 0건 실행에서
+  다이제스트가 발송 안 될 수 있음, 수집 주기는 Sheets가 아니라 n8n 노드 재배포로만
+  변경 가능.
+- **다음 Blocker**: `N8N_BASE_URL`(실제 n8n 배포), `GOOGLE_SHEETS_MASTER_
+  SPREADSHEET_ID`(실제 Sheets 연동) 둘 다 여전히 미확보 — 확보되면
+  `scripts/n8n_deploy.py --apply`/`create_google_sheets.py --apply`로 다음 단계
+  진행 가능.
+- 전체 테스트 487개, 전부 PASS. 외부 API 실제 호출 0건(`feature_flags.yaml` 전부
+  false 유지).
 
 ## Round 13 이어서: Credential 반영 + 모델 티어 결정
 

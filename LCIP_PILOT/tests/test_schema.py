@@ -141,6 +141,7 @@ def test_claude_risk_analysis_output_example_validates():
     example = {
         "facts": ["샘플 사실"],
         "significance": "high",
+        "importance_level": "중요",
         "mission_category": ["risk_management"],
         "intelligence_categories": ["litigation"],
         "lx_impact": [],
@@ -215,7 +216,8 @@ def test_quick_company_scan_recommendation_signal_enum_enforced():
 
 def test_google_sheets_columns_json_is_well_formed():
     data = _load_json(SCHEMAS_DIR / "google_sheets_columns.json")
-    assert len(data["sheets"]) == 11
+    # 12 = 원래 11개(TASK-006) + KEYWORD_GROUPS(뉴스 수집 실체화 라운드, 2026-08-08 신설)
+    assert len(data["sheets"]) == 12
     for name, entry in data["sheets"].items():
         assert entry["status"] in ("confirmed", "draft")
         assert isinstance(entry["columns"], list) and entry["columns"]

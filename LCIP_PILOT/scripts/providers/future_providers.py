@@ -23,7 +23,11 @@ class OpenAIProvider(AIProvider):
         raise NotImplementedError("OpenAIProvider는 아직 구현되지 않았다 (Future).")
 
     def analyze_risk(
-        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+        self,
+        article: dict,
+        lx_context_excerpt: str,
+        existing_timeline_excerpt: str,
+        group_ai_instructions: str = "",
     ) -> ProviderResult:
         raise NotImplementedError("OpenAIProvider는 아직 구현되지 않았다 (Future).")
 
@@ -45,7 +49,11 @@ class GeminiProvider(AIProvider):
         raise NotImplementedError("GeminiProvider는 아직 구현되지 않았다 (Future).")
 
     def analyze_risk(
-        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+        self,
+        article: dict,
+        lx_context_excerpt: str,
+        existing_timeline_excerpt: str,
+        group_ai_instructions: str = "",
     ) -> ProviderResult:
         raise NotImplementedError("GeminiProvider는 아직 구현되지 않았다 (Future).")
 

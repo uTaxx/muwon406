@@ -18,6 +18,14 @@
         "collection_schedule", "deep_analysis_rule", "alert_rule", "active"
       ]
     },
+    "KEYWORD_GROUPS": {
+      "status": "draft",
+      "note": "뉴스 수집 '실체화' 라운드(2026-08-08) 신설 — TOPIC_CONFIG의 include_keywords/exclude_keywords는 Topic 하나당 평면(flat) 리스트 1개뿐이라, '키워드를 그룹으로 나누고 그룹별로 다른 AI 지침을 준다'는 요구를 담을 수 없다. 기존 confirmed 컬럼을 변경하지 않고 새 탭으로 분리했다. Sheets 미준비 상태에서는 config/keyword_groups.yaml이 동일한 컬럼 셋을 로컬로 대신한다(scripts/keyword_groups.py).",
+      "columns": [
+        "group_id", "topic_id", "group_name", "include_keywords", "exclude_keywords",
+        "ai_instructions", "sources", "enabled"
+      ]
+    },
     "SOURCE_REGISTRY": {
       "status": "confirmed",
       "columns": [
@@ -39,7 +47,8 @@
       "columns": [
         "intelligence_id", "article_id", "mission_category", "mission_subcategory",
         "intelligence_categories", "related_company", "related_business", "fact_summary",
-        "significance", "lx_impact", "action", "confidence", "evidence_links", "created_at"
+        "significance", "importance_level", "lx_impact", "action", "confidence",
+        "evidence_links", "created_at"
       ]
     },
     "SOURCE_HEALTH": {

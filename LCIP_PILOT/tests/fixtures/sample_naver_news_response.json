@@ -1,0 +1,22 @@
+{
+  "lastBuildDate": "Fri, 07 Aug 2026 09:00:00 +0900",
+  "total": 2,
+  "start": 1,
+  "display": 2,
+  "items": [
+    {
+      "title": "<b>실리코시스</b> 소송, 국내 인조대리석 업계 파장",
+      "originallink": "https://example.co.kr/news/silicosis-lawsuit",
+      "link": "https://news.naver.com/main/read.naver?id=silicosis",
+      "description": "<b>엔지니어드스톤</b> 관련 &quot;규폐증&quot; 소송이 국내에도 영향을 미칠 것으로 보인다.",
+      "pubDate": "Fri, 07 Aug 2026 08:30:00 +0900"
+    },
+    {
+      "title": "오늘의 날씨: 전국 대체로 맑음",
+      "originallink": "https://example.co.kr/news/weather",
+      "link": "https://news.naver.com/main/read.naver?id=weather",
+      "description": "전국 대체로 맑은 날씨가 이어지겠습니다.",
+      "pubDate": "Fri, 07 Aug 2026 07:00:00 +0900"
+    }
+  ]
+}

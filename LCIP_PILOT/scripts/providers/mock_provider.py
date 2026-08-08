@@ -101,13 +101,18 @@ class MockProvider(AIProvider):
         )
 
     def analyze_risk(
-        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+        self,
+        article: dict,
+        lx_context_excerpt: str,
+        existing_timeline_excerpt: str,
+        group_ai_instructions: str = "",
     ) -> ProviderResult:
         self.call_count += 1
         title = article.get("title_original", "샘플 기사")
         parsed = {
             "facts": [f"원문 제목: {title}"],
             "significance": "중요 — mock 심층분석 (실제 Claude 미연동)",
+            "importance_level": "중요",
             "mission_category": ["risk_management"],
             "mission_subcategory": ["litigation"],
             "intelligence_categories": ["litigation", "product"],
@@ -133,6 +138,7 @@ class MockProvider(AIProvider):
             "facts": [f"원문 제목: {title}"],
             "regulatory_stage": "unknown",
             "significance": "중요 — mock 정책 영향 분석 (실제 Claude 미연동)",
+            "importance_level": "중요",
             "mission_category": ["risk_management"],
             "mission_subcategory": ["regulatory"],
             "intelligence_categories": ["regulation", "government"],

@@ -6,6 +6,7 @@
   "intelligence_categories": ["regulation", "technology"],
   "fact_summary": "규제 강화가 동시에 저실리카 제품 기술 전환 기회로 해석되는 샘플",
   "verified_facts": ["규제 초안이 공청회 단계에 있다."],
+  "importance_level": "중요",
   "ai_interpretation": ["경쟁사 대비 기술 전환 여지가 있다."],
   "ai_inference": [],
   "lx_impact": [],

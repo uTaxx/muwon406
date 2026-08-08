@@ -7,19 +7,28 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 * * * *"
+              "expression": "0 8 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "30 16 * * 1-5"
             }
           ]
         }
       },
       "id": "schedule-001",
-      "name": "Master Scheduler (매시 정각)",
+      "name": "Master Scheduler (평일 08:00/12:00/16:30)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
         460
-      ]
+      ],
+      "notes": "뉴스 수집 실체화 라운드(2026-08-08) — 사용자 요구(평일 3회) 반영. 스케줄 자체를 바꾸려면 이 노드를 재배포해야 한다(Sheets로 동적 변경 불가 — 알려진 한계, config/technical_debt_registry.yaml 참고)."
     },
     {
       "parameters": {},
@@ -34,21 +43,57 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+        "operation": "read",
+        "sheetName": "KEYWORD_GROUPS",
+        "documentId": "={{ $env.GOOGLE_SHEETS_MASTER_SPREADSHEET_ID }}"
+      },
+      "id": "sheets-groups-026",
+      "name": "Config Load - Read KEYWORD_GROUPS",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        300
+      ],
+      "notes": "schemas/google_sheets_columns.json의 KEYWORD_GROUPS 탭 컬럼과 동일 (group_id/topic_id/group_name/include_keywords/exclude_keywords/ai_instructions/sources/enabled). GOOGLE_SHEETS_MASTER_SPREADSHEET_ID 준비 전까지는 이 노드에서 멈춘다.",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "PLACEHOLDER_CRED_GoogleSheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Python 원본: scripts/keyword_groups.py::active_keyword_groups() +\n// scripts/run_news_collection.py::build_group_query() — 로직을 그대로 이식했다.\n// 실제 n8n 인스턴스로 아직 검증되지 않았다.\nconst rows = $input.all().map(item => item.json);\nconst items = [];\nfor (const row of rows) {\n  if (String(row.enabled).toUpperCase() !== 'TRUE') continue;\n  const includeKeywords = String(row.include_keywords || '')\n    .split(',').map(s => s.trim()).filter(Boolean);\n  const excludeKeywords = String(row.exclude_keywords || '')\n    .split(',').map(s => s.trim()).filter(Boolean);\n  const sources = String(row.sources || '')\n    .split(',').map(s => s.trim()).filter(Boolean);\n  const query = includeKeywords\n    .map(kw => kw.includes(' ') ? '\"' + kw + '\"' : kw)\n    .join(' OR ');\n  for (const sourceId of sources) {\n    items.push({\n      json: {\n        group_id: row.group_id,\n        topic_id: row.topic_id,\n        group_name: row.group_name,\n        include_keywords: includeKeywords,\n        exclude_keywords: excludeKeywords,\n        group_ai_instructions: row.ai_instructions || '',\n        source_id: sourceId,\n        query: query,\n      },\n    });\n  }\n}\nreturn items;"
       },
       "id": "code-003",
       "name": "Config Load",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        440,
         300
       ],
-      "notes": "CONFIG_MASTER/TOPIC_CONFIG 조회, 관련 Source/Prompt/Knowledge 경로 반환 (舊 WF-P01)"
+      "notes": "KEYWORD_GROUPS 각 행을 활성 소스별로 펼친다 — Python scripts/keyword_groups.py + scripts/run_news_collection.py 로직 이식."
     },
     {
       "parameters": {
-        "url": "https://news.google.com/rss/search?q={{ $json.query_en }}&hl=en-US&gl=US&ceid=US:en",
+        "mode": "expression",
+        "output": "={{ {\"SRC-0001\": 0, \"SRC-0002\": 1, \"SRC-0003\": 2}[$json.source_id] }}"
+      },
+      "id": "switch-source-027",
+      "name": "Route by Source",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        660,
+        300
+      ],
+      "notes": "SRC-0001=Google EN / SRC-0002=Google KO / SRC-0003=Naver. config/sources.yaml에 새 source_id를 추가하면 이 노드도 함께 갱신해야 한다(알려진 한계)."
+    },
+    {
+      "parameters": {
+        "url": "=https://news.google.com/rss/search?q={{ encodeURIComponent($json.query) }}&hl=en-US&gl=US&ceid=US:en",
         "options": {
           "timeout": 15000
         }
@@ -58,14 +103,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        220
+        880,
+        140
       ],
-      "notes": "TOP-0001 영어 키워드 검색. AI 호출 금지 (舊 WF-P02)."
+      "notes": "Config Load가 만든 query를 그대로 사용한다. AI 호출 아님."
     },
     {
       "parameters": {
-        "url": "https://news.google.com/rss/search?q={{ $json.query_ko }}&hl=ko&gl=KR&ceid=KR:ko",
+        "url": "=https://news.google.com/rss/search?q={{ encodeURIComponent($json.query) }}&hl=ko&gl=KR&ceid=KR:ko",
         "options": {
           "timeout": 15000
         }
@@ -75,10 +120,32 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        380
+        880,
+        300
       ],
-      "notes": "TOP-0001 한국어 키워드 검색. AI 호출 금지 (舊 WF-P02)."
+      "notes": "AI 호출 아님."
+    },
+    {
+      "parameters": {
+        "url": "=https://openapi.naver.com/v1/search/news.json?query={{ encodeURIComponent($json.query) }}&display=100&sort=date",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-naver-028",
+      "name": "News Collect - Naver News API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        460
+      ],
+      "notes": "Python 원본: scripts/adapters/naver_news_adapter.py. Header 인증은 n8n Credential Store에 X-Naver-Client-Id/Secret으로 등록한다(.env와 별개).",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PLACEHOLDER_CRED_NaverApi"
+        }
+      }
     },
     {
       "parameters": {
@@ -88,29 +155,83 @@
         }
       },
       "id": "http-006",
-      "name": "News Collect - Public Source (DART/정부)",
+      "name": "News Collect - Public Source (DART/정부, 범위 밖)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        540
+        880,
+        620
       ],
-      "notes": "DART/정부 보도자료 — sources.yaml에서 active:false인 동안 disabled (舊 WF-P03).",
+      "notes": "뉴스 수집 실체화 라운드(2026-08-08)에서 DART/정부보도자료는 명시적으로 범위 밖으로 확정됐다 — 연결 없이 자리만 보존한다.",
       "disabled": true
     },
     {
       "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+        "mode": "xmlToJson"
       },
-      "id": "code-007",
-      "name": "News Collect - 정규화·중복제거",
+      "id": "xml-parse-029",
+      "name": "Google RSS - XML to JSON",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n의 pairedItem 추적 기능으로 상류 'Config Load' 노드의 원본 컨텍스트(group_id 등)를\n// 되찾는다 — HTTP Request/XML 노드는 입력 1건당 출력 1건이라 pairedItem이 그대로\n// 이어진다고 가정한다(공식 n8n itemMatching() 패턴, 실제 인스턴스 미검증 — 알려진 한계).\nfunction getContext(entry) {\n  const paired = Array.isArray(entry.pairedItem) ? entry.pairedItem[0] : entry.pairedItem;\n  const idx = paired && typeof paired === 'object' ? paired.item : paired;\n  return $('Config Load').itemMatching(idx).json;\n}\n\n// n8n XML 노드가 만든 {rss: {channel: {item: [...]}}} 구조를 RawArticle 형태로 편다.\n// Python 원본: scripts/adapters/google_rss_adapter.py::parse_feed()\nconst out = [];\nfor (const entry of $input.all()) {\n  const ctx = getContext(entry);\n  const channel = entry.json.rss && entry.json.rss.channel;\n  let items = (channel && channel.item) || [];\n  if (!Array.isArray(items)) items = [items];\n  for (const it of items) {\n    out.push({\n      json: {\n        ...ctx,\n        title_original: (it.title || '').toString().trim(),\n        source_url: it.link || '',\n        published_at: it.pubDate || null,\n        language: ctx.source_id === 'SRC-0002' ? 'ko' : 'en',\n      },\n    });\n  }\n}\nreturn out;\n"
+      },
+      "id": "code-parse-google-030",
+      "name": "Google RSS - RawArticle 변환",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        660,
-        380
+        1320,
+        220
       ],
-      "notes": "URL canonicalization, 제목 유사도 중복그룹 생성. AI 호출 금지."
+      "notes": "실제 n8n XML 노드 출력 구조는 인스턴스 검증 전까지 가정이다(알려진 한계)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n의 pairedItem 추적 기능으로 상류 'Config Load' 노드의 원본 컨텍스트(group_id 등)를\n// 되찾는다 — HTTP Request/XML 노드는 입력 1건당 출력 1건이라 pairedItem이 그대로\n// 이어진다고 가정한다(공식 n8n itemMatching() 패턴, 실제 인스턴스 미검증 — 알려진 한계).\nfunction getContext(entry) {\n  const paired = Array.isArray(entry.pairedItem) ? entry.pairedItem[0] : entry.pairedItem;\n  const idx = paired && typeof paired === 'object' ? paired.item : paired;\n  return $('Config Load').itemMatching(idx).json;\n}\n\n// Python 원본: scripts/adapters/naver_news_adapter.py::parse_response()/_clean_naver_text()\nfunction cleanNaverText(text) {\n  return String(text || '')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&quot;/g, '\"').replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, \"'\")\n    .trim();\n}\nconst out = [];\nfor (const entry of $input.all()) {\n  const ctx = getContext(entry);\n  const items = (entry.json.items) || [];\n  for (const it of items) {\n    out.push({\n      json: {\n        ...ctx,\n        title_original: cleanNaverText(it.title),\n        source_url: it.originallink || it.link || '',\n        published_at: it.pubDate || null,\n        language: 'ko',\n      },\n    });\n  }\n}\nreturn out;\n"
+      },
+      "id": "code-parse-naver-031",
+      "name": "Naver - RawArticle 변환",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex"
+      },
+      "id": "merge-032",
+      "name": "Merge - 수집 결과 통합",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Python 원본: scripts/pipeline/normalize.py + scripts/pipeline/rule_filter.py\n// (passes_rule_filter_group). 정확한 ART-YYYYMMDD-NNNN 순번 채번(Python의 next_id())은\n// n8n 실행 컨텍스트에서 재현하지 않고 타임스탬프 기반 근사 ID를 쓴다(알려진 한계 —\n// config/technical_debt_registry.yaml 참고, 실제 순번은 Python 배치 실행 결과가 기준).\nfunction passesRuleFilter(title, includeKeywords, excludeKeywords) {\n  const t = title.toLowerCase();\n  if (excludeKeywords.some(kw => t.includes(kw.toLowerCase()))) return false;\n  if (includeKeywords.length === 0) return true;\n  return includeKeywords.some(kw => t.includes(kw.toLowerCase()));\n}\nconst seen = new Set();\nconst out = [];\nlet i = 0;\nfor (const entry of $input.all()) {\n  const j = entry.json;\n  if (!j.source_url || seen.has(j.source_url)) continue;\n  seen.add(j.source_url);\n  i += 1;\n  const matched = passesRuleFilter(\n    j.title_original || '', j.include_keywords || [], j.exclude_keywords || []\n  );\n  out.push({\n    json: {\n      ...j,\n      article_id: 'ART-' + $now.toFormat('yyyyMMdd') + '-' + String(i).padStart(4, '0'),\n      status: matched ? 'collected' : 'rejected',\n      matched: matched,\n    },\n  });\n}\nreturn out;"
+      },
+      "id": "code-007",
+      "name": "정규화·중복제거·Rule Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        340
+      ],
+      "notes": "AI 호출 없음(CLAUDE.md 절대 원칙 #5)."
     },
     {
       "parameters": {
@@ -123,29 +244,15 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        880,
-        380
+        1980,
+        340
       ],
-      "notes": "신규 기사만 append",
+      "notes": "매칭 여부와 무관하게 전부 적재한다 — '전체 리스트는 데이터로 계속 축적' 요구사항(뉴스 수집 실체화 라운드, 2026-08-08).",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
-      },
-      "id": "code-009",
-      "name": "Rule Filter",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1100,
-        380
-      ],
-      "notes": "포함/제외 키워드, 신뢰등급, 게시일, 관련 기업명 기반 1차 판정 (AI 미사용, 舊 WF-P04 1차 규칙)."
     },
     {
       "parameters": {
@@ -157,7 +264,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.condition_placeholder }}",
+              "leftValue": "={{ $json.matched }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -170,19 +277,21 @@
         "options": {}
       },
       "id": "if-010",
-      "name": "애매한 건인가?",
+      "name": "그룹에 매칭됐는가?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1320,
-        300
-      ],
-      "notes": "규칙 점수가 중간구간일 때만 True"
+        2200,
+        260
+      ]
     },
     {
       "parameters": {
         "url": "https://api.anthropic.com/v1/messages",
         "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({model: 'claude-haiku-4-5', max_tokens: 1200, messages: [{role: 'user', content: \"\\ub2f9\\uc2e0\\uc740 LX\\ud640\\ub529\\uc2a4 \\uc804\\ub7b5\\ud300\\uc744 \\uc704\\ud55c 1\\ucc28 \\uad00\\ub828\\uc131 \\ubd84\\ub958\\uae30\\ub2e4. \\uaddc\\uce59 \\uae30\\ubc18 \\ud544\\ud130\\ub97c \\ud1b5\\uacfc\\ud588\\uc9c0\\ub9cc\\n\\uad00\\ub828\\uc131\\uc774 \\uc560\\ub9e4\\ud55c \\uae30\\uc0ac\\ub9cc \\uc5ec\\uae30\\ub85c \\uc804\\ub2ec\\ub41c\\ub2e4. \\uc2ec\\uce35\\ubd84\\uc11d\\uc744 \\ud558\\uc9c0 \\uc54a\\ub294\\ub2e4 \\u2014 \\uad00\\ub828 \\uc788\\ub294\\uc9c0, \\uc5b4\\ub290\\n\\ubbf8\\uc158(future_readiness/risk_management)\\uc5d0 \\ud574\\ub2f9\\ud558\\ub294\\uc9c0, \\uc2ec\\uce35\\ubd84\\uc11d\\uc774 \\ud544\\uc694\\ud55c\\uc9c0\\ub9cc \\ud310\\ub2e8\\ud55c\\ub2e4.\\n\\n\\uc808\\ub300 \\uc6d0\\uce59:\\n1. \\uc804\\ub2ec\\ub41c \\uae30\\uc0ac \\uc6d0\\ubb38\\ub9cc \\uadfc\\uac70\\ub85c \\ud310\\ub2e8\\ud55c\\ub2e4. \\ub0b4\\ubd80 \\uc815\\ubcf4\\ub97c \\ucd94\\uc815\\ud558\\uc9c0 \\uc54a\\ub294\\ub2e4.\\n2. \\uc6d0\\ubb38\\uc5d0 \\uc5c6\\ub294 \\uc0ac\\uc2e4\\uc744 \\ub9cc\\ub4e4\\uc5b4\\ub0b4\\uc9c0 \\uc54a\\ub294\\ub2e4.\\n3. \\ud655\\uc2e0\\uc774 \\uc5c6\\uc73c\\uba74 relevance_score\\ub97c \\ub0ae\\uac8c, needs_deep_analysis\\ub294 \\uc2e0\\uc911\\ud558\\uac8c true\\ub85c\\ub9cc.\\n4. mission_category/mission_subcategory\\ub294 \\ubc30\\uc5f4\\uc774\\ub2e4.\\n5. intelligence_categories\\ub294 \\ud544\\uc218\\uc774\\uba70 19\\uac1c \\uce74\\ud14c\\uace0\\ub9ac \\uc911 \\ud574\\ub2f9\\ud558\\ub294 \\uc804\\ubd80\\ub97c \\ub9e4\\ud551\\ud55c\\ub2e4.\\n\\nJSON\\ub9cc \\ucd9c\\ub825\\ud558\\ub77c(\\ub2e4\\ub978 \\ud14d\\uc2a4\\ud2b8 \\uc5c6\\uc774):\\n{\\\"relevant\\\": true, \\\"relevance_score\\\": 0.0, \\\"mission_category\\\": [\\\"risk_management\\\"],\\n \\\"mission_subcategory\\\": [], \\\"intelligence_categories\\\": [\\\"litigation\\\"],\\n \\\"related_companies\\\": [], \\\"reason\\\": \\\"\\\", \\\"needs_deep_analysis\\\": false}\\n\" + '\\n\\n기사: ' + $json.title_original + '\\n원문: ' + $json.source_url}]}) }}",
         "options": {
           "timeout": 30000
         }
@@ -192,16 +301,29 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1540,
-        220
+        2420,
+        180
       ],
-      "notes": "prompts/relevance_filter.md (Static/Dynamic Block 분리). Anthropic Key 준비 전까지 disabled (舊 WF-P04 AI 분류).",
-      "disabled": true,
+      "notes": "prompts/relevance_filter.md 정적 지시문을 요약 이식(전체 Knowledge Block 재현은 하지 않는다 — 알려진 한계). Haiku tier(classification) 사용.",
       "credentials": {
         "httpHeaderAuth": {
           "name": "PLACEHOLDER_CRED_AnthropicApiKey"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Python scripts/providers/claude_provider.py::_strip_markdown_json_fence()와 동일한\n// 로직 — Claude가 JSON을 ```json ... ``` 코드펜스로 감싸 응답하는 경우가 실측으로\n// 확인됐다(Round 13 이어서, 2026-08-08).\nfunction stripMarkdownFence(text) {\n  const trimmed = text.trim();\n  const m = trimmed.match(/^```(?:json)?\\s*\\n([\\s\\S]*)\\n```$/);\n  return m ? m[1] : text;\n}\nfunction parseClaudeJson(text) {\n  try { return JSON.parse(text); }\n  catch (e) { return JSON.parse(stripMarkdownFence(text)); }\n}\n\n// 원본 article 필드는 '정규화·중복제거·Rule Filter' 노드의 pairedItem으로 되찾는다\n// (Claude Relevance HTTP 노드가 $json을 API 응답으로 덮어써서 사라졌기 때문).\nfunction getArticle(entry) {\n  const paired = Array.isArray(entry.pairedItem) ? entry.pairedItem[0] : entry.pairedItem;\n  const idx = paired && typeof paired === 'object' ? paired.item : paired;\n  return $('정규화·중복제거·Rule Filter').itemMatching(idx).json;\n}\nconst out = [];\nfor (const entry of $input.all()) {\n  const text = entry.json.content && entry.json.content[0] && entry.json.content[0].text;\n  const parsed = parseClaudeJson(text || '{}');\n  out.push({ json: { ...getArticle(entry), ...parsed } });\n}\nreturn out;\n"
+      },
+      "id": "code-relevance-parse-033",
+      "name": "Relevance 응답 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        180
+      ],
+      "notes": "Python 원본: scripts/providers/claude_provider.py::_strip_markdown_json_fence() (2026-08-08 실제 연결 검증 중 발견한 버그 수정)을 이식했다."
     },
     {
       "parameters": {
@@ -213,7 +335,15 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.condition_placeholder }}",
+              "leftValue": "={{ $json.relevant }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            },
+            {
+              "leftValue": "={{ $json.needs_deep_analysis }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -230,15 +360,17 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1540,
-        460
-      ],
-      "notes": "needs_deep_analysis=true → 심층분석 (舊 WF-P05 진입 조건)"
+        2860,
+        180
+      ]
     },
     {
       "parameters": {
         "url": "https://api.anthropic.com/v1/messages",
         "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({model: 'claude-sonnet-5', max_tokens: 1200, messages: [{role: 'user', content: \"\\ub2f9\\uc2e0\\uc740 LX\\ud640\\ub529\\uc2a4 \\uc804\\ub7b5\\ud300\\uc744 \\uc704\\ud55c \\ub9ac\\uc2a4\\ud06c \\uc2ec\\uce35\\ubd84\\uc11d\\uac00\\ub2e4. \\uc2e0\\uaddc \\uc911\\uc694 \\uc0ac\\uac74\\ub9cc \\uc804\\ub2ec\\ub41c\\ub2e4.\\n\\n\\uc808\\ub300 \\uc6d0\\uce59:\\n1. \\uc0ac\\uc2e4(facts)\\u00b7\\ud574\\uc11d\\u00b7\\ucd94\\ub860\\u00b7\\uc81c\\uc548\\uc744 \\uba85\\ud655\\ud788 \\uad6c\\ubd84\\ud55c\\ub2e4.\\n2. \\ubaa8\\ub4e0 \\uc0ac\\uc2e4\\uc5d0\\ub294 evidence(\\uc6d0\\ubb38 URL)\\ub97c \\uc5f0\\uacb0\\ud55c\\ub2e4.\\n3. \\uae08\\uc561\\uc744 \\uc784\\uc758\\ub85c \\ucd94\\uc815\\ud558\\uc9c0 \\uc54a\\ub294\\ub2e4 \\u2014 \\ucd1d \\ubc30\\uc0c1\\uc561/\\uc6d0\\uace0 \\uc218 \\ub458 \\ub2e4 \\uc788\\uc744 \\ub54c\\ub9cc \\uacc4\\uc0b0\\ud55c\\ub2e4.\\n4. lx_impact\\ub294 \\uadfc\\uac70\\uac00 \\uc788\\uc744 \\ub54c\\ub9cc \\uc791\\uc131\\ud55c\\ub2e4. \\ubd88\\ud655\\uc2e4\\ud558\\uba74 unknowns\\uc5d0 \\ub0a8\\uae34\\ub2e4.\\n5. intelligence_categories\\ub294 \\ud544\\uc218\\ub2e4.\\n6. importance_level\\uc740 \\uc544\\ub798 3\\ub2e8\\uacc4 \\uc911 \\ud558\\ub098\\uc5ec\\uc57c \\ud55c\\ub2e4:\\n   - \\uae34\\uae09: \\uc2e0\\uaddc \\uc18c\\uc1a1 \\uc81c\\uae30, \\uc2e0\\uaddc \\ubc30\\uc0c1 \\ud310\\uacb0/\\ud569\\uc758, \\uc2e0\\uaddc \\uaddc\\uc81c\\u00b7\\uc785\\ubc95 \\ud1b5\\uacfc, \\uc0dd\\uc0b0/\\ud310\\ub9e4 \\uc911\\ub2e8\\n   - \\uc911\\uc694: \\uc18c\\uc1a1 \\uc9c4\\ud589 \\uc0c1\\ud669 \\uc5c5\\ub370\\uc774\\ud2b8, \\uaddc\\uc81c \\ucd08\\uc548\\u00b7\\uacf5\\uccad\\ud68c, \\uacbd\\uc7c1\\uc0ac \\uc720\\uc0ac \\uc774\\uc288\\n   - \\ucc38\\uace0: \\uc77c\\ubc18 \\uc0b0\\uc5c5 \\ub3d9\\ud5a5, \\ud559\\uc220/\\uc5f0\\uad6c \\ubcf4\\ub3c4\\n7. \\uc774 \\uadf8\\ub8f9\\uc5d0 \\uc0ac\\uc6a9\\uc790\\uac00 \\uc9c0\\uc815\\ud55c \\ucd94\\uac00 \\uc9c0\\uce68(group_ai_instructions, \\uc788\\ub294 \\uacbd\\uc6b0)\\uc774 \\uc704 \\uc6d0\\uce59\\uacfc\\n   \\ubaa8\\uc21c\\ub418\\uc9c0 \\uc54a\\ub294 \\ubc94\\uc704\\uc5d0\\uc11c \\ubc18\\uc601\\ud55c\\ub2e4.\\n8. \\ud55c\\uad6d\\uc5b4\\ub85c \\ucd9c\\ub825\\ud55c\\ub2e4.\\n\\nJSON\\ub9cc \\ucd9c\\ub825\\ud558\\ub77c(\\ub2e4\\ub978 \\ud14d\\uc2a4\\ud2b8 \\uc5c6\\uc774):\\n{\\\"facts\\\": [], \\\"significance\\\": \\\"\\\", \\\"importance_level\\\": \\\"\\uc911\\uc694\\\",\\n \\\"mission_category\\\": [\\\"risk_management\\\"], \\\"mission_subcategory\\\": [],\\n \\\"intelligence_categories\\\": [\\\"litigation\\\"], \\\"lx_impact\\\": [], \\\"actions\\\": [],\\n \\\"confidence\\\": \\\"medium\\\", \\\"evidence\\\": [], \\\"unknowns\\\": []}\\n\" + '\\n\\n기사: ' + $json.title_original + '\\n원문: ' + $json.source_url + ($json.group_ai_instructions ? ('\\n\\n그룹 AI 지침: ' + $json.group_ai_instructions) : '')}]}) }}",
         "options": {
           "timeout": 30000
         }
@@ -248,11 +380,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
-        460
+        3080,
+        180
       ],
-      "notes": "prompts/risk_analysis.md. 입력 최대 8000/출력 최대 1200 tokens. Anthropic Key 준비 전까지 disabled (舊 WF-P05).",
-      "disabled": true,
+      "notes": "prompts/risk_analysis.md v0.4.0 정적 지시문 이식(importance_level 3단계 포함). 입력 최대 8000/출력 최대 1200 tokens. Sonnet tier(deep_analysis).",
       "credentials": {
         "httpHeaderAuth": {
           "name": "PLACEHOLDER_CRED_AnthropicApiKey"
@@ -261,17 +392,17 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+        "jsCode": "// Python scripts/providers/claude_provider.py::_strip_markdown_json_fence()와 동일한\n// 로직 — Claude가 JSON을 ```json ... ``` 코드펜스로 감싸 응답하는 경우가 실측으로\n// 확인됐다(Round 13 이어서, 2026-08-08).\nfunction stripMarkdownFence(text) {\n  const trimmed = text.trim();\n  const m = trimmed.match(/^```(?:json)?\\s*\\n([\\s\\S]*)\\n```$/);\n  return m ? m[1] : text;\n}\nfunction parseClaudeJson(text) {\n  try { return JSON.parse(text); }\n  catch (e) { return JSON.parse(stripMarkdownFence(text)); }\n}\n\n// 원본 article+relevance 필드는 'Relevance 응답 파싱' 노드의 pairedItem으로 되찾는다.\nfunction getArticle(entry) {\n  const paired = Array.isArray(entry.pairedItem) ? entry.pairedItem[0] : entry.pairedItem;\n  const idx = paired && typeof paired === 'object' ? paired.item : paired;\n  return $('Relevance 응답 파싱').itemMatching(idx).json;\n}\nconst REQUIRED = ['facts', 'significance', 'importance_level', 'intelligence_categories',\n  'lx_impact', 'actions', 'confidence', 'evidence', 'unknowns'];\nconst out = [];\nfor (const entry of $input.all()) {\n  const text = entry.json.content && entry.json.content[0] && entry.json.content[0].text;\n  let parsed;\n  try { parsed = parseClaudeJson(text || '{}'); } catch (e) { parsed = null; }\n  const missing = !parsed || REQUIRED.some(k => !(k in parsed));\n  out.push({\n    json: {\n      ...getArticle(entry),\n      ...(parsed || {}),\n      status: missing ? 'needs_review' : 'analyzed',\n    },\n  });\n}\nreturn out;\n"
       },
       "id": "code-014",
-      "name": "AI Analyze - JSON Schema 검증",
+      "name": "Risk Analysis 응답 파싱 + Schema 검증",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1980,
-        460
+        3300,
+        180
       ],
-      "notes": "claude_output.schema.json 검증. 실패 시 1회 교정 재호출, 재실패하면 needs_review."
+      "notes": "schemas/claude_output.schema.json의 risk_analysis_output 필수 필드를 확인한다(전체 jsonschema 검증기 이식은 하지 않고 필수 키 존재만 확인 — 알려진 한계)."
     },
     {
       "parameters": {
@@ -284,10 +415,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        2200,
-        460
+        3520,
+        180
       ],
-      "notes": "심층분석 결과 저장",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
@@ -296,31 +426,31 @@
     },
     {
       "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드에서 구현\nreturn $input.all();"
       },
       "id": "code-016",
       "name": "Dashboard - 집계",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2420,
-        380
+        3740,
+        180
       ],
-      "notes": "Tracker/국가별/규제/세이프가드 집계는 Code 노드에서 처리 (AI 미사용, 舊 WF-P06)."
+      "notes": "이번 라운드(뉴스 수집 실체화, 2026-08-08) 범위 밖 — 그대로 TODO 유지."
     },
     {
       "parameters": {
-        "jsCode": "// TODO: 다음 라운드(TASK-009~013)에서 구현\nreturn $input.all();"
+        "jsCode": "// TODO: 다음 라운드에서 구현\nreturn $input.all();"
       },
       "id": "code-017",
       "name": "Dashboard - HTML 렌더링",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
-        380
+        3960,
+        180
       ],
-      "notes": "scripts/build_dashboard.py 로직과 동일한 템플릿 주입."
+      "notes": "scripts/build_dashboard.py 로직과 동일한 템플릿 주입(다음 라운드)."
     },
     {
       "parameters": {
@@ -331,8 +461,8 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        2860,
-        300
+        4180,
+        100
       ],
       "notes": "04_Reports/CURRENT에 최신본 저장",
       "disabled": true,
@@ -351,8 +481,8 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        2860,
-        460
+        4180,
+        260
       ],
       "notes": "05_Archive에 날짜별 저장",
       "disabled": true,
@@ -361,6 +491,34 @@
           "name": "PLACEHOLDER_CRED_GoogleDrive"
         }
       }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "records"
+      },
+      "id": "aggregate-034",
+      "name": "Aggregate - 이번 실행 전체 결과",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3740,
+        340
+      ],
+      "notes": "한 번의 Schedule 실행에서 나온 모든 (article, intelligence) 결과를 하나로 모아 다이제스트 1건으로 발송한다 — 기사 건별 발송이 아니다."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Python 원본: scripts/pipeline/build_digest.py (select_digest_records/build_digest_body).\nconst ALERT_LEVELS = ['긴급', '중요'];\nconst all = ($input.first().json.records || []).map(r => r.json || r);\nconst alertRecords = all.filter(r => ALERT_LEVELS.includes(r.importance_level));\nalertRecords.sort((a, b) => ALERT_LEVELS.indexOf(a.importance_level) - ALERT_LEVELS.indexOf(b.importance_level));\nconst MAX_ITEMS = 3; // config/notification.yaml email.max_highlighted_changes와 동일 값\nlet body;\nif (alertRecords.length === 0) {\n  body = '오늘 새로 발송할 만큼 중요한 변화는 없다.';\n} else {\n  const lines = ['오늘의 핵심 변화 ' + Math.min(alertRecords.length, MAX_ITEMS) + '건:'];\n  for (const r of alertRecords.slice(0, MAX_ITEMS)) {\n    lines.push('\\n[' + r.importance_level + '] ' + (r.title_original || '') +\n      '\\n- 시사점: ' + ((r.lx_impact || []).join('; ') || '(LX 영향 근거 없음)') +\n      '\\n- 제언: ' + ((r.actions || []).join('; ') || '(제언 없음)'));\n  }\n  body = lines.join('\\n');\n}\nconst subject = alertRecords.length === 0\n  ? '미국 엔지니어드스톤 리스크 알리미 — 신규 주요 변화 없음'\n  : '미국 엔지니어드스톤 리스크 알리미 — 신규 ' + alertRecords.length + '건';\nreturn [{ json: { subject: subject, body: body, has_alert: alertRecords.length > 0 } }];"
+      },
+      "id": "code-digest-035",
+      "name": "다이제스트 조립",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3960,
+        340
+      ]
     },
     {
       "parameters": {
@@ -389,26 +547,26 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        3080,
-        380
+        4180,
+        340
       ],
-      "notes": "notification.yaml active_send_start/end 기준 (舊 WF-P07)."
+      "notes": "notification.yaml active_send_start/end 기준 — 조건식 자체는 다음 라운드에서 실제 시간 비교로 구현한다(범위 밖, 알려진 한계)."
     },
     {
       "parameters": {
         "sendTo": "={{ $env.LCIP_TEST_EMAIL_RECIPIENT }}",
-        "subject": "미국 엔지니어드스톤 리스크 알리미"
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}"
       },
       "id": "gmail-021",
-      "name": "Notification - Gmail 카드 발송",
+      "name": "Notification - Gmail 다이제스트 발송",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3300,
-        300
+        4400,
+        260
       ],
-      "notes": "test_mode 준수.",
-      "disabled": true,
+      "notes": "test_mode 준수는 n8n 쪽에서 별도 게이트가 없다 — 실 운영 전환 시 notification.yaml의 test_mode=false 전환과 함께 이 노드를 켜는 결정이 필요하다.",
       "credentials": {
         "gmailOAuth2": {
           "name": "PLACEHOLDER_CRED_Gmail"
@@ -418,18 +576,16 @@
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "={{ $json.summary_text }}"
+        "text": "={{ $json.subject }}\\n\\n{{ $json.body }}"
       },
       "id": "telegram-022",
-      "name": "Notification - Telegram 요약 발송",
+      "name": "Notification - Telegram 다이제스트 발송",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3300,
-        460
+        4400,
+        420
       ],
-      "notes": "3~6줄, 신규 변화만.",
-      "disabled": true,
       "credentials": {
         "telegramApi": {
           "name": "PLACEHOLDER_CRED_Telegram"
@@ -447,10 +603,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        3520,
-        380
+        4620,
+        340
       ],
-      "notes": "발송 기록, dedupe_key 저장",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
@@ -468,10 +623,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        3520,
-        540
+        4620,
+        500
       ],
-      "notes": "Claude 호출 usage 기록",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "name": "PLACEHOLDER_CRED_GoogleSheets"
@@ -485,18 +639,18 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        3740,
-        380
+        4840,
+        400
       ],
       "notes": "Master Pipeline 종료 지점"
     }
   ],
   "connections": {
-    "Master Scheduler (매시 정각)": {
+    "Master Scheduler (평일 08:00/12:00/16:30)": {
       "main": [
         [
           {
-            "node": "Config Load",
+            "node": "Config Load - Read KEYWORD_GROUPS",
             "type": "main",
             "index": 0
           }
@@ -504,6 +658,17 @@
       ]
     },
     "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config Load - Read KEYWORD_GROUPS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Load - Read KEYWORD_GROUPS": {
       "main": [
         [
           {
@@ -518,17 +683,32 @@
       "main": [
         [
           {
+            "node": "Route by Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Source": {
+      "main": [
+        [
+          {
             "node": "News Collect - Google News RSS (EN)",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
           {
             "node": "News Collect - Google News RSS (KO)",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
           {
-            "node": "News Collect - Public Source (DART/정부)",
+            "node": "News Collect - Naver News API",
             "type": "main",
             "index": 0
           }
@@ -539,7 +719,7 @@
       "main": [
         [
           {
-            "node": "News Collect - 정규화·중복제거",
+            "node": "Google RSS - XML to JSON",
             "type": "main",
             "index": 0
           }
@@ -550,25 +730,69 @@
       "main": [
         [
           {
-            "node": "News Collect - 정규화·중복제거",
+            "node": "Google RSS - XML to JSON",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "News Collect - Public Source (DART/정부)": {
+    "Google RSS - XML to JSON": {
       "main": [
         [
           {
-            "node": "News Collect - 정규화·중복제거",
+            "node": "Google RSS - RawArticle 변환",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "News Collect - 정규화·중복제거": {
+    "News Collect - Naver News API": {
+      "main": [
+        [
+          {
+            "node": "Naver - RawArticle 변환",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google RSS - RawArticle 변환": {
+      "main": [
+        [
+          {
+            "node": "Merge - 수집 결과 통합",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Naver - RawArticle 변환": {
+      "main": [
+        [
+          {
+            "node": "Merge - 수집 결과 통합",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge - 수집 결과 통합": {
+      "main": [
+        [
+          {
+            "node": "정규화·중복제거·Rule Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "정규화·중복제거·Rule Filter": {
       "main": [
         [
           {
@@ -583,25 +807,14 @@
       "main": [
         [
           {
-            "node": "Rule Filter",
+            "node": "그룹에 매칭됐는가?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Rule Filter": {
-      "main": [
-        [
-          {
-            "node": "애매한 건인가?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "애매한 건인가?": {
+    "그룹에 매칭됐는가?": {
       "main": [
         [
           {
@@ -613,6 +826,17 @@
       ]
     },
     "AI Analyze - Claude Relevance": {
+      "main": [
+        [
+          {
+            "node": "Relevance 응답 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relevance 응답 파싱": {
       "main": [
         [
           {
@@ -638,14 +862,14 @@
       "main": [
         [
           {
-            "node": "AI Analyze - JSON Schema 검증",
+            "node": "Risk Analysis 응답 파싱 + Schema 검증",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Analyze - JSON Schema 검증": {
+    "Risk Analysis 응답 파싱 + Schema 검증": {
       "main": [
         [
           {
@@ -661,6 +885,11 @@
         [
           {
             "node": "Dashboard - 집계",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Aggregate - 이번 실행 전체 결과",
             "type": "main",
             "index": 0
           }
@@ -694,7 +923,18 @@
         ]
       ]
     },
-    "Dashboard - Drive CURRENT 업로드": {
+    "Aggregate - 이번 실행 전체 결과": {
+      "main": [
+        [
+          {
+            "node": "다이제스트 조립",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "다이제스트 조립": {
       "main": [
         [
           {
@@ -709,19 +949,19 @@
       "main": [
         [
           {
-            "node": "Notification - Gmail 카드 발송",
+            "node": "Notification - Gmail 다이제스트 발송",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Notification - Telegram 요약 발송",
+            "node": "Notification - Telegram 다이제스트 발송",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Notification - Gmail 카드 발송": {
+    "Notification - Gmail 다이제스트 발송": {
       "main": [
         [
           {
@@ -732,7 +972,7 @@
         ]
       ]
     },
-    "Notification - Telegram 요약 발송": {
+    "Notification - Telegram 다이제스트 발송": {
       "main": [
         [
           {

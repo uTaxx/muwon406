@@ -5,6 +5,61 @@
 
 ## [Unreleased]
 
+### Added — 뉴스 수집 실체화 (2026-08-08)
+
+사용자 지시: "N8N 적용해서 뉴스 수집하는 것부터 실체화 하자." Google/Naver News를
+실제로 수집하고, 키워드를 그룹으로 나눠 그룹별 AI 지침을 줄 수 있게 하고, 중요도를
+판정해 의미있는 기사만 임플리케이션+제언으로 요약해 Telegram/Email로 발송하는 실제
+서비스로 만들었다. Plan Mode로 설계 후 사용자가 3가지 핵심 결정(n8n 네이티브 재구현/
+Google Sheets 편집/Google News+Naver만 이번 범위)을 확정하고 승인했다.
+
+- **Keyword Group 스키마**: 신설 `KEYWORD_GROUPS` Google Sheets 탭(`schemas/
+  google_sheets_columns.json`, `config/sheet_structure.yaml`) + 로컬 YAML 폴백
+  (`config/keyword_groups.yaml`, `scripts/keyword_groups.py`) — Sheets 준비 전까지도
+  즉시 동작한다. TOP-0001의 기존 키워드를 그대로 "GRP-0001" 그룹으로 이관했다(신규
+  키워드 창작 없음).
+- **Naver News 실제 어댑터**: `scripts/adapters/naver_news_adapter.py` 신설 —
+  `GoogleRSSAdapter`와 동일한 `enabled`/`http_get` 주입 패턴. `config/sources.yaml`
+  SRC-0003을 `active: true`로 전환. `future_adapters.py`에서 stub 제거.
+- **importance_level 신설**: `schemas/claude_output.schema.json`/`intelligence.
+  schema.json`에 enum `[긴급, 중요, 참고]` 추가 — `knowledge/STRATEGY_PLAYBOOK.md`
+  §2의 기존 3단계 기준을 구조화된 필드로 승격했다(새 기준 창작 아님).
+  `prompts/risk_analysis.md`를 v0.4.0으로 올리고 그룹별 `ai_instructions`를
+  Dynamic Block에 추가로 전달할 수 있게 했다.
+- **실제 배치 파이프라인**(`scripts/run_news_collection.py` 신규): 활성 그룹×활성
+  소스를 순회해 Collect→Normalize→그룹별 Rule Filter→**전체 ARTICLE_DB 적재**(탈락
+  해도 `status="rejected"`로 보존 — "전체 리스트는 데이터로 계속 축적" 요구사항)→
+  Haiku Classify→Sonnet Analyze(그룹 AI 지침 반영)→INTELLIGENCE_DB→Dashboard 갱신→
+  다이제스트 발송까지 실제로 수행한다. 기존 `scenario_1_news_analysis.py`는 fixture
+  1건짜리 데모였을 뿐 이런 다건 배치 흐름이 아니었다 — 이번에 처음 만들었다.
+  `scripts/pipeline/build_digest.py` 신규 — 긴급/중요만 다이제스트에 포함, 참고는
+  누적만.
+- **n8n WF-P01 네이티브 재구현**: n8n Cloud가 이 코드저장소(Python)를 직접 실행할 수
+  없어(사용자 확인), Python 로직을 n8n의 Schedule/Code(JS)/HTTP Request/XML/
+  Google Sheets/Gmail/Telegram 노드로 다시 구현했다 — Schedule Trigger를 평일
+  08:00/12:00/16:30 3개 cron으로 변경, KEYWORD_GROUPS Sheets 읽기→그룹×소스 fan-out
+  →Google News RSS(EN/KO)/Naver News API 실제 호출→Rule Filter→AI Analyze(Claude
+  Relevance/Risk Analysis, 마크다운 JSON 코드펜스 스트립 로직 이식)→다이제스트
+  Aggregate→Gmail/Telegram 실제 발송까지 `disabled: true`를 해제했다. DART/
+  정부보도자료는 이번 범위 밖으로 확정해 계속 비활성 상태로 남겼다. Drive 업로드/
+  Dashboard HTML 렌더링 Code 노드도 이번 범위 밖(TODO 유지). **알려진 한계 4가지**를
+  `config/technical_debt_registry.yaml` TD-008에 정직하게 기록했다: (1) 프롬프트
+  변경 시 n8n 노드 수동 동기화 필요, (2) pairedItem/itemMatching() 기반 컨텍스트
+  전달이 실제 n8n 인스턴스로 미검증, (3) 분석 대상 0건인 실행에서 "변화 없음"
+  다이제스트가 발송되지 않을 수 있음(Python은 항상 발송), (4) 수집 주기는 Sheets가
+  아니라 Schedule Trigger 노드 자체를 재배포해야 바뀐다.
+- **Home Dashboard 카드 추가**: "7. 뉴스 수집 설정 현황"(읽기 전용, 활성 그룹 수/
+  키워드 수/소스/상태) — 새 Widget 클래스 없이 기존 HOME_* 토큰 패턴 재사용. 실제
+  수정은 Google Sheets에서 한다는 안내를 명시했다(직전 "대시보드는 CLI로 유지"
+  결정과 일관).
+- **DART/정부보도자료는 이번 범위에서 명시적으로 제외**했다 — 사용자 확인: DART는
+  "기업명→corp_code 조회"라 "뉴스 키워드 검색"과 성격이 달라 별도 설계 논의가
+  필요하고, 정부보도자료(OSHA 등)는 실제 기관이 아직 지정되지 않았다.
+- 전체 테스트 449개(모델 티어 확정 후)+연결검증 1개 → 487개, 전부 PASS. 실제 외부
+  API 호출은 `feature_flags.yaml`이 여전히 전부 `false`라 0건이다 — 실제 n8n Cloud
+  배포(`N8N_BASE_URL` 필요)와 실제 Google Sheets 연동(`GOOGLE_SHEETS_MASTER_
+  SPREADSHEET_ID` 필요)은 다음 단계다.
+
 ### Added — Architect Review Round 13 "RC2 실체화" 반영 (2026-08-08, 13차)
 
 ChatGPT Architect Review Round 13 승인 및 반영. "LCIP는 설계 단계를 종료하고 RC2

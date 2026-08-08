@@ -34,9 +34,18 @@ class AIProvider(ABC):
 
     @abstractmethod
     def analyze_risk(
-        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+        self,
+        article: dict,
+        lx_context_excerpt: str,
+        existing_timeline_excerpt: str,
+        group_ai_instructions: str = "",
     ) -> ProviderResult:
-        """schemas/claude_output.schema.json의 risk_analysis_output 형태를 반환해야 한다."""
+        """schemas/claude_output.schema.json의 risk_analysis_output 형태를 반환해야 한다.
+
+        Architect Review 뉴스 수집 실체화 라운드(2026-08-08): `group_ai_instructions`
+        (선택, 기본값 빈 문자열 — 하위호환)는 이 기사가 속한 Keyword Group의
+        `ai_instructions`를 Dynamic Block에 추가 컨텍스트로 전달한다.
+        """
 
     @abstractmethod
     def quick_company_scan(

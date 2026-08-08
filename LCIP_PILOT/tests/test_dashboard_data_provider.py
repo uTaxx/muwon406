@@ -116,3 +116,14 @@ def test_pipeline_dashboard_data_provider_reference_library_empty_by_default(tmp
     provider = PipelineDashboardDataProvider(storage, "Topic", "2026-08-05 09:00")
     data = provider.get_data()
     assert data["reference_library_rows"] == []
+
+
+def test_pipeline_dashboard_data_provider_includes_keyword_groups_summary(tmp_path, monkeypatch):
+    """뉴스 수집 실체화 라운드(2026-08-08) — Home Dashboard "뉴스 수집 설정 현황" 카드가
+    실제 config/keyword_groups.yaml(local_yaml 기본 모드)을 반영해야 한다."""
+    monkeypatch.setattr(reference_library, "project_root", lambda: tmp_path / "reflib_root")
+    storage = LocalJSONLStorage(tmp_path / "pilot_data")
+    provider = PipelineDashboardDataProvider(storage, "Topic", "2026-08-05 09:00")
+    data = provider.get_data()
+    assert len(data["keyword_groups_summary"]) >= 1
+    assert data["keyword_groups_summary"][0]["그룹명"]

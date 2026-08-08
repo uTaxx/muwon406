@@ -67,3 +67,73 @@ def test_error_handler_referenced_except_self():
         assert data.get("settings", {}).get("errorWorkflow") == "LCIP - Error Handler", (
             f"{name}에 errorWorkflow 설정(Error 분기)이 없음"
         )
+
+
+# --- 뉴스 수집 실체화 라운드(2026-08-08): WF-P01 네이티브 재구현 검증 ---
+
+
+def test_wf_p01_schedule_has_three_weekday_cron_expressions():
+    data = _load("WF-P01-master-pipeline.json")
+    schedule_node = next(
+        n for n in data["nodes"] if n["type"] == "n8n-nodes-base.scheduleTrigger"
+    )
+    expressions = {
+        entry["expression"] for entry in schedule_node["parameters"]["rule"]["interval"]
+    }
+    assert expressions == {"0 8 * * 1-5", "0 12 * * 1-5", "30 16 * * 1-5"}
+
+
+def test_wf_p01_ai_analyze_nodes_are_enabled():
+    """뉴스 수집 실체화 라운드 전에는 disabled:true였다 — 이번에 실제 활성화했다."""
+    data = _load("WF-P01-master-pipeline.json")
+    ai_nodes = [n for n in data["nodes"] if n["name"].startswith("AI Analyze - Claude")]
+    assert len(ai_nodes) == 2
+    assert all(not n.get("disabled") for n in ai_nodes)
+
+
+def test_wf_p01_notification_nodes_are_enabled():
+    data = _load("WF-P01-master-pipeline.json")
+    notif_nodes = [n for n in data["nodes"] if n["name"].startswith("Notification - ")]
+    assert len(notif_nodes) >= 2
+    assert all(not n.get("disabled") for n in notif_nodes)
+
+
+def test_wf_p01_has_naver_news_node_not_disabled():
+    data = _load("WF-P01-master-pipeline.json")
+    naver_node = next(n for n in data["nodes"] if "Naver" in n["name"])
+    assert not naver_node.get("disabled")
+    assert naver_node["credentials"]["httpHeaderAuth"]["name"] == "PLACEHOLDER_CRED_NaverApi"
+
+
+def test_wf_p01_dart_and_government_sources_remain_disabled():
+    """DART/정부보도자료는 이번 라운드 명시적 범위 밖 — 계속 비활성 상태여야 한다."""
+    data = _load("WF-P01-master-pipeline.json")
+    public_source_node = next(
+        n for n in data["nodes"] if "Public Source" in n["name"]
+    )
+    assert public_source_node.get("disabled") is True
+
+
+def test_wf_p01_drive_upload_nodes_remain_disabled():
+    data = _load("WF-P01-master-pipeline.json")
+    drive_nodes = [n for n in data["nodes"] if n["type"] == "n8n-nodes-base.googleDrive"]
+    assert len(drive_nodes) == 2
+    assert all(n.get("disabled") is True for n in drive_nodes)
+
+
+def test_wf_p01_all_node_names_and_ids_are_unique():
+    data = _load("WF-P01-master-pipeline.json")
+    names = [n["name"] for n in data["nodes"]]
+    ids = [n["id"] for n in data["nodes"]]
+    assert len(names) == len(set(names))
+    assert len(ids) == len(set(ids))
+
+
+def test_wf_p01_connections_reference_only_existing_nodes():
+    data = _load("WF-P01-master-pipeline.json")
+    names = {n["name"] for n in data["nodes"]}
+    for src, spec in data["connections"].items():
+        assert src in names, f"connections에 존재하지 않는 노드 참조: {src}"
+        for output in spec["main"]:
+            for conn in output:
+                assert conn["node"] in names, f"connections에 존재하지 않는 노드 참조: {conn['node']}"

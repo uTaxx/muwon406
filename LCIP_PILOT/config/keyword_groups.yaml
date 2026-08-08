@@ -1,0 +1,44 @@
+# LCIP Pilot — Keyword Groups (뉴스 수집 실체화 라운드, 2026-08-08 신설)
+#
+# Google Sheets KEYWORD_GROUPS 탭(schemas/google_sheets_columns.json)이 준비되기 전까지
+# 이 파일이 1차 진실 공급원이다 — GOOGLE_SHEETS_MASTER_SPREADSHEET_ID가 준비되면
+# scripts/keyword_groups.py의 source="google_sheets" 모드로 그대로 이관되는 동일 컬럼
+# 구조를 쓴다(group_id/topic_id/group_name/include_keywords/exclude_keywords/
+# ai_instructions/sources/enabled).
+#
+# GRP-0001은 config/topics.yaml TOP-0001의 기존 include_keywords/exclude_keywords를
+# 그대로 옮긴 것이다 — 새 키워드를 임의로 만들지 않았다. 그룹을 더 나누거나 키워드/
+# AI 지침을 다듬는 것은 Sheets가 준비된 뒤 사용자가 직접 한다(운영 데이터가 쌓이기
+# 전이라 Pilot 시작 시점의 단일 그룹 초안이다).
+
+keyword_groups:
+  - group_id: GRP-0001
+    topic_id: TOP-0001
+    group_name: 실리코시스·엔지니어드스톤 소송·규제
+    include_keywords:
+      - silicosis
+      - engineered stone
+      - artificial stone
+      - quartz countertop
+      - respirable crystalline silica
+      - silica lawsuit
+      - silica litigation
+      - engineered stone safeguard
+      - artificial stone safeguard
+      - quartz surface safeguard
+      - engineered stone tariffs
+      - 규폐증
+      - 엔지니어드스톤
+      - 인조대리석
+    exclude_keywords:
+      - sports
+      - unrelated natural stone
+    ai_instructions: >
+      LX하우시스 관점에서 판단한다. 신규 소송 제기, 신규 배상 판결/합의, 신규
+      규제·입법 통과, 생산/판매 중단 조치는 knowledge/STRATEGY_PLAYBOOK.md §2
+      기준 "긴급"으로 분류한다. 소송 진행 상황 업데이트, 규제 초안/공청회,
+      경쟁사(KCC/한샘/Caesarstone/Cosentino 등) 유사 이슈는 "중요"로 분류한다.
+      일반 산업 동향/학술 보도는 "참고"로만 분류하고 알림 대상에 포함하지 않는다.
+      원문에 없는 배상액/원고 수를 추정하지 않는다.
+    sources: [SRC-0001, SRC-0002, SRC-0003]
+    enabled: true

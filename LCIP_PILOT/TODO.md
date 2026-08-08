@@ -461,14 +461,18 @@ Round 13 지시: "LCIP는 설계 단계를 종료하고 RC2(실체화 단계)로
       삭제 없음). 실제 n8n 인스턴스 미검증 상태임을 코드에 명시.
 - [x] **Gmail/Telegram 실체화** — `notifiers.py`의 실제 발송 경로 완성(2중 안전장치
       유지).
-- [ ] **DART/Naver Adapter** — 보류. 회사명→corp_code 매핑 등 추가 설계 결정이
-      필요해 "Credential만 있으면 되는" 나머지 항목과 분리했다.
+- [x] **Naver Adapter** — 뉴스 수집 실체화 라운드(2026-08-08)에서 실제 구현 완료
+      (`scripts/adapters/naver_news_adapter.py`). 더 이상 stub 아님.
+- [ ] **DART Adapter** — 계속 보류. "기업명→corp_code 조회"는 "뉴스 키워드 검색"과
+      성격이 달라 별도 설계 결정이 필요하다(이번 라운드에서도 사용자가 범위 제외
+      확정).
 - [ ] **RC2 실제 연결 시작** — 사용자가 Credential을 준비해 알려주면 순서대로
       Feature Flag를 켜고 검증한다(`docs/RC2_CONNECTION_CHECKLIST.md` §2).
 
 ## 이번 라운드(Architect Review Round 13 반영)에서 알려진 한계
 
-- DART/Naver는 Credential이 있어도 아직 동작하지 않는다(어댑터 코드 자체가 stub).
+- DART는 Credential이 있어도 아직 동작하지 않는다(어댑터 코드 자체가 stub, Naver는
+  뉴스 수집 실체화 라운드에서 실제 구현 완료됨).
 - n8n 배포 코드는 실제 n8n 인스턴스로 검증되지 않았다 — `tags` 필드 등 세부 계약은
   Credential 준비 후 1회 실행으로 재확인이 필요하다.
 - Google Drive는 여전히 `feature_flags.yaml` 전용 스위치가 없다(Round 12부터 알려진
@@ -485,3 +489,18 @@ Dashboard는 정적 HTML(볼 수만 있음)이고 "실행" 카드는 클릭형 �
 재개)를 제시했고, **"지금은 CLI로 유지"**를 선택했다 — 새 서버/백엔드/자연어
 관리자 기능을 추가하지 않는다. 이 결정은 Round 11 설계를 재확인한 것뿐이며 코드
 변경은 없다. 향후 이 방향을 바꾸려면 별도의 명시적 승인이 필요하다.
+
+## 뉴스 수집 실체화 완료 후 다음 우선순위 (2026-08-08)
+
+- [ ] **N8N_BASE_URL 확보** — 실제 n8n Cloud 배포(`scripts/n8n_deploy.py --apply`)의
+      유일한 남은 Blocker. 확보되면 WF-P01(이번에 네이티브 재구현 완료)을 실제
+      배포하고 1회 실행으로 JS 로직을 검증한다(TD-008 해소).
+- [ ] **GOOGLE_SHEETS_MASTER_SPREADSHEET_ID 확보** — KEYWORD_GROUPS 탭 등 실제
+      Sheets 연동에 필요. 확보되면 `create_google_sheets.py --apply`로 탭 생성 후
+      `config/keyword_groups.yaml`의 내용을 Sheets로 옮긴다.
+- [ ] **Keyword Group 실제 운영** — 현재는 TOP-0001 키워드를 그대로 옮긴 GRP-0001
+      하나뿐이다. 실제 Sheets가 준비되면 사용자가 그룹을 세분화하고 그룹별
+      `ai_instructions`를 다듬는다(Claude가 임의로 새 그룹을 만들지 않는다).
+- [ ] **정부보도자료/DART 소스 확장 여부 재논의** — 이번 라운드에서 명시적으로
+      제외됐다. OSHA 보도자료 RSS(`osha.gov/news/newsreleases.xml`) 등 후보는
+      찾아뒀으나 사용자 결정 대기.

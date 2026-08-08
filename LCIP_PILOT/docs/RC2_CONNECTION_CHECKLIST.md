@@ -85,9 +85,10 @@ Secret 값은 이 문서(또는 어떤 Markdown/코드/Git)에도 절대 기록�
 | 9 | n8n API Key | 준비됨 | RC2 5단계 | 필수(자동배포 시) | `N8N_API_KEY` | 예 | 아니오 |
 | 10 | Gmail Credential | 미준비 | RC2 6단계 | 선택(이메일 발송 시) | `GMAIL_SENDER_ADDRESS`/`GMAIL_OAUTH_CLIENT_ID`/`GMAIL_OAUTH_CLIENT_SECRET`/`GMAIL_OAUTH_TOKEN_PATH` | 예(Client Secret/Token) | 아니오 |
 | 11 | Telegram Bot Token / Chat ID | 준비됨(LX그룹 봇) | RC2 7단계 | 선택(Telegram 발송 시) | `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` | Bot Token은 예, Chat ID는 아니오 | Chat ID만 예, Token은 아니오 |
-| 12 | Naver API Client ID/Secret | 준비됨(Credential만 — 코드는 아직 stub) | RC2 8단계(마지막) | 선택(국내 뉴스 확장 시) | `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET` | 예 | 아니오 |
+| 12 | Naver API Client ID/Secret | 준비됨 — 코드도 실제 구현 완료(뉴스 수집 실체화 라운드, 2026-08-08) | RC2 8단계 | 선택(국내 뉴스 확장 시) | `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET` | 예 | 아니오 |
+| 13(신규) | Google Sheets Master Spreadsheet ID (KEYWORD_GROUPS 탭용) | 미준비 — #5와 동일 항목(같은 Spreadsheet 안의 새 탭) | RC2 2단계 | 필수(그룹/키워드/AI지침 실제 편집 시) | `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID` | 아니오(식별자) | 예 |
 
-(참고) `KRX_API_KEY`는 위 12개 우선순위 항목에 포함되지 않는다 — 사용자가 제공한
+(참고) `KRX_API_KEY`는 위 우선순위 항목에 포함되지 않는다 — 사용자가 제공한
 Credential Sheet에 있어 `.env`에 값만 보관했을 뿐, `config/sources.yaml`
 SRC-0005용 어댑터 자체가 아직 없다(Vision Backlog 아님, 단순 미착수).
 
@@ -96,11 +97,11 @@ Google Drive Sheet "Activate" 탭에서 제공한 값을 `.env`에 반영한 결
 **코드 준비 상태는 별개다**: Round 13(RC2 실체화)이 #1(Claude API)/#3~5(Drive/
 Sheets)/#8~9(n8n)/#10(Gmail)/#11(Telegram)의 실제 호출 코드를 전부 완성했다 —
 Credential만 채워지면 즉시 동작한다(단, #1은 아래 #2 모델 ID 확정 전까지는
-`claude_api_enabled` Flag를 켜도 Provider가 여전히 비활성 상태다). #7(DART)/
-#12(Naver)는 코드 자체가 아직 stub(`scripts/adapters/future_adapters.py`)이라
-Credential이 갖춰져도 추가 구현이 먼저 필요하다(§4 Vision Backlog 아님 — RC2
-우선순위에는 포함되지만 DART는 회사명→corp_code 매핑이라는 별도 설계 결정이
-선행돼야 해서 이번 Round는 보류했다).
+`claude_api_enabled` Flag를 켜도 Provider가 여전히 비활성 상태다). 뉴스 수집
+실체화 라운드(2026-08-08)에서 **#12(Naver) 어댑터도 실제 구현을 완료**했다
+(`scripts/adapters/naver_news_adapter.py`) — 더 이상 stub이 아니다. #7(DART)만
+"기업명→corp_code 매핑"이라는 별도 설계 결정이 필요해 계속 보류한다(§4 Vision
+Backlog 아님).
 
 ## 2. RC2 연결 우선순위 (Architect 지정 순서)
 
@@ -116,7 +117,7 @@ Round 12 지시대로 아래 8단계 순서를 Connection Test Plan의 기준으
 | 5 | n8n API | 해당 없음(n8n 자체 활성화) | #8, #9 |
 | 6 | Gmail | `notification_send_enabled` | #10 |
 | 7 | Telegram | `notification_send_enabled` | #11 |
-| 8 | Naver News | `real_network_calls` (어댑터 자체가 아직 stub — 구현이 선행) | #12 |
+| 8 | Naver News | `real_network_calls` (어댑터 실제 구현 완료, 2026-08-08 — Credential+Flag만 있으면 즉시 동작) | #12 |
 
 각 단계 전환 후 확인 방법(스키마 통과 여부, 비용 확인 등)은 `docs/
 CONNECTION_READINESS.md` §5의 기존 확인 방법을 그대로 따른다 — 순서만 이 표로

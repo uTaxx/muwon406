@@ -6,7 +6,7 @@
   "type": "object",
   "required": [
     "intelligence_id", "article_ids", "mission_category", "intelligence_categories",
-    "fact_summary", "verified_facts",
+    "fact_summary", "verified_facts", "importance_level",
     "ai_interpretation", "ai_inference", "lx_impact", "recommended_actions",
     "unknowns", "confidence_score", "evidence", "created_at", "prompt_version",
     "knowledge_version"
@@ -55,6 +55,11 @@
       "description": "knowledge/INTELLIGENCE_TAXONOMY.md의 19개 도메인 카테고리 중 해당하는 전부. AI는 모든 기사를 이 Taxonomy에 매핑해야 한다."
     },
     "fact_summary": { "type": "string", "minLength": 1 },
+    "importance_level": {
+      "type": "string",
+      "enum": ["긴급", "중요", "참고"],
+      "description": "뉴스 수집 실체화 라운드(2026-08-08) 신설. knowledge/STRATEGY_PLAYBOOK.md §2 기준을 그대로 승격 — risk_analysis_output의 importance_level을 그대로 옮긴다(scripts/pipeline/generate_intelligence.py). 긴급/중요만 알림 발송 대상."
+    },
     "verified_facts": {
       "type": "array",
       "items": { "type": "string" },

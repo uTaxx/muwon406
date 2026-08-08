@@ -9,8 +9,11 @@ def analyze_risk(
     article: dict,
     lx_context_excerpt: str,
     existing_timeline_excerpt: str,
+    group_ai_instructions: str = "",
 ) -> ProviderResult:
-    return provider.analyze_risk(article, lx_context_excerpt, existing_timeline_excerpt)
+    return provider.analyze_risk(
+        article, lx_context_excerpt, existing_timeline_excerpt, group_ai_instructions
+    )
 
 
 def analyze_policy_impact(

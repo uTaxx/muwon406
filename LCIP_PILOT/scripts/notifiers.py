@@ -178,3 +178,13 @@ def build_alert_message(article: dict, intelligence: dict) -> tuple[str, str]:
         f"신뢰도: {intelligence.get('confidence_score', '')}",
     ]
     return subject, "\n".join(lines)
+
+
+def build_digest_message(records: list[tuple[dict, dict]]) -> tuple[str, str]:
+    """뉴스 수집 실체화 라운드(2026-08-08) 신설 — 한 번의 배치 실행에서 나온 여러
+    (article, intelligence) 쌍을 하나의 다이제스트 제목/본문으로 합친다.
+    `scripts/pipeline/build_digest.py`의 얇은 wrapper다(새 Notifier 클래스 없음,
+    `EmailNotifier`/`TelegramNotifier`가 그대로 이 결과를 `send()`한다)."""
+    from pipeline.build_digest import build_digest_body, build_digest_subject
+
+    return build_digest_subject(records), build_digest_body(records)

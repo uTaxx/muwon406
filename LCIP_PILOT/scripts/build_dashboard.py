@@ -62,6 +62,10 @@ def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[s
             data.get("reference_library_rows") or [],
             "등록된 Reference 없음 — reference_library/inbox/에 자료를 추가하면 여기 표시된다",
         ),
+        "{{HOME_KEYWORD_GROUPS_HTML}}": render_generic_list(
+            data.get("keyword_groups_summary") or [],
+            "등록된 Keyword Group 없음",
+        ),
     }
     for widget in widgets:
         tokens[f"{{{{{widget.token}}}}}"] = widget.render(data)

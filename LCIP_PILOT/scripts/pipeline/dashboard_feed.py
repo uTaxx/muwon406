@@ -108,6 +108,15 @@ def _news_row(article: dict) -> dict:
     }
 
 
+def _keyword_group_row(group: dict) -> dict:
+    return {
+        "그룹명": group.get("group_name") or "-",
+        "포함 키워드 수": len(group.get("include_keywords") or []),
+        "소스": ", ".join(group.get("sources") or []) or "-",
+        "상태": "활성" if group.get("enabled") else "비활성",
+    }
+
+
 def _reference_library_row(summary: dict) -> list[dict]:
     if not summary or not summary.get("total"):
         return []
@@ -131,6 +140,7 @@ def build_dashboard_data(
     company_scans: list[dict] | None = None,
     sources: list[dict] | None = None,
     reference_library_summary: dict | None = None,
+    keyword_groups: list[dict] | None = None,
 ) -> dict:
     """articles/intelligences/company_scans(Store 단계에서 읽어온 레코드 목록)와
     sources(Source Registry)를 Executive Dashboard 6개 Widget 입력 shape으로 변환한다.
@@ -143,9 +153,15 @@ def build_dashboard_data(
 
     `reference_library_summary`는 Round 12 TASK 2가 추가한 `reference_library.
     reference_library_summary()`의 원시 집계 결과다(선택 인자, 미전달 시 빈 카드).
+
+    `keyword_groups`는 뉴스 수집 실체화 라운드(2026-08-08)가 추가한
+    `scripts/keyword_groups.py::load_keyword_groups()`의 결과다(선택 인자, 미전달 시
+    빈 카드) — Home Dashboard "뉴스 수집 설정 현황" 카드는 조회 전용이며, 실제 수정은
+    Google Sheets(KEYWORD_GROUPS 탭)에서 한다.
     """
     company_scans = company_scans or []
     sources = sources or []
+    keyword_groups = keyword_groups or []
 
     today_intelligence = _most_recent([_intelligence_row(i) for i in intelligences])
     critical_risk = _most_recent([
@@ -175,4 +191,5 @@ def build_dashboard_data(
         "source_health": [_source_health_row(s) for s in sources],
         "recent_news": _most_recent([_news_row(a) for a in articles]),
         "reference_library_rows": _reference_library_row(reference_library_summary or {}),
+        "keyword_groups_summary": [_keyword_group_row(g) for g in keyword_groups],
     }

@@ -63,14 +63,21 @@ class ClaudeProvider(AIProvider):
         return self._call_anthropic(model, messages, "relevance_output")
 
     def analyze_risk(
-        self, article: dict, lx_context_excerpt: str, existing_timeline_excerpt: str
+        self,
+        article: dict,
+        lx_context_excerpt: str,
+        existing_timeline_excerpt: str,
+        group_ai_instructions: str = "",
     ) -> ProviderResult:
         self._require_enabled()
         model = claude_client.get_model_name("deep_analysis")
         builder = PromptBuilder(PromptTemplate("risk_analysis"), cache=self._prompt_cache)
         source_block = self._build_source_block(article)
+        dynamic_payload = {"article": article}
+        if group_ai_instructions.strip():
+            dynamic_payload["group_ai_instructions"] = group_ai_instructions
         messages = builder.build(
-            {"article": article},
+            dynamic_payload,
             knowledge_block=lx_context_excerpt,
             source_block=source_block,
             context_block=existing_timeline_excerpt,

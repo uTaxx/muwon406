@@ -77,9 +77,11 @@ sources:
     rate_limit: "25,000 calls/day (뉴스 검색 API, 앱당 무료 티어 기준)"
     estimated_update_delay: "공식 SLA 없음 — 네이버 뉴스 색인 반영 주기에 의존(공식 문서 미확인)"
     typical_reliability: "중간 — 국내 주요 언론사 기사를 API로 제공하지만 검색 정확도는 키워드 매칭에 의존한다"
-    historical_stability: "Pilot 자체 연동 이력 없음(active: false, API Key 미발급)"
-    # Naver API Key 준비 여부는 TASK-006/008 진행 전 사용자에게 확인해야 하는 항목
-    active: false
+    historical_stability: "Pilot 자체 연동 이력 없음(뉴스 수집 실체화 라운드,
+      2026-08-08에 어댑터는 실제 구현됐으나 feature_flags.real_network_calls가
+      아직 false라 실제 호출은 없었다)"
+    # NAVER_CLIENT_ID/NAVER_CLIENT_SECRET는 .env에 준비됨 (scripts/adapters/naver_news_adapter.py)
+    active: true
 
   - source_id: SRC-0004
     source_name: DART 공시 (전자공시시스템)

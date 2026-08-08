@@ -25,3 +25,22 @@ def passes_rule_filter(article: dict, topic: dict) -> bool:
         return True
 
     return any(kw in title for kw in include_keywords)
+
+
+def passes_rule_filter_group(article: dict, group: dict) -> bool:
+    """단일 Keyword Group(scripts/keyword_groups.py) 기준 판정 — `passes_rule_filter()`와
+    동일한 판정 로직을 그룹의 include_keywords/exclude_keywords에 적용한 것이다."""
+    return passes_rule_filter(article, group)
+
+
+def passes_rule_filter_groups(article: dict, groups: list[dict]) -> list[str]:
+    """뉴스 수집 실체화 라운드(2026-08-08) 신설 — 키워드가 그룹으로 나뉘어 있을 때
+    기사가 매칭되는 모든 group_id를 반환한다(하나도 없으면 빈 리스트, 즉 탈락).
+
+    `enabled=False`인 그룹은 매칭 대상에서 제외한다(사용자가 잠시 꺼둔 그룹).
+    """
+    return [
+        group["group_id"]
+        for group in groups
+        if group.get("enabled", True) and passes_rule_filter_group(article, group)
+    ]
