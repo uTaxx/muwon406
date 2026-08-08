@@ -316,6 +316,27 @@ def test_claude_provider_real_call_executes_when_both_gates_true(monkeypatch):
     assert fake_client.messages.calls[0]["messages"][0]["role"] == "user"
 
 
+def test_claude_provider_real_call_strips_markdown_json_fence(monkeypatch):
+    """Round 13 이어서(2026-08-08) 최초 실제 연결 검증에서 발견한 실측 버그: 프롬프트가
+    "JSON만" 출력하라고 지시해도 Haiku 4.5가 실제로 ```json ... ``` 코드펜스로 감싸
+    응답하는 경우가 있었다 — 감싸여 있어도 파싱에 성공해야 한다."""
+    import anthropic
+    import providers.claude_provider as claude_provider_module
+
+    monkeypatch.setattr(claude_provider_module, "is_enabled", lambda flag_name: True)
+    monkeypatch.setenv("LCIP_CLASSIFICATION_MODEL", "test-model-id")
+
+    fenced_text = "```json\n" + json.dumps(_RELEVANCE_PAYLOAD, ensure_ascii=False) + "\n```"
+    fake_client = _FakeAnthropicClient(_FakeAnthropicResponse(fenced_text))
+    monkeypatch.setattr(anthropic, "Anthropic", lambda: fake_client)
+
+    provider = ClaudeProvider(enabled=True)
+    result = provider.classify_relevance(SILICA_ARTICLE, TOPIC)
+
+    assert result.ok is True
+    assert result.parsed_json["relevant"] is True
+
+
 def test_claude_provider_real_call_returns_not_ok_on_invalid_json(monkeypatch):
     import anthropic
     import providers.claude_provider as claude_provider_module

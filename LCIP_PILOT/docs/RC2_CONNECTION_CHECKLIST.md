@@ -10,8 +10,13 @@ Architect Review Round 12 TASK 3. RC1이 공식 승인되고 동결(Frozen)된 �
 
 **이 문서를 읽거나 채워도 실제 외부 API 호출은 발생하지 않는다.** `config/
 feature_flags.yaml`의 4개 스위치가 전부 `false`인 한 Pilot은 계속 Mock/dry-run으로
-동작한다. 실제 연결은 사용자가 "Credential 준비 완료"를 알려준 다음 Round에서만
-시작한다.
+동작한다.
+
+**갱신(Round 13 이어서, 2026-08-08)**: Claude API(#1)는 사용자 승인으로
+`scripts/verify_claude_connection.py`를 통해 1회 실제 연결 검증을 마쳤다 —
+연결/인증/모델 호출 전부 정상 확인, 검증 후 Flag는 다시 `false`로 복원했다.
+나머지 3개 스위치(Google Sheets/Notification/전체 real_network_calls)와
+`claude_api_enabled`를 상시 켜 둘지는 여전히 사용자 승인 대기 상태다.
 
 ---
 

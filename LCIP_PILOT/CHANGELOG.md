@@ -90,6 +90,41 @@ ChatGPT Architect Review Round 13 승인 및 반영. "LCIP는 설계 단계를 �
   전부 `false`로 유지되어 있고, 이를 켤지는 이번 Round의 다음 Priority 1
   질문으로 남겼다(실제 비용이 발생하는 결정이라 자동 진행 대상이 아니다).
 
+### Added — Round 13 이어서: Claude API 최초 실제 연결 검증 (2026-08-08)
+
+사용자가 Priority 1 질문에 "Claude API만 켜서 최소 비용으로 연결 검증"으로
+답해, LCIP Pilot 역사상 처음으로 실제 Anthropic API를 호출했다.
+
+- **`scripts/verify_claude_connection.py` 신설**: `config/feature_flags.yaml`의
+  `claude_api_enabled`를 잠깐 `true`로 전환한 상태에서 classification tier
+  (가장 저렴한 모델)로 1회만 실제 호출해 연결을 확인하는 CLI. 새 Provider/
+  Pipeline을 만들지 않고 기존 `providers.factory.get_default_provider()` +
+  `ClaudeProvider.classify_relevance()`를 그대로 재사용한다. API Key 등 Secret
+  값은 어디에도 출력하지 않고 모델명/토큰 사용량/추정 비용만 표시한다.
+- **실제 버그 발견 및 수정**: 실제 호출 결과, Haiku 4.5가 프롬프트의 "JSON만
+  출력하라"는 지시에도 불구하고 응답을 마크다운 JSON 코드펜스(백틱 3개 + json)로
+  감싸는 경우가 있음을 확인했다 — `ClaudeProvider._call_anthropic()`이 이를
+  처리하지 못해 `json.loads()`가 항상 실패하던 실제 버그였다(Round 6부터
+  존재했으나 실제 API를 호출한 적이 없어 발견되지 못했다). `_strip_markdown_
+  json_fence()`를 추가해 1차 파싱 실패 시 코드펜스를 벗기고 재시도하도록
+  고쳤다. 회귀 테스트(`test_claude_provider_real_call_strips_markdown_json_
+  fence`) 추가.
+- **검증 결과**: 연결/인증/모델 호출/토큰 계산까지 전부 정상 동작을 확인했다
+  (실제 비용 합계 $0.01 미만). 다만 검증에 사용한 실리코시스 기사 샘플에서
+  Haiku가 `intelligence_categories`에 스키마 enum에 없는 `occupational_
+  health_safety`를 반복적으로 반환해 스키마 검증에서 막히는 것도 확인했다 —
+  연결 자체는 정상이며 안전장치(스키마 검증)가 의도대로 작동한 것이다. 다만
+  이는 LCIP의 핵심 리스크 축인 "산업안전"이 `knowledge/INTELLIGENCE_
+  TAXONOMY.md`의 19개 카테고리 enum에 정확히 대응하는 값이 없다는 실제 데이터
+  품질 이슈를 시사한다 — 이번 Round 범위 밖이라 고치지 않고 다음 Round 후보로
+  기록만 한다(Vision Backlog 아님, Taxonomy 조정 필요 항목).
+- **검증 후 안전 기본값 복원**: 확인이 끝난 뒤 `claude_api_enabled`를 다시
+  `false`로 되돌렸다 — 이번 승인은 "1회 연결 검증"이지 "Scenario 등 자동
+  파이프라인이 상시 실제 비용을 발생시키기 시작"하는 승인이 아니었기 때문이다
+  (이 상태 변경으로 8개 테스트가 일시적으로 깨졌다가, 원복 후 다시 전부 통과).
+  Flag를 계속 켜 둘지는 별도 결정 사항으로 남겼다.
+- 전체 테스트 449개(Round 13 모델 티어 반영) → 450개(+1), 전부 PASS.
+
 ### Added — Architect Review Round 12 "RC1 승인 + RC2 준비" 반영 (2026-08-08, 12차)
 
 ChatGPT Architect Review Round 12 승인 및 반영. "Round 11 결과를 승인한다. LCIP

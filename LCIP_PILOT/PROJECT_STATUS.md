@@ -23,8 +23,21 @@ n8n 워크플로우 배포, Gmail/Telegram 실제 발송. Credential만 입력�
 `.env`(Git 미포함)에 Anthropic/Google OAuth/n8n API Key/Telegram/DART/Naver
 6개 항목을 반영했고(값은 어디에도 노출하지 않음), Claude 모델 3개 티어는
 WHY/WHAT/HOW 질문에 사용자가 "분류=Haiku, 심층분석/미래준비=Sonnet"으로 답해
-`config/model_registry.yaml`/`.env`에 반영했다. `feature_flags.yaml`(실제 호출
-스위치)은 아직 전부 `false`다 — 켤지 여부는 다음 Priority 1 질문이다.
+`config/model_registry.yaml`/`.env`에 반영했다.
+
+## Round 13 이어서: Claude API 최초 실제 연결 검증
+
+Priority 1 질문("Flag를 지금 켤까?")에 사용자가 "Claude API만 켜서 최소 비용
+검증"으로 답해, LCIP 역사상 최초로 실제 Anthropic API를 호출했다(`scripts/
+verify_claude_connection.py`). 연결·인증·모델 호출은 전부 정상 확인(비용
+$0.01 미만). 이 과정에서 Haiku 4.5가 응답을 마크다운 JSON 코드펜스로 감싸는
+경우 파싱이 항상 실패하던 실제 버그를 발견해 수정했다(`ClaudeProvider.
+_call_anthropic`). 검증 후에는 `feature_flags.yaml`의 `claude_api_enabled`를
+다시 `false`로 되돌렸다 — "1회 검증"과 "Scenario가 상시 실제 비용을 발생시키는
+전환"은 별개의 결정이라고 판단했다. Flag를 계속 켜 둘지는 다음 Priority 1
+질문으로 남겼다. 또한 검증 중 `intelligence_categories` enum에 "산업안전"에
+정확히 대응하는 값이 없다는 Taxonomy 데이터 품질 이슈를 발견했다(범위 밖이라
+이번 Round에서는 고치지 않음, 다음 Round 후보로 기록).
 
 ## Round 13 실체화 처리 결과
 

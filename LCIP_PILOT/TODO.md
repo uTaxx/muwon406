@@ -34,6 +34,17 @@ TASK-009~017의 구조/테스트는 Mock 기반으로 이미 완료됐다 — �
       → `config/model_pricing.yaml`의 placeholder 단가도 실제 값으로 함께 갱신 완료
 - [x] Google OAuth 방식 선택: Desktop OAuth — Round 13 이어서 사용자가 제공한 Credential이
       Desktop OAuth Client ID/Secret 형식이라 확정, `.env`에 반영 완료
+- [x] Claude API 최초 실제 연결 검증 — `scripts/verify_claude_connection.py`로 1회
+      실행, 연결/인증/모델 호출/토큰 계산 전부 확인(비용 $0.01 미만). 검증 중
+      마크다운 JSON 코드펜스 파싱 버그를 발견해 수정(`ClaudeProvider._call_anthropic`).
+      검증 후 `feature_flags.yaml`의 `claude_api_enabled`는 다시 `false`로 복원했다.
+- [ ] **다음 Priority 1**: `claude_api_enabled`를 계속 켜 둘지(Scenario 등 자동
+      파이프라인이 상시 실제 비용 발생 시작) 결정 — 실제 비용 결정이라 자동 진행
+      대상 아님
+- [ ] (참고, 이번 Round 범위 밖) `knowledge/INTELLIGENCE_TAXONOMY.md`의 19개
+      `intelligence_categories`에 "산업안전"에 정확히 대응하는 값이 없어, Haiku가
+      실제로 반환한 `occupational_health_safety`가 스키마 enum 검증에서 계속 막힘 —
+      Taxonomy 조정이 필요한지 검토 필요(다음 Round 후보)
 - [ ] 기존 Google Drive Root Folder ID 존재 여부 확인 → 있다면 `.env`의
       `GOOGLE_DRIVE_ROOT_FOLDER_ID`에 입력
 - [ ] 기존 Master Spreadsheet ID 존재 여부 확인 → 있다면 `.env`의

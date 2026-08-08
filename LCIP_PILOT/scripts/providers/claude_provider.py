@@ -17,6 +17,7 @@ Round 5부터 메시지 조립은 `claude_client.build_cached_messages()` 대신
 from __future__ import annotations
 
 import json
+import re
 
 import claude_client
 from _common import load_yaml, project_root
@@ -29,6 +30,16 @@ from source_priority import score_for_source_type
 from .base import AIProvider, ProviderResult, ProviderUsage
 
 SCHEMAS_DIR = project_root() / "schemas"
+
+_MARKDOWN_JSON_FENCE = re.compile(r"^```(?:json)?\s*\n(.*)\n```$", re.DOTALL)
+
+
+def _strip_markdown_json_fence(text: str) -> str:
+    """Round 13 이어서(2026-08-08) 실제 Claude API 최초 연결 검증에서 발견한 버그 수정:
+    프롬프트가 "JSON만" 출력하라고 지시해도 모델이 ```json ... ``` 코드펜스로 감싸
+    응답하는 경우가 실제로 있다(Haiku 4.5 실측). 감싸여 있으면 안쪽 JSON만 꺼낸다."""
+    match = _MARKDOWN_JSON_FENCE.match(text.strip())
+    return match.group(1) if match else text
 
 
 class ClaudeProviderDisabledError(RuntimeError):
@@ -156,7 +167,10 @@ class ClaudeProvider(AIProvider):
             model=model,
         )
         try:
-            parsed_json = json.loads(raw_text)
+            try:
+                parsed_json = json.loads(raw_text)
+            except json.JSONDecodeError:
+                parsed_json = json.loads(_strip_markdown_json_fence(raw_text))
             self.validate_output(parsed_json, schema_def)
         except (json.JSONDecodeError, ValidationError) as exc:
             return ProviderResult(
