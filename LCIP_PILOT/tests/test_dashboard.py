@@ -37,6 +37,33 @@ def test_build_html_contains_home_section_with_five_required_items():
     assert "{{" not in html, "치환되지 않은 HOME_* 토큰이 남아있음"
 
 
+def test_build_html_home_section_includes_reference_library_card():
+    """Round 12 TASK 2: Home Dashboard에 새 Widget 없이 Reference Library 현황
+    섹션이 6번째 카드로 추가되어야 한다."""
+    data = json.loads((ROOT / "dashboard" / "sample_data.json").read_text(encoding="utf-8"))
+    html = build_dashboard.build_html(data)
+
+    assert "Reference Library — AI 참고자료" in html
+    assert "등록 자료 수" in html
+    assert "{{" not in html
+
+
+def test_build_html_reference_library_card_falls_back_when_empty():
+    data = {
+        "topic_display_name": "테스트",
+        "generated_at_kst": "2026-08-05 09:00",
+        "today_intelligence": [],
+        "critical_risk": [],
+        "future_opportunity": [],
+        "quick_company_scan": [],
+        "investment_review": [],
+        "source_health": [],
+    }
+    html = build_dashboard.build_html(data)
+    assert "등록된 Reference 없음" in html
+    assert "{{" not in html
+
+
 def test_build_html_home_section_falls_back_when_recent_news_missing():
     data = {
         "topic_display_name": "테스트",

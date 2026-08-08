@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lcip-pilot.local/schemas/reference_metadata.schema.json",
+  "title": "ReferenceMetadata",
+  "description": "Architect Review Round 12 TASK 2(Reference Library MVP) 산출물 검증 스키마. 사용자가 reference_library/에 추가한 공개자료 1건의 최소 Metadata다. Knowledge Engine을 대체하지 않는다 — Embedding/Vector DB 없이, 파일 시스템 위치(inbox/active/archive)와 이 Metadata만으로 최소 관리 기능을 제공한다.",
+  "type": "object",
+  "required": [
+    "reference_id", "title", "document_type", "source_type", "added_at",
+    "official_source", "reliability_grade", "status"
+  ],
+  "properties": {
+    "reference_id": { "type": "string", "pattern": "^REF-[0-9]{4,}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "company": {
+      "type": ["string", "null"],
+      "description": "config/company_registry.yaml의 company_id. 미확인이면 null(임의 추정 금지)."
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "official_website", "annual_report", "sustainability_report", "ir_material",
+        "company_brochure", "disclosure", "government", "research_report",
+        "press_release", "other"
+      ]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "government_disclosure", "official_company", "corporate_ir", "official_website",
+        "press", "research", "user_upload"
+      ],
+      "description": "Round 12 Source Priority 순서(공식 공시/정부 > 공식 기업자료 > 기업 IR > 공식 홈페이지 > 언론 > Research > User Upload)의 출처 계열."
+    },
+    "source_url": { "type": ["string", "null"] },
+    "file_path": {
+      "type": ["string", "null"],
+      "description": "project root 기준 상대경로. URL Registry 항목(파일 없이 URL만 등록)은 null."
+    },
+    "published_date": { "type": ["string", "null"], "format": "date" },
+    "added_at": { "type": "string", "format": "date-time" },
+    "official_source": {
+      "type": "boolean",
+      "description": "User Upload라도 공식 원자료 파일이면 true — 원 출처의 신뢰등급을 따른다(Round 12 지시)."
+    },
+    "reliability_grade": {
+      "type": "string",
+      "enum": ["A", "B", "C"],
+      "description": "knowledge/SOURCE_PRIORITY.md의 기존 A/B/C 등급 축을 그대로 재사용한다(새 척도 신설 아님)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["unclassified", "active", "archived"],
+      "description": "파일이 실제로 위치한 폴더(inbox/active/archive)로부터 자동 도출된다."
+    },
+    "latest_version": { "type": "boolean" },
+    "applicable_services": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["quick_company_scan", "investment_review", "news_intelligence"]
+      }
+    },
+    "last_verified": { "type": ["string", "null"], "format": "date" },
+    "parseable": {
+      "type": "boolean",
+      "description": "Markdown/TXT만 true — PDF/DOCX/XLSX/PPTX는 이번 Round에서 텍스트를 파싱하지 않는다(정직하게 false, '등록됨 / Parsing 미지원')."
+    }
+  },
+  "additionalProperties": false
+}

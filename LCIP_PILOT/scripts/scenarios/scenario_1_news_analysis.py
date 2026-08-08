@@ -19,6 +19,11 @@ Round 9 지시("뉴스 1건→Rule Filter→AI 분석→Dashboard→Email Previe
 Pipeline으로"): Dashboard 다음 단계로 Email Preview를 추가했다. 새 Notifier 구조를
 만들지 않고 Round 4의 `EmailNotifier`+`build_alert_message()`를 그대로 재사용한다.
 
+Round 12 TASK 2(Reference Library) — Knowledge Retrieval 다음 단계로 Topic의
+`related_lx_companies`(LX_HAUSYS) 기준 Reference Library `active/` 자료를 조회한다.
+News Intelligence는 Quick Company Scan과 달리 별도 Export 파일이 없어, "결과물에서
+어떤 Reference를 사용했는지 표시"를 터미널 로그로 정직하게 보여준다.
+
 사용법: python3 scripts/scenarios/scenario_1_news_analysis.py
 """
 from __future__ import annotations
@@ -47,6 +52,7 @@ from pipeline.normalize import normalize
 from pipeline.rule_filter import passes_rule_filter
 from pipeline.validate import validate_article, validate_claude_output, validate_intelligence
 from providers.factory import get_default_provider
+from reference_library import list_active_references_for_company
 from storage.local_jsonl_storage import LocalJSONLStorage
 
 FIXTURE_RSS = project_root() / "tests" / "fixtures" / "sample_google_news_rss.xml"
@@ -54,8 +60,9 @@ ARTICLE_DB, INTELLIGENCE_DB = "ARTICLE_DB", "INTELLIGENCE_DB"
 
 
 def run(verbose: bool = True) -> dict:
-    """Scenario 1을 실행하고 {article, intelligence, dashboard_path, email_preview}를
-    반환한다. `email_preview`는 `notifiers.NotifierResult`(dry-run, 실제 발송 아님)다."""
+    """Scenario 1을 실행하고 {article, intelligence, reference_entries, dashboard_path,
+    email_preview}를 반환한다. `email_preview`는 `notifiers.NotifierResult`(dry-run,
+    실제 발송 아님)다."""
 
     def log(msg: str) -> None:
         if verbose:
@@ -100,16 +107,29 @@ def run(verbose: bool = True) -> dict:
     validate_claude_output(classify_result.parsed_json, "relevance_output")
     log(f"  relevant={classify_result.parsed_json['relevant']}")
 
-    log("[3/7] Knowledge Retrieval")
+    log("[3/8] Knowledge Retrieval")
     lx_context_excerpt, knowledge_version = retrieve_context(topic["related_lx_companies"])
     log(f"  발췌 길이: {len(lx_context_excerpt)}자")
 
-    log("[4/7] Claude Analysis")
+    log("[4/8] Reference Library — 참조 근거 조회")
+    reference_entries = []
+    seen_reference_ids: set[str] = set()
+    for company_id in topic["related_lx_companies"]:
+        for entry in list_active_references_for_company(company_id):
+            if entry["reference_id"] not in seen_reference_ids:
+                reference_entries.append(entry)
+                seen_reference_ids.add(entry["reference_id"])
+    log(f"  {len(reference_entries)}건"
+        + ("" if reference_entries else " (등록된 Reference 없음 — 정직하게 빈 값)"))
+    for entry in reference_entries:
+        log(f"  - {entry['reference_id']}: {entry['title']} ({entry['reliability_grade']}등급)")
+
+    log("[5/8] Claude Analysis")
     analyze_result = analyze_risk(provider, article, lx_context_excerpt, "")
     validate_claude_output(analyze_result.parsed_json, "risk_analysis_output")
     log(f"  confidence={analyze_result.parsed_json['confidence']}")
 
-    log("[5/7] INTELLIGENCE_DB")
+    log("[6/8] INTELLIGENCE_DB")
     intelligence = build_intelligence_record(
         article_id=article["article_id"],
         risk_analysis=analyze_result.parsed_json,
@@ -123,7 +143,7 @@ def run(verbose: bool = True) -> dict:
     storage.append(INTELLIGENCE_DB, intelligence)
     log(f"  intelligence_id={intelligence['intelligence_id']}")
 
-    log("[6/7] Dashboard")
+    log("[7/8] Dashboard")
     data_provider = PipelineDashboardDataProvider(
         storage, topic_display_name=topic["display_name"],
         generated_at_kst=now.strftime("%Y-%m-%d %H:%M"),
@@ -133,7 +153,7 @@ def run(verbose: bool = True) -> dict:
     dashboard_path.write_text(html, encoding="utf-8")
     log(f"  {dashboard_path}")
 
-    log("[7/7] Email Preview (dry-run — 실제 발송 없음)")
+    log("[8/8] Email Preview (dry-run — 실제 발송 없음)")
     subject, body = build_alert_message(article, intelligence)
     email_preview = EmailNotifier().send(subject, body)
     log(f"  To: {email_preview.recipient}")
@@ -143,6 +163,7 @@ def run(verbose: bool = True) -> dict:
     return {
         "article": article,
         "intelligence": intelligence,
+        "reference_entries": reference_entries,
         "dashboard_path": str(dashboard_path),
         "email_preview": email_preview,
     }

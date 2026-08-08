@@ -8,7 +8,9 @@ Scenario는 독립 실행 가능해야 한다." 각 Scenario 모듈의 `run()`�
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
+import reference_library
 from scenarios import (
     scenario_1_news_analysis,
     scenario_2_quick_company_scan,
@@ -36,6 +38,40 @@ def test_scenario_1_includes_email_preview_step():
     assert result["article"]["title_original"] in preview.subject
 
 
+def test_scenario_1_returns_empty_reference_entries_when_none_registered():
+    result = scenario_1_news_analysis.run(verbose=False)
+    assert result["reference_entries"] == []
+
+
+def test_scenario_1_includes_registered_reference_for_related_company(tmp_path, monkeypatch):
+    """Round 12 TASK 2: Topic의 related_lx_companies(LX_HAUSYS) 기준으로 Reference
+    Library `active/` 자료를 조회해 반환해야 한다."""
+    monkeypatch.setattr(scenario_1_news_analysis, "project_root", lambda: tmp_path)
+    monkeypatch.setattr(reference_library, "project_root", lambda: tmp_path)
+
+    reference_library.ensure_directories()
+    reference_library.save_index([{
+        "reference_id": "REF-0001",
+        "title": "LX Hausys 사업보고서",
+        "company": "LX_HAUSYS",
+        "document_type": "annual_report",
+        "source_type": "official_company",
+        "source_url": None,
+        "file_path": None,
+        "published_date": "2024-03-01",
+        "added_at": "2026-08-01T00:00:00Z",
+        "official_source": True,
+        "reliability_grade": "A",
+        "status": "active",
+        "latest_version": True,
+        "applicable_services": [],
+        "last_verified": None,
+    }])
+
+    result = scenario_1_news_analysis.run(verbose=False)
+    assert [e["reference_id"] for e in result["reference_entries"]] == ["REF-0001"]
+
+
 def test_scenario_2_runs_independently_of_scenario_1():
     result = scenario_2_quick_company_scan.run("LX Hausys", verbose=False)
     assert result["company"].resolved is True
@@ -54,6 +90,59 @@ def test_scenario_2_includes_knowledge_retrieval_step():
 def test_scenario_2_handles_unregistered_company_honestly():
     result = scenario_2_quick_company_scan.run("존재하지않는가상회사12345", verbose=False)
     assert result["company"].resolved is False
+
+
+def test_scenario_2_returns_empty_reference_entries_when_none_registered():
+    """Round 12 TASK 2: Reference Library가 비어 있으면 정직하게 빈 목록을 반환한다."""
+    result = scenario_2_quick_company_scan.run("LX Hausys", verbose=False)
+    assert result["reference_entries"] == []
+
+
+def test_scenario_3_export_includes_registered_reference_citations(tmp_path, monkeypatch):
+    """Round 12 TASK 2 완료조건("결과물에서 어떤 Reference를 사용했는지 표시"): active/에
+    등록된 자료가 있으면 Markdown/Executive Report의 "참조 근거" 절과 COMPANY_SCAN_DB의
+    reference_ids_used에 반영돼야 한다."""
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+    monkeypatch.setattr(reference_library, "project_root", lambda: tmp_path)
+
+    reference_library.ensure_directories()
+    entries = [{
+        "reference_id": "REF-0001",
+        "title": "LX Hausys 지속가능경영보고서 2024",
+        "company": "LX_HAUSYS",
+        "document_type": "sustainability_report",
+        "source_type": "official_company",
+        "source_url": "https://example.com/lx-hausys-2024.html",
+        "file_path": None,
+        "published_date": "2024-05-01",
+        "added_at": "2026-08-01T00:00:00Z",
+        "official_source": True,
+        "reliability_grade": "A",
+        "status": "active",
+        "latest_version": True,
+        "applicable_services": [],
+        "last_verified": None,
+    }]
+    reference_library.save_index(entries)
+
+    result = scenario_3_investment_review.run("LX Hausys", verbose=False)
+
+    assert len(result["reference_entries"]) == 1
+    assert result["reference_entries"][0]["reference_id"] == "REF-0001"
+
+    md_text = Path(result["export"]["md_path"]).read_text(encoding="utf-8")
+    assert "참조 근거 (Reference Library — AI 참고자료)" in md_text
+    assert "LX Hausys 지속가능경영보고서 2024" in md_text
+    assert "AI 학습 완료" not in md_text
+
+    executive_html = Path(result["export"]["executive_report_path"]).read_text(encoding="utf-8")
+    assert "LX Hausys 지속가능경영보고서 2024" in executive_html
+
+    from storage.local_jsonl_storage import LocalJSONLStorage
+
+    storage = LocalJSONLStorage(tmp_path / "output" / "pilot_data")
+    records = storage.load_all(scenario_3_investment_review.COMPANY_SCAN_DB)
+    assert records[0]["reference_ids_used"] == ["REF-0001"]
 
 
 def test_scenario_3_runs_independently_and_internally_calls_scenario_2():
@@ -93,6 +182,63 @@ def test_scenario_3_stores_result_for_dashboard_widget(tmp_path, monkeypatch):
     assert len(records) == 1
     assert records[0]["company_id"] == "LX_HAUSYS"
     assert "company_intelligence_score" in records[0]
+
+
+def test_scenario_3_updates_home_dashboard_without_needing_scenario_1(tmp_path, monkeypatch):
+    """Round 12 TASK 1(TD-006): "Scenario 3 실행 직후 Dashboard에 해당 회사가 보인다.
+    Scenario 1을 별도로 실행할 필요가 없다." """
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+    result = scenario_3_investment_review.run("LX Hausys", verbose=False)
+
+    dashboard_path = Path(result["dashboard_path"])
+    assert dashboard_path.exists()
+    assert dashboard_path.name == "dashboard.html"
+    html = dashboard_path.read_text(encoding="utf-8")
+    assert "LX Hausys" in html
+    assert "{{" not in html
+
+
+def test_scenario_3_dashboard_update_preserves_existing_news_intelligence(tmp_path, monkeypatch):
+    """완료조건: "기존 News Intelligence 데이터가 삭제되지 않는다." Scenario 1을 먼저
+    실행해 뉴스 Intelligence를 쌓아 두고, Scenario 3을 실행해도 그대로 남아 있어야 한다."""
+    monkeypatch.setattr(scenario_1_news_analysis, "project_root", lambda: tmp_path)
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+
+    scenario_1_news_analysis.run(verbose=False)
+
+    from storage.local_jsonl_storage import LocalJSONLStorage
+
+    storage = LocalJSONLStorage(tmp_path / "output" / "pilot_data")
+    intelligence_before = storage.load_all("INTELLIGENCE_DB")
+    assert len(intelligence_before) == 1
+
+    result = scenario_3_investment_review.run("KCC", verbose=False)
+
+    intelligence_after = storage.load_all("INTELLIGENCE_DB")
+    assert intelligence_after == intelligence_before  # 삭제되지 않았다
+
+    html = Path(result["dashboard_path"]).read_text(encoding="utf-8")
+    assert "KCC" in html  # 새로 스캔한 회사도 반영됐다
+
+
+def test_scenario_3_repeated_run_same_company_does_not_duplicate_in_dashboard(tmp_path, monkeypatch):
+    """완료조건: "같은 회사 반복 실행 시 무한 중복 누적하지 않는다." COMPANY_SCAN_DB
+    Storage 자체는 감사 목적으로 계속 쌓이지만(Round 9 원칙), Dashboard 위젯에는 같은
+    회사가 여러 번 나열되지 않아야 한다."""
+    monkeypatch.setattr(scenario_3_investment_review, "project_root", lambda: tmp_path)
+
+    scenario_3_investment_review.run("LX Hausys", verbose=False)
+    result = scenario_3_investment_review.run("LX Hausys", verbose=False)
+
+    from storage.local_jsonl_storage import LocalJSONLStorage
+
+    storage = LocalJSONLStorage(tmp_path / "output" / "pilot_data")
+    assert len(storage.load_all(scenario_3_investment_review.COMPANY_SCAN_DB)) == 2  # 이력은 보존
+
+    html = Path(result["dashboard_path"]).read_text(encoding="utf-8")
+    # Home 카드 2곳(최근 분석 결과 - Scan/Investment) + 본문 섹션 2곳(Quick Company
+    # Scan/Investment Review) = 정확히 4회. Dedup이 깨지면 반복 실행 횟수만큼 늘어난다.
+    assert html.count("LX Hausys") == 4
 
 
 def test_scenario_3_main_prints_result_summary_without_opening_files(tmp_path, monkeypatch, capsys):

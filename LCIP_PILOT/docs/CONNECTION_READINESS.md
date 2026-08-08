@@ -63,8 +63,14 @@ Round 7에서 그동안 누락되어 있던 `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECR
 
 ## 5. Connection Test Plan (승인 후 실행 순서)
 
+> **Round 12 갱신**: 아래 순서(RSS 우선)는 Round 7 시점의 권장안이었다. Architect
+> Review Round 12가 `docs/RC2_CONNECTION_CHECKLIST.md` §2에서 새 우선순위(Claude API →
+> Google Drive/Sheets → Google News RSS → DART → n8n API → Gmail → Telegram →
+> Naver News)를 확정했다 — 실행 순서는 그 문서를 따른다. 아래 표의 "확인 방법" 칸은
+> 여전히 유효하며 그대로 재사용한다.
+
 **원칙: 위험(비용/외부 부작용)이 가장 낮은 연결부터, 하나씩, 매 단계 사이에 결과를
-확인한다.** 아래 순서는 권장안이며 최종 순서는 Architect 승인 시 확정한다.
+확인한다.** 아래 순서는 Round 7 시점 권장안이다(위 Round 12 갱신 참고).
 
 | 단계 | 대상 | Feature Flag | 안전장치 | 확인 방법 |
 |---|---|---|---|---|

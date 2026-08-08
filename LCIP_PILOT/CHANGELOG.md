@@ -5,6 +5,62 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 12 "RC1 승인 + RC2 준비" 반영 (2026-08-08, 12차)
+
+ChatGPT Architect Review Round 12 승인 및 반영. "Round 11 결과를 승인한다. LCIP
+Pilot RC1을 공식 승인한다. 현재부터 RC1은 동결(Frozen)하고, 새로운 기능·Framework·
+Engine·Registry·Layer를 추가하지 않는다. 다음 단계는 RC2 준비다"가 핵심 지시다. 이번
+Round는 3개 항목(TD-006 해결/Reference Library MVP/RC2 Connection Plan)만 수행했고,
+실제 외부 API 호출은 여전히 하지 않았다.
+
+- **TD-006 Dashboard 자동 갱신(TASK 1)**: Quick Company Scan을 실행해도 Home
+  Dashboard가 갱신되지 않던 문제를 해소했다. `scripts/scenarios/
+  scenario_3_investment_review.py`가 Scenario 1과 동일한 Dashboard Builder
+  (`build_dashboard.build_html` + `PipelineDashboardDataProvider`)를 Export 다음
+  단계로 재사용해 `output/pilot_data/dashboard.html`을 직접 갱신한다 — 새
+  Layer/Framework 없이 기존 두 함수를 그대로 호출만 추가했다. 같은 Storage를 읽으므로
+  ARTICLE_DB/INTELLIGENCE_DB(News Intelligence)는 그대로 보존되고 COMPANY_SCAN_DB만
+  새로 반영된다. `scripts/pipeline/dashboard_feed.py`에 `_dedupe_most_recent_by()`를
+  추가해 같은 회사를 반복 스캔해도 Quick Company Scan/Investment Review 위젯이 그
+  회사로 도배되지 않고(최근 1건만 표시) COMPANY_SCAN_DB Storage 자체는 감사 목적으로
+  전체 이력을 그대로 보존하도록 구분했다.
+- **Reference Library MVP(TASK 2)**: `reference_library/{inbox,active,archive,index}`
+  4개 폴더와 `scripts/reference_library.py`를 신설했다. 기존 Knowledge Engine을
+  대체하지 않고 Embedding/Vector DB/RAG Server 없이, 파일이 물리적으로 어느 폴더에
+  있는지(inbox=미분류/active=AI 참고 가능/archive=보관)와 최소 Metadata
+  (`schemas/reference_metadata.schema.json`)만으로 동작하는 얕은 카탈로그다.
+  `reliability_grade`(A/B/C)는 새 척도가 아니라 `knowledge/SOURCE_PRIORITY.md`가 이미
+  정의한 축을 `document_type`에서 결정론적으로 도출한다. PDF/DOCX/XLSX/PPTX는 이번
+  Round에 텍스트를 파싱하지 않고 "Parsing 미지원"으로 정직하게 표시하며, Markdown/TXT
+  만 `parseable: true`다. URL Registry는 `inbox/url_registry.yaml` 매니페스트로
+  지원한다(자동 웹 크롤링 없음). 사용자가 검토를 마친 파일을 inbox→active로 물리적
+  으로 옮기는 승격 워크플로우를 지원하며, 이동 시 이미 채운 Metadata(회사/자료유형
+  등)를 잃지 않도록 basename 기반 이동 감지를 구현했다(애매하면 새 항목으로 등록해
+  잘못 추측하지 않는다). Scenario 1(News Intelligence)/Scenario 2·3(Quick Company
+  Scan/Investment Review)이 `list_active_references_for_company()`로 관련 자료를
+  조회해 결과물에 "참조 근거" 절로 표시한다("AI 학습 완료" 같은 표현은 쓰지 않고
+  "AI 참고자료"/"Reference Library"/"분석에 사용된 근거"라고만 표기). Home
+  Dashboard에는 새 Widget 클래스 없이 Round 11과 동일한 패턴(`HOME_*` 토큰)으로
+  "Reference Library" 6번째 카드를 추가했다 — 실제 파일시스템 접근은
+  `PipelineDashboardDataProvider` 한 곳에서만 하고 `dashboard_feed.py`/
+  `build_dashboard.py`는 전달받은 값만 가공/렌더링한다(계층 분리 유지).
+- **RC2 Connection Execution Plan(TASK 3)**: `docs/RC2_CONNECTION_CHECKLIST.md`를
+  신설했다. Round 7 `docs/CONNECTION_READINESS.md`를 대체하지 않고, "무엇을 준비해야
+  하는지"를 A(사용자가 해야 하는 일)/B(Claude가 해야 하는 일)/C(공동 확인 필요)로
+  재정리했다. Credential 12개 항목마다 상태/필요 시점/필수·선택/`.env` 입력 위치/
+  Secret 여부/"Claude에게 값을 직접 알려줘야 하는가"를 표로 정리했다(Secret 값
+  자체는 어떤 문서에도 기록하지 않는다). Architect가 지정한 RC2 연결 우선순위 8단계
+  (Claude API → Google Drive/Sheets → Google News RSS → DART → n8n API → Gmail →
+  Telegram → Naver News)를 반영했고, `CONNECTION_READINESS.md` §5에는 이 새 순서를
+  가리키는 포인터를 추가했다(기존 확인 방법 자체는 그대로 유효해 재작성하지 않음).
+- **테스트**: `test_scenarios.py`(+7, TD-006/Reference Library 시나리오 통합)/
+  `test_dashboard_feed.py`(+4, dedup + reference_library_rows)/
+  `test_reference_library.py`(신규, +14)/`test_dashboard.py`(+2)/
+  `test_dashboard_data_provider.py`(+2) 총 29건 추가. 전체 409개(Round 11) → 438개,
+  전부 PASS. 새로운 Engine/Layer/Registry/Framework는 추가하지 않았다(Reference
+  Library는 Architect가 이번 Round에 명시적으로 예외 승인한 MVP다). 외부 API 실제
+  호출도 Round 12에서 없다.
+
 ### Added — Architect Review Round 11 "Pilot RC1 User Validation" 반영 (2026-08-07, 11차)
 
 ChatGPT Architect Review Round 11 승인 및 반영. "Round 10을 기점으로 Data Sprint도

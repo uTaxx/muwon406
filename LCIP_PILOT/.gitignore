@@ -12,6 +12,21 @@ output/
 archive/
 n8n/backups/
 
+# Reference Library(Round 12) — 사용자가 올린 실제 자료(PDF/DOCX 등)와 그로부터 자동
+# 생성되는 색인은 로컬 전용 데이터다. output/과 동일하게 Git에는 폴더 구조(.gitkeep)만
+# 남기고 실제 파일/색인은 커밋하지 않는다.
+# 주의: 위 12번 줄의 일반 `archive/` 규칙이 reference_library/archive/도 먼저 무시해
+# 버려서 아래 .gitkeep 예외가 무시되므로, 디렉터리 자체를 먼저 명시적으로 되살린다.
+!reference_library/archive/
+reference_library/inbox/*
+reference_library/active/*
+reference_library/archive/*
+reference_library/index/*
+!reference_library/inbox/.gitkeep
+!reference_library/active/.gitkeep
+!reference_library/archive/.gitkeep
+!reference_library/index/.gitkeep
+
 *.key
 *.pem
 credentials*.json

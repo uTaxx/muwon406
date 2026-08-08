@@ -18,6 +18,7 @@ from html import escape
 from _common import load_yaml, project_root
 from jsonschema import validate as jsonschema_validate
 from providers.base import AIProvider, ProviderResult
+from reference_library import reference_citation_rows
 
 SCHEMAS_DIR = project_root() / "schemas"
 
@@ -173,11 +174,18 @@ def _bullets(items: list[str]) -> str:
     return "\n".join(f"- {item}" for item in items)
 
 
-def _render_quick_scan_markdown(quick_report: dict, investment_review: dict, intelligence_score: dict) -> str:
+def _render_quick_scan_markdown(
+    quick_report: dict, investment_review: dict, intelligence_score: dict,
+    reference_entries: list[dict] | None = None,
+) -> str:
     """Architect Review Round 9 — "실제 전략팀 직원이 바로 사용할 수 있는가?"에 대한
     답으로, Quick Report의 Core 7 필드 전체(이전에는 company_overview만 보여줬다)와
     Investment Review의 Comparable Valuation·추천 사유까지 한 페이지에 담는다. 새 필드나
-    새 계산 로직은 추가하지 않는다 — 이미 있는 값을 빠짐없이 보여주기만 한다."""
+    새 계산 로직은 추가하지 않는다 — 이미 있는 값을 빠짐없이 보여주기만 한다.
+
+    Round 12 TASK 2(Reference Library) 지시("결과물에서 어떤 Reference를 사용했는지
+    표시한다")에 따라 "참조 근거" 절을 추가한다 — "AI 학습 완료" 같은 표현은 쓰지 않고
+    "AI 참고자료"라고만 표기한다."""
     rec = investment_review["recommendation"]
     peer_avg = investment_review["peer_average"]
     comparable = investment_review.get("comparable", [])
@@ -238,6 +246,24 @@ def _render_quick_scan_markdown(quick_report: dict, investment_review: dict, int
         "## 참고 출처 (Reference Sources)",
         _bullets(quick_report.get("reference_sources", [])),
         "",
+        "## 참조 근거 (Reference Library — AI 참고자료)",
+    ]
+    citation_rows = reference_citation_rows(reference_entries or [])
+    if citation_rows:
+        lines.append("| 문서명 | 자료유형 | 발행일 | Source URL / 파일 경로 | 신뢰도 |")
+        lines.append("|---|---|---|---|---|")
+        for row in citation_rows:
+            lines.append(
+                f"| {row['문서명']} | {row['자료유형']} | {row['발행일']} | "
+                f"{row['Source URL / 파일 경로']} | {row['신뢰도']} |"
+            )
+    else:
+        lines.append(
+            "등록된 Reference 없음 — reference_library/inbox/에 자료를 추가하고 active/로 "
+            "옮기면 다음 스캔부터 여기 표시된다."
+        )
+    lines += [
+        "",
         "> Confidence가 'low'인 항목은 Mock/미확인 상태다 — 실제 Claude 연동(RC2) 전까지는",
         "> 초안(draft) 참고용으로만 사용하고, 전략팀 검토자료에는 출처를 재확인한 뒤 반영한다.",
     ]
@@ -245,7 +271,8 @@ def _render_quick_scan_markdown(quick_report: dict, investment_review: dict, int
 
 
 def build_executive_report_html(
-    quick_report: dict, investment_review: dict, intelligence_score: dict
+    quick_report: dict, investment_review: dict, intelligence_score: dict,
+    reference_entries: list[dict] | None = None,
 ) -> str:
     """Architect Review Round 11 Priority 3 — Quick Company Scan 결과를 임원 보고용
     1~2페이지 요약본으로 자동 생성한다. Pilot은 HTML만 지원한다(PDF는 구현하지 않는다).
@@ -254,7 +281,11 @@ def build_executive_report_html(
     3분 안에 판단할 수 있는 핵심(점수·추천신호·근거·Top 3 리스크·Peer 수)만 추린다.
     새 CSS 프레임워크를 만들지 않고 `dashboard/styles.css`와 같은 톤(흰 배경·남색
     accent·얇은 구분선)을 이 파일 안에 직접 인라인한다 — Dashboard 파일에 대한 의존성
-    없이 단독으로 열람 가능해야 하기 때문이다(이메일 첨부·인쇄 용도)."""
+    없이 단독으로 열람 가능해야 하기 때문이다(이메일 첨부·인쇄 용도).
+
+    Round 12 TASK 2(Reference Library) — 1페이지 예산을 지키기 위해 상세 표 대신
+    "AI 참고자료" 상위 3건만 한 줄씩 보여준다(전체 목록은 같은 폴더 Markdown 보고서에
+    있다)."""
     rec = investment_review["recommendation"]
     peer_avg = investment_review["peer_average"]
     top_unknowns = quick_report.get("unknowns", [])[:3]
@@ -263,6 +294,16 @@ def build_executive_report_html(
         "".join(f"<li>{escape(u)}</li>" for u in top_unknowns)
         if top_unknowns else "<li>확인된 미확인 사항 없음</li>"
     )
+
+    top_references = (reference_entries or [])[:3]
+    if top_references:
+        references_html = "".join(
+            f"<li>{escape(e.get('title') or '-')} "
+            f"({escape(e.get('document_type') or '-')}, {escape(e.get('reliability_grade') or '-')}등급)</li>"
+            for e in top_references
+        )
+    else:
+        references_html = "<li>등록된 Reference 없음 — Reference Library에 자료를 추가하면 여기 표시된다</li>"
 
     return f"""<!DOCTYPE html>
 <html lang="ko">
@@ -308,6 +349,9 @@ def build_executive_report_html(
   <h2>주요 확인 필요 사항 (Top 3 Unknowns)</h2>
   <ul>{unknowns_html}</ul>
 
+  <h2>참조 근거 (Reference Library — AI 참고자료)</h2>
+  <ul>{references_html}</ul>
+
   <div class="footer">
     본 요약본은 공개정보 기반 Pilot 산출물이며, Confidence가 'low'인 항목은 초안 참고용이다.
     상세 근거는 같은 폴더의 Markdown 전체 보고서를 참고한다. Mock/dry-run 결과가 섞여 있을
@@ -324,6 +368,7 @@ def export_quick_scan_report(
     investment_review: dict,
     intelligence_score: dict,
     out_dir=None,
+    reference_entries: list[dict] | None = None,
 ) -> dict:
     """Architect Review Round 8 — 파이프라인의 마지막 단계(Export). Quick Report +
     Investment Review + Company Intelligence Score를 하나로 묶어 JSON(기계 판독용)과
@@ -335,6 +380,10 @@ def export_quick_scan_report(
     단계에서 HTML Executive Report(`build_executive_report_html()`)도 세 번째
     파일로 함께 내보낸다 — 새 파이프라인 단계를 추가하지 않고 기존 Export 단계의
     산출물 종류만 늘린다.
+
+    Round 12 TASK 2 — `reference_entries`(Scenario 2가 `reference_library.
+    list_active_references_for_company()`로 조회해 온 결과)를 Markdown/Executive
+    Report 양쪽의 "참조 근거" 절에 그대로 전달한다.
     """
     out_dir = out_dir if out_dir is not None else project_root() / "output" / "quick_company_scan_exports"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -353,11 +402,15 @@ def export_quick_scan_report(
     json_path.write_text(json.dumps(combined, ensure_ascii=False, indent=2), encoding="utf-8")
 
     md_path = out_dir / f"{safe_name}.md"
-    md_path.write_text(_render_quick_scan_markdown(quick_report, investment_review, intelligence_score), encoding="utf-8")
+    md_path.write_text(
+        _render_quick_scan_markdown(quick_report, investment_review, intelligence_score, reference_entries),
+        encoding="utf-8",
+    )
 
     executive_report_path = out_dir / f"{safe_name}_executive_report.html"
     executive_report_path.write_text(
-        build_executive_report_html(quick_report, investment_review, intelligence_score), encoding="utf-8"
+        build_executive_report_html(quick_report, investment_review, intelligence_score, reference_entries),
+        encoding="utf-8",
     )
 
     return {"json_path": json_path, "md_path": md_path, "executive_report_path": executive_report_path}

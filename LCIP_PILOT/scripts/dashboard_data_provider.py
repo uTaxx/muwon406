@@ -14,6 +14,7 @@ from pathlib import Path
 
 from _common import load_yaml
 from pipeline.dashboard_feed import build_dashboard_data
+from reference_library import reference_library_summary
 from storage.base import StorageBackend
 
 
@@ -44,6 +45,12 @@ class PipelineDashboardDataProvider(DashboardDataProvider):
     `config/sources.yaml`도 함께 읽는다 — `storage`가 COMPANY_SCAN_DB 컬렉션을 아직
     갖고 있지 않아도(예: Scenario 1만 실행한 경우) `load_all()`은 빈 리스트를 반환하므로
     에러 없이 동작한다.
+
+    Round 12 TASK 2 — Home Dashboard "Reference Library" 카드용으로
+    `reference_library.reference_library_summary()`도 함께 조회해 넘긴다. 이 클래스가
+    유일하게 실제 파일시스템(reference_library/)을 읽는 지점이다 —
+    `pipeline/dashboard_feed.py`와 `build_dashboard.py`는 전달받은 값만 그대로
+    가공/렌더링한다(계층 분리, 테스트 격리 유지).
     """
 
     def __init__(self, storage: StorageBackend, topic_display_name: str, generated_at_kst: str):
@@ -59,4 +66,5 @@ class PipelineDashboardDataProvider(DashboardDataProvider):
             intelligences=self.storage.load_all("INTELLIGENCE_DB"),
             company_scans=self.storage.load_all("COMPANY_SCAN_DB"),
             sources=load_yaml("config/sources.yaml")["sources"],
+            reference_library_summary=reference_library_summary(),
         )

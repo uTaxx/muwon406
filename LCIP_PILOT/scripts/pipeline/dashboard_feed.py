@@ -20,6 +20,21 @@ docstring 참고) — 새 Widget 클래스를 만들지 않고, 이미 받고 �
 `recent_news`라는 새 dict 키로 가공해 반환값에 추가했다. `build_dashboard.py`의 Home
 섹션이 기존 `render_generic_list()`로 이 값을 직접 렌더링한다(6개 Widget 목록에는
 들어가지 않는다).
+
+Round 12 TASK 1(Technical Debt TD-006) 완료조건("같은 회사 반복 실행 시 무한 중복
+누적하지 않는다"): Scenario 3이 이제 실행할 때마다 Dashboard를 직접 갱신하므로, 같은
+회사를 여러 번 스캔하면 Quick Company Scan/Investment Review 위젯이 같은 회사로
+도배될 수 있다 — `_most_recent()`는 시점만 볼 뿐 회사명 중복은 걸러내지 않기 때문이다.
+이를 위해 `_dedupe_most_recent_by()`를 추가해 같은 회사명은 가장 최근 스캔 1건만
+남긴다. Today's Intelligence/Critical Risk/Future Opportunity/최근 뉴스는 "같은
+회사"라는 개념이 없는 이벤트 로그라 기존 `_most_recent()`를 그대로 쓴다.
+
+Round 12 TASK 2(Reference Library) — Home Dashboard의 "Reference Library" 카드도
+이 파일이 만드는 `data` dict를 통해서만 값을 받는다(`build_dashboard.py`는 렌더링만
+한다는 원칙 유지). `reference_library_summary`는 호출자(`PipelineDashboardDataProvider`)
+가 `scripts/reference_library.py:reference_library_summary()`로 미리 조회해 전달하는
+raw 집계이며, 이 파일은 그것을 `_reference_library_row()`로 표시용 1행으로 변환하기만
+한다 — Reference Library 파일시스템을 직접 읽지 않는다(테스트 격리·계층 분리 유지).
 """
 from __future__ import annotations
 
@@ -30,6 +45,23 @@ def _most_recent(rows: list[dict], limit: int = MAX_ROWS_PER_WIDGET) -> list[dic
     """가장 최근에 추가된 것부터 최대 `limit`건만 반환한다. `rows`는 Storage에 append된
     순서(오래된 것 -> 최신)로 들어온다고 가정한다(`LocalJSONLStorage.load_all()`과 동일)."""
     return list(reversed(rows))[:limit]
+
+
+def _dedupe_most_recent_by(rows: list[dict], key: str, limit: int = MAX_ROWS_PER_WIDGET) -> list[dict]:
+    """`_most_recent()`와 동일하게 최신순으로 정렬하되, 같은 `key` 값(예: 회사명)을 가진
+    행은 가장 최근 것 하나만 남긴다. 같은 회사를 반복 스캔해도 위젯이 그 회사로만
+    채워지지 않도록 한다(Round 12 TD-006)."""
+    seen: set = set()
+    result: list[dict] = []
+    for row in reversed(rows):
+        value = row.get(key)
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(row)
+        if len(result) >= limit:
+            break
+    return result
 
 
 def _intelligence_row(intelligence: dict) -> dict:
@@ -76,6 +108,20 @@ def _news_row(article: dict) -> dict:
     }
 
 
+def _reference_library_row(summary: dict) -> list[dict]:
+    if not summary or not summary.get("total"):
+        return []
+    by_company = summary.get("by_company") or {}
+    top_companies = sorted(by_company.items(), key=lambda kv: kv[1], reverse=True)[:3]
+    company_text = ", ".join(f"{c} {n}건" for c, n in top_companies) if top_companies else "-"
+    return [{
+        "등록 자료 수": f"{summary['total']}건",
+        "회사별 자료 수(상위)": company_text,
+        "최신 자료": summary.get("latest_title") or "-",
+        "공식자료 수": f"{summary.get('official_count', 0)}건",
+    }]
+
+
 def build_dashboard_data(
     *,
     topic_display_name: str,
@@ -84,6 +130,7 @@ def build_dashboard_data(
     intelligences: list[dict],
     company_scans: list[dict] | None = None,
     sources: list[dict] | None = None,
+    reference_library_summary: dict | None = None,
 ) -> dict:
     """articles/intelligences/company_scans(Store 단계에서 읽어온 레코드 목록)와
     sources(Source Registry)를 Executive Dashboard 6개 Widget 입력 shape으로 변환한다.
@@ -93,6 +140,9 @@ def build_dashboard_data(
     Round 11의 Home Dashboard "최근 뉴스" 섹션이 `recent_news` 키로 그대로 소비한다 —
     AI가 해석한 Intelligence(사실 요약)와 원문 뉴스 목록은 서로 다른 것이라 구분해서
     보여준다.
+
+    `reference_library_summary`는 Round 12 TASK 2가 추가한 `reference_library.
+    reference_library_summary()`의 원시 집계 결과다(선택 인자, 미전달 시 빈 카드).
     """
     company_scans = company_scans or []
     sources = sources or []
@@ -115,10 +165,14 @@ def build_dashboard_data(
         "today_intelligence": today_intelligence,
         "critical_risk": critical_risk,
         "future_opportunity": future_opportunity,
-        "quick_company_scan": _most_recent([_quick_scan_row(s) for s in company_scans]),
-        "investment_review": _most_recent([
-            _investment_review_row(s) for s in company_scans if s.get("recommendation_signal")
-        ]),
+        "quick_company_scan": _dedupe_most_recent_by(
+            [_quick_scan_row(s) for s in company_scans], "회사명"
+        ),
+        "investment_review": _dedupe_most_recent_by(
+            [_investment_review_row(s) for s in company_scans if s.get("recommendation_signal")],
+            "회사명",
+        ),
         "source_health": [_source_health_row(s) for s in sources],
         "recent_news": _most_recent([_news_row(a) for a in articles]),
+        "reference_library_rows": _reference_library_row(reference_library_summary or {}),
     }

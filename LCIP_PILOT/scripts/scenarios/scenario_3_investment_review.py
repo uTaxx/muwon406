@@ -18,6 +18,22 @@ Round 11 지시("입력 -> 결과 -> Export까지 클릭 수를 최소화한다.
 있도록 실행 마지막에 "결과 요약" 블록을 출력한다 — `run()`이 이미 반환하던 값을 그대로
 출력만 할 뿐, 새 단계나 새 산출물을 추가하지 않는다.
 
+Round 12 TASK 1(Technical Debt TD-006 해소): "회사명 입력 -> Quick Company Scan ->
+Investment Review -> 결과 저장 -> Executive Report 생성 -> Home Dashboard 갱신까지
+한 번의 실행으로 끝나야 한다." 이전에는 Scenario 1(뉴스 분석)만 `dashboard.html`을
+다시 썼고, 이 Scenario는 COMPANY_SCAN_DB에 저장만 할 뿐 Dashboard 파일 자체는
+갱신하지 않아 "Scenario 1을 별도로 한 번 더 실행해야 방금 조사한 회사가 Home
+Dashboard에 보인다"는 문제가 있었다. 새 Layer/Framework를 만들지 않고 Scenario 1이
+이미 쓰는 것과 동일한 Dashboard Builder(`build_dashboard.build_html` +
+`PipelineDashboardDataProvider`)를 그대로 재사용해 Export 다음 단계로 추가했다 —
+같은 `output/pilot_data/` Storage를 읽으므로 ARTICLE_DB/INTELLIGENCE_DB(News
+Intelligence) 데이터는 그대로 보존되고, COMPANY_SCAN_DB만 새로 반영된다.
+
+Round 12 TASK 2(Reference Library) — Scenario 2가 조회해 온 `reference_entries`를
+Export(참조 근거 절)로 전달하고, 사용된 `reference_id` 목록을 COMPANY_SCAN_DB에도
+함께 저장한다(Home Dashboard "Reference Library" 섹션이 최근 분석에 쓰인 자료를
+표시할 때 참고).
+
 사용법: python3 scripts/scenarios/scenario_3_investment_review.py ["회사명"]
 """
 from __future__ import annotations
@@ -28,8 +44,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from _common import project_root
+from _common import load_yaml, project_root
+from build_dashboard import build_html
 from company_intelligence_score import compute_score
+from dashboard_data_provider import PipelineDashboardDataProvider
 from financial_provider import MockFinancialDataProvider
 from investment_review import build_investment_review
 from quick_company_scan import export_quick_scan_report
@@ -50,6 +68,7 @@ def run(query: str = "LX Hausys", verbose: bool = True) -> dict:
 
     scan = scenario_2_quick_company_scan.run(query, verbose=verbose)
     company, sources, quick_report = scan["company"], scan["sources"], scan["quick_report"]
+    reference_entries = scan["reference_entries"]
 
     log("\n[6/8] Financial Provider(Mock) — Comparable Peer 조회")
     peers = MockFinancialDataProvider().get_comparable_peers(company.company_id)
@@ -80,21 +99,36 @@ def run(query: str = "LX Hausys", verbose: bool = True) -> dict:
             "confidence": quick_report["confidence"],
             "recommendation_signal": review["recommendation"]["signal"],
             "company_intelligence_score": score_dict,
+            "reference_ids_used": [e["reference_id"] for e in reference_entries],
         },
     )
     log(f"  {COMPANY_SCAN_DB}.jsonl에 1건 추가")
 
     log("\nExport — JSON/Markdown/Executive Report(HTML) 산출물 생성")
-    export_paths = export_quick_scan_report(company, quick_report, review, score_dict)
+    export_paths = export_quick_scan_report(
+        company, quick_report, review, score_dict, reference_entries=reference_entries
+    )
     log(f"  {export_paths['json_path']}")
     log(f"  {export_paths['md_path']}")
     log(f"  {export_paths['executive_report_path']}")
+
+    log("\nHome Dashboard 갱신 (Round 12 TD-006 — Scenario 1과 동일한 Dashboard Builder 재사용)")
+    topic = load_yaml("config/topics.yaml")["topics"][0]
+    data_provider = PipelineDashboardDataProvider(
+        storage, topic_display_name=topic["display_name"],
+        generated_at_kst=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+    )
+    dashboard_path = storage.base_dir / "dashboard.html"
+    dashboard_path.write_text(build_html(data_provider.get_data()), encoding="utf-8")
+    log(f"  {dashboard_path}")
 
     return {
         "quick_report": quick_report,
         "review": review,
         "intelligence_score": score_dict,
         "export": export_paths,
+        "dashboard_path": str(dashboard_path),
+        "reference_entries": reference_entries,
     }
 
 
@@ -122,6 +156,8 @@ def main() -> int:
     print(f"보고서(Markdown, 상세): {export['md_path']}")
     print(f"보고서(JSON): {export['json_path']}")
     print(f"Executive Report(HTML, 임원 보고용 1~2페이지): {export['executive_report_path']}")
+    print(f"참조 근거(Reference Library): {len(result['reference_entries'])}건")
+    print(f"Home Dashboard(자동 갱신됨): {result['dashboard_path']}")
     print("\nScenario 3 완료.")
     return 0
 

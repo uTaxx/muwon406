@@ -35,6 +35,13 @@ def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[s
     않는다"): HOME_* 토큰 4개는 새 Widget 클래스가 아니라, 이미 있는 6개 Widget과
     같은 `data` dict에서 상위 1건만 뽑아 기존 `render_generic_list()`로 그대로
     렌더링한 것이다 — 상세는 아래 각 섹션(1~6번)에서 계속 볼 수 있다.
+
+    Round 12 TASK 2 지시("Home Dashboard 또는 기존 화면에서 새 Widget을 만들지 말고
+    기존 영역 내 링크/섹션 수준으로만 Reference Library 현황을 보여준다"): 같은 패턴을
+    그대로 반복해 `HOME_REFERENCE_LIBRARY_HTML` 토큰 1개만 추가했다. 실제 집계는 이
+    파일이 하지 않는다 — Data Provider 계층(`dashboard_feed.build_dashboard_data()`의
+    `reference_library_rows`)이 만들어 `data` dict로 넘겨주는 값을 그대로 렌더링만
+    한다(다른 HOME_* 토큰과 동일한 책임 분리 — build_dashboard.py는 토큰 조립만 한다).
     """
     tokens = {
         "{{TOPIC_DISPLAY_NAME}}": escape(data.get("topic_display_name") or "엔지니어드스톤·실리코시스"),
@@ -50,6 +57,10 @@ def _render_common_tokens(data: dict, widgets: list = DEFAULT_WIDGETS) -> dict[s
         ),
         "{{HOME_RECENT_NEWS_HTML}}": render_generic_list(
             (data.get("recent_news") or [])[:1], "최근 수집된 뉴스 없음"
+        ),
+        "{{HOME_REFERENCE_LIBRARY_HTML}}": render_generic_list(
+            data.get("reference_library_rows") or [],
+            "등록된 Reference 없음 — reference_library/inbox/에 자료를 추가하면 여기 표시된다",
         ),
     }
     for widget in widgets:

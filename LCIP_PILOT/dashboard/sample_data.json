@@ -46,5 +46,13 @@
       "제목": "표본 뉴스 제목 (실제 데이터 아님 — 샘플 fixture)",
       "출처": "https://example.com/sample-news"
     }
+  ],
+  "reference_library_rows": [
+    {
+      "등록 자료 수": "1건 (예시)",
+      "회사별 자료 수(상위)": "LX_HAUSYS 1건",
+      "최신 자료": "표본 참고자료 (샘플 fixture)",
+      "공식자료 수": "1건"
+    }
   ]
 }

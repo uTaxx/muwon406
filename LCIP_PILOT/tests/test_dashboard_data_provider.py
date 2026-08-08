@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import reference_library
 from dashboard_data_provider import (
     DashboardDataProvider,
     PipelineDashboardDataProvider,
@@ -84,3 +85,34 @@ def test_pipeline_dashboard_data_provider_empty_storage_returns_empty_lists(tmp_
     data = provider.get_data()
     assert data["today_intelligence"] == []
     assert data["quick_company_scan"] == []
+
+
+def test_pipeline_dashboard_data_provider_includes_reference_library_summary(tmp_path, monkeypatch):
+    """Round 12 TASK 2: Home Dashboard "Reference Library" 카드가 실제 Reference
+    Library 색인을 반영해야 한다. 이 Provider가 유일하게 reference_library 파일시스템을
+    읽는 지점이므로, 여기서만 `reference_library.project_root`를 격리하면 된다."""
+    monkeypatch.setattr(reference_library, "project_root", lambda: tmp_path / "reflib_root")
+    reference_library.ensure_directories()
+    reference_library.save_index([{
+        "reference_id": "REF-0001", "title": "LX Hausys 사업보고서", "company": "LX_HAUSYS",
+        "document_type": "annual_report", "source_type": "official_company", "source_url": None,
+        "file_path": None, "published_date": "2024-03-01", "added_at": "2026-08-01T00:00:00Z",
+        "official_source": True, "reliability_grade": "A", "status": "active",
+        "latest_version": True, "applicable_services": [], "last_verified": None,
+    }])
+
+    storage = LocalJSONLStorage(tmp_path / "pilot_data")
+    provider = PipelineDashboardDataProvider(storage, "Topic", "2026-08-05 09:00")
+    data = provider.get_data()
+
+    assert len(data["reference_library_rows"]) == 1
+    assert data["reference_library_rows"][0]["등록 자료 수"] == "1건"
+    assert data["reference_library_rows"][0]["최신 자료"] == "LX Hausys 사업보고서"
+
+
+def test_pipeline_dashboard_data_provider_reference_library_empty_by_default(tmp_path, monkeypatch):
+    monkeypatch.setattr(reference_library, "project_root", lambda: tmp_path / "reflib_root")
+    storage = LocalJSONLStorage(tmp_path / "pilot_data")
+    provider = PipelineDashboardDataProvider(storage, "Topic", "2026-08-05 09:00")
+    data = provider.get_data()
+    assert data["reference_library_rows"] == []

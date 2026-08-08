@@ -1,43 +1,67 @@
 # Project Status
 
-최종 갱신: 2026-08-07 (Architect Review Round 11 반영)
+최종 갱신: 2026-08-08 (Architect Review Round 12 반영)
 
 ## 요약
 
-TASK-001~007 → Round 2~10(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 정의/
-Data Sprint) → **Round 11("Pilot RC1 User Validation" UX Sprint) 반영** 완료.
-Architect는 "전체 검토 결과를 승인한다. Round 10을 기점으로 Data Sprint도
-종료한다. Pilot은 이제 '개발 프로젝트'가 아니라 '사용성 검증 프로젝트'로
-전환한다"고 선언하며 **새로운 회사 리서치/Registry/Layer/Engine/Framework/
-Dashboard Widget/Enterprise 기능을 절대 금지**하고, "실제 전략팀 직원이 사용하는
-흐름을 만든다"를 유일한 목표로 지정했다.
+TASK-001~007 → Round 2~11(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 정의/
+Data Sprint/UX Sprint) → **Round 12("RC1 승인 + RC2 준비") 반영** 완료. Architect는
+"Round 11 결과를 승인한다. LCIP Pilot RC1을 공식 승인한다. 현재부터 RC1은
+동결(Frozen)하고, 새로운 기능·Framework·Engine·Registry·Layer를 추가하지 않는다.
+다음 단계는 RC2 준비다"라고 선언했다. 이번 Round는 3개 항목(TD-006 해결/Reference
+Library MVP/RC2 Connection Plan)만 수행했다.
 
-이번 Round는 새 구조를 하나도 추가하지 않고 **이미 있는 기능을 연결·다듬었다**:
-Home Dashboard(5개 카드로 첫 화면 완성), Quick Company Scan 실행 후 터미널에
-바로 뜨는 "결과 요약"(파일을 열지 않아도 핵심이 보임), Executive Report(HTML,
-임원 보고용 1페이지 자동 생성), Pilot Demo Package(실제 시연 대본), User Guide
-(전략팀 관점 재작성) 5가지를 완성했다.
+**LCIP Pilot RC1이 공식 승인되었다** — ADR-010이 정의한 구조적 요건(Round 8)과
+콘텐츠 요건(Round 10 TOP10 완성)에 이어 사용성 요건(Round 11)까지 Architect가
+검토를 마쳤다. 이후 모든 개발은 "이 기능이 Pilot의 실제 사용자 검증에 필요한가?"
+질문을 통과해야 하며, RC2(실제 외부 API 연결)가 다음 목표다.
 
-## Round 11 Priority 5개 처리 결과
+## Round 12 TASK 3개 처리 결과
 
 | 순위 | 항목 | 상태 | 핵심 내용 |
 |---|---|---|---|
-| 1 | Home Dashboard | ✅ 완료 | `dashboard/template.html`에 새 `<section id="home">` 추가 — 5개 카드(오늘의 핵심 Intelligence/Quick Company Scan 실행/Investment Review 실행/최근 분석 결과/최근 뉴스). 새 Widget 클래스 없이 기존 6개 Widget 데이터의 상위 1건만 재사용(`HOME_*` 토큰 4개, `build_dashboard.py`). 이전까지 미사용이던 `articles` 인자를 `recent_news` 키로 처음 활용(`dashboard_feed.py`) |
-| 2 | Quick Company Scan UX 개선 | ✅ 완료 | `scenario_3_investment_review.py` `main()` 실행 마지막에 "결과 요약"(회사명/점수/추천신호/근거/파일 경로 3종) 블록을 터미널에 바로 출력 — Export 파일을 열지 않아도 핵심 확인 가능 |
-| 3 | Executive Report 자동 생성 | ✅ 완료 | `quick_company_scan.py`에 `build_executive_report_html()`/Export 단계 확장 — 점수·투자시그널·근거·Top3 미확인사항만 담은 1페이지 HTML을 `{회사명}_executive_report.html`로 자동 생성(HTML만 지원, PDF 미구현) |
-| 4 | Pilot Demo Package | ✅ 완료 | `docs/PILOT_DEMO_PACKAGE.md` 신설 — Demo Dataset(LX Hausys/KCC/Caesarstone), Demo Scenario(명령어 표), 시연 순서(단계별 대본), 예상 질문 6개, Demo Script |
-| 5 | User Guide 재작성 | ✅ 완료 | `docs/USER_GUIDE.md` 신설 — 개발자 관점(README.md)과 분리, 전략팀 직원이 5분 안에 "회사 조사 → 결과 보기 → Dashboard 보기"를 끝낼 수 있도록 재작성 |
+| 1 | TD-006 Dashboard 자동 갱신 | ✅ 완료 | `scenario_3_investment_review.py`가 Scenario 1과 동일한 Dashboard Builder를 재사용해 Export 다음 단계로 `dashboard.html`을 직접 갱신. News Intelligence 데이터 보존, `_dedupe_most_recent_by()`로 같은 회사 반복 스캔 시 무한 중복 방지 |
+| 2 | Reference Library MVP | ✅ 완료 | `reference_library/{inbox,active,archive,index}` + `scripts/reference_library.py` 신설(Architect 명시적 예외 승인). Knowledge Engine 비대체, Embedding/RAG 없음. Scenario 1/2/3이 "참조 근거" 절 표시, Home Dashboard에 새 Widget 없이 6번째 카드 추가 |
+| 3 | RC2 Connection Execution Plan | ✅ 완료 | `docs/RC2_CONNECTION_CHECKLIST.md` 신설 — A(사용자)/B(Claude)/C(공동확인) 역할 분담, Credential 12개 항목 표, RC2 연결 우선순위 8단계 반영 |
 
 ## 테스트 결과
 
 ```text
-$ pytest tests/ -q                                    -> 전부 PASS (409개 테스트, Round 10: 402개 → +7개)
-$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"    -> PASS (결과 요약 + Executive Report HTML 생성 확인)
-$ python scripts/scenarios/scenario_1_news_analysis.py                    -> PASS (Home Dashboard "최근 뉴스" 반영 확인, {{ 토큰 누락 없음)
-$ python scripts/build_dashboard.py --data dashboard/sample_data.json     -> PASS (Home 5개 카드 렌더링 확인)
+$ pytest tests/ -q                                              -> 전부 PASS (438개 테스트, Round 11: 409개 → +29개)
+$ python scripts/validate_config.py                             -> PASS
+$ python scripts/secret_scan.py                                  -> PASS
+$ python scripts/bootstrap_project.py --dry-run                   -> PASS (Registry 8개 전체 검증 통과)
+$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"  -> PASS (Home Dashboard 자동 갱신 + 참조 근거 절 확인)
 ```
 
-## Round 11에서 새로 생성/수정된 파일
+## Round 12에서 새로 생성/수정된 파일
+
+**신규**: `scripts/reference_library.py`, `schemas/reference_metadata.schema.json`,
+`docs/RC2_CONNECTION_CHECKLIST.md`, `tests/test_reference_library.py`,
+`reference_library/{inbox,active,archive,index}/.gitkeep`
+
+**수정**
+- `scripts/scenarios/scenario_3_investment_review.py`: Export 다음 단계로 Home
+  Dashboard 갱신 추가, Reference Library 조회 결과(`reference_entries`)를 Export/
+  COMPANY_SCAN_DB(`reference_ids_used`)로 전달.
+- `scripts/scenarios/scenario_2_quick_company_scan.py`: Reference Library 조회
+  단계 추가(`list_active_references_for_company()`).
+- `scripts/scenarios/scenario_1_news_analysis.py`: Topic 관련 회사 기준 Reference
+  Library 조회 단계 추가.
+- `scripts/quick_company_scan.py`: Markdown/Executive Report에 "참조 근거" 절 추가.
+- `scripts/pipeline/dashboard_feed.py`: `_dedupe_most_recent_by()`,
+  `_reference_library_row()`, `reference_library_rows` 키 추가.
+- `scripts/dashboard_data_provider.py`: `PipelineDashboardDataProvider`가
+  `reference_library_summary()`를 조회해 전달(유일한 파일시스템 접근 지점).
+- `dashboard/template.html`/`sample_data.json`: Home Dashboard 6번째 카드
+  "Reference Library" 추가.
+- `.gitignore`: `reference_library/` 실제 파일/색인은 Git에서 제외(구조만 유지).
+- `docs/CONNECTION_READINESS.md`: §5에 Round 12 우선순위로 대체됐다는 포인터 추가.
+- 테스트: `test_scenarios.py`(+7)/`test_dashboard_feed.py`(+4)/
+  `test_reference_library.py`(신규 +14)/`test_dashboard.py`(+2)/
+  `test_dashboard_data_provider.py`(+2) 총 29건 추가.
+
+## Round 11에서 새로 생성/수정된 파일 (과거 기록)
 
 **신규**: `docs/PILOT_DEMO_PACKAGE.md`, `docs/USER_GUIDE.md`
 
@@ -91,12 +115,24 @@ $ python scripts/build_dashboard.py --data dashboard/sample_data.json     -> PAS
 
 - ADR-006/007/008/009/010: 문서 우선순위 / n8n 통합 / Workflow ID 정책 / Workflow
   생명주기 / Release Policy(RC1 정의)
-- Round 2~10의 각 Q 항목·추가 지시: `CHANGELOG.md`에 라운드별 상세 기록
+- Round 2~12의 각 Q 항목·추가 지시: `CHANGELOG.md`에 라운드별 상세 기록
+- **RC1 공식 승인(Round 12)**: ADR-010의 구조적 요건(Round 8)+콘텐츠 요건(Round 10)+
+  사용성 요건(Round 11)을 모두 충족한 것으로 Architect가 승인했다. RC1은 이제
+  동결(Frozen) 상태이며, 새로운 기능/Framework/Engine/Registry/Layer는 추가하지
+  않는다(Round 12가 명시적으로 예외 승인한 Reference Library MVP는 제외).
 
 ## 남은 사용자 작업 / 알려진 한계
 
-`TODO.md` 참고 — Round 11도 여전히 Mock/dry-run 기반이며 코드 구조는 동결 상태다
-(Architect 지시: "새로운 기능/구조는 구현하지 않는다"). Round 11이 새로 확인한 한계:
+`TODO.md` 참고 — Round 12도 여전히 Mock/dry-run 기반이며 실제 외부 API 호출은
+시작하지 않았다(RC1 동결, RC2는 다음 단계). Round 12가 새로 확인한 한계:
+- **Reference Library 승격은 사용자가 직접 파일을 옮겨야 한다** — Pilot이 사용자
+  파일을 임의로 이동시키지 않는다(안전 원칙)는 설계상, `inbox/`→`active/` 이동은
+  사용자가 직접 한다. 자동 분류(문서유형 추정 등)는 이번 MVP 범위 밖이다.
+- **RC2 실제 연결은 아직 시작 전** — `docs/RC2_CONNECTION_CHECKLIST.md`의 Credential
+  12개 항목이 전부 미준비 상태다. 사용자가 "N번 항목 준비 완료"를 알려줘야 다음
+  Round에서 순서대로(§2, Claude API부터) 실제 연결을 시작할 수 있다.
+
+Round 11이 확인한 한계(계속 유효):
 - **Home Dashboard의 "실행" 카드는 클릭할 수 없다** — Pilot이 서버 없는 정적
   HTML+CLI 구조라 명령어 텍스트로만 안내한다. 실제 클릭 실행이 필요하면 RC2 이후
   경량 로컬 서버 도입을 Architect 승인 사항으로 검토해야 한다.

@@ -488,3 +488,41 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
   - 전체 테스트 402개(Round 10) → 409개(+7개), 전부 PASS. 새로운 Engine/Layer/
     Registry/Framework/Widget/Enterprise 기능은 일절 추가하지 않았다. 외부 API
     실제 호출도 Round 11에서 없다.
+- **Round 12: "RC1 승인 + RC2 준비"** — "Round 11 결과를 승인한다. LCIP Pilot RC1을
+  공식 승인한다. 현재부터 RC1은 동결(Frozen)하고, 새로운 기능·Framework·Engine·
+  Registry·Layer를 추가하지 않는다. 다음 단계는 RC2 준비다." 이번 Round는 TD-006
+  해결/Reference Library MVP/RC2 Connection Plan 3개만 수행했다. 실제 외부 API
+  호출은 여전히 시작하지 않았다.
+  - **TD-006 Dashboard 자동 갱신**: Quick Company Scan을 실행해도 Home Dashboard가
+    갱신되지 않던 문제를 해소했다 — `scenario_3_investment_review.py`가 Scenario
+    1과 동일한 Dashboard Builder를 Export 다음 단계로 재사용해 `dashboard.html`을
+    직접 갱신한다(새 Layer 없이 기존 두 함수 재호출만 추가). 같은 Storage를 읽으므로
+    News Intelligence 데이터는 보존되고 COMPANY_SCAN_DB만 새로 반영된다.
+    `dashboard_feed.py`에 `_dedupe_most_recent_by()`를 추가해 같은 회사를 반복
+    스캔해도 위젯이 그 회사로 도배되지 않게 했다(Storage 자체는 감사 목적으로 전체
+    이력 보존).
+  - **Reference Library MVP**: `reference_library/{inbox,active,archive,index}`와
+    `scripts/reference_library.py`를 신설했다 — Architect가 이번 Round에 명시적으로
+    예외 승인한 항목이며, 기존 Knowledge Engine을 대체하지 않고 Embedding/Vector
+    DB/RAG Server 없이 파일 위치(inbox=미분류/active=AI 참고 가능/archive=보관)와
+    최소 Metadata로만 동작한다. `reliability_grade`(A/B/C)는 새 척도가 아니라
+    `knowledge/SOURCE_PRIORITY.md`의 기존 축을 `document_type`에서 결정론적으로
+    도출한다. PDF/DOCX/XLSX/PPTX는 "Parsing 미지원"으로 정직하게 표시하고
+    Markdown/TXT만 실제 파싱 가능(`parseable`)으로 표시한다. URL Registry는 자동
+    크롤링 없이 `inbox/url_registry.yaml` 매니페스트로만 지원한다. Scenario
+    1/2/3이 관련 자료를 조회해 결과물에 "참조 근거" 절로 표시하며("AI 학습 완료"
+    같은 표현 금지, "AI 참고자료"라고만 표기), Home Dashboard에는 새 Widget 없이
+    Round 11과 동일한 HOME_* 토큰 패턴으로 6번째 카드를 추가했다 — 실제
+    파일시스템 접근은 `PipelineDashboardDataProvider` 한 곳에서만 하는 계층
+    분리를 유지했다.
+  - **RC2 Connection Execution Plan**: `docs/RC2_CONNECTION_CHECKLIST.md`를
+    신설해 Round 7 `CONNECTION_READINESS.md`를 대체하지 않고 "무엇을 준비해야
+    하는지"를 A(사용자 작업)/B(Claude 작업)/C(공동 확인)로 재정리했다. Credential
+    12개 항목마다 상태/필요 시점/필수·선택/입력 위치/Secret 여부/"Claude에게 값을
+    직접 알려줘야 하는가"를 표로 정리했다(Secret 값 자체는 기록하지 않음).
+    Architect 지정 RC2 연결 우선순위 8단계(Claude API → Google Drive/Sheets →
+    Google News RSS → DART → n8n API → Gmail → Telegram → Naver News)를
+    반영했다.
+  - 전체 테스트 409개(Round 11) → 438개(+29개), 전부 PASS. Reference Library를
+    제외하고는 새로운 Engine/Layer/Registry/Framework를 추가하지 않았다. 외부 API
+    실제 호출도 Round 12에서 없다.

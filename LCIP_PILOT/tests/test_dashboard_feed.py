@@ -53,7 +53,7 @@ def test_critical_risk_and_future_opportunity_also_capped():
 def test_quick_company_scan_and_investment_review_row_labels_and_cap():
     scans = [
         {
-            "target_company": "LX Hausys",
+            "target_company": f"Company {n}",
             "scan_date": f"2026-08-{n:02d}",
             "confidence": "low",
             "recommendation_signal": "monitor",
@@ -70,6 +70,47 @@ def test_quick_company_scan_and_investment_review_row_labels_and_cap():
     assert data["quick_company_scan"][0]["종합 점수"] == "42.3/100"
     assert len(data["investment_review"]) == MAX_ROWS_PER_WIDGET
     assert set(data["investment_review"][0].keys()) == {"회사명", "추천 신호", "검토일"}
+
+
+def test_quick_company_scan_dedupes_repeated_same_company_scans():
+    """Round 12 TASK 1(TD-006) 완료조건: "같은 회사 반복 실행 시 무한 중복 누적하지
+    않는다." 같은 회사를 14번 스캔해도 위젯에는 가장 최근 스캔 1건만 남아야 한다."""
+    scans = [
+        {
+            "target_company": "LX Hausys",
+            "scan_date": f"2026-08-{n:02d}",
+            "confidence": "low",
+            "recommendation_signal": "monitor",
+            "company_intelligence_score": {"overall": float(n)},
+        }
+        for n in range(1, 15)
+    ]
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[], company_scans=scans,
+    )
+    assert len(data["quick_company_scan"]) == 1
+    assert data["quick_company_scan"][0]["스캔일"] == "2026-08-14"  # 가장 마지막 스캔만 남는다
+    assert len(data["investment_review"]) == 1
+
+
+def test_quick_company_scan_dedup_keeps_multiple_distinct_companies():
+    scans = [
+        {"target_company": "LX Hausys", "scan_date": "2026-08-01", "confidence": "low",
+         "recommendation_signal": "monitor", "company_intelligence_score": {"overall": 42.3}},
+        {"target_company": "LX Hausys", "scan_date": "2026-08-02", "confidence": "low",
+         "recommendation_signal": "monitor", "company_intelligence_score": {"overall": 43.0}},
+        {"target_company": "KCC", "scan_date": "2026-08-03", "confidence": "low",
+         "recommendation_signal": "monitor", "company_intelligence_score": {"overall": 45.0}},
+    ]
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[], company_scans=scans,
+    )
+    companies = {row["회사명"] for row in data["quick_company_scan"]}
+    assert companies == {"LX Hausys", "KCC"}
+    lx_row = next(r for r in data["quick_company_scan"] if r["회사명"] == "LX Hausys")
+    assert lx_row["스캔일"] == "2026-08-02"
 
 
 def test_source_health_row_uses_korean_labels_and_is_not_capped():
@@ -114,3 +155,32 @@ def test_recent_news_empty_when_no_articles():
         articles=[], intelligences=[],
     )
     assert data["recent_news"] == []
+
+
+def test_reference_library_rows_empty_when_summary_missing():
+    """Round 12 TASK 2: reference_library_summary를 넘기지 않아도(기본 None) 정직하게
+    빈 카드가 되어야 한다."""
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[],
+    )
+    assert data["reference_library_rows"] == []
+
+
+def test_reference_library_rows_summarizes_top_companies_and_counts():
+    summary = {
+        "total": 5,
+        "by_company": {"LX_HAUSYS": 3, "KCC": 2},
+        "latest_title": "최신 문서",
+        "official_count": 4,
+    }
+    data = build_dashboard_data(
+        topic_display_name="Topic", generated_at_kst="2026-08-07 09:00",
+        articles=[], intelligences=[], reference_library_summary=summary,
+    )
+    rows = data["reference_library_rows"]
+    assert len(rows) == 1
+    assert rows[0]["등록 자료 수"] == "5건"
+    assert rows[0]["회사별 자료 수(상위)"] == "LX_HAUSYS 3건, KCC 2건"
+    assert rows[0]["최신 자료"] == "최신 문서"
+    assert rows[0]["공식자료 수"] == "4건"

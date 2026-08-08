@@ -113,7 +113,11 @@ technical_debt:
     priority: P2
     estimated_time: "설계 결정 필요(예: 시연 직전 Dashboard만 별도 재빌드하는 절차 문서화) — 30분"
     owner: "다음 Architect Review 라운드 담당(설계 승인 필요)"
-    status: open
+    status: resolved  # Round 12 TASK 1 — Scenario 3도 Scenario 1과 동일한 Dashboard
+    # Builder(build_dashboard.build_html + PipelineDashboardDataProvider)를 Export
+    # 다음 단계로 재사용해 dashboard.html을 직접 갱신하도록 수정. 두 Scenario 모두
+    # 같은 Storage(output/pilot_data/)를 매번 전체 다시 읽어 렌더링하므로 "마지막
+    # 실행 기준으로 다른 Scenario의 산출물이 화면에서 사라지는" 문제가 해소됐다.
     identified_in_round: 8
 
   - debt_id: TD-007

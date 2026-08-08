@@ -391,6 +391,46 @@ Widget, Enterprise 기능.
   HTML+CLI 구조라 명령어 텍스트로만 안내한다. 클릭 실행이 필요하면 RC2 이후
   경량 로컬 서버 도입 여부를 Architect가 별도로 승인해야 한다.
 - Executive Dashboard 스냅샷 분리 문제(TD-006)는 Round 11에서도 다루지 않았다 —
-  "새 구조 금지" 지시상 이번 라운드 범위 밖이다.
+  "새 구조 금지" 지시상 이번 라운드 범위 밖이다. (Round 12에서 해결 — 아래 참고)
 - Company Registry 30개사 중 10개사(TOP10)만 실제 Knowledge를 보유한다 — 이번
   Round는 "새 회사 리서치 금지"였으므로 나머지 20개사는 그대로 Mock이다.
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 12 "RC1 승인 + RC2 준비" (전부 완료)
+
+Round 12 지시: "Round 11 결과를 승인한다. LCIP Pilot RC1을 공식 승인한다. 현재부터
+RC1은 동결(Frozen)하고, 새로운 기능·Framework·Engine·Registry·Layer를 추가하지
+않는다. 다음 단계는 RC2 준비다." 이번 Round는 3개 항목만 수행했다: TD-006 해결/
+Reference Library MVP(명시적 예외 승인)/RC2 Connection Plan. 실제 API 호출과 외부
+시스템 쓰기는 아직 하지 않는다 — 사용자가 Credential 준비 완료를 알려주면 다음
+Round에서 실행한다.
+
+- [x] **TASK 1: TD-006 Dashboard 갱신 문제 해결** — `scenario_3_investment_review.py`
+      가 Scenario 1과 동일한 Dashboard Builder를 재사용해 Export 다음 단계로
+      `dashboard.html`을 직접 갱신. 완료조건 5개 전부 확인: Scenario 3 실행 직후
+      Dashboard에 해당 회사 표시 / Scenario 1 별도 실행 불필요 / News Intelligence
+      데이터 보존 / 같은 회사 반복 실행 시 무한 중복 방지(`_dedupe_most_recent_by()`)
+      / 테스트 5건 추가.
+- [x] **TASK 2: Reference Library MVP** — `reference_library/{inbox,active,archive,
+      index}` + `scripts/reference_library.py` 신설. 폴더 자동 인식/기본 Metadata
+      등록/Knowledge Retrieval 연동/결과물 "참조 근거" 표시/Home Dashboard 6번째
+      카드까지 5개 지원 기능 전부 구현. PDF/DOCX/XLSX/PPTX는 "Parsing 미지원"으로
+      정직하게 표시, Markdown/TXT만 파싱 가능. URL Registry는 크롤링 없이 매니페스트
+      파일로 지원. Embedding/Vector DB/RAG Server/자동 OCR/버전 Diff/Semantic
+      Search/권한관리/자동 웹 크롤링은 지시대로 구현하지 않음.
+- [x] **TASK 3: RC2 Connection Execution Plan** — `docs/RC2_CONNECTION_CHECKLIST.md`
+      신설. A(사용자)/B(Claude)/C(공동확인) 역할 분담, Credential 12개 항목별
+      상태/필요시점/필수선택/입력위치/Secret여부/Claude 전달 필요여부 표, RC2 연결
+      우선순위 8단계(Claude API 최우선) 반영.
+- [x] **Technical Debt Registry 갱신** — TD-006을 `resolved`로 표시.
+
+## 이번 라운드(Architect Review Round 12 반영)에서 알려진 한계
+
+- Reference Library의 inbox→active 승격은 사용자가 직접 파일을 옮겨야 한다 —
+  Pilot이 사용자 파일을 임의로 이동시키지 않는다(안전 원칙). 자동 문서유형 분류는
+  이번 MVP 범위 밖이다.
+- RC2 실제 연결은 아직 시작 전이다 — Credential 12개 항목이 전부 미준비 상태
+  (`docs/RC2_CONNECTION_CHECKLIST.md` §1). 사용자가 순서대로 준비를 알려줘야 다음
+  Round에서 실제 연결이 시작된다.
+- Google Drive는 아직 `feature_flags.yaml`에 전용 스위치가 없다 — `create_drive_
+  structure.py --apply`라는 별도 dry-run/apply 메커니즘으로만 제어된다(RC2 진행 시
+  일관성 검토 필요).
