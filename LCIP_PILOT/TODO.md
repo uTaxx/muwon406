@@ -434,3 +434,30 @@ Round에서 실행한다.
 - Google Drive는 아직 `feature_flags.yaml`에 전용 스위치가 없다 — `create_drive_
   structure.py --apply`라는 별도 dry-run/apply 메커니즘으로만 제어된다(RC2 진행 시
   일관성 검토 필요).
+
+## Claude Code가 다음에 할 작업 — Architect Review Round 13 "RC2 실체화" (진행 중)
+
+Round 13 지시: "LCIP는 설계 단계를 종료하고 RC2(실체화 단계)로 전환한다. 지금부터는
+새로운 기능을 추가하지 않는다. Pilot MVP를 실제 사용할 수 있는 상태로 만드는 것이
+최우선이다." 새 개발 원칙: Claude가 독립 수행 가능한 코드 작업은 승인 없이 계속
+진행, Credential처럼 사람만 가능한 것만 질문(WHY/WHAT/HOW, 한 번에 하나씩).
+
+- [x] **Google Drive/Sheets 실체화** — `scripts/google_auth.py` 신설(OAuth Desktop/
+      Service Account 공용), `create_drive_structure.py`/`create_google_sheets.py`
+      의 `apply_plan()` 실제 API 호출 완성, `GoogleSheetsStorage` 실제 읽기/쓰기 완성.
+- [x] **n8n 실체화** — `n8n_deploy.py`의 `apply_deploy()` 완성(이름 매칭 갱신/생성,
+      삭제 없음). 실제 n8n 인스턴스 미검증 상태임을 코드에 명시.
+- [x] **Gmail/Telegram 실체화** — `notifiers.py`의 실제 발송 경로 완성(2중 안전장치
+      유지).
+- [ ] **DART/Naver Adapter** — 보류. 회사명→corp_code 매핑 등 추가 설계 결정이
+      필요해 "Credential만 있으면 되는" 나머지 항목과 분리했다.
+- [ ] **RC2 실제 연결 시작** — 사용자가 Credential을 준비해 알려주면 순서대로
+      Feature Flag를 켜고 검증한다(`docs/RC2_CONNECTION_CHECKLIST.md` §2).
+
+## 이번 라운드(Architect Review Round 13 반영)에서 알려진 한계
+
+- DART/Naver는 Credential이 있어도 아직 동작하지 않는다(어댑터 코드 자체가 stub).
+- n8n 배포 코드는 실제 n8n 인스턴스로 검증되지 않았다 — `tags` 필드 등 세부 계약은
+  Credential 준비 후 1회 실행으로 재확인이 필요하다.
+- Google Drive는 여전히 `feature_flags.yaml` 전용 스위치가 없다(Round 12부터 알려진
+  한계, 유효).

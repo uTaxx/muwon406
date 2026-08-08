@@ -55,8 +55,35 @@ def print_plan(plan: dict) -> None:
         print(f"  - {entry['path']}  ({entry['purpose']})")
 
 
+def _ensure_folder(service, name: str, parent_id: str | None) -> str:
+    """이름+부모 조합이 같은 폴더가 이미 있으면 재사용하고, 없으면 새로 만든다(멱등성 —
+    이 스크립트를 여러 번 실행해도 중복 폴더가 생기지 않는다)."""
+    query = (
+        f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+    if parent_id:
+        query += f" and '{parent_id}' in parents"
+    results = service.files().list(q=query, spaces="drive", fields="files(id, name)").execute()
+    existing = results.get("files", [])
+    if existing:
+        return existing[0]["id"]
+
+    metadata = {"name": name, "mimeType": "application/vnd.google-apps.folder"}
+    if parent_id:
+        metadata["parents"] = [parent_id]
+    created = service.files().create(body=metadata, fields="id").execute()
+    return created["id"]
+
+
 def apply_plan(plan: dict, auth_mode: str) -> None:
-    """실제 Google Drive API 호출. dry-run이 아닐 때만 이 함수가 실행된다."""
+    """실제 Google Drive API 호출. dry-run이 아닐 때만 이 함수가 실행된다.
+
+    Architect Review Round 13(RC2 실체화) — `oauth_desktop`/`service_account`
+    실제 쓰기 로직을 완성했다. Credential이 아직 준비되지 않았다면
+    `scripts/google_auth.py`가 명확한 안내 메시지와 함께 멈춘다(임의로 빈 값을
+    쓰거나 추측하지 않는다).
+    """
     if auth_mode == "n8n_only":
         print(
             "auth-mode=n8n_only: 로컬 스크립트는 실제 생성을 수행하지 않는다. "
@@ -71,25 +98,44 @@ def apply_plan(plan: dict, auth_mode: str) -> None:
     except ImportError as exc:  # pragma: no cover - 실제 환경 의존
         print(
             "google-api-python-client가 설치되어 있지 않다. "
-            "실제 적용 전 `pip install google-api-python-client google-auth` 필요.",
+            "실제 적용 전 `pip install -r requirements.txt` 필요.",
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
 
-    if auth_mode == "oauth_desktop":
-        raise SystemExit(
-            "OAuth Desktop 인증 흐름은 사용자 브라우저 승인이 필요하다. "
-            "docs/GOOGLE_DRIVE_SETUP.md의 절차를 먼저 완료한 뒤 이 스크립트를 다시 실행하라."
-        )
-    if auth_mode == "service_account":
-        sa_path = env_or_none("GOOGLE_SERVICE_ACCOUNT_JSON_PATH")
-        if not sa_path:
-            raise SystemExit("GOOGLE_SERVICE_ACCOUNT_JSON_PATH가 .env에 설정되어 있지 않다.")
-        raise SystemExit(
-            "Service Account 자격 증명이 감지되었으나, 이번 라운드(TASK-001~007)는 "
-            "실제 쓰기를 수행하지 않는다. 사용자 승인 후 별도 라운드에서 apply 로직을 완성한다."
-        )
-    raise SystemExit(f"알 수 없는 auth-mode: {auth_mode}")
+    from google_auth import GoogleAuthError, DRIVE_SCOPES, load_credentials
+
+    try:
+        creds = load_credentials(auth_mode, DRIVE_SCOPES)
+    except GoogleAuthError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    service = build("drive", "v3", credentials=creds)
+
+    root_folder_id = plan["existing_root_folder_id"]
+    if not root_folder_id:
+        root_folder_id = _ensure_folder(service, plan["root_folder_name"], parent_id=None)
+        print(f"Root 폴더 생성/확인됨: {plan['root_folder_name']} (id={root_folder_id})")
+        print(f"  -> .env의 {plan['root_folder_id_env']}에 이 ID를 저장하면 다음 실행부터 재사용된다.")
+    else:
+        print(f"기존 Root 폴더 재사용: {root_folder_id}")
+
+    id_by_path: dict[str, str] = {plan["root_folder_name"]: root_folder_id}
+    for entry in plan["folders_to_ensure"]:
+        parts = entry["path"].split("/")
+        current_path = parts[0]
+        parent_id = id_by_path[current_path]
+        for part in parts[1:]:
+            current_path = f"{current_path}/{part}"
+            if current_path in id_by_path:
+                parent_id = id_by_path[current_path]
+                continue
+            folder_id = _ensure_folder(service, part, parent_id=parent_id)
+            id_by_path[current_path] = folder_id
+            print(f"  폴더 생성/확인됨: {current_path} (id={folder_id})")
+            parent_id = folder_id
+
+    print(f"\n완료 — 폴더 {len(id_by_path)}개 생성/확인됨.")
 
 
 def main() -> int:

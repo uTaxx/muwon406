@@ -5,3 +5,12 @@ requests>=2.31
 pytest>=8.0
 feedparser>=6.0
 anthropic>=0.34
+
+# RC2 실체화(Architect Review Round 13) — Google Drive/Sheets/Gmail 실제 연결.
+# create_drive_structure.py는 googleapiclient(Drive API v3), create_google_sheets.py/
+# storage/google_sheets_storage.py는 gspread(Sheets API v4 래퍼)를 각각 이미 참조하고
+# 있었다 — 두 라이브러리를 통일하지 않고 기존 설계 그대로 채택했다.
+google-api-python-client>=2.100
+google-auth>=2.23
+google-auth-oauthlib>=1.1
+gspread>=6.0

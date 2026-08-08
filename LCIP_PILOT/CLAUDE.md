@@ -87,9 +87,13 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
    전환했다 — 새 회사 리서치/Registry/Layer/Engine/Framework/Dashboard Widget/
    Enterprise 기능을 전부 금지하고, Home Dashboard 완성/Quick Company Scan 결과
    요약 출력/Executive Report(HTML) 자동 생성/Pilot Demo Package/User Guide
-   재작성 5가지로 "실제 사용 흐름"만 다듬었다. 상세는 아래 "Round 6"/"Round 7"/
-   "Round 8"/"Round 9"/"Round 10"/"Round 11" 절 참고. 외부 API 실제 연결은 Round 11
-   까지도 시작하지 않았다.
+   재작성 5가지로 "실제 사용 흐름"만 다듬었다. Round 12는 RC1을 공식 승인·동결하고
+   TD-006 해결/Reference Library MVP(명시적 예외 승인)/RC2 Connection Plan 3개만
+   수행했다. Round 13은 "설계 단계 종료, RC2(실체화 단계) 전환"을 선언하고, 이미
+   설계됐지만 `NotImplementedError`로 막혀 있던 Google Drive/Sheets/n8n/Gmail/
+   Telegram 실제 연결 코드를 전부 완성했다(Credential 대기 상태로 여전히 실제
+   호출은 0건). 상세는 아래 "Round 6"~"Round 13" 절 참고. 외부 API 실제 연결은
+   Round 13까지도 시작하지 않았다(코드는 준비됐으나 Credential이 없다).
 5. 외부 계정에 영향을 주는 작업은 기본적으로 `dry-run`으로 구현한다.
 6. 실제 Google Drive·Sheets 생성, n8n 배포, 이메일·Telegram 발송 전 사용자 승인을 요청한다.
 7. Task 완료 후 `docs/05_ACCEPTANCE_TESTS.md`의 Acceptance Test를 수행한다.
@@ -526,3 +530,38 @@ LCIP (LX Corporate Intelligence Platform) Pilot은 **공개정보만** 사용하
   - 전체 테스트 409개(Round 11) → 438개(+29개), 전부 PASS. Reference Library를
     제외하고는 새로운 Engine/Layer/Registry/Framework를 추가하지 않았다. 외부 API
     실제 호출도 Round 12에서 없다.
+- **Round 13: "RC2 실체화"** — "LCIP는 설계 단계를 종료하고 RC2(실체화 단계)로
+  전환한다. 지금부터는 새로운 기능을 추가하지 않는다. Pilot MVP를 실제 사용할 수
+  있는 상태로 만드는 것이 최우선이다." 새 개발 원칙: Claude가 독립 수행 가능한 코드
+  작업(API 연동 코드 포함)은 승인 없이 계속 진행, Credential 등 사람만 가능한
+  것만 WHY/WHAT/HOW 형식으로 한 번에 하나씩 질문한다.
+  - **공용 Google 인증 헬퍼**: `scripts/google_auth.py` 신설 — Drive/Sheets/Gmail이
+    공유하는 OAuth Desktop(`InstalledAppFlow`, 토큰 캐시/자동 갱신)/Service Account
+    두 인증 방식을 한 곳에서 제공한다. 새 Framework가 아니라 각 파일이 이미
+    `.env.example`/`docs/GOOGLE_DRIVE_SETUP.md`에서 정의해 둔 인증 방식을 실제로
+    로드하는 얇은 공용 헬퍼다.
+  - **Google Drive/Sheets 실체화**: `create_drive_structure.py --apply`가 Drive
+    API v3로 Root/하위 폴더를 멱등적으로 생성한다(이미 있으면 재사용). `create_
+    google_sheets.py --apply`가 gspread로 누락 탭만 생성(헤더/freeze 포함, 기존
+    탭은 절대 건드리지 않음). `storage/google_sheets_storage.py`의 `append()`/
+    `load_all()`을 완성해 실제 Pipeline Storage로 쓸 수 있게 했다(탭이 없으면
+    `create_google_sheets.py --apply`를 먼저 실행하라는 명확한 에러).
+  - **n8n 실체화**: `n8n_deploy.py`의 `apply_deploy()`가 n8n Public API로 이름이
+    같은 Workflow는 갱신(PUT), 없으면 생성(POST)한다 — 삭제 API는 어디에서도
+    호출하지 않는다. 실제 n8n 인스턴스로 검증되지 않았음을 코드 주석에 명시했다
+    (`tags`/`active` 필드는 payload에서 제외 — Credential 준비 후 1회 실행으로
+    가정을 재확인해야 한다).
+  - **Gmail/Telegram 실체화**: `notifiers.py`의 `EmailNotifier`(Gmail API)/
+    `TelegramNotifier`(Bot API, 기존 `requests` 재사용)가 `test_mode=False`일 때
+    실제로 발송하도록 완성했다. `enabled`+`test_mode` 2중 안전장치는 그대로
+    유지했다.
+  - **보류**: DART(#4)/Naver News(#8) Adapter는 회사명→corp_code 매핑 등 추가
+    설계 결정이 필요해 이번 Round에서 구현하지 않았다 — 단순 "Credential 대기"
+    상태인 나머지 6개 항목과 다르게 분류했다(`docs/RC2_CONNECTION_CHECKLIST.md`
+    §1 갱신).
+  - 모든 실제 호출부는 `GoogleRSSAdapter`의 `http_get` 주입과 동일한 패턴으로
+    `client_factory`/`http_post`/`http` 등을 주입할 수 있어, 실제 네트워크 없이
+    가짜 클라이언트로 로직만 검증했다. 전체 테스트 438개(Round 12) → 449개
+    (+11개), 전부 PASS. 새 Engine/Layer/Registry/Framework는 추가하지 않았다
+    (이미 설계된 연결의 실제 구현만 완성). 외부 API 실제 호출은 Round 13에서도
+    0건이다(Credential이 없어 모든 실제 호출 경로가 명확한 에러로 멈춘다).

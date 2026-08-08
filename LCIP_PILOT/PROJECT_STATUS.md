@@ -1,40 +1,69 @@
 # Project Status
 
-최종 갱신: 2026-08-08 (Architect Review Round 12 반영)
+최종 갱신: 2026-08-08 (Architect Review Round 13 반영)
 
 ## 요약
 
-TASK-001~007 → Round 2~11(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 정의/
-Data Sprint/UX Sprint) → **Round 12("RC1 승인 + RC2 준비") 반영** 완료. Architect는
-"Round 11 결과를 승인한다. LCIP Pilot RC1을 공식 승인한다. 현재부터 RC1은
-동결(Frozen)하고, 새로운 기능·Framework·Engine·Registry·Layer를 추가하지 않는다.
-다음 단계는 RC2 준비다"라고 선언했다. 이번 Round는 3개 항목(TD-006 해결/Reference
-Library MVP/RC2 Connection Plan)만 수행했다.
+TASK-001~007 → Round 2~12(Knowledge/Provider/Registry/Coverage/Scenario화/RC1 승인/
+UX Sprint/RC2 준비) → **Round 13("RC2 실체화") 반영** 완료. Architect는 "LCIP는
+설계 단계를 종료하고 RC2(실체화 단계)로 전환한다. 지금부터는 새로운 기능을 추가하지
+않는다. Pilot MVP를 실제 사용할 수 있는 상태로 만드는 것이 최우선이다"라고 선언하며,
+Claude가 독립적으로 수행 가능한 코드 작업은 승인 없이 계속 진행하라는 새 개발 원칙을
+제시했다.
 
-**LCIP Pilot RC1이 공식 승인되었다** — ADR-010이 정의한 구조적 요건(Round 8)과
-콘텐츠 요건(Round 10 TOP10 완성)에 이어 사용성 요건(Round 11)까지 Architect가
-검토를 마쳤다. 이후 모든 개발은 "이 기능이 Pilot의 실제 사용자 검증에 필요한가?"
-질문을 통과해야 하며, RC2(실제 외부 API 연결)가 다음 목표다.
+**이미 설계됐지만 `NotImplementedError`로 막혀 있던 실제 외부 연결 코드를 전부
+완성했다** — Google Drive 폴더 생성, Google Sheets 탭 생성 + Storage 읽기/쓰기,
+n8n 워크플로우 배포, Gmail/Telegram 실제 발송. Credential만 입력하면 즉시 동작한다
+(현재는 전부 미입력 상태라 실제 호출은 여전히 0건). DART/Naver Adapter는 추가 설계
+결정(회사명→corp_code 매핑 등)이 필요해 이번 Round에서는 보류했다.
 
-## Round 12 TASK 3개 처리 결과
+## Round 13 실체화 처리 결과
 
-| 순위 | 항목 | 상태 | 핵심 내용 |
+| 우선순위 | 항목 | 상태 | 핵심 내용 |
 |---|---|---|---|
-| 1 | TD-006 Dashboard 자동 갱신 | ✅ 완료 | `scenario_3_investment_review.py`가 Scenario 1과 동일한 Dashboard Builder를 재사용해 Export 다음 단계로 `dashboard.html`을 직접 갱신. News Intelligence 데이터 보존, `_dedupe_most_recent_by()`로 같은 회사 반복 스캔 시 무한 중복 방지 |
-| 2 | Reference Library MVP | ✅ 완료 | `reference_library/{inbox,active,archive,index}` + `scripts/reference_library.py` 신설(Architect 명시적 예외 승인). Knowledge Engine 비대체, Embedding/RAG 없음. Scenario 1/2/3이 "참조 근거" 절 표시, Home Dashboard에 새 Widget 없이 6번째 카드 추가 |
-| 3 | RC2 Connection Execution Plan | ✅ 완료 | `docs/RC2_CONNECTION_CHECKLIST.md` 신설 — A(사용자)/B(Claude)/C(공동확인) 역할 분담, Credential 12개 항목 표, RC2 연결 우선순위 8단계 반영 |
+| 1 | Claude API | 코드 완료(기존) | `ClaudeProvider._call_anthropic()` — Round 6부터 완전 구현, Credential 대기만 |
+| 2 | Google Drive/Sheets | ✅ 코드 완료 | `google_auth.py` 신설(OAuth Desktop/Service Account 공용), Drive 폴더 생성 멱등적 구현, Sheets 탭 생성 + `GoogleSheetsStorage` 실제 읽기/쓰기 |
+| 3 | Google News RSS | 코드 완료(기존) | `GoogleRSSAdapter` — Round 6부터 완전 구현 |
+| 4 | DART | ⏸ 보류 | 어댑터 stub 그대로 — 회사명→corp_code 매핑 설계 필요 |
+| 5 | n8n API | ✅ 코드 완료 | `n8n_deploy.py`가 이름 매칭으로 갱신/생성(삭제 없음). 실제 n8n 인스턴스로 미검증 — 주석에 명시 |
+| 6 | Gmail | ✅ 코드 완료 | `EmailNotifier`가 Gmail API로 실제 발송(2중 안전장치 유지) |
+| 7 | Telegram | ✅ 코드 완료 | `TelegramNotifier`가 Bot API로 실제 발송(2중 안전장치 유지) |
+| 8 | Naver News | ⏸ 보류 | 어댑터 stub 그대로 |
 
 ## 테스트 결과
 
 ```text
-$ pytest tests/ -q                                              -> 전부 PASS (438개 테스트, Round 11: 409개 → +29개)
+$ pytest tests/ -q                                              -> 전부 PASS (449개 테스트, Round 12: 438개 → +11개)
 $ python scripts/validate_config.py                             -> PASS
 $ python scripts/secret_scan.py                                  -> PASS
 $ python scripts/bootstrap_project.py --dry-run                   -> PASS (Registry 8개 전체 검증 통과)
-$ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"  -> PASS (Home Dashboard 자동 갱신 + 참조 근거 절 확인)
 ```
 
-## Round 12에서 새로 생성/수정된 파일
+## Round 13에서 새로 생성/수정된 파일
+
+**신규**: `scripts/google_auth.py`, `tests/test_n8n_deploy.py`,
+`tests/test_create_drive_structure.py`, `tests/test_create_google_sheets.py`
+
+**수정**
+- `scripts/create_drive_structure.py`: `apply_plan()` 실제 Drive API 호출 완성
+  (멱등적 폴더 생성).
+- `scripts/create_google_sheets.py`: `apply_plan()` 실제 Sheets API 호출 완성
+  (gspread, 누락 탭만 생성), `--auth-mode` 옵션 추가.
+- `scripts/storage/google_sheets_storage.py`: `append()`/`load_all()` 실제 구현
+  (gspread 경유, `client_factory` 주입 지원).
+- `scripts/n8n_deploy.py`: `apply_deploy()` 실제 n8n Public API 호출 완성(이름
+  매칭 갱신/생성, 삭제 없음).
+- `scripts/notifiers.py`: `EmailNotifier`(Gmail API)/`TelegramNotifier`(Bot API)
+  실제 발송 경로 완성.
+- `requirements.txt`: `google-api-python-client`/`google-auth`/
+  `google-auth-oauthlib`/`gspread` 추가.
+- `docs/GOOGLE_DRIVE_SETUP.md`/`docs/GOOGLE_SHEETS_SETUP.md`/
+  `docs/RC2_CONNECTION_CHECKLIST.md`: apply 로직이 실제로 구현됐음을 반영.
+- 테스트: `test_storage.py`(+1)/`test_notifiers.py`(+3)/`test_n8n_deploy.py`
+  (신규 +3)/`test_create_drive_structure.py`(신규 +2)/`test_create_google_sheets.py`
+  (신규 +2) 총 11건 추가.
+
+## Round 12에서 새로 생성/수정된 파일 (과거 기록)
 
 **신규**: `scripts/reference_library.py`, `schemas/reference_metadata.schema.json`,
 `docs/RC2_CONNECTION_CHECKLIST.md`, `tests/test_reference_library.py`,
@@ -123,8 +152,16 @@ $ python scripts/scenarios/scenario_3_investment_review.py "LX Hausys"  -> PASS 
 
 ## 남은 사용자 작업 / 알려진 한계
 
-`TODO.md` 참고 — Round 12도 여전히 Mock/dry-run 기반이며 실제 외부 API 호출은
-시작하지 않았다(RC1 동결, RC2는 다음 단계). Round 12가 새로 확인한 한계:
+`TODO.md` 참고 — Round 13도 여전히 Mock/dry-run 기반이다(코드는 실제 호출 준비가
+됐지만 Credential이 없어 자연히 dry-run으로 남는다). Round 13이 새로 확인한 한계:
+- **DART/Naver News는 Credential이 있어도 아직 동작하지 않는다** — 어댑터 코드
+  자체가 stub이다(회사명→corp_code 매핑 등 추가 설계 필요, `docs/
+  RC2_CONNECTION_CHECKLIST.md` §1 참고).
+- **n8n 실제 배포 코드는 실제 n8n 인스턴스로 검증되지 않았다** — Public API
+  문서 기준으로 작성했으나, `tags` 필드 등 세부 계약은 실제 Credential이 준비되면
+  1회 실행으로 재확인이 필요하다.
+
+Round 12가 확인한 한계(계속 유효):
 - **Reference Library 승격은 사용자가 직접 파일을 옮겨야 한다** — Pilot이 사용자
   파일을 임의로 이동시키지 않는다(안전 원칙)는 설계상, `inbox/`→`active/` 이동은
   사용자가 직접 한다. 자동 분류(문서유형 추정 등)는 이번 MVP 범위 밖이다.

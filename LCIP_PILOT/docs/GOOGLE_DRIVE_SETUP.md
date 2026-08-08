@@ -41,8 +41,13 @@ python scripts/create_drive_structure.py --apply --auth-mode <oauth_desktop|serv
 ```
 
 `n8n_only` 모드에서는 이 명령도 실제로 아무것도 쓰지 않고, 계획을 n8n 워크플로우에서
-수동/노드 기반으로 반영하라는 안내만 출력한다. `oauth_desktop`/`service_account` 모드의
-실제 쓰기 로직은 TASK-008(외부 연결 승인) 라운드에서 사용자 승인 후 완성한다.
+수동/노드 기반으로 반영하라는 안내만 출력한다.
+
+**Round 13(RC2 실체화)부터 `oauth_desktop`/`service_account` 모드의 실제 쓰기 로직이
+구현되어 있다** — Credential(§1)만 `.env`에 준비되면 이 명령으로 실제 Drive에 폴더가
+생성된다(멱등성 보장 — 이미 있는 폴더는 재사용하고 중복 생성하지 않는다). `oauth_desktop`
+은 최초 1회 브라우저 승인이 필요하며, 이후에는 `GOOGLE_OAUTH_TOKEN_PATH`에 캐시된
+토큰을 재사용한다.
 
 ## 5. 생성될 폴더 구조
 

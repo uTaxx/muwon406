@@ -32,11 +32,14 @@ python scripts/create_google_sheets.py --dry-run
 
 ```bash
 export LCIP_CONFIRM_APPLY=yes
-python scripts/create_google_sheets.py --apply
+python scripts/create_google_sheets.py --apply --auth-mode <oauth_desktop|service_account>
 ```
 
-이번 라운드에서는 `--apply`를 붙여도 실제 Sheets API를 호출하지 않고, TASK-008 이후 라운드로
-안내 메시지만 출력한다 (Google 인증정보 준비 + 사용자 명시적 승인이 선행되어야 하므로).
+**Round 13(RC2 실체화)부터 실제 Sheets API 호출이 구현되어 있다** — Credential이
+준비되면 이 명령으로 누락된 탭이 실제로 생성된다(이미 있는 탭은 데이터를 포함해
+절대 건드리지 않는다). `GOOGLE_SHEETS_MASTER_SPREADSHEET_ID`가 가리키는 Spreadsheet
+자체는 이 스크립트가 만들지 않는다 — 빈 Spreadsheet를 먼저 하나 만들어 ID를 `.env`에
+넣어야 한다.
 
 ## 5. 생성될 탭 목록
 

@@ -5,6 +5,47 @@
 
 ## [Unreleased]
 
+### Added — Architect Review Round 13 "RC2 실체화" 반영 (2026-08-08, 13차)
+
+ChatGPT Architect Review Round 13 승인 및 반영. "LCIP는 설계 단계를 종료하고 RC2
+(실체화 단계)로 전환한다. 지금부터는 새로운 기능을 추가하지 않는다. Pilot MVP를
+실제 사용할 수 있는 상태로 만드는 것이 최우선이다"가 핵심 지시다. Claude가 독립적으로
+수행 가능한 코드 작업(API 연동 코드)은 승인 없이 계속 진행하라는 새 개발 원칙에 따라,
+이미 설계·스캐폴딩되어 있었지만 `NotImplementedError`로 막혀 있던 실제 외부 연결
+코드를 전부 완성했다 — Credential만 입력하면 즉시 동작한다.
+
+- **공용 Google 인증 헬퍼**: `scripts/google_auth.py` 신설 — Drive/Sheets/Gmail이
+  공유하는 OAuth Desktop(`InstalledAppFlow`, 토큰 캐시/자동 갱신)과 Service Account
+  두 인증 방식을 한 곳에서 제공한다.
+- **Google Drive 실제 폴더 생성**: `create_drive_structure.py --apply`의
+  `apply_plan()`을 완성했다 — Drive API v3로 Root 폴더 및 하위 폴더를 멱등적으로
+  생성/재사용한다(이미 있으면 재사용, 중복 생성 없음).
+- **Google Sheets 실제 탭 생성 + 저장소 연동**: `create_google_sheets.py --apply`가
+  gspread로 누락된 탭만 생성하고 헤더/freeze를 적용한다. `storage/
+  google_sheets_storage.py`의 `append()`/`load_all()`을 완성해 실제 Pipeline
+  Storage로 쓸 수 있게 했다(탭이 없으면 명확한 안내와 함께 실패 — 임의 생성 없음).
+- **n8n 실제 배포**: `n8n_deploy.py`의 `apply_deploy()`를 완성했다 — n8n Public API로
+  이름이 같은 Workflow는 갱신(PUT), 없으면 생성(POST)하며 삭제 API는 어디에서도
+  호출하지 않는다. 실제 n8n 인스턴스로 검증되지 않았음을 코드 주석에 명시했다
+  (Credential 준비 후 1회 실행으로 확인 필요).
+- **Gmail/Telegram 실제 발송**: `notifiers.py`의 `EmailNotifier`(Gmail API)/
+  `TelegramNotifier`(Bot API, `requests` 재사용)가 `test_mode=False`일 때 실제로
+  발송하도록 완성했다. 2중 안전장치(`enabled` + `test_mode`)는 그대로 유지했다.
+- **의존성 추가**: `requirements.txt`에 `google-api-python-client`/`google-auth`/
+  `google-auth-oauthlib`/`gspread` 추가(모두 기존 코드가 이미 참조하던 라이브러리 —
+  새 라이브러리 도입 없음).
+- **보류(다음 우선순위)**: DART(#4)/Naver News(#8) Adapter는 이번 Round에서 구현하지
+  않았다 — 회사명→corp_code 매핑 등 추가 설계 결정이 선행돼야 해서, 단순 "Credential
+  대기" 상태인 다른 6개 항목과 다르게 분류했다(`docs/RC2_CONNECTION_CHECKLIST.md` §1
+  갱신).
+- **테스트**: `test_storage.py`(+1, GoogleSheetsStorage 실제 로직)/
+  `test_notifiers.py`(+3, Gmail/Telegram 실제 발송)/`test_n8n_deploy.py`(신규 +3)/
+  `test_create_drive_structure.py`(신규 +2)/`test_create_google_sheets.py`(신규 +2)
+  총 11건 추가, 전부 실제 네트워크 없이 주입된 가짜 클라이언트로 검증(`GoogleRSSAdapter`
+  의 `http_get` 주입과 동일한 패턴). 전체 438개(Round 12) → 449개, 전부 PASS. 실제
+  외부 API 호출/실제 발송은 이번 Round도 0건이다(Credential이 없어 모든 실제 호출
+  경로가 명확한 에러로 멈춘다).
+
 ### Added — Architect Review Round 12 "RC1 승인 + RC2 준비" 반영 (2026-08-08, 12차)
 
 ChatGPT Architect Review Round 12 승인 및 반영. "Round 11 결과를 승인한다. LCIP

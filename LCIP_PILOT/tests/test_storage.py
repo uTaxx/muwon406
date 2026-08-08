@@ -58,11 +58,70 @@ def test_google_sheets_storage_enabled_without_spreadsheet_id_raises():
         storage.append("ARTICLE_DB", {})
 
 
-def test_google_sheets_storage_enabled_with_spreadsheet_id_raises_not_implemented():
-    storage = GoogleSheetsStorage(spreadsheet_id="fake-id", enabled=True)
-    with pytest.raises(NotImplementedError):
-        storage.append("ARTICLE_DB", {})
-    with pytest.raises(NotImplementedError):
+class _FakeWorksheet:
+    def __init__(self):
+        self.rows: list[list[str]] = []
+
+    def row_values(self, row_number: int) -> list[str]:
+        return self.rows[row_number - 1] if len(self.rows) >= row_number else []
+
+    def append_row(self, values: list) -> None:
+        self.rows.append([str(v) for v in values])
+
+    def get_all_records(self) -> list[dict]:
+        if not self.rows:
+            return []
+        headers, *data_rows = self.rows
+        return [dict(zip(headers, row)) for row in data_rows]
+
+
+class _FakeSpreadsheet:
+    def __init__(self):
+        self.worksheets_by_name: dict[str, _FakeWorksheet] = {}
+
+    def worksheet(self, name: str) -> _FakeWorksheet:
+        import gspread.exceptions
+
+        if name not in self.worksheets_by_name:
+            raise gspread.exceptions.WorksheetNotFound(name)
+        return self.worksheets_by_name[name]
+
+
+class _FakeGspreadClient:
+    def __init__(self, spreadsheet: _FakeSpreadsheet):
+        self._spreadsheet = spreadsheet
+
+    def open_by_key(self, spreadsheet_id: str) -> _FakeSpreadsheet:
+        return self._spreadsheet
+
+
+def test_google_sheets_storage_append_and_load_round_trips_with_injected_client():
+    """Round 13(RC2 실체화) — GoogleRSSAdapter의 http_get 주입과 동일한 패턴으로,
+    실제 네트워크 없이 append/load_all의 행 매핑 로직만 검증한다."""
+    spreadsheet = _FakeSpreadsheet()
+    spreadsheet.worksheets_by_name["ARTICLE_DB"] = _FakeWorksheet()
+    storage = GoogleSheetsStorage(
+        spreadsheet_id="fake-id", enabled=True,
+        client_factory=lambda: _FakeGspreadClient(spreadsheet),
+    )
+
+    storage.append("ARTICLE_DB", {"article_id": "ART-0001", "title": "제목 A"})
+    storage.append("ARTICLE_DB", {"article_id": "ART-0002", "title": "제목 B"})
+
+    records = storage.load_all("ARTICLE_DB")
+    assert records == [
+        {"article_id": "ART-0001", "title": "제목 A"},
+        {"article_id": "ART-0002", "title": "제목 B"},
+    ]
+
+
+def test_google_sheets_storage_missing_tab_raises_clear_runtime_error():
+    spreadsheet = _FakeSpreadsheet()  # ARTICLE_DB 탭 없음
+    storage = GoogleSheetsStorage(
+        spreadsheet_id="fake-id", enabled=True,
+        client_factory=lambda: _FakeGspreadClient(spreadsheet),
+    )
+    with pytest.raises(RuntimeError, match="create_google_sheets.py"):
         storage.load_all("ARTICLE_DB")
 
 

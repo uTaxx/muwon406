@@ -82,8 +82,15 @@ Secret 값은 이 문서(또는 어떤 Markdown/코드/Git)에도 절대 기록�
 | 11 | Telegram Bot Token / Chat ID | 미준비 | RC2 7단계 | 선택(Telegram 발송 시) | `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` | Bot Token은 예, Chat ID는 아니오 | Chat ID만 예, Token은 아니오 |
 | 12 | Naver API Client ID/Secret | 미준비 | RC2 8단계(마지막) | 선택(국내 뉴스 확장 시) | `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET` | 예 | 아니오 |
 
-"상태"는 이 문서 작성 시점(Round 12) 기준이며, `.env.example`의 모든 값이 비어 있는
-현재 상태를 그대로 반영한다 — 실제 준비 여부는 사용자가 §A-2로 갱신해 알려준다.
+"상태"는 Credential 준비 여부만 나타낸다(Round 12 작성 시점 기준, `.env.example`의
+모든 값이 비어 있는 현재 상태를 그대로 반영) — 실제 준비 여부는 사용자가 §A-2로
+갱신해 알려준다. **코드 준비 상태는 별개다**: Round 13(RC2 실체화)이 #1(Claude
+API)/#3~5(Drive/Sheets)/#8~9(n8n)/#10(Gmail)/#11(Telegram)의 실제 호출 코드를
+전부 완성했다 — Credential만 채워지면 즉시 동작한다. #7(DART)/#12(Naver)는 코드
+자체가 아직 stub(`scripts/adapters/future_adapters.py`)이라 Credential이 갖춰져도
+추가 구현이 먼저 필요하다(§4 Vision Backlog 아님 — RC2 우선순위에는 포함되지만
+DART는 회사명→corp_code 매핑이라는 별도 설계 결정이 선행돼야 해서 이번 Round는
+보류했다).
 
 ## 2. RC2 연결 우선순위 (Architect 지정 순서)
 

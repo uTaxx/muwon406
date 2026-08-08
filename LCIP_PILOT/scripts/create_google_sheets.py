@@ -67,21 +67,56 @@ def print_plan(plan: dict) -> None:
         )
 
 
-def apply_plan(plan: dict) -> None:
+def apply_plan(plan: dict, auth_mode: str) -> None:
+    """실제 Google Sheets API 호출(gspread 경유). dry-run이 아닐 때만 실행된다.
+
+    Architect Review Round 13(RC2 실체화) — 탭 생성 apply 로직을 완성했다. 기존 탭은
+    절대 건드리지 않고(`plan["tabs_to_create"]`만 대상), 각 탭 생성 직후 헤더 행을
+    쓰고 `freeze_rows`만큼 고정한다.
+    """
     try:
-        import gspread  # type: ignore  # noqa: F401
+        import gspread  # type: ignore
     except ImportError as exc:  # pragma: no cover
         print(
-            "gspread가 설치되어 있지 않다. 실제 적용 전 `pip install gspread google-auth` 필요.",
+            "gspread가 설치되어 있지 않다. 실제 적용 전 `pip install -r requirements.txt` 필요.",
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
 
-    raise SystemExit(
-        "이번 라운드(TASK-001~007)는 Google Sheets 실제 생성을 수행하지 않는다. "
-        "TASK-008 이후, 사용자가 Master Spreadsheet ID와 인증 정보를 제공하고 명시적으로 "
-        "승인한 뒤 apply 로직을 완성한다."
-    )
+    spreadsheet_id = env_or_none("GOOGLE_SHEETS_MASTER_SPREADSHEET_ID")
+    if not spreadsheet_id:
+        raise SystemExit(
+            "GOOGLE_SHEETS_MASTER_SPREADSHEET_ID가 .env에 설정되어 있지 않다 — 기존 "
+            "Master Spreadsheet가 있다면 그 ID를, 없다면 먼저 빈 Spreadsheet를 하나 "
+            "만들어 ID를 채워야 한다(이 스크립트는 Spreadsheet 자체는 생성하지 않고 "
+            "탭만 추가한다)."
+        )
+
+    from google_auth import GoogleAuthError, SHEETS_SCOPES, load_credentials
+
+    try:
+        creds = load_credentials(auth_mode, SHEETS_SCOPES)
+    except GoogleAuthError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    client = gspread.authorize(creds)
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    existing_titles = {ws.title for ws in spreadsheet.worksheets()}
+
+    created = 0
+    for tab in plan["tabs_to_create"]:
+        if tab["name"] in existing_titles:
+            continue  # 이미 있는 탭은 건드리지 않는다(데이터 삭제 금지 원칙)
+        cols = max(len(tab["columns"]), 1)
+        worksheet = spreadsheet.add_worksheet(title=tab["name"], rows=100, cols=cols)
+        if tab["columns"]:
+            worksheet.append_row(tab["columns"])
+        if tab["freeze_rows"]:
+            worksheet.freeze(rows=tab["freeze_rows"])
+        print(f"  탭 생성됨: {tab['name']} ({len(tab['columns'])}개 컬럼)")
+        created += 1
+
+    print(f"\n완료 — 탭 {created}개 생성됨(이미 존재하던 탭은 건드리지 않음).")
 
 
 def main() -> int:
@@ -92,6 +127,12 @@ def main() -> int:
         "--existing-tabs",
         default="",
         help="쉼표로 구분된, 이미 존재하는 탭 이름 목록 (테스트/시뮬레이션용)",
+    )
+    parser.add_argument(
+        "--auth-mode",
+        choices=["oauth_desktop", "service_account"],
+        default="oauth_desktop",
+        help="--apply 시 사용할 Google 인증 방식 (기본: oauth_desktop)",
     )
     parser.add_argument("--out", default=None, help="계획 JSON을 파일로도 저장 (선택)")
     args = parser.parse_args()
@@ -114,7 +155,7 @@ def main() -> int:
                 "설정해야 한다. 현재 미설정이므로 dry-run으로 종료한다."
             )
             return 0
-        apply_plan(plan)
+        apply_plan(plan, args.auth_mode)
     else:
         print("\n(dry-run) 실제 Google Sheets API 호출 없음.")
 
