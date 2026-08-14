@@ -16,11 +16,13 @@ interface SortControlProps {
 export function SortControl({ value, onChange, resultCount }: SortControlProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-neutral-500">검색 결과 {resultCount}곳</span>
+      <span className="text-sm text-stone-500">
+        검색 결과 <span className="font-semibold text-stone-800">{resultCount}</span>곳
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as SortKey)}
-        className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500"
+        className="rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-sm text-stone-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

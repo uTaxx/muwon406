@@ -2,6 +2,13 @@
 
 키워드/지역으로 맛집·카페를 검색하고, 지도에서 위치를 확인하고, 평점·리뷰순으로 정렬하고, 즐겨찾기(찜)할 수 있는 대시보드입니다.
 
+## 디자인
+
+민트 톤 primary 컬러 + 웜톤 오프화이트 배경, 큰 라운드 코너와 소프트 elevation을 쓰는 파스텔 스타일가이드를 기준으로
+꾸몄습니다. 색상 팔레트는 `tailwind.config.js`의 `brand` 스케일에, 카드/버튼 radius는 `rounded-card`/`shadow-soft`/
+`shadow-elevated` 커스텀 토큰에 정의되어 있습니다. 한글 가독성이 좋은 [Pretendard](https://github.com/orioncactus/pretendard)를
+기본 폰트로 CDN에서 불러와 사용합니다 (`index.html`).
+
 ## 주요 기능
 
 - 키워드/지역 검색 (가게명, 메뉴, 태그, 지역명, 주소)

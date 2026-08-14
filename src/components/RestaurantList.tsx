@@ -23,7 +23,7 @@ export function RestaurantList({
   onSelect,
 }: RestaurantListProps) {
   if (loading) {
-    return <div className="py-16 text-center text-sm text-neutral-400">검색 중...</div>
+    return <div className="py-16 text-center text-sm text-stone-400">검색 중...</div>
   }
 
   if (error) {
@@ -34,7 +34,7 @@ export function RestaurantList({
 
   if (restaurants.length === 0) {
     return (
-      <div className="py-16 text-center text-sm text-neutral-400">
+      <div className="py-16 text-center text-sm text-stone-400">
         조건에 맞는 맛집/카페가 없어요. 필터를 조정해보세요.
       </div>
     )

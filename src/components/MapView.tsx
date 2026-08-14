@@ -58,9 +58,9 @@ export function MapView({ restaurants, selectedId, onSelect }: MapViewProps) {
 
   if (status === 'no-key') {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
-        <p className="text-sm font-medium text-neutral-500">지도가 연결되어 있지 않아요</p>
-        <p className="max-w-xs text-xs text-neutral-400">
+      <div className="flex h-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-stone-300 bg-stone-50 p-6 text-center">
+        <p className="text-sm font-medium text-stone-500">지도가 연결되어 있지 않아요</p>
+        <p className="max-w-xs text-xs text-stone-400">
           .env 파일에 VITE_KAKAO_MAP_KEY를 설정하면 실제 지도가 표시돼요. (.env.example 참고)
         </p>
       </div>
@@ -69,11 +69,11 @@ export function MapView({ restaurants, selectedId, onSelect }: MapViewProps) {
 
   if (status === 'error') {
     return (
-      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-red-200 bg-red-50 p-6 text-center text-sm text-red-500">
+      <div className="flex h-full items-center justify-center rounded-card border border-dashed border-red-200 bg-red-50 p-6 text-center text-sm text-red-500">
         지도를 불러오지 못했어요. API 키를 확인해주세요.
       </div>
     )
   }
 
-  return <div ref={containerRef} className="h-full w-full rounded-xl bg-neutral-100" />
+  return <div ref={containerRef} className="h-full w-full rounded-card bg-stone-100" />
 }

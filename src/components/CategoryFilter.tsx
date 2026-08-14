@@ -46,10 +46,10 @@ export function CategoryFilter({
           <button
             key={type}
             onClick={() => onPlaceTypeChange(type)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
               placeType === type
-                ? 'bg-brand-600 text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-brand-300 text-stone-900'
+                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
           >
             {type}
@@ -63,8 +63,8 @@ export function CategoryFilter({
             onClick={() => toggleCategory(category)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               categories.includes(category)
-                ? 'border-brand-600 bg-brand-50 text-brand-700'
-                : 'border-neutral-300 text-neutral-600 hover:border-brand-300'
+                ? 'border-brand-300 bg-brand-100 text-brand-800'
+                : 'border-stone-300 text-stone-600 hover:border-brand-300'
             }`}
           >
             {category}

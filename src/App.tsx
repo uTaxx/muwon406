@@ -69,18 +69,20 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-          <h1 className="text-xl font-bold text-neutral-900">🍽️ 맛집·카페 검색 대시보드</h1>
-          <p className="mt-0.5 text-sm text-neutral-400">
-            데이터 소스: <span className="font-medium text-brand-600">{provider.name}</span>
+    <div className="min-h-screen bg-stone-50">
+      <header className="border-b border-stone-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900">
+            🍽️ 맛집·카페 검색 대시보드
+          </h1>
+          <p className="mt-1 text-sm text-stone-400">
+            데이터 소스: <span className="font-semibold text-brand-600">{provider.name}</span>
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6">
-        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+        <div className="rounded-card border border-stone-200 bg-white p-5 shadow-soft">
           <SearchBar
             keyword={filters.keyword}
             region={filters.region}
@@ -95,7 +97,7 @@ export default function App() {
               onCategoriesChange={(categories) => setFilters((f) => ({ ...f, categories }))}
             />
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-3">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <ReviewQualityFilter
                 excludeReviewEvents={filters.excludeReviewEvents}
@@ -122,12 +124,13 @@ export default function App() {
           </div>
 
           <div className="order-1 space-y-4 lg:order-2">
-            <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="rounded-card border border-stone-200 bg-white p-4 shadow-soft">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-neutral-700">즐겨찾기</h2>
-                <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+                <h2 className="text-sm font-semibold text-stone-700">즐겨찾기</h2>
+                <label className="flex items-center gap-1.5 text-xs text-stone-500">
                   <input
                     type="checkbox"
+                    className="accent-brand-500"
                     checked={showFavoritesOnly}
                     onChange={(e) => setShowFavoritesOnly(e.target.checked)}
                   />
@@ -141,7 +144,7 @@ export default function App() {
               />
             </div>
 
-            <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="rounded-card border border-stone-200 bg-white p-4 shadow-soft">
               <div className="mb-3">
                 <SortControl
                   value={filters.sortBy}

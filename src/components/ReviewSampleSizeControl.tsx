@@ -7,12 +7,12 @@ interface ReviewSampleSizeControlProps {
 
 export function ReviewSampleSizeControl({ value, onChange }: ReviewSampleSizeControlProps) {
   return (
-    <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+    <label className="flex items-center gap-1.5 text-xs text-stone-600">
       리뷰 분석 개수
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-brand-500"
+        className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
       >
         {OPTIONS.map((n) => (
           <option key={n} value={n}>

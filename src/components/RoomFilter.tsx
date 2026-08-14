@@ -5,9 +5,10 @@ interface RoomFilterProps {
 
 export function RoomFilter({ requirePrivateRoom, onChange }: RoomFilterProps) {
   return (
-    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-neutral-600">
+    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-stone-600">
       <input
         type="checkbox"
+        className="accent-brand-500"
         checked={requirePrivateRoom}
         onChange={(e) => onChange(e.target.checked)}
       />
