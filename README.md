@@ -79,30 +79,30 @@ npm run dev
 상태조회 서비스"를 신청해 서비스 키를 발급받아야 합니다. 이 API도 브라우저에서 직접 호출하도록 공식 지원되지
 않아 서버 프록시가 필요합니다.
 
-## 자동 데이터 파이프라인 (n8n + GitHub + Google Sheets)
+## 실시간 검색 + 누적 저장 파이프라인 (n8n + Google Sheets)
 
-API 키 없이도 데모가 동작하지만, 실제 데이터로 하루~주 1회 자동 갱신되게 하려면 아래 배치 파이프라인을 씁니다.
+`VITE_DATA_SOURCE=live`로 설정하면 대시보드가 정적 파일이 아니라 n8n 웹훅을 실시간으로 호출합니다.
 
 ```
-n8n (스케줄, 매일 03:00)
-  → 카카오 로컬 API로 지역별 맛집/카페 검색
-  → Google Sheets에서 API로 못 얻는 값(회식룸 여부, 사업자등록번호 등) 읽어와 병합
-  → public/data/restaurants.json 을 GitHub 저장소에 커밋
-  → GitHub Actions(.github/workflows/deploy.yml)가 push를 감지해 Vite 빌드 후 GitHub Pages에 자동 배포
-  → 배포된 사이트에서 VITE_DATA_SOURCE=live 인 경우 이 JSON 파일을 그대로 읽어 표시
+대시보드에서 검색 (키워드/지역 있음)
+  → n8n 웹훅(GET) 호출
+  → 카카오 로컬 API 실시간 검색
+  → Google Sheets("restaurants" 탭)에서 같은 id의 기존 데이터를 읽어 회식룸/업력/사업자정보 등
+    수동 필드를 유지한 채 병합
+  → 병합 결과를 시트에 upsert(카카오 id 기준)로 반영 — 검색될 때마다 데이터베이스가 누적됨
+  → 병합 결과를 대시보드에 바로 응답
+
+대시보드를 검색어 없이 처음 열 때
+  → 같은 웹훅을 파라미터 없이 호출 → 지금까지 시트에 쌓인 전체 목록을 그대로 반환 (기본 화면용)
 ```
 
-**n8n**: `맛집·카페 데이터 자동 갱신` 워크플로우가 비활성 상태로 생성되어 있습니다. 활성화 전 아래 3개 자격증명을 연결하세요.
+즉 정해진 지역을 매일 도는 배치 크롤링이 아니라, **사람들이 실제로 검색한 곳만 데이터베이스에 쌓이는 구조**입니다. 카테고리 필터·정렬처럼 이미 받아온 데이터로 처리 가능한 조건은 프론트엔드(`filterAndSortRestaurants`)에서 처리하고, 키워드/지역이 바뀔 때만 웹훅을 다시 호출합니다 (`src/App.tsx`).
 
-- Kakao REST API Key (HTTP Header Auth 자격증명, 헤더 이름 `Authorization`, 값 `KakaoAK <키>`)
-- Google Sheets OAuth (시트 컬럼: `name, hasPrivateRoom, roomCapacity, openedYear, businessRegistrationDate, businessRegistrationNumber, hasReviewEvent, sponsoredReviewRatio`)
-- GitHub Personal Access Token (해당 저장소 `repo` 쓰기 권한)
+**n8n**: `맛집·카페 실시간 검색 + 누적 저장` 워크플로우가 Active 상태로 배포되어 있고, 웹훅 URL은 `.env.example`의 `VITE_N8N_SEARCH_WEBHOOK_URL`에 있습니다. 카카오 REST API Key(Header Auth)와 Google Sheets OAuth 자격증명이 이미 연결되어 있습니다.
 
-카카오 로컬 API는 사업자등록번호를 주지 않기 때문에, 사업자 조회·회식룸 여부처럼 API로 얻을 수 없는 값은 Google Sheets에 사람이 직접 입력해두고 워크플로우가 매장명 기준으로 병합합니다.
+**Google Sheets**: 스프레드시트 안에 `restaurants` 탭이 실데이터베이스 역할을 합니다. 카카오 로컬 API가 주지 않는 값(회식룸 여부, 업력, 사업자등록일 등)은 이 시트에서 `id`(카카오 장소 id)로 해당 행을 찾아 직접 입력하면, 다음 검색/조회 때 자동으로 반영됩니다. 사업자등록번호와 개업 연도는 어떤 API도 주지 않는 정보라 사람이 직접 조사해서 채워야 합니다.
 
-**GitHub Pages**: 저장소 Settings → Pages → Source를 "GitHub Actions"로 설정하면 `main` 브랜치에 push될 때마다(위 워크플로우의 커밋 포함) 자동 배포됩니다. `vite.config.ts`의 `base`는 `/muwon406/`로 맞춰져 있습니다 — 저장소 이름을 바꾸면 함께 수정하세요.
-
-**로컬에서 live 데이터 테스트**: `.env`에 `VITE_DATA_SOURCE=live`로 설정하면 `public/data/restaurants.json`을 읽어옵니다. 지금은 mock 데이터로 시드되어 있고, n8n이 실행되면 이 파일이 최신 데이터로 갱신됩니다.
+**GitHub / GitHub Pages**: 이 저장소는 이제 코드(앱)만 호스팅합니다. `.github/workflows/deploy.yml`이 `main` push마다 Vite 빌드 후 GitHub Pages에 배포합니다 (Settings → Pages → Source를 "GitHub Actions"로 설정). 데이터는 더 이상 저장소에 커밋되지 않습니다.
 
 ## 프로젝트 구조
 
@@ -114,9 +114,8 @@ src/
   services/providers/        # 데이터 소스 추상화 (mock/live/kakao/naver/google)
   hooks/                     # 즐겨찾기(localStorage), 카카오맵 SDK 로더
   components/                # 검색바, 필터, 정렬, 카드, 지도, 즐겨찾기 패널
-  App.tsx                    # 전체 레이아웃 및 상태 관리
-public/data/restaurants.json # n8n이 주기적으로 갱신하는 데이터 파일 (live 소스)
-.github/workflows/deploy.yml # GitHub Pages 자동 배포
+  App.tsx                    # 전체 레이아웃 및 상태 관리 (키워드/지역 변경 시에만 provider 재호출)
+.github/workflows/deploy.yml # GitHub Pages 자동 배포 (코드만, 데이터는 n8n 웹훅에서 실시간 제공)
 ```
 
 ## 빌드

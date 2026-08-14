@@ -56,6 +56,7 @@ export interface Restaurant {
    * 변경 여부를 추정하는 용도로만 사용합니다.
    */
   businessRegistrationDate?: string
+  businessRegistrationNumber?: string
   businessStatus?: BusinessStatus
   /** 회식/모임용 별도 룸 보유 여부 */
   hasPrivateRoom: boolean

@@ -1,5 +1,5 @@
 import type { SearchProvider } from './types'
-import type { Restaurant, SearchFilters } from '../../types/restaurant'
+import type { Restaurant } from '../../types/restaurant'
 
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY as string | undefined
 
@@ -49,14 +49,14 @@ function toRestaurant(doc: KakaoDocument): Restaurant {
 
 export const kakaoProvider: SearchProvider = {
   name: 'kakao',
-  async search(filters: SearchFilters) {
+  async search(keyword: string, region: string) {
     if (!KAKAO_REST_API_KEY) {
       throw new Error(
         '카카오 검색을 사용하려면 VITE_KAKAO_REST_API_KEY 환경변수를 설정하세요 (.env.example 참고).',
       )
     }
 
-    const query = [filters.keyword, filters.region].filter(Boolean).join(' ') || '맛집'
+    const query = [keyword, region].filter(Boolean).join(' ') || '맛집'
     const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json')
     url.searchParams.set('query', query)
     url.searchParams.set('size', '15')

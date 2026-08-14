@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Restaurant, SearchFilters } from './types/restaurant'
 import { DEFAULT_REVIEW_SAMPLE_SIZE } from './types/restaurant'
 import { getActiveProvider } from './services/providers'
+import { filterAndSortRestaurants } from './utils/filterRestaurants'
 import { useFavorites } from './hooks/useFavorites'
 import { SearchBar } from './components/SearchBar'
 import { CategoryFilter } from './components/CategoryFilter'
@@ -26,7 +27,7 @@ const DEFAULT_FILTERS: SearchFilters = {
 
 export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS)
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [rawResults, setRawResults] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
   const [selected, setSelected] = useState<Restaurant | undefined>()
@@ -36,15 +37,18 @@ export default function App() {
   const { favoriteIds, toggleFavorite } = useFavorites()
   const provider = useMemo(() => getActiveProvider(), [])
 
+  // keyword/region이 바뀔 때만 provider를 다시 호출합니다. 카테고리·정렬·부가 필터는
+  // 이미 받아온 rawResults를 아래에서 다시 걸러내기만 하므로, 실시간 검색 API를
+  // 불필요하게 다시 호출하지 않습니다.
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(undefined)
 
     provider
-      .search(filters)
+      .search(filters.keyword, filters.region)
       .then((results) => {
-        if (!cancelled) setRestaurants(results)
+        if (!cancelled) setRawResults(results)
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message)
@@ -56,7 +60,12 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [filters, provider])
+  }, [filters.keyword, filters.region, provider])
+
+  const restaurants = useMemo(
+    () => filterAndSortRestaurants(rawResults, filters),
+    [rawResults, filters],
+  )
 
   const visibleRestaurants = showFavoritesOnly
     ? restaurants.filter((r) => favoriteIds.includes(r.id))
