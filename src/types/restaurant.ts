@@ -19,7 +19,7 @@ export type CuisineCategory =
 
 export type PriceRange = '~1만원' | '1~2만원' | '2~3만원' | '3만원~'
 
-export type DataSource = 'mock' | 'kakao' | 'naver' | 'google'
+export type DataSource = 'mock' | 'live' | 'kakao' | 'naver' | 'google'
 
 export type BusinessStatus = '계속사업자' | '휴업자' | '폐업자'
 

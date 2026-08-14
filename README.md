@@ -79,6 +79,31 @@ npm run dev
 상태조회 서비스"를 신청해 서비스 키를 발급받아야 합니다. 이 API도 브라우저에서 직접 호출하도록 공식 지원되지
 않아 서버 프록시가 필요합니다.
 
+## 자동 데이터 파이프라인 (n8n + GitHub + Google Sheets)
+
+API 키 없이도 데모가 동작하지만, 실제 데이터로 하루~주 1회 자동 갱신되게 하려면 아래 배치 파이프라인을 씁니다.
+
+```
+n8n (스케줄, 매일 03:00)
+  → 카카오 로컬 API로 지역별 맛집/카페 검색
+  → Google Sheets에서 API로 못 얻는 값(회식룸 여부, 사업자등록번호 등) 읽어와 병합
+  → public/data/restaurants.json 을 GitHub 저장소에 커밋
+  → GitHub Actions(.github/workflows/deploy.yml)가 push를 감지해 Vite 빌드 후 GitHub Pages에 자동 배포
+  → 배포된 사이트에서 VITE_DATA_SOURCE=live 인 경우 이 JSON 파일을 그대로 읽어 표시
+```
+
+**n8n**: `맛집·카페 데이터 자동 갱신` 워크플로우가 비활성 상태로 생성되어 있습니다. 활성화 전 아래 3개 자격증명을 연결하세요.
+
+- Kakao REST API Key (HTTP Header Auth 자격증명, 헤더 이름 `Authorization`, 값 `KakaoAK <키>`)
+- Google Sheets OAuth (시트 컬럼: `name, hasPrivateRoom, roomCapacity, openedYear, businessRegistrationDate, businessRegistrationNumber, hasReviewEvent, sponsoredReviewRatio`)
+- GitHub Personal Access Token (해당 저장소 `repo` 쓰기 권한)
+
+카카오 로컬 API는 사업자등록번호를 주지 않기 때문에, 사업자 조회·회식룸 여부처럼 API로 얻을 수 없는 값은 Google Sheets에 사람이 직접 입력해두고 워크플로우가 매장명 기준으로 병합합니다.
+
+**GitHub Pages**: 저장소 Settings → Pages → Source를 "GitHub Actions"로 설정하면 `main` 브랜치에 push될 때마다(위 워크플로우의 커밋 포함) 자동 배포됩니다. `vite.config.ts`의 `base`는 `/muwon406/`로 맞춰져 있습니다 — 저장소 이름을 바꾸면 함께 수정하세요.
+
+**로컬에서 live 데이터 테스트**: `.env`에 `VITE_DATA_SOURCE=live`로 설정하면 `public/data/restaurants.json`을 읽어옵니다. 지금은 mock 데이터로 시드되어 있고, n8n이 실행되면 이 파일이 최신 데이터로 갱신됩니다.
+
 ## 프로젝트 구조
 
 ```
@@ -86,10 +111,12 @@ src/
   types/restaurant.ts        # 맛집/카페 데이터 타입 정의
   data/mockRestaurants.ts    # 샘플 데이터 (실제 API 응답과 동일한 필드 구조)
   utils/filterRestaurants.ts # 키워드/지역/카테고리 필터 + 정렬 로직
-  services/providers/        # 데이터 소스 추상화 (mock/kakao/naver/google)
+  services/providers/        # 데이터 소스 추상화 (mock/live/kakao/naver/google)
   hooks/                     # 즐겨찾기(localStorage), 카카오맵 SDK 로더
   components/                # 검색바, 필터, 정렬, 카드, 지도, 즐겨찾기 패널
   App.tsx                    # 전체 레이아웃 및 상태 관리
+public/data/restaurants.json # n8n이 주기적으로 갱신하는 데이터 파일 (live 소스)
+.github/workflows/deploy.yml # GitHub Pages 자동 배포
 ```
 
 ## 빌드
