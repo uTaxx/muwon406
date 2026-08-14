@@ -12,6 +12,31 @@ interface RestaurantListProps {
   onSelect: (restaurant: Restaurant) => void
 }
 
+function RestaurantGroup({
+  restaurants,
+  favoriteIds,
+  selectedId,
+  reviewSampleSize,
+  onToggleFavorite,
+  onSelect,
+}: Omit<RestaurantListProps, 'loading' | 'error'>) {
+  return (
+    <div className="space-y-3">
+      {restaurants.map((restaurant) => (
+        <RestaurantCard
+          key={restaurant.id}
+          restaurant={restaurant}
+          isFavorite={favoriteIds.includes(restaurant.id)}
+          isSelected={restaurant.id === selectedId}
+          reviewSampleSize={reviewSampleSize}
+          onToggleFavorite={onToggleFavorite}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function RestaurantList({
   restaurants,
   favoriteIds,
@@ -40,19 +65,51 @@ export function RestaurantList({
     )
   }
 
+  const restaurantsOnly = restaurants.filter((r) => r.placeType === '맛집')
+  const cafesOnly = restaurants.filter((r) => r.placeType === '카페')
+  const isMixed = restaurantsOnly.length > 0 && cafesOnly.length > 0
+
+  if (!isMixed) {
+    return (
+      <RestaurantGroup
+        restaurants={restaurants}
+        favoriteIds={favoriteIds}
+        selectedId={selectedId}
+        reviewSampleSize={reviewSampleSize}
+        onToggleFavorite={onToggleFavorite}
+        onSelect={onSelect}
+      />
+    )
+  }
+
   return (
-    <div className="space-y-3">
-      {restaurants.map((restaurant) => (
-        <RestaurantCard
-          key={restaurant.id}
-          restaurant={restaurant}
-          isFavorite={favoriteIds.includes(restaurant.id)}
-          isSelected={restaurant.id === selectedId}
+    <div className="space-y-6">
+      <section>
+        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-stone-500">
+          🍽️ 맛집 <span className="text-stone-400">{restaurantsOnly.length}곳</span>
+        </h3>
+        <RestaurantGroup
+          restaurants={restaurantsOnly}
+          favoriteIds={favoriteIds}
+          selectedId={selectedId}
           reviewSampleSize={reviewSampleSize}
           onToggleFavorite={onToggleFavorite}
           onSelect={onSelect}
         />
-      ))}
+      </section>
+      <section>
+        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-stone-500">
+          ☕ 카페 <span className="text-stone-400">{cafesOnly.length}곳</span>
+        </h3>
+        <RestaurantGroup
+          restaurants={cafesOnly}
+          favoriteIds={favoriteIds}
+          selectedId={selectedId}
+          reviewSampleSize={reviewSampleSize}
+          onToggleFavorite={onToggleFavorite}
+          onSelect={onSelect}
+        />
+      </section>
     </div>
   )
 }
