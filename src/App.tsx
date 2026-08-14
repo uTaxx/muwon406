@@ -7,6 +7,7 @@ import { SearchBar } from './components/SearchBar'
 import { CategoryFilter } from './components/CategoryFilter'
 import { ReviewQualityFilter } from './components/ReviewQualityFilter'
 import { ReviewSampleSizeControl } from './components/ReviewSampleSizeControl'
+import { RoomFilter } from './components/RoomFilter'
 import { SortControl } from './components/SortControl'
 import { RestaurantList } from './components/RestaurantList'
 import { MapView } from './components/MapView'
@@ -20,6 +21,7 @@ const DEFAULT_FILTERS: SearchFilters = {
   sortBy: 'rating',
   excludeReviewEvents: false,
   excludeSponsoredHeavy: false,
+  requirePrivateRoom: false,
 }
 
 export default function App() {
@@ -94,16 +96,22 @@ export default function App() {
             />
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
-            <ReviewQualityFilter
-              excludeReviewEvents={filters.excludeReviewEvents}
-              excludeSponsoredHeavy={filters.excludeSponsoredHeavy}
-              onExcludeReviewEventsChange={(excludeReviewEvents) =>
-                setFilters((f) => ({ ...f, excludeReviewEvents }))
-              }
-              onExcludeSponsoredHeavyChange={(excludeSponsoredHeavy) =>
-                setFilters((f) => ({ ...f, excludeSponsoredHeavy }))
-              }
-            />
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <ReviewQualityFilter
+                excludeReviewEvents={filters.excludeReviewEvents}
+                excludeSponsoredHeavy={filters.excludeSponsoredHeavy}
+                onExcludeReviewEventsChange={(excludeReviewEvents) =>
+                  setFilters((f) => ({ ...f, excludeReviewEvents }))
+                }
+                onExcludeSponsoredHeavyChange={(excludeSponsoredHeavy) =>
+                  setFilters((f) => ({ ...f, excludeSponsoredHeavy }))
+                }
+              />
+              <RoomFilter
+                requirePrivateRoom={filters.requirePrivateRoom}
+                onChange={(requirePrivateRoom) => setFilters((f) => ({ ...f, requirePrivateRoom }))}
+              />
+            </div>
             <ReviewSampleSizeControl value={reviewSampleSize} onChange={setReviewSampleSize} />
           </div>
         </div>

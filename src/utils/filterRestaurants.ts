@@ -52,6 +52,7 @@ export function filterAndSortRestaurants(
     if (!matchesRegion(place, filters.region)) return false
     if (filters.excludeReviewEvents && place.hasReviewEvent) return false
     if (filters.excludeSponsoredHeavy && place.sponsoredReviewRatio >= SPONSORED_HEAVY_THRESHOLD) return false
+    if (filters.requirePrivateRoom && !place.hasPrivateRoom) return false
     return true
   })
 

@@ -1,6 +1,7 @@
 import type { Restaurant } from '../types/restaurant'
 import { SPONSORED_HEAVY_THRESHOLD } from '../types/restaurant'
 import { ReviewAnalysisPanel } from './ReviewAnalysisPanel'
+import { estimateOwnerChange, getYearsInBusiness } from '../utils/businessInfo'
 
 interface RestaurantCardProps {
   restaurant: Restaurant
@@ -19,6 +20,9 @@ export function RestaurantCard({
   onToggleFavorite,
   onSelect,
 }: RestaurantCardProps) {
+  const yearsInBusiness = getYearsInBusiness(restaurant)
+  const ownerChange = estimateOwnerChange(restaurant)
+
   return (
     <div
       onClick={() => onSelect(restaurant)}
@@ -83,6 +87,27 @@ export function RestaurantCard({
           <span className="text-neutral-400">광고성 리뷰 추정 {restaurant.sponsoredReviewRatio}%</span>
         )}
       </div>
+
+      {(yearsInBusiness !== undefined || restaurant.hasPrivateRoom) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+          {yearsInBusiness !== undefined && (
+            <span>
+              업력 {yearsInBusiness}년차{restaurant.openedYear ? ` (${restaurant.openedYear}년 개업)` : ''}
+            </span>
+          )}
+          {restaurant.hasPrivateRoom && (
+            <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600">
+              회식룸 있음{restaurant.roomCapacity ? ` · 최대 ${restaurant.roomCapacity}인` : ''}
+            </span>
+          )}
+        </div>
+      )}
+
+      {ownerChange.likely && (
+        <p className="mt-1 text-[11px] text-amber-600">
+          ⚠ 사업자등록일({ownerChange.registeredYear}년) 기준 주인이 바뀌었을 가능성 (실제 이력이 아닌 추정치)
+        </p>
+      )}
 
       {restaurant.tags.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">

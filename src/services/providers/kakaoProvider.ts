@@ -40,6 +40,10 @@ function toRestaurant(doc: KakaoDocument): Restaurant {
     // 실제로 채우려면 블로그 리뷰 본문을 수집해 분석하는 별도 파이프라인이 필요합니다.
     hasReviewEvent: false,
     sponsoredReviewRatio: 0,
+    // 업력/사업자등록일/룸 여부도 카카오 로컬 API 응답에 없는 값입니다.
+    // 업력·사업자등록일은 국세청 사업자등록정보 진위확인 API(공공데이터포털)를 별도로
+    // 연동해야 하고, 룸 여부는 공개 API가 없어 매장 상세페이지 파싱 등이 필요합니다.
+    hasPrivateRoom: false,
   }
 }
 
