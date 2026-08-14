@@ -20,6 +20,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '16:00 - 24:00',
     thumbnail: '🔥',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 35,
   },
   {
     id: 'm-002',
@@ -38,6 +40,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:30 - 22:00',
     thumbnail: '🍳',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 10,
   },
   {
     id: 'm-003',
@@ -55,6 +59,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '09:00 - 21:00',
     thumbnail: '🥐',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 55,
   },
   {
     id: 'm-004',
@@ -72,6 +78,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '08:00 - 22:00',
     thumbnail: '☕',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 5,
   },
   {
     id: 'm-005',
@@ -89,6 +97,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:00 - 23:00',
     thumbnail: '🔥',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 15,
   },
   {
     id: 'm-006',
@@ -106,6 +116,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:30 - 22:30',
     thumbnail: '🥩',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 45,
   },
   {
     id: 'm-007',
@@ -123,6 +135,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '17:00 - 01:00',
     thumbnail: '🌮',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 8,
   },
   {
     id: 'm-008',
@@ -140,6 +154,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '06:00 - 21:00',
     thumbnail: '🍲',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 2,
   },
   {
     id: 'm-009',
@@ -157,6 +173,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '24시간',
     thumbnail: '📚',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 0,
   },
   {
     id: 'm-010',
@@ -174,6 +192,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:00 - 23:00',
     thumbnail: '🌇',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 60,
   },
   {
     id: 'm-011',
@@ -191,6 +211,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '08:30 - 20:00',
     thumbnail: '🥖',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 12,
   },
   {
     id: 'm-012',
@@ -208,6 +230,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '16:00 - 01:00',
     thumbnail: '🔥',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 20,
   },
   {
     id: 'm-013',
@@ -225,6 +249,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '18:00 - 02:00',
     thumbnail: '🍶',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 30,
   },
   {
     id: 'm-014',
@@ -242,6 +268,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:00 - 21:30',
     thumbnail: '🥟',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 18,
   },
   {
     id: 'm-015',
@@ -259,6 +287,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '10:00 - 22:00',
     thumbnail: '🍢',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 3,
   },
   {
     id: 'm-016',
@@ -276,6 +306,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '17:00 - 22:30',
     thumbnail: '🍣',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 50,
   },
   {
     id: 'm-017',
@@ -293,6 +325,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '15:00 - 24:00',
     thumbnail: '🍗',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 22,
   },
   {
     id: 'm-018',
@@ -310,6 +344,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '17:00 - 23:00',
     thumbnail: '🍳',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 42,
   },
   {
     id: 'm-019',
@@ -327,6 +363,8 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '11:30 - 22:00',
     thumbnail: '🍝',
     source: 'mock',
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 25,
   },
   {
     id: 'm-020',
@@ -344,5 +382,7 @@ export const mockRestaurants: Restaurant[] = [
     openHours: '10:00 - 22:00',
     thumbnail: '🍰',
     source: 'mock',
+    hasReviewEvent: true,
+    sponsoredReviewRatio: 38,
   },
 ]

@@ -38,6 +38,13 @@ export interface Restaurant {
   openHours?: string
   thumbnail: string
   source: DataSource
+  /** 체험단/협찬 등 리뷰 이벤트를 현재 진행 중인 업체인지 여부 */
+  hasReviewEvent: boolean
+  /**
+   * 전체 리뷰 중 광고성(협찬/체험단 대가성) 블로그 리뷰로 추정되는 비율 (0~100).
+   * 실제 블로그 본문을 분석해 얻은 값이 아니라 참고용 추정치입니다.
+   */
+  sponsoredReviewRatio: number
 }
 
 export type SortKey = 'rating' | 'reviewCount' | 'distance' | 'priceAsc'
@@ -48,4 +55,10 @@ export interface SearchFilters {
   placeType: PlaceType | '전체'
   categories: CuisineCategory[]
   sortBy: SortKey
+  /** 리뷰 이벤트(체험단/협찬)를 진행 중인 곳 제외 */
+  excludeReviewEvents: boolean
+  /** 광고성 리뷰 추정 비율이 높은 곳 제외 (기준: 40% 이상) */
+  excludeSponsoredHeavy: boolean
 }
+
+export const SPONSORED_HEAVY_THRESHOLD = 40

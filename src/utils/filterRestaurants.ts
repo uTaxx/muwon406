@@ -1,4 +1,5 @@
 import type { Restaurant, SearchFilters } from '../types/restaurant'
+import { SPONSORED_HEAVY_THRESHOLD } from '../types/restaurant'
 
 function matchesKeyword(place: Restaurant, keyword: string): boolean {
   if (!keyword.trim()) return true
@@ -49,6 +50,8 @@ export function filterAndSortRestaurants(
     if (filters.categories.length > 0 && !filters.categories.includes(place.category)) return false
     if (!matchesKeyword(place, filters.keyword)) return false
     if (!matchesRegion(place, filters.region)) return false
+    if (filters.excludeReviewEvents && place.hasReviewEvent) return false
+    if (filters.excludeSponsoredHeavy && place.sponsoredReviewRatio >= SPONSORED_HEAVY_THRESHOLD) return false
     return true
   })
 

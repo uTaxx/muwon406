@@ -1,4 +1,5 @@
 import type { Restaurant } from '../types/restaurant'
+import { SPONSORED_HEAVY_THRESHOLD } from '../types/restaurant'
 
 interface RestaurantCardProps {
   restaurant: Restaurant
@@ -27,10 +28,10 @@ export function RestaurantCard({
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-2xl">
             {restaurant.thumbnail}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
               <h3 className="font-semibold text-neutral-900">{restaurant.name}</h3>
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-500">
+              <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-500">
                 {restaurant.placeType}
               </span>
             </div>
@@ -38,6 +39,20 @@ export function RestaurantCard({
               {restaurant.category} · {restaurant.region}
             </p>
             <p className="text-xs text-neutral-400">{restaurant.address}</p>
+            {(restaurant.hasReviewEvent || restaurant.sponsoredReviewRatio >= SPONSORED_HEAVY_THRESHOLD) && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {restaurant.hasReviewEvent && (
+                  <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-600">
+                    체험단 진행중
+                  </span>
+                )}
+                {restaurant.sponsoredReviewRatio >= SPONSORED_HEAVY_THRESHOLD && (
+                  <span className="shrink-0 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-500">
+                    광고성 리뷰 많음
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <button
@@ -61,6 +76,9 @@ export function RestaurantCard({
         <span className="text-neutral-500">리뷰 {restaurant.reviewCount.toLocaleString()}</span>
         <span className="text-neutral-500">{restaurant.priceRange}</span>
         {restaurant.openHours && <span className="text-neutral-400">{restaurant.openHours}</span>}
+        {restaurant.sponsoredReviewRatio > 0 && (
+          <span className="text-neutral-400">광고성 리뷰 추정 {restaurant.sponsoredReviewRatio}%</span>
+        )}
       </div>
 
       {restaurant.tags.length > 0 && (

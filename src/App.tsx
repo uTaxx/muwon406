@@ -4,6 +4,7 @@ import { getActiveProvider } from './services/providers'
 import { useFavorites } from './hooks/useFavorites'
 import { SearchBar } from './components/SearchBar'
 import { CategoryFilter } from './components/CategoryFilter'
+import { ReviewQualityFilter } from './components/ReviewQualityFilter'
 import { SortControl } from './components/SortControl'
 import { RestaurantList } from './components/RestaurantList'
 import { MapView } from './components/MapView'
@@ -15,6 +16,8 @@ const DEFAULT_FILTERS: SearchFilters = {
   placeType: '전체',
   categories: [],
   sortBy: 'rating',
+  excludeReviewEvents: false,
+  excludeSponsoredHeavy: false,
 }
 
 export default function App() {
@@ -81,6 +84,18 @@ export default function App() {
               categories={filters.categories}
               onPlaceTypeChange={(placeType) => setFilters((f) => ({ ...f, placeType }))}
               onCategoriesChange={(categories) => setFilters((f) => ({ ...f, categories }))}
+            />
+          </div>
+          <div className="mt-4 border-t border-neutral-100 pt-3">
+            <ReviewQualityFilter
+              excludeReviewEvents={filters.excludeReviewEvents}
+              excludeSponsoredHeavy={filters.excludeSponsoredHeavy}
+              onExcludeReviewEventsChange={(excludeReviewEvents) =>
+                setFilters((f) => ({ ...f, excludeReviewEvents }))
+              }
+              onExcludeSponsoredHeavyChange={(excludeSponsoredHeavy) =>
+                setFilters((f) => ({ ...f, excludeSponsoredHeavy }))
+              }
             />
           </div>
         </div>

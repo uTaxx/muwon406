@@ -36,6 +36,10 @@ function toRestaurant(doc: KakaoDocument): Restaurant {
     phone: doc.phone || undefined,
     thumbnail: doc.category_name.includes('카페') ? '☕' : '🍽️',
     source: 'kakao',
+    // 카카오 로컬 API는 리뷰 이벤트/광고성 리뷰 신호를 제공하지 않습니다.
+    // 실제로 채우려면 블로그 리뷰 본문을 수집해 분석하는 별도 파이프라인이 필요합니다.
+    hasReviewEvent: false,
+    sponsoredReviewRatio: 0,
   }
 }
 
