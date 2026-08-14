@@ -62,3 +62,17 @@ export interface SearchFilters {
 }
 
 export const SPONSORED_HEAVY_THRESHOLD = 40
+
+export const DEFAULT_REVIEW_SAMPLE_SIZE = 20
+export const MIN_REVIEW_SAMPLE_SIZE = 5
+export const MAX_REVIEW_SAMPLE_SIZE = 50
+
+export interface Review {
+  id: string
+  author: string
+  content: string
+  rating: number
+  dateLabel: string
+  /** 광고 문구 패턴 분류기가 판단한 협찬/광고성 리뷰 여부 */
+  isSponsored: boolean
+}

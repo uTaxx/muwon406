@@ -5,6 +5,7 @@ interface RestaurantListProps {
   restaurants: Restaurant[]
   favoriteIds: string[]
   selectedId?: string
+  reviewSampleSize: number
   loading: boolean
   error?: string
   onToggleFavorite: (id: string) => void
@@ -15,6 +16,7 @@ export function RestaurantList({
   restaurants,
   favoriteIds,
   selectedId,
+  reviewSampleSize,
   loading,
   error,
   onToggleFavorite,
@@ -46,6 +48,7 @@ export function RestaurantList({
           restaurant={restaurant}
           isFavorite={favoriteIds.includes(restaurant.id)}
           isSelected={restaurant.id === selectedId}
+          reviewSampleSize={reviewSampleSize}
           onToggleFavorite={onToggleFavorite}
           onSelect={onSelect}
         />

@@ -1,10 +1,12 @@
 import type { Restaurant } from '../types/restaurant'
 import { SPONSORED_HEAVY_THRESHOLD } from '../types/restaurant'
+import { ReviewAnalysisPanel } from './ReviewAnalysisPanel'
 
 interface RestaurantCardProps {
   restaurant: Restaurant
   isFavorite: boolean
   isSelected: boolean
+  reviewSampleSize: number
   onToggleFavorite: (id: string) => void
   onSelect: (restaurant: Restaurant) => void
 }
@@ -13,6 +15,7 @@ export function RestaurantCard({
   restaurant,
   isFavorite,
   isSelected,
+  reviewSampleSize,
   onToggleFavorite,
   onSelect,
 }: RestaurantCardProps) {
@@ -90,6 +93,8 @@ export function RestaurantCard({
           ))}
         </div>
       )}
+
+      {isSelected && <ReviewAnalysisPanel restaurant={restaurant} sampleSize={reviewSampleSize} />}
     </div>
   )
 }

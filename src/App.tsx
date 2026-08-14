@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Restaurant, SearchFilters } from './types/restaurant'
+import { DEFAULT_REVIEW_SAMPLE_SIZE } from './types/restaurant'
 import { getActiveProvider } from './services/providers'
 import { useFavorites } from './hooks/useFavorites'
 import { SearchBar } from './components/SearchBar'
 import { CategoryFilter } from './components/CategoryFilter'
 import { ReviewQualityFilter } from './components/ReviewQualityFilter'
+import { ReviewSampleSizeControl } from './components/ReviewSampleSizeControl'
 import { SortControl } from './components/SortControl'
 import { RestaurantList } from './components/RestaurantList'
 import { MapView } from './components/MapView'
@@ -27,6 +29,7 @@ export default function App() {
   const [error, setError] = useState<string | undefined>()
   const [selected, setSelected] = useState<Restaurant | undefined>()
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [reviewSampleSize, setReviewSampleSize] = useState(DEFAULT_REVIEW_SAMPLE_SIZE)
 
   const { favoriteIds, toggleFavorite } = useFavorites()
   const provider = useMemo(() => getActiveProvider(), [])
@@ -59,6 +62,10 @@ export default function App() {
 
   const favoritePlaces = restaurants.filter((r) => favoriteIds.includes(r.id))
 
+  function toggleSelected(restaurant: Restaurant) {
+    setSelected((prev) => (prev?.id === restaurant.id ? undefined : restaurant))
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <header className="border-b border-neutral-200 bg-white">
@@ -86,7 +93,7 @@ export default function App() {
               onCategoriesChange={(categories) => setFilters((f) => ({ ...f, categories }))}
             />
           </div>
-          <div className="mt-4 border-t border-neutral-100 pt-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
             <ReviewQualityFilter
               excludeReviewEvents={filters.excludeReviewEvents}
               excludeSponsoredHeavy={filters.excludeSponsoredHeavy}
@@ -97,6 +104,7 @@ export default function App() {
                 setFilters((f) => ({ ...f, excludeSponsoredHeavy }))
               }
             />
+            <ReviewSampleSizeControl value={reviewSampleSize} onChange={setReviewSampleSize} />
           </div>
         </div>
 
@@ -138,10 +146,11 @@ export default function App() {
                   restaurants={visibleRestaurants}
                   favoriteIds={favoriteIds}
                   selectedId={selected?.id}
+                  reviewSampleSize={reviewSampleSize}
                   loading={loading}
                   error={error}
                   onToggleFavorite={toggleFavorite}
-                  onSelect={setSelected}
+                  onSelect={toggleSelected}
                 />
               </div>
             </div>
