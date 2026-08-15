@@ -109,7 +109,12 @@ export const liveProvider: SearchProvider = {
       throw new Error(`검색 요청 실패: ${response.status}`)
     }
 
-    const data = (await response.json()) as { restaurants: RawRow[] }
+    // 카카오 검색 결과가 0건이면 n8n 워크플로우가 빈 본문을 응답합니다.
+    // JSON.parse('')는 예외를 던지므로, 결과 없음으로 취급합니다.
+    const text = await response.text()
+    if (!text.trim()) return []
+
+    const data = JSON.parse(text) as { restaurants: RawRow[] }
     return (data.restaurants ?? []).map(normalize)
   },
 }
