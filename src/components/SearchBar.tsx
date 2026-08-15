@@ -1,11 +1,18 @@
+import type { KeyboardEvent } from 'react'
+
 interface SearchBarProps {
   keyword: string
   region: string
   onKeywordChange: (value: string) => void
   onRegionChange: (value: string) => void
+  onSearch: () => void
 }
 
-export function SearchBar({ keyword, region, onKeywordChange, onRegionChange }: SearchBarProps) {
+export function SearchBar({ keyword, region, onKeywordChange, onRegionChange, onSearch }: SearchBarProps) {
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') onSearch()
+  }
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row">
       <div className="flex-1">
@@ -15,6 +22,7 @@ export function SearchBar({ keyword, region, onKeywordChange, onRegionChange }: 
             type="text"
             value={keyword}
             onChange={(e) => onKeywordChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="가게 이름, 메뉴, 태그로 검색 (예: 숯불, 브런치)"
             className="w-full rounded-full border border-stone-300 bg-white py-2 pl-4 pr-10 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
           />
@@ -37,9 +45,19 @@ export function SearchBar({ keyword, region, onKeywordChange, onRegionChange }: 
           type="text"
           value={region}
           onChange={(e) => onRegionChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="예: 홍대, 성수동"
           className="w-full rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
         />
+      </div>
+      <div className="sm:self-end">
+        <button
+          type="button"
+          onClick={onSearch}
+          className="w-full rounded-full bg-brand-500 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 sm:w-auto"
+        >
+          검색
+        </button>
       </div>
     </div>
   )

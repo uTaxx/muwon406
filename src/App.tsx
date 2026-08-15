@@ -27,6 +27,7 @@ const DEFAULT_FILTERS: SearchFilters = {
 
 export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS)
+  const [committedQuery, setCommittedQuery] = useState({ keyword: '', region: '' })
   const [rawResults, setRawResults] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
@@ -37,16 +38,17 @@ export default function App() {
   const { favoriteIds, toggleFavorite } = useFavorites()
   const provider = useMemo(() => getActiveProvider(), [])
 
-  // keyword/region이 바뀔 때만 provider를 다시 호출합니다. 카테고리·정렬·부가 필터는
-  // 이미 받아온 rawResults를 아래에서 다시 걸러내기만 하므로, 실시간 검색 API를
-  // 불필요하게 다시 호출하지 않습니다.
+  // 검색 버튼(또는 Enter)을 눌러 committedQuery가 바뀔 때만 provider를 호출합니다.
+  // 입력창에 글자를 치는 동안에는 호출하지 않아, 타이핑 중간의 검색어로 API가
+  // 반복 호출되거나 어중간한 검색어 결과가 시트에 쌓이는 것을 막습니다. 카테고리·정렬·
+  // 부가 필터는 이미 받아온 rawResults를 아래에서 다시 걸러내기만 합니다.
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(undefined)
 
     provider
-      .search(filters.keyword, filters.region)
+      .search(committedQuery.keyword, committedQuery.region)
       .then((results) => {
         if (!cancelled) setRawResults(results)
       })
@@ -60,7 +62,11 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [filters.keyword, filters.region, provider])
+  }, [committedQuery, provider])
+
+  function runSearch() {
+    setCommittedQuery({ keyword: filters.keyword, region: filters.region })
+  }
 
   const restaurants = useMemo(
     () => filterAndSortRestaurants(rawResults, filters),
@@ -97,6 +103,7 @@ export default function App() {
             region={filters.region}
             onKeywordChange={(keyword) => setFilters((f) => ({ ...f, keyword }))}
             onRegionChange={(region) => setFilters((f) => ({ ...f, region }))}
+            onSearch={runSearch}
           />
           <div className="mt-4">
             <CategoryFilter
