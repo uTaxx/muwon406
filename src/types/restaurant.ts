@@ -96,8 +96,11 @@ export interface Review {
   id: string
   author: string
   content: string
-  rating: number
+  /** 실제 블로그 리뷰에는 별점이 없어 데모(mock) 데이터에서만 채워집니다 */
+  rating?: number
   dateLabel: string
   /** 광고 문구 패턴 분류기가 판단한 협찬/광고성 리뷰 여부 */
   isSponsored: boolean
+  /** 실제 블로그 리뷰 원문 링크 (데모 데이터에는 없음) */
+  link?: string
 }
