@@ -23,6 +23,9 @@ import pandas as pd
 import streamlit as st
 
 from muwon.config import bootstrap_settings
+from muwon.data.universe import find_by_symbol
+from muwon.db.models import OrderRow, PositionRow
+from muwon.db.session import make_session_factory
 from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
 from muwon.settings.service import SettingsService, build_settings_service
 
@@ -30,11 +33,17 @@ st.set_page_config(page_title="muwon406 대시보드", layout="wide")
 
 HISTORY_REFRESH_SECONDS = 5
 DEVLOG_REFRESH_SECONDS = 20
+TRADING_REFRESH_SECONDS = 5
 
 
 @st.cache_resource
 def get_service() -> SettingsService:
     return build_settings_service()
+
+
+@st.cache_resource
+def get_session_factory():
+    return make_session_factory(bootstrap_settings.database_url)
 
 
 def _mask(value: str) -> str:
@@ -72,6 +81,9 @@ def main() -> None:
         with st.expander(f"개발 로그(git 커밋) · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
             render_devlog_fragment()
 
+    with st.expander(f"보유 종목 & 최근 주문 · {TRADING_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
+        render_trading_fragment()
+
 
 def render_status_bar(service: SettingsService) -> None:
     policy = service.get_risk_policy()
@@ -98,7 +110,7 @@ def render_status_bar(service: SettingsService) -> None:
             st.info(f"KIS 환경: {kis_env}")
 
     with col_time:
-        st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")
+        st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
 
 
 def render_risk_tab(service: SettingsService) -> None:
@@ -237,7 +249,7 @@ def _display_setting_value(value: str | None, is_secret: bool, decrypted: bool) 
 @st.fragment(run_every=HISTORY_REFRESH_SECONDS)
 def render_history_fragment(service: SettingsService) -> None:
     render_history_tab(service)
-    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")
+    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
 
 
 def render_history_tab(service: SettingsService) -> None:
@@ -264,7 +276,7 @@ def render_history_tab(service: SettingsService) -> None:
 @st.fragment(run_every=DEVLOG_REFRESH_SECONDS)
 def render_devlog_fragment() -> None:
     render_devlog_tab()
-    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")
+    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
 
 
 def render_devlog_tab() -> None:
@@ -290,6 +302,61 @@ def render_devlog_tab() -> None:
         st.info("커밋 기록이 없습니다.")
         return
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def _symbol_name(symbol: str) -> str:
+    ticker = find_by_symbol(symbol)
+    return ticker.name if ticker else symbol
+
+
+@st.fragment(run_every=TRADING_REFRESH_SECONDS)
+def render_trading_fragment() -> None:
+    render_trading_tab()
+    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
+
+
+def render_trading_tab() -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        positions = session.query(PositionRow).order_by(PositionRow.entry_date.desc()).all()
+        orders = session.query(OrderRow).order_by(OrderRow.created_at.desc()).limit(50).all()
+
+    col_positions, col_orders = st.columns(2)
+    with col_positions:
+        st.caption("보유 종목")
+        if not positions:
+            st.info("보유 중인 포지션이 없습니다.")
+        else:
+            rows = [
+                {
+                    "종목": f"{_symbol_name(p.symbol)}({p.symbol})",
+                    "수량": p.quantity,
+                    "진입가": f"{p.entry_price:,.0f}",
+                    "진입일": p.entry_date.isoformat(),
+                    "진입사유": p.entry_reason,
+                }
+                for p in positions
+            ]
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    with col_orders:
+        st.caption("최근 주문 (최대 50건)")
+        if not orders:
+            st.info("주문 기록이 없습니다.")
+        else:
+            rows = [
+                {
+                    "시각": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "종목": f"{_symbol_name(o.symbol)}({o.symbol})",
+                    "구분": "매수" if o.side == "buy" else "매도",
+                    "수량": o.quantity,
+                    "가격": f"{o.price:,.0f}",
+                    "사유": o.reason,
+                    "모의": "예" if o.is_paper else "실전",
+                }
+                for o in orders
+            ]
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":

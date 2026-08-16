@@ -72,4 +72,30 @@ class OrderRow(Base):
     price: Mapped[float] = mapped_column(Float)
     is_paper: Mapped[bool] = mapped_column(default=True)
     kis_order_id: Mapped[str] = mapped_column(String(50), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    reason: Mapped[str] = mapped_column(String(100), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class EngineStateRow(Base):
+    """TradingEngine이 회차 사이에 이어가야 하는 내부 상태(가상 현금,
+    당일 시작 평가금액 등). 사용자가 만지는 app_settings와는 다른
+    성격이라 별도 테이블로 둔다."""
+
+    __tablename__ = "engine_state"
+
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="")
+
+
+class PositionRow(Base):
+    """실거래/모의투자 엔진(TradingEngine)이 회차마다 새로 뜨지 않고도 보유
+    종목을 이어서 추적할 수 있도록 남기는 상태. 백테스트의 OpenPosition과
+    같은 정보를 갖지만, 여긴 프로세스 재시작에도 살아남아야 해서 DB에 둔다."""
+
+    __tablename__ = "positions"
+
+    symbol: Mapped[str] = mapped_column(String(10), primary_key=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    entry_price: Mapped[float] = mapped_column(Float)
+    entry_date: Mapped[date] = mapped_column(Date)
+    entry_reason: Mapped[str] = mapped_column(String(100), default="")

@@ -32,8 +32,14 @@ class Strategy(ABC):
 
 
 class OrderExecutor(ABC):
-    """모의투자/실전투자 주문 실행의 공통 인터페이스."""
+    """모의투자/실전투자 주문 실행의 공통 인터페이스.
+
+    reference_price는 시장가 주문의 체결가를 미리 알 수 없다는 전제로,
+    엔진이 이미 갖고 있는 최신 종가를 기록·수량계산용 기준가로 넘기는
+    값이다. 실제 체결가 조회(주문 조회 API)는 이 MVP 범위 밖이다."""
 
     @abstractmethod
-    def submit_order(self, symbol: str, side: OrderSide, quantity: int) -> OrderResult:
+    def submit_order(
+        self, symbol: str, side: OrderSide, quantity: int, reference_price: float
+    ) -> OrderResult:
         raise NotImplementedError
