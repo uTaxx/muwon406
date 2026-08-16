@@ -34,10 +34,19 @@ pip install -e ".[dashboard]"
 streamlit run src/muwon/dashboard/app.py
 ```
 
-KIS 인증정보·텔레그램·리스크 정책을 웹에서 조회/수정할 수 있습니다.
-`scripts/configure.py`와 동일한 `SettingsService`를 거치므로 저장 위치·
-형식은 CLI와 완전히 같습니다. 비밀값(앱시크릿, 봇토큰 등)을 저장/조회하려면
-`MUWON_MASTER_KEY`가 `.env`에 설정되어 있어야 합니다.
+한 화면에서 설정 조회/수정, 변경 이력, 개발 로그(git 커밋)까지 다 보이는
+통합 도구입니다. `scripts/configure.py`와 동일한 `SettingsService`를
+거치므로 저장 위치·형식은 CLI와 완전히 같습니다.
+
+- **자동매매 킬스위치**: 화면 상단 토글로 즉시 on/off — 끄면 `RiskManager`가
+  신규 진입 신호를 전부 거부합니다.
+- **실시간 갱신**: 변경 이력(5초)·개발 로그(20초)는 `st.fragment(run_every=...)`로
+  자동 새로고침되어, 다른 프로세스(CLI, 봇)가 값을 바꿔도 클릭 없이 반영됩니다.
+- **변경 이력**: 설정값이 바뀔 때마다 이전값→새값이 자동 기록됩니다. 비밀값은
+  `MUWON_MASTER_KEY`가 있을 때만 마스킹 표시됩니다.
+
+비밀값(앱시크릿, 봇토큰 등)을 저장/조회하려면 `MUWON_MASTER_KEY`가 `.env`에
+설정되어 있어야 합니다.
 
 ## 로드맵
 

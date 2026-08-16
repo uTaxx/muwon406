@@ -7,6 +7,7 @@ class RiskPolicy:
     stop_loss_pct: float = -0.05
     daily_loss_limit_pct: float = -0.03
     max_concurrent_positions: int = 8
+    trading_enabled: bool = True  # 전체 킬스위치 — False면 신규 진입을 전부 거부
 
 
 @dataclass(frozen=True)

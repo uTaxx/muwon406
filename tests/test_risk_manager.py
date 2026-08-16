@@ -47,6 +47,22 @@ def test_blocks_when_weight_exceeds_limit():
     assert "최대 비중" in decision.reason
 
 
+def test_blocks_new_positions_when_trading_disabled():
+    policy = RiskPolicy(
+        max_position_weight=0.15,
+        stop_loss_pct=-0.05,
+        daily_loss_limit_pct=-0.03,
+        max_concurrent_positions=8,
+        trading_enabled=False,
+    )
+    rm = make_manager(policy)
+    decision = rm.check_new_position(
+        proposed_weight=0.05, current_open_positions=0, daily_pnl_pct=0.0
+    )
+    assert not decision.approved
+    assert "자동매매" in decision.reason
+
+
 def test_stop_loss_triggers_below_threshold():
     rm = make_manager()
     assert rm.should_stop_loss(entry_price=10000, current_price=9400)

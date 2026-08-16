@@ -54,6 +54,7 @@ def main() -> None:
     risk.add_argument("--stop-loss-pct", type=float, required=True)
     risk.add_argument("--daily-loss-limit-pct", type=float, required=True)
     risk.add_argument("--max-concurrent-positions", type=int, required=True)
+    risk.add_argument("--trading-enabled", choices=["true", "false"], default="true")
 
     sub.add_parser("show", help="현재 설정 조회 (비밀값은 마스킹)")
 
@@ -83,6 +84,7 @@ def main() -> None:
                 stop_loss_pct=args.stop_loss_pct,
                 daily_loss_limit_pct=args.daily_loss_limit_pct,
                 max_concurrent_positions=args.max_concurrent_positions,
+                trading_enabled=args.trading_enabled == "true",
             )
         )
         print("리스크 정책 저장 완료")
@@ -99,6 +101,7 @@ def main() -> None:
             f"bot_token={_mask(telegram_cfg.bot_token)}"
         )
         print(f"Risk: {risk_policy}")
+        print(f"자동매매: {'ON' if risk_policy.trading_enabled else 'OFF'}")
 
 
 if __name__ == "__main__":

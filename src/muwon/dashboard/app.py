@@ -1,15 +1,19 @@
-"""설정 관리 + 변경 이력 + 개발 로그를 한 화면에서 보는 통합 대시보드.
+"""설정·리스크정책·변경이력·개발로그를 한 화면에서 보고 고치는 통합 대시보드.
 
 scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 설정값을
-읽고 쓴다 — 저장 위치·형식이 CLI와 완전히 동일하다. 실행:
+읽고 쓴다 — 저장 위치·형식이 CLI와 완전히 동일하다. 변경 이력/개발 로그는
+st.fragment(run_every=...)로 자동 갱신되어, 다른 폼(예: KIS 인증정보 입력
+중)을 건드리지 않고 그 구역만 주기적으로 새로고침된다. 실행:
 
     streamlit run src/muwon/dashboard/app.py
 """
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -23,6 +27,9 @@ from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
 from muwon.settings.service import SettingsService, build_settings_service
 
 st.set_page_config(page_title="muwon406 대시보드", layout="wide")
+
+HISTORY_REFRESH_SECONDS = 5
+DEVLOG_REFRESH_SECONDS = 20
 
 
 @st.cache_resource
@@ -47,23 +54,54 @@ def main() -> None:
         )
 
     service = get_service()
-    tab_risk, tab_kis, tab_telegram, tab_history, tab_devlog = st.tabs(
-        ["리스크 정책", "KIS 인증정보", "텔레그램", "변경 이력", "개발 로그"]
-    )
-    with tab_risk:
-        render_risk_tab(service)
-    with tab_kis:
-        render_kis_tab(service)
-    with tab_telegram:
-        render_telegram_tab(service)
-    with tab_history:
-        render_history_tab(service)
-    with tab_devlog:
-        render_devlog_tab()
+
+    render_status_bar(service)
+    st.divider()
+
+    col_left, col_right = st.columns(2)
+    with col_left:
+        with st.expander("리스크 정책", expanded=True):
+            render_risk_tab(service)
+        with st.expander("KIS 인증정보", expanded=False):
+            render_kis_tab(service)
+        with st.expander("텔레그램 알림", expanded=False):
+            render_telegram_tab(service)
+    with col_right:
+        with st.expander(f"변경 이력 · {HISTORY_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
+            render_history_fragment(service)
+        with st.expander(f"개발 로그(git 커밋) · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
+            render_devlog_fragment()
+
+
+def render_status_bar(service: SettingsService) -> None:
+    policy = service.get_risk_policy()
+
+    col_toggle, col_env, col_time = st.columns([2, 2, 1])
+    with col_toggle:
+        enabled = st.toggle(
+            "자동매매 활성화",
+            value=policy.trading_enabled,
+            help="꺼두면 RiskManager가 신규 진입 신호를 전부 거부합니다 (킬스위치).",
+        )
+        if enabled != policy.trading_enabled:
+            service.set_risk_policy(dataclasses.replace(policy, trading_enabled=enabled))
+            st.rerun()
+
+    with col_env:
+        try:
+            kis_env = service.get_kis_credentials().kis_env
+        except RuntimeError:
+            kis_env = "(미확인)"
+        if kis_env == "real":
+            st.error("KIS 환경: **실거래(real)**", icon="⚠️")
+        else:
+            st.info(f"KIS 환경: {kis_env}")
+
+    with col_time:
+        st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")
 
 
 def render_risk_tab(service: SettingsService) -> None:
-    st.subheader("리스크 정책")
     current = service.get_risk_policy()
 
     with st.form("risk_form"):
@@ -107,6 +145,7 @@ def render_risk_tab(service: SettingsService) -> None:
                 stop_loss_pct=stop_loss_pct,
                 daily_loss_limit_pct=daily_loss_limit_pct,
                 max_concurrent_positions=int(max_concurrent_positions),
+                trading_enabled=current.trading_enabled,  # 상단 토글이 이 값의 유일한 창구
             )
         )
         st.success("리스크 정책 저장 완료 — 봇 프로세스는 최대 5초(캐시 TTL) 내 반영됩니다.")
@@ -114,7 +153,6 @@ def render_risk_tab(service: SettingsService) -> None:
 
 
 def render_kis_tab(service: SettingsService) -> None:
-    st.subheader("KIS 인증정보")
     try:
         current = service.get_kis_credentials()
     except RuntimeError as e:
@@ -160,7 +198,6 @@ def render_kis_tab(service: SettingsService) -> None:
 
 
 def render_telegram_tab(service: SettingsService) -> None:
-    st.subheader("텔레그램 알림")
     try:
         current = service.get_telegram_config()
     except RuntimeError as e:
@@ -197,8 +234,13 @@ def _display_setting_value(value: str | None, is_secret: bool, decrypted: bool) 
     return value
 
 
+@st.fragment(run_every=HISTORY_REFRESH_SECONDS)
+def render_history_fragment(service: SettingsService) -> None:
+    render_history_tab(service)
+    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")
+
+
 def render_history_tab(service: SettingsService) -> None:
-    st.subheader("설정 변경 이력")
     st.caption("리스크 정책·KIS 인증정보·텔레그램 값이 바뀔 때마다 자동으로 남는 기록입니다.")
 
     entries = service.get_settings_history(limit=200)
@@ -219,9 +261,13 @@ def render_history_tab(service: SettingsService) -> None:
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
-def render_devlog_tab() -> None:
-    st.subheader("개발 로그 (git 커밋 이력)")
+@st.fragment(run_every=DEVLOG_REFRESH_SECONDS)
+def render_devlog_fragment() -> None:
+    render_devlog_tab()
+    st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")
 
+
+def render_devlog_tab() -> None:
     try:
         output = subprocess.run(
             ["git", "-C", str(REPO_ROOT), "log", "-n", "50", "--pretty=format:%h|%ad|%s", "--date=short"],

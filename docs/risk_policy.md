@@ -2,12 +2,14 @@
 
 Phase 0에서 합의한 초기값입니다. `src/muwon/settings/schema.py`의
 `RiskPolicy` 기본값으로 들어가 있으며, 실제 값은 DB에 저장되어
-`scripts/configure.py risk` 또는 (Phase 2+) 대시보드에서 재시작 없이 조정할
-수 있습니다 (구조는 [`config_architecture.md`](config_architecture.md) 참고).
-실거래 전환 전 반드시 재검토합니다.
+`scripts/configure.py risk` 또는 웹 대시보드(`streamlit run
+src/muwon/dashboard/app.py`)에서 재시작 없이 조정할 수 있습니다 (구조는
+[`config_architecture.md`](config_architecture.md) 참고). 실거래 전환 전
+반드시 재검토합니다.
 
 | 항목 | 기본값 | 설명 |
 |---|---|---|
+| 자동매매 활성화 | ON | 킬스위치. 대시보드 상단 토글로 즉시 껐다 켤 수 있고, 끄면 신규 진입이 전부 거부됨 |
 | 종목당 최대 비중 | 15% | 총자산 대비 단일 종목 최대 투입 비중 |
 | 종목당 손절선 | -5% | 진입가 대비 하락 시 강제 청산 기준 |
 | 일일 최대 손실 한도 | -3% | 당일 계좌 전체 손실이 이 수준에 도달하면 신규 진입 중단 (서킷브레이커) |

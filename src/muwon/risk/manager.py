@@ -33,6 +33,8 @@ class RiskManager:
     ) -> RiskDecision:
         policy = self._policy_provider()
 
+        if not policy.trading_enabled:
+            return RiskDecision(approved=False, reason="자동매매가 꺼져 있음 — 신규 진입 중단")
         if daily_pnl_pct <= policy.daily_loss_limit_pct:
             return RiskDecision(
                 approved=False,

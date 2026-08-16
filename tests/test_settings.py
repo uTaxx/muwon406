@@ -30,6 +30,14 @@ def test_risk_policy_defaults_when_unset():
     assert service.get_risk_policy() == RiskPolicy()
 
 
+def test_trading_enabled_roundtrip():
+    service = make_service()
+    service.set_risk_policy(RiskPolicy(trading_enabled=False))
+    assert service.get_risk_policy().trading_enabled is False
+    service.set_risk_policy(RiskPolicy(trading_enabled=True))
+    assert service.get_risk_policy().trading_enabled is True
+
+
 def test_kis_credentials_are_encrypted_and_roundtrip():
     master_key = generate_master_key()
     service = make_service(master_key=master_key)

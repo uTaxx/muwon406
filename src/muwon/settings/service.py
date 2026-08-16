@@ -40,6 +40,10 @@ class SettingsService:
                     "risk.max_concurrent_positions", str(d.max_concurrent_positions)
                 )
             ),
+            trading_enabled=self._store.get(
+                "risk.trading_enabled", str(d.trading_enabled)
+            )
+            == "True",
         )
 
     def set_risk_policy(self, policy: RiskPolicy) -> None:
@@ -49,6 +53,7 @@ class SettingsService:
         self._store.set(
             "risk.max_concurrent_positions", str(policy.max_concurrent_positions)
         )
+        self._store.set("risk.trading_enabled", str(policy.trading_enabled))
 
     def get_kis_credentials(self) -> KISCredentials:
         d = KISCredentials()
