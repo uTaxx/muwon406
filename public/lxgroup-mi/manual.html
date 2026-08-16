@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LX Group MI | 시스템 안내 · 사용 매뉴얼</title>
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#A32B26; --green-dark:#7A211D; --green-tint:#F1EBE5;
+    --bg:#FAF7F4; --card:#FFFFFF; --line:#DED2C4;
+    --text:#201D1B; --muted:#726A61; --danger:#F04452; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Noto Sans KR', -apple-system, sans-serif; line-height:1.65;}
+  .cover{background:var(--green); padding:36px 20px 46px; position:relative; overflow:hidden;}
+  .cover::after{content:""; position:absolute; right:-40px; top:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.12);}
+  .cover::before{content:""; position:absolute; right:60px; bottom:-60px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.10);}
+  .badge{display:inline-block; background:rgba(255,255,255,0.22); color:#fff; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.02em; margin-bottom:14px; position:relative;}
+  .cover h1{color:#fff; font-size:22px; font-weight:700; margin:0 0 8px; position:relative; line-height:1.4;}
+  .cover p{color:rgba(255,255,255,0.92); font-size:14px; margin:0; max-width:520px; position:relative;}
+  .cover-links{display:flex; gap:8px; margin-top:16px; position:relative; flex-wrap:wrap;}
+  .cover-links a{display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none;}
+  .cover-links a:hover{background:rgba(255,255,255,0.26);}
+
+  main{max-width:680px; margin:-24px auto 0; padding:0 16px 90px; position:relative;}
+  section.card{background:var(--card); border-radius:var(--radius); padding:24px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .step-num{width:26px; height:26px; border-radius:50%; background:var(--green-tint); color:var(--green-dark); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .step-title{font-size:16px; font-weight:700; color:var(--text);}
+  .step-desc{color:var(--muted); font-size:13px; margin:4px 0 16px 36px; line-height:1.6;}
+  .body-text{color:var(--text); font-size:13.5px; line-height:1.75; margin:0 0 12px;}
+  .body-text:last-child{margin-bottom:0;}
+  .body-text b{color:var(--green-dark);}
+
+  .flow{margin-top:4px;}
+  .flow-step{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+  .flow-step:last-child{border-bottom:none;}
+  .flow-num{width:26px; height:26px; border-radius:50%; background:var(--green); color:#fff; font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .flow-body .flow-title{font-size:14px; font-weight:700; margin-bottom:2px;}
+  .flow-body .flow-desc{font-size:12.5px; color:var(--muted); line-height:1.6;}
+
+  .field-block{background:var(--bg); border-radius:12px; padding:14px 16px; margin-bottom:10px; border:1px solid var(--line);}
+  .field-block:last-child{margin-bottom:0;}
+  .field-name{font-size:13.5px; font-weight:700; color:var(--green-dark); margin-bottom:4px;}
+  .field-desc{font-size:12.5px; color:var(--text); line-height:1.65;}
+  .field-desc code{background:#fff; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11.5px;}
+
+  .sample-msg{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:12.5px; line-height:1.8; margin-bottom:14px; white-space:pre-wrap;}
+  .legend{display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12.5px; margin-top:10px;}
+  .legend span:first-child{font-weight:700;}
+  .legend span:nth-child(2n){color:var(--muted);}
+
+  .faq-item{padding:12px 0; border-bottom:1px solid var(--line);}
+  .faq-item:last-child{border-bottom:none; padding-bottom:0;}
+  .faq-q{font-size:13.5px; font-weight:700; margin-bottom:4px; display:flex; gap:6px;}
+  .faq-q::before{content:"Q."; color:var(--green);}
+  .faq-a{font-size:12.5px; color:var(--muted); line-height:1.7; padding-left:20px;}
+
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
+  footer a{color:var(--green); text-decoration:none; font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <span class="badge">LX Group MI · 사내 전용</span>
+  <h1>시스템 안내 ·<br>사용 매뉴얼</h1>
+  <p>LX Group MI가 무엇을 하는 도구인지, 설정은 어떻게 하고 다이제스트는 어떻게 읽으면 되는지 정리했습니다.</p>
+  <div class="cover-links">
+    <a href="./index.html">✏️ 키워드 신청/변경</a>
+    <a href="./articles.html">🔍 기사 검색</a>
+  </div>
+</div>
+
+<main>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">•</span><span class="step-title">이 시스템은 무엇인가요?</span></div>
+    <p class="body-text"><b>LX Group MI</b>는 등록한 키워드 그룹을 기준으로 뉴스와 DART 공시를 자동으로 수집하고, AI가 각 기사의 관련성·중요도·긴급성·논조를 평가해서 정해진 시각에 <b>텔레그램과 이메일</b>로 정리된 다이제스트를 보내주는 사내 도구입니다.</p>
+    <p class="body-text">사람이 직접 뉴스를 검색하고 훑어보는 대신, 그룹별 목적에 맞게 AI가 걸러낸 기사만 매일 정해진 시각에 받아볼 수 있습니다.</p>
+  </section>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">•</span><span class="step-title">전체 흐름</span></div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <div class="flow-title">키워드 그룹 등록</div>
+          <div class="flow-desc"><a href="./index.html">신청/변경 폼</a>에서 관심 있는 주제별로 그룹을 나누고, 그룹마다 AI 분석 지침과 키워드를 등록합니다.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <div class="flow-title">매시간 자동 수집</div>
+          <div class="flow-desc">네이버·구글 뉴스와 DART 공시를 키워드 기준으로 계속 수집합니다. 이미 보낸 기사는 자동으로 중복 제외됩니다.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <div class="flow-title">AI 분석</div>
+          <div class="flow-desc">각 그룹의 목적에 맞춰 관련성 · 중요도 · 긴급성 · 논조(긍정/부정/불확실)를 점수화하고, 지주사 관점의 시사점을 한 줄로 요약합니다.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <div class="flow-title">다이제스트 발송</div>
+          <div class="flow-desc">등록한 발송시각에 텔레그램·이메일로 발송됩니다. <b>긴급 그룹</b>으로 지정한 그룹은 정기 발송을 기다리지 않고 매시간 감지 즉시 텔레그램으로 따로 알려드립니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">1</span><span class="step-title">처음 시작하기 — 신청/변경 폼</span></div>
+    <div class="step-desc"><a href="./index.html">index.html 폼</a>에서 신규 등록하거나 기존 설정을 불러와 수정합니다.</div>
+
+    <div class="field-block">
+      <div class="field-name">식별코드 / 알림채널</div>
+      <div class="field-desc">영문 대문자 코드로 본인 팀을 구분합니다(예: <code>LXHOLDINGS</code>). 텔레그램 채팅방 chatId와 수신 이메일을 등록하면 두 채널 모두로 항상 발송됩니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">발송 시각 / 주말 제외</div>
+      <div class="field-desc">원하는 시간대를 체크한 만큼 하루 여러 번 발송됩니다. "주말 발송 제외"를 켜면 토·일요일은 정기 발송을 건너뜁니다(단, 긴급 그룹은 주말에도 계속 감지·발송됩니다).</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">모니터링 키워드 그룹</div>
+      <div class="field-desc">그룹명 · AI 분석 목표 · 키워드 3가지를 그룹마다 입력합니다. 키워드는 쉼표로 구분하고, <code>재건축+압구정</code>처럼 <b>+</b>를 쓰면 두 단어 모두 포함된 기사만, <code>KCC-농구</code>처럼 <b>-</b>를 쓰면 해당 단어가 들어간 기사는 제외합니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">🚨 긴급 그룹</div>
+      <div class="field-desc">그룹명 옆의 작은 토글 버튼입니다. 켜두면 그 그룹만 매시간 별도로 확인해서, 정기 발송 시각과 무관하게 감지 즉시 텔레그램으로 알려드립니다(이메일·엑셀·공시는 포함되지 않는 경량 알림입니다).</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">관심 기업 (공시 자료)</div>
+      <div class="field-desc">등록한 기업의 DART 공시를 다이제스트 하단에 함께 받아봅니다. LX그룹 관련 공시는 별도 등록 없이 항상 포함됩니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">출력 기준</div>
+      <div class="field-desc">중요도 · 관련성 · 긴급성 세 기준을 모두 만족하는 기사만 다이제스트 본문에 노출됩니다. 기본값을 권장하며, 기준을 만족 못 하는 기사도 첨부 엑셀에서는 전부 확인할 수 있습니다.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">2</span><span class="step-title">다이제스트 읽는 법</span></div>
+    <div class="step-desc">텔레그램·이메일로 오는 메시지는 아래와 같은 구조입니다.</div>
+    <div class="sample-msg">🔔 <b>MI Report</b> 키워드 뉴스
+현재 수집된 기사는 총 6건이고, 주요 기사는 6건입니다.
+
+🗂 <b>LX그룹 관련 기사</b>
+📈 [제목] LX, 비상임이사·감사 공모 착수 ⭐⭐
+   2026. 8. 15. 오전 6:04 · MTN 머니투데이방송
+💬 지주사 이사회 독립성 강화 신호.
+
+📋 <b>주요 기업 공시</b>
+KCC: 분기보고서 제출
+
+— LX그룹 MI
+키워드 변경 설정 · 기사 검색</div>
+    <div class="legend">
+      <span>🗂 (그룹별 이모지)</span><span>그룹 성격에 맞는 아이콘 (경제💰 산업🏭 국제🌍 등)</span>
+      <span>📈 / 📉</span><span>AI가 판단한 논조 — 긍정 / 부정 (불확실이면 표시 없음)</span>
+      <span>⭐</span><span>중요도 점수 — 3점부터 별 1개, 5점이면 별 3개</span>
+      <span>💬</span><span>지주사 관점에서 AI가 요약한 한 줄 시사점</span>
+      <span>🚨 긴급 알림</span><span>긴급 그룹에서 감지되어 즉시 발송된 메시지 표시</span>
+      <span>📋 주요 기업 공시</span><span>등록한 관심 기업의 DART 공시 목록</span>
+      <span>엑셀 첨부</span><span>이번 실행에서 수집된 전체 후보 기사 목록(출력 기준 미달 포함)</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">3</span><span class="step-title">기사 검색 대시보드</span></div>
+    <div class="step-desc"><a href="./articles.html">articles.html</a>에서 지금까지 쌓인 기사를 검색·조회합니다.</div>
+    <div class="field-block">
+      <div class="field-name">자동 조회</div>
+      <div class="field-desc">다이제스트의 "기사 검색" 링크로 들어오면 식별코드 입력 없이 바로 본인 기사가 조회됩니다. 한 번 조회하면 브라우저에 기억해서 다음 방문부터도 자동으로 조회됩니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">검색 · 그룹 필터</div>
+      <div class="field-desc">제목·키워드로 검색하거나 그룹을 선택해서 좁혀볼 수 있습니다. "더 보기"로 50건씩 추가로 불러옵니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">📊 엑셀 원본 보기</div>
+      <div class="field-desc">화면 상단의 링크를 누르면 누계 기사가 쌓이는 구글시트 원본을 xlsx 파일로 바로 내려받습니다.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">•</span><span class="step-title">자주 묻는 질문</span></div>
+    <div class="faq-item">
+      <div class="faq-q">설정을 바꾸면 언제부터 반영되나요?</div>
+      <div class="faq-a">폼 제출 즉시 저장되고, 다음 수집·발송 실행부터 바로 반영됩니다. 별도 승인 절차는 없습니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">긴급 그룹은 아무 그룹이나 켜도 되나요?</div>
+      <div class="faq-a">켤 수는 있지만, 긴급 그룹은 매시간 별도로 확인하는 만큼 정말 즉시 확인이 필요한 주제(예: 그룹 지배구조·경영권 이슈)에만 켜는 걸 권장합니다. 켜둔 그룹이 많을수록 알림도 잦아집니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">같은 기사가 정기 발송과 긴급 알림에 중복으로 오나요?</div>
+      <div class="faq-a">아니요. 긴급 알림으로 이미 보낸 기사는 누계 시트에 기록되어, 다음 정기 발송에서 자동으로 제외됩니다.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">다른 회사/팀도 이 시스템을 쓸 수 있나요?</div>
+      <div class="faq-a">네. <a href="./index.html">신청 폼</a>에서 "신규 등록"으로 새 식별코드를 만들면 완전히 별도의 설정으로 독립적으로 운영됩니다.</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>LX Group MI 사내 전용 도구입니다. · <a href="./index.html">키워드 설정 변경</a> · <a href="./articles.html">기사 검색</a></footer>
+
+</body>
+</html>
