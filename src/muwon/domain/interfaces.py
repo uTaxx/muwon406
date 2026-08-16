@@ -25,7 +25,9 @@ class Strategy(ABC):
     name: str
 
     @abstractmethod
-    def generate_signals(self, price_history: pd.DataFrame) -> list[Signal]:
+    def generate_signals(self, symbol: str, price_history: pd.DataFrame) -> list[Signal]:
+        """price_history: [trade_date, open, high, low, close, volume] 컬럼을 가진,
+        날짜 오름차순으로 정렬된 단일 종목의 가격 히스토리."""
         raise NotImplementedError
 
 

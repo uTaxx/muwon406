@@ -31,7 +31,7 @@ class KISClient(MarketDataSource):
         self._token_expires_at: float = 0.0
 
     @classmethod
-    def from_settings(cls, settings_service: SettingsService) -> "KISClient":
+    def from_settings(cls, settings_service: SettingsService) -> KISClient:
         """SettingsService(=DB, 대시보드/CLI로 갱신됨)에서 현재 인증정보를
         읽어 클라이언트를 만든다. 인증정보가 바뀔 수 있으므로 오래 붙들고
         쓰지 말고, 필요할 때마다(예: 스케줄 작업 시작 시) 새로 생성할 것."""

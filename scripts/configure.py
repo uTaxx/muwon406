@@ -20,8 +20,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig  # noqa: E402
-from muwon.settings.service import build_settings_service  # noqa: E402
+from muwon.settings.schema import (
+    KISCredentials,
+    RiskPolicy,
+    TelegramConfig,
+)
+from muwon.settings.service import build_settings_service
 
 
 def _mask(value: str) -> str:

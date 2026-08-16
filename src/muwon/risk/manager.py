@@ -22,6 +22,9 @@ class RiskManager:
     def __init__(self, policy_provider: Callable[[], RiskPolicy]):
         self._policy_provider = policy_provider
 
+    def get_policy(self) -> RiskPolicy:
+        return self._policy_provider()
+
     def check_new_position(
         self,
         proposed_weight: float,
