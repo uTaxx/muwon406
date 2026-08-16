@@ -25,12 +25,22 @@ GitHub Actions는 사람이 브라우저로 로그인할 수 없으니, 이게 �
 8. 서비스 계정 이메일 주소를 복사해둘 것 — `xxx@muwon406.iam.gserviceaccount.com` 같은 형식
    (서비스 계정 목록 페이지에 표시됨)
 
-## 2. 구글드라이브 폴더 만들고 공유
+## 2. 구글드라이브 "공유 드라이브" 만들고 서비스 계정 추가
 
-1. 구글드라이브(https://drive.google.com)에서 새 폴더 생성 (예: `muwon406-state`)
-2. 그 폴더 우클릭 → **공유** → 위 7번에서 복사한 서비스 계정 이메일 주소 추가 → 권한 **편집자(Editor)** → 공유
-3. 폴더를 열어서 주소창 URL을 본다: `https://drive.google.com/drive/folders/`**`이 뒤의 긴 문자열`**
-   이 문자열이 "폴더 ID"다 — 복사해둘 것
+**일반 "내 드라이브" 폴더로는 안 된다** — 서비스 계정은 자체 저장 공간이
+없어서, 개인 폴더에 새 파일을 만들려고 하면 `storageQuotaExceeded` 오류로
+막힌다. 구글 워크스페이스 계정이면 파일 소유권이 개인이 아니라 드라이브
+자체에 귀속되는 **공유 드라이브(Shared Drive)** 를 쓸 수 있다 (개인 무료
+Gmail 계정은 공유 드라이브를 만들 수 없다 — 그 경우 워크스페이스 계정으로
+진행할 것).
+
+1. https://drive.google.com 접속 → 왼쪽 메뉴 **공유 드라이브** → 상단 **+ 새로 만들기**
+2. 이름 아무거나 (예: `muwon406-state`) → 만들기
+3. 만든 공유 드라이브 열기 → 우측 상단 사람 추가 아이콘(또는 드라이브 이름 옆 점 세 개 → **회원 관리**)
+4. 1번에서 복사한 서비스 계정 이메일 주소 추가 → 권한 **콘텐츠 관리자(Content manager)** 이상 → 보내기
+5. 그 공유 드라이브를 연 상태에서 주소창 URL을 본다:
+   `https://drive.google.com/drive/folders/`**`이 뒤의 긴 문자열`**
+   이 문자열이 "폴더 ID"(공유 드라이브 ID와 동일)다 — 복사해둘 것
 
 ## 3. GitHub Secrets 등록
 
@@ -77,9 +87,19 @@ python scripts/gdrive_sync.py upload --folder-id <폴더ID> --filename muwon.db 
 
 ## 문제가 생기면
 
-- **워크플로우가 KIS 접속 단계에서 실패**: `python scripts/configure.py kis ...`
-  단계 로그에서 앱키/시크릿이 제대로 들어갔는지, `run_paper_trading.py` 로그에서
-  KIS가 어떤 에러를 돌려줬는지 확인. GitHub Actions 러너에서 KIS 접속 자체는
-  가능한 것으로 확인됨(모의투자 포트 29443 응답 확인됨).
-- **구글드라이브 단계에서 실패**: 서비스 계정 이메일이 폴더에 편집자로 공유돼
-  있는지, `GDRIVE_SA_KEY_JSON`에 JSON 전체가 (따옴표 손상 없이) 들어갔는지 확인.
+- **1번(서비스 계정 키 만들기)에서 "서비스 계정 키 생성 사용 중지됨" 오류**:
+  구글 워크스페이스 조직 정책(`iam.managed.disableServiceAccountKeyCreation`)이
+  자동으로 걸려 있는 경우다. 조직 정책 관리자 권한이 있으면
+  `https://console.cloud.google.com/iam-admin/orgpolicies/iam-managed-disableServiceAccountKeyCreation?project=<프로젝트ID>`
+  에서 "상위 정책 재정의" → 규칙을 "사용 안함"으로 바꿔서 이 프로젝트만 예외
+  처리한다. 권한이 없으면 조직에 속하지 않은 개인 Gmail 계정으로 새 프로젝트를
+  만드는 게 더 빠르다.
+- **`storageQuotaExceeded` 오류**: 일반 "내 드라이브" 폴더를 썼을 때 나는
+  오류다 — 2번처럼 공유 드라이브를 써야 한다.
+- **워크플로우가 KIS 접속 단계에서 `403 Forbidden`**: 서버까지는 도달했지만
+  인증이 거부된 것이다 — 십중팔구 **모의투자용이 아니라 실전투자용 앱키를
+  넣은 경우**다. KIS Developers 포털에서 모의투자 전용으로 발급받은
+  앱키/시크릿인지 다시 확인할 것 (실전투자 키와는 완전히 별개로 발급됨).
+- **구글드라이브 단계에서 실패**: 서비스 계정 이메일이 공유 드라이브에
+  콘텐츠 관리자 이상으로 추가돼 있는지, `GDRIVE_SA_KEY_JSON`에 JSON 전체가
+  (따옴표 손상 없이) 들어갔는지 확인.

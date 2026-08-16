@@ -40,7 +40,18 @@ def _build_service():
 
 def _find_file_id(service, folder_id: str, filename: str) -> str | None:
     query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
-    result = service.files().list(q=query, fields="files(id, name)", spaces="drive").execute()
+    result = (
+        service.files()
+        .list(
+            q=query,
+            fields="files(id, name)",
+            spaces="drive",
+            corpora="allDrives",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        )
+        .execute()
+    )
     files = result.get("files", [])
     return files[0]["id"] if files else None
 
@@ -56,7 +67,7 @@ def download(folder_id: str, filename: str, out_path: str) -> None:
         )
         return
 
-    request = service.files().get_media(fileId=file_id)
+    request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
     with open(out_path, "wb") as f:
         downloader = MediaIoBaseDownload(f, request)
         done = False
@@ -72,10 +83,14 @@ def upload(folder_id: str, filename: str, path: str) -> None:
 
     if file_id is None:
         metadata = {"name": filename, "parents": [folder_id]}
-        service.files().create(body=metadata, media_body=media, fields="id").execute()
+        service.files().create(
+            body=metadata, media_body=media, fields="id", supportsAllDrives=True
+        ).execute()
         print(f"신규 업로드 완료: {filename}")
     else:
-        service.files().update(fileId=file_id, media_body=media).execute()
+        service.files().update(
+            fileId=file_id, media_body=media, supportsAllDrives=True
+        ).execute()
         print(f"업데이트 완료: {filename}")
 
 
