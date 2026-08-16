@@ -28,6 +28,7 @@ class OpenPosition:
     quantity: int
     entry_price: float
     entry_date: date
+    entry_reason: str = ""
 
 
 @dataclass
@@ -41,6 +42,7 @@ class ClosedTrade:
     pnl_pct: float
     pnl_amount: float
     exit_reason: str
+    entry_reason: str = ""
 
 
 @dataclass
@@ -187,7 +189,11 @@ class BacktestEngine:
 
                 cash -= cost
                 positions[symbol] = OpenPosition(
-                    symbol=symbol, quantity=quantity, entry_price=price, entry_date=current_date
+                    symbol=symbol,
+                    quantity=quantity,
+                    entry_price=price,
+                    entry_date=current_date,
+                    entry_reason=buy_signals[0].reason,
                 )
 
             equity = cash + sum(
@@ -226,6 +232,7 @@ class BacktestEngine:
                 pnl_pct=pnl_pct,
                 pnl_amount=pnl_amount,
                 exit_reason=exit_reason,
+                entry_reason=position.entry_reason,
             )
         )
         return proceeds
