@@ -263,14 +263,13 @@
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
 
+    const DEFAULT_CODE = 'LXHOLDINGS';
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('code');
     const codeFromStorage = localStorage.getItem('lxgroup_mi_code');
-    const autoCode = codeFromUrl || codeFromStorage;
-    if (autoCode){
-      document.getElementById('codeInput').value = autoCode.trim().toUpperCase();
-      loadArticles();
-    }
+    const autoCode = codeFromUrl || codeFromStorage || DEFAULT_CODE;
+    document.getElementById('codeInput').value = autoCode.trim().toUpperCase();
+    loadArticles();
   });
 </script>
 
