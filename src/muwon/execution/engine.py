@@ -21,9 +21,10 @@ from sqlalchemy.orm import sessionmaker
 
 from muwon.backtest.costs import TransactionCosts
 from muwon.data.universe import Ticker
-from muwon.db.models import EngineStateRow, OrderRow, PositionRow
+from muwon.db.models import PositionRow
 from muwon.domain.interfaces import MarketDataSource, OrderExecutor, Strategy
 from muwon.domain.types import OrderSide, SignalType
+from muwon.execution import state_repository
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 
@@ -96,8 +97,10 @@ class TradingEngine:
         if run_date is None:
             return summary
 
-        cash, day_start_equity = self._load_engine_state(run_date)
-        positions = self._load_positions()
+        cash, day_start_equity = state_repository.load_engine_state(
+            self._session_factory, self._initial_cash
+        )
+        positions = state_repository.load_positions(self._session_factory)
 
         # 1) 청산: 손절 우선, 그다음 전략 매도 신호
         for symbol, position in list(positions.items()):
@@ -121,8 +124,8 @@ class TradingEngine:
             proceeds = order.quantity * order.price * (1 - self._costs.total_sell_cost_pct)
             cash += proceeds
             del positions[symbol]
-            self._record_order(order, exit_reason)
-            self._delete_position(symbol)
+            state_repository.record_order(self._session_factory, order, exit_reason)
+            state_repository.delete_position(self._session_factory, symbol)
             summary.actions.append(
                 ExecutedAction(symbol, ticker.name, OrderSide.SELL, order.quantity, order.price, exit_reason)
             )
@@ -172,8 +175,8 @@ class TradingEngine:
                 entry_date=run_date,
                 entry_reason=buy_signals[0].reason,
             )
-            self._record_order(order, buy_signals[0].reason)
-            self._save_position(positions[symbol])
+            state_repository.record_order(self._session_factory, order, buy_signals[0].reason)
+            state_repository.save_position(self._session_factory, positions[symbol])
             summary.actions.append(
                 ExecutedAction(symbol, ticker.name, OrderSide.BUY, order.quantity, order.price, buy_signals[0].reason)
             )
@@ -187,77 +190,11 @@ class TradingEngine:
         )
         # day_start_equity는 "직전 실행 종료 시점 평가금액"이다 — 하루 한 번만
         # 도는 엔진이라 이번 실행의 최종 평가금액이 곧 다음 실행의 기준점이 된다.
-        self._save_engine_state(run_date, cash, final_equity)
+        state_repository.save_engine_state(self._session_factory, cash, final_equity)
         return summary
 
     def _notify(self, message: str) -> None:
         self._notifier.send(message)
-
-    def _load_positions(self) -> dict[str, PositionRow]:
-        with self._session_factory() as session:
-            rows = session.query(PositionRow).all()
-            session.expunge_all()
-            return {row.symbol: row for row in rows}
-
-    def _save_position(self, position: PositionRow) -> None:
-        with self._session_factory() as session:
-            session.merge(position)
-            session.commit()
-
-    def _delete_position(self, symbol: str) -> None:
-        with self._session_factory() as session:
-            row = session.get(PositionRow, symbol)
-            if row is not None:
-                session.delete(row)
-                session.commit()
-
-    def _record_order(self, order, reason: str) -> None:
-        with self._session_factory() as session:
-            session.add(
-                OrderRow(
-                    symbol=order.symbol,
-                    side=order.side.value,
-                    quantity=order.quantity,
-                    price=order.price,
-                    is_paper=order.is_paper,
-                    kis_order_id=order.order_id,
-                    reason=reason,
-                )
-            )
-            session.commit()
-
-    def _load_engine_state(self, run_date: date) -> tuple[float, float]:
-        """(cash, day_start_equity)를 돌려준다. day_start_equity는 '직전
-        실행이 끝난 시점의 평가금액' — 하루 한 번만 도는 엔진이라 이게 곧
-        오늘의 기준점(어제 종가 기준 평가금액)이 된다. 상태가 아예 없는
-        첫 실행이면, 남아 있는 포지션을 진입가로 어림잡아 기준을 만든다."""
-        with self._session_factory() as session:
-            cash_row = session.get(EngineStateRow, "cash")
-            equity_row = session.get(EngineStateRow, "day_start_equity")
-
-            cash = float(cash_row.value) if cash_row else self._initial_cash
-            if equity_row is not None:
-                day_start_equity = float(equity_row.value)
-            else:
-                positions_value = sum(
-                    p.quantity * p.entry_price for p in session.query(PositionRow).all()
-                )
-                day_start_equity = cash + positions_value
-            return cash, day_start_equity
-
-    def _save_engine_state(self, run_date: date, cash: float, day_start_equity: float) -> None:
-        with self._session_factory() as session:
-            for key, value in (
-                ("cash", str(cash)),
-                ("equity_date", run_date.isoformat()),
-                ("day_start_equity", str(day_start_equity)),
-            ):
-                row = session.get(EngineStateRow, key)
-                if row is None:
-                    session.add(EngineStateRow(key=key, value=value))
-                else:
-                    row.value = value
-            session.commit()
 
 
 def _find_ticker(universe: list[Ticker], symbol: str) -> Ticker:

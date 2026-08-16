@@ -20,11 +20,12 @@ src/muwon/
 └── db/             # 시세/신호/주문/설정 저장 (SQLite → 운영 시 Postgres 전환 가능)
 
 scripts/
-├── configure.py       # 대시보드와 동일한 SettingsService를 쓰는 설정 CLI
-├── run_backtest.py    # 과거 데이터로 전략 백테스트
-├── run_dry_run.py     # KIS 없이 신호→리스크→체결→알림→기록 파이프라인 검증(가짜 체결)
-├── run_paper_trading.py  # KIS 모의투자 계좌로 실제 매매
-└── gdrive_sync.py     # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
+├── configure.py           # 대시보드와 동일한 SettingsService를 쓰는 설정 CLI
+├── run_backtest.py        # 과거 데이터로 전략 백테스트
+├── run_dry_run.py         # KIS 없이 신호→리스크→체결→알림→기록 파이프라인 검증(가짜 체결)
+├── run_paper_trading.py   # KIS 모의투자 — 하루 1회 배치 모드 (GitHub Actions용)
+├── run_realtime_trading.py  # KIS 모의투자 — 장중 실시간 모드 (VPS용, KIS 웹소켓)
+└── gdrive_sync.py         # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
 
 .github/workflows/
 ├── paper-trading.yml            # 평일 장마감 후 자동으로 run_paper_trading.py 실행
@@ -98,13 +99,36 @@ PC를 계속 켜둘 필요 없이, GitHub Actions가 평일 장마감 후 자동
 [`docs/deploy_github_actions.md`](docs/deploy_github_actions.md)에
 순서대로 정리되어 있습니다.
 
+## 장중 실시간 매매 (VPS)
+
+하루 1회 배치 대신, 장중(09:00~15:30 KST) 체결이 들어올 때마다 반응하는
+운영 모드도 있습니다. `src/muwon/execution/realtime_engine.py`의
+`RealtimeTradingEngine`이 KIS 웹소켓으로 받은 틱을 분봉(기본 1분,
+`src/muwon/data/tick_aggregator.py`)으로 묶고, 봉이 마감될 때마다 신호를
+평가합니다 — 판단 로직(`Strategy`)과 리스크 검증(`RiskManager`)은 배치
+모드와 완전히 동일하게 재사용하고, "언제 판단하느냐"만 다릅니다.
+
+이건 장중 내내 떠 있어야 하는 상시 프로세스라 GitHub Actions로는 안 되고
+**VPS가 필요합니다** — 두 운영 모드(배치/실시간)는 같은 계좌에 동시에
+쓰는 게 아니라 둘 중 하나를 고르는 대안입니다.
+
+```bash
+pip install -e ".[realtime]"
+python scripts/run_realtime_trading.py
+```
+
+KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 검증을 못 했습니다
+(KIS 포트 자체가 막혀 있음) — 공식 문서 기준으로 작성했으니 VPS 배포 후
+첫 실행에서 재검증이 필요합니다. 설정 방법은
+[`docs/deploy_vps_realtime.md`](docs/deploy_vps_realtime.md) 참고.
+
 ## 로드맵
 
 1. **Phase 0**: 저장소 구조, 리스크 매니저 기본 로직, KIS API 신청 가이드
 2. **Phase 1**: 데이터 수집 파이프라인 + 규칙기반 전략 + 백테스트 엔진
 3. **Phase 2** (진행 중): 매매 파이프라인(신호→리스크→체결→알림→기록) +
-   설정 대시보드 + GitHub Actions 자동 실행 — KIS 모의투자 계좌로 실제
-   체결 확인이 다음 단계
+   설정 대시보드 + 배치(GitHub Actions)/실시간(VPS 웹소켓) 두 실행 모드 —
+   KIS 모의투자 계좌로 실제 체결 확인이 다음 단계
 4. **Phase 3**: ML 신호 고도화
 5. **Phase 4**: 소액 실거래 전환
 
