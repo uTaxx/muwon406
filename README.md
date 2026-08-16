@@ -23,7 +23,12 @@ scripts/
 ├── configure.py       # 대시보드와 동일한 SettingsService를 쓰는 설정 CLI
 ├── run_backtest.py    # 과거 데이터로 전략 백테스트
 ├── run_dry_run.py     # KIS 없이 신호→리스크→체결→알림→기록 파이프라인 검증(가짜 체결)
-└── run_paper_trading.py  # KIS 모의투자 계좌로 실제 매매 (KIS 네트워크 접근 필요)
+├── run_paper_trading.py  # KIS 모의투자 계좌로 실제 매매
+└── gdrive_sync.py     # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
+
+.github/workflows/
+├── paper-trading.yml            # 평일 장마감 후 자동으로 run_paper_trading.py 실행
+└── check-kis-connectivity.yml   # KIS 접속 가능 여부만 확인하는 진단용 (비밀값 불필요)
 ```
 
 KIS 인증정보·텔레그램 토큰·리스크 정책은 `.env`가 아니라 DB에 저장되어,
@@ -70,9 +75,9 @@ streamlit run src/muwon/dashboard/app.py
 - **`scripts/run_paper_trading.py`** — 시세·체결 모두 `KISClient`를 거쳐
   KIS 모의투자 서버로 실제 주문을 넣습니다. KIS API가 비표준 포트
   (9443/29443)를 쓰기 때문에 egress 정책에 따라 접근이 막혀 있을 수
-  있습니다 — 이 저장소를 개발한 환경은 실제로 막혀 있어 이 스크립트
-  자체는 검증하지 못했습니다. KIS 네트워크 접근이 되는 환경(운영 서버
-  등)에서, KIS 모의투자 앱키를 먼저 넣고 실행하세요.
+  있습니다 — 이 저장소를 개발한 로컬 환경은 실제로 막혀 있었지만,
+  **GitHub Actions 러너에서는 모의투자 포트(29443) 접속이 확인됐습니다**
+  (`check-kis-connectivity.yml` 참고).
 
 두 경로 모두 같은 `TradingEngine`·`RiskManager`·`TelegramNotifier`를
 쓰므로, KIS 접근이 열리면 데이터소스/실행기만 바꿔 끼우면 됩니다.
@@ -81,12 +86,25 @@ streamlit run src/muwon/dashboard/app.py
 갑니다(봇토큰 미설정 시엔 로그로만 남습니다). 리스크 매니저가 거부한
 신호는 알림을 보내지 않고 실행 결과에만 남습니다.
 
+## 매일 자동 실행 (GitHub Actions)
+
+PC를 계속 켜둘 필요 없이, GitHub Actions가 평일 장마감 후 자동으로
+`run_paper_trading.py`를 실행하도록 구성되어 있습니다
+(`.github/workflows/paper-trading.yml`). GitHub Actions는 매번 새
+가상머신이라 로컬 상태가 안 남기 때문에, 보유 종목·가상현금 상태(`muwon.db`)를
+구글드라이브에 두고 실행마다 내려받고/올립니다.
+
+설정 방법(구글 서비스 계정 만들기, GitHub Secrets 등록 등)은
+[`docs/deploy_github_actions.md`](docs/deploy_github_actions.md)에
+순서대로 정리되어 있습니다.
+
 ## 로드맵
 
 1. **Phase 0**: 저장소 구조, 리스크 매니저 기본 로직, KIS API 신청 가이드
 2. **Phase 1**: 데이터 수집 파이프라인 + 규칙기반 전략 + 백테스트 엔진
 3. **Phase 2** (진행 중): 매매 파이프라인(신호→리스크→체결→알림→기록) +
-   설정 대시보드 — KIS 실제 연동은 네트워크 접근이 되는 환경에서 검증 필요
+   설정 대시보드 + GitHub Actions 자동 실행 — KIS 모의투자 계좌로 실제
+   체결 확인이 다음 단계
 4. **Phase 3**: ML 신호 고도화
 5. **Phase 4**: 소액 실거래 전환
 

@@ -22,6 +22,7 @@ dependencies = [
 backtest = ["vectorbt>=0.26"]
 ml = ["scikit-learn>=1.4", "lightgbm>=4.3"]
 dashboard = ["streamlit>=1.35"]
+cloud = ["google-api-python-client>=2.100", "google-auth>=2.23"]
 dev = ["pytest>=8.0", "ruff>=0.4"]
 
 [build-system]
