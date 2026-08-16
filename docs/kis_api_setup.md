@@ -32,22 +32,28 @@
 
 ## 5. 발급받은 값 설정
 
-`.env.example`을 복사해 `.env`로 만들고 값을 채워 넣습니다:
+앱키/시크릿키는 `.env`가 아니라 DB에 암호화되어 저장됩니다 (이유는
+[`docs/config_architecture.md`](config_architecture.md) 참고 — 나중에
+대시보드에서 재시작 없이 값을 바꿀 수 있게 하기 위함입니다).
+
+먼저 `.env`에 DB 접속 정보와 암호화 키만 설정합니다:
 
 ```bash
 cp .env.example .env
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# 출력된 값을 .env의 MUWON_MASTER_KEY= 뒤에 채워 넣기
 ```
 
-```env
-KIS_ENV=paper
-KIS_APP_KEY=발급받은_앱키
-KIS_APP_SECRET=발급받은_시크릿키
-KIS_ACCOUNT_NO=계좌번호_앞8자리
-KIS_ACCOUNT_PRODUCT_CD=계좌번호_뒤2자리(보통 01)
+그다음 CLI로 KIS 인증정보를 저장합니다:
+
+```bash
+python scripts/configure.py kis --env paper \
+    --app-key 발급받은_앱키 --app-secret 발급받은_시크릿키 \
+    --account-no 계좌번호_앞8자리 --account-product-cd 01
 ```
 
-`.env`는 `.gitignore`에 포함되어 있어 저장소에 커밋되지 않습니다. **절대
-앱키/시크릿키를 코드나 커밋에 직접 넣지 마세요.**
+`.env`와 DB 파일(`muwon.db`)은 `.gitignore`에 포함되어 있어 저장소에
+커밋되지 않습니다. **절대 앱키/시크릿키를 코드나 커밋에 직접 넣지 마세요.**
 
 ## 6. 다음 단계
 

@@ -1,7 +1,10 @@
 # 리스크 관리 기본 정책
 
-Phase 0에서 합의한 초기값이며, `src/muwon/config.py`의 `Settings`에서 조정
-가능합니다. 실거래 전환 전 반드시 재검토합니다.
+Phase 0에서 합의한 초기값입니다. `src/muwon/settings/schema.py`의
+`RiskPolicy` 기본값으로 들어가 있으며, 실제 값은 DB에 저장되어
+`scripts/configure.py risk` 또는 (Phase 2+) 대시보드에서 재시작 없이 조정할
+수 있습니다 (구조는 [`config_architecture.md`](config_architecture.md) 참고).
+실거래 전환 전 반드시 재검토합니다.
 
 | 항목 | 기본값 | 설명 |
 |---|---|---|
@@ -12,4 +15,6 @@ Phase 0에서 합의한 초기값이며, `src/muwon/config.py`의 `Settings`에�
 
 구현: `src/muwon/risk/manager.py`의 `RiskManager` — 주문 실행 전 반드시
 `check_new_position()`을 통과해야 하며, 보유 중 포지션은 매 틱마다
-`should_stop_loss()`로 점검합니다.
+`should_stop_loss()`로 점검합니다. 두 메서드 모두 호출될 때마다
+`SettingsService`에서 최신 정책을 읽으므로, 값이 바뀌면 다음 호출부터 바로
+적용됩니다.

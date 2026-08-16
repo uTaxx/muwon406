@@ -3,20 +3,23 @@ import asyncio
 from loguru import logger
 from telegram import Bot
 
+from muwon.settings.service import SettingsService
+
 
 class TelegramNotifier:
     """텔레그램 알림 전송기.
 
-    토큰/채팅ID가 설정되지 않은 동안(Phase 0~1 초기)에는 실제 전송 대신
-    로그만 남기고 넘어간다 — 봇 생성은 사용자가 나중에 진행.
+    보낼 때마다 SettingsService에서 최신 봇 토큰/채팅ID를 읽으므로, 대시보드
+    /CLI에서 나중에 값을 추가·변경해도 프로세스 재시작 없이 다음 전송부터
+    바로 적용된다. 토큰/채팅ID가 아직 없으면 실제 전송 대신 로그만 남긴다.
     """
 
-    def __init__(self, bot_token: str, chat_id: str):
-        self._bot = Bot(token=bot_token) if bot_token else None
-        self._chat_id = chat_id
+    def __init__(self, settings_service: SettingsService):
+        self._settings_service = settings_service
 
     def send(self, message: str) -> None:
-        if not self._bot or not self._chat_id:
+        cfg = self._settings_service.get_telegram_config()
+        if not cfg.bot_token or not cfg.chat_id:
             logger.info(f"[telegram:disabled] {message}")
             return
-        asyncio.run(self._bot.send_message(chat_id=self._chat_id, text=message))
+        asyncio.run(Bot(token=cfg.bot_token).send_message(chat_id=cfg.chat_id, text=message))
