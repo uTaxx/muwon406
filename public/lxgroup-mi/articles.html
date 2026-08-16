@@ -62,6 +62,8 @@
   .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
   .add-btn{background:var(--green-tint); border:1.5px dashed var(--green); color:var(--green-dark); border-radius:10px; padding:12px; width:100%; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:16px;}
   .add-btn:hover{background:#e9dfd6;}
+  .excel-link{display:none; align-items:center; gap:6px; margin-top:14px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none; width:fit-content; position:relative;}
+  .excel-link:hover{background:rgba(255,255,255,0.26);}
   footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
   footer a{color:var(--green); text-decoration:none; font-weight:600;}
 </style>
@@ -71,7 +73,8 @@
 <div class="cover">
   <span class="badge">LX Group MI · 사내 전용</span>
   <h1>수집된 기사<br>검색 · 조회</h1>
-  <p>식별코드를 입력하면 지금까지 수집·발송된 기사를 그룹/키워드별로 검색할 수 있습니다.</p>
+  <p>다이제스트의 "기사 검색" 링크로 들어오시면 자동으로 조회됩니다. 처음이시거나 다른 식별코드로 보고 싶다면 아래에 입력해주세요.</p>
+  <a id="excelLink" class="excel-link" href="#" target="_blank" rel="noopener">📊 엑셀 원본 보기</a>
 </div>
 
 <main>
@@ -223,7 +226,18 @@
           box.className = 'status show err';
           box.textContent = '✕ ' + (data.error || '조회 중 오류가 발생했습니다.');
           document.getElementById('resultsSection').style.display = 'none';
+          document.getElementById('excelLink').style.display = 'none';
           return;
+        }
+
+        localStorage.setItem('lxgroup_mi_code', code);
+
+        const excelLink = document.getElementById('excelLink');
+        if (data.sheetDownloadUrl){
+          excelLink.href = data.sheetDownloadUrl;
+          excelLink.style.display = 'inline-flex';
+        } else {
+          excelLink.style.display = 'none';
         }
 
         allArticles = data.articles;
@@ -251,8 +265,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('code');
-    if (codeFromUrl){
-      document.getElementById('codeInput').value = codeFromUrl.trim().toUpperCase();
+    const codeFromStorage = localStorage.getItem('lxgroup_mi_code');
+    const autoCode = codeFromUrl || codeFromStorage;
+    if (autoCode){
+      document.getElementById('codeInput').value = autoCode.trim().toUpperCase();
       loadArticles();
     }
   });

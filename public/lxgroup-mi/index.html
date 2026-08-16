@@ -41,7 +41,10 @@
   textarea{resize:vertical; min-height:64px;}
   .block{background:var(--bg); border-radius:12px; padding:16px; margin-bottom:12px; position:relative; border:1px solid var(--line);}
   .block .rm{position:absolute; top:12px; right:12px; background:#fff; border:1px solid var(--line); color:var(--danger); font-size:11.5px; cursor:pointer; font-weight:600; padding:4px 10px; border-radius:14px;}
+  .block .urgent-toggle{position:absolute; top:12px; right:76px; background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .block .urgent-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
   #groupList .block{padding:12px;}
+  #groupList .block .rm, #groupList .block .urgent-toggle{top:12px;}
   #groupList .block label{margin-bottom:4px; font-size:12px;}
   #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
   #groupList .block textarea.g-keywords{min-height:56px;}
@@ -291,6 +294,7 @@
     wrap.id = 'group-' + id;
     wrap.innerHTML = `
       <button type="button" class="rm">삭제</button>
+      <button type="button" class="urgent-toggle" title="긴급 그룹: 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)">🚨 긴급</button>
       <label>그룹명</label>
       <input type="text" class="g-name" placeholder="예: 경쟁사">
       <label>AI 분석 목표(본 그룹의 AI 검색 지침)</label>
@@ -302,19 +306,13 @@
         ・두 단어 필수 포함이 필요한 경우 <b>+</b>로 연결하세요. (예: 재건축+압구정)<br>
         ・특정 단어가 들어간 기사를 빼고 싶을 때는 <b>-</b>를 쓰세요. (예: KCC-농구-감독 * 제거 조건 복수가능)
       </div>
-      <label class="check-option g-urgent-wrap" style="margin-top:4px; margin-bottom:0;">
-        <input type="checkbox" class="g-urgent">
-        <div><div class="opt-text">🚨 긴급 그룹으로 지정</div><div class="opt-sub">이 그룹의 기사는 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)</div></div>
-      </label>
     `;
     document.getElementById('groupList').appendChild(wrap);
     wrap.querySelector('.rm').addEventListener('click', function(){
       document.getElementById('group-' + id).remove();
     });
-    const urgentWrap = wrap.querySelector('.g-urgent-wrap');
-    const urgentCb = wrap.querySelector('.g-urgent');
-    urgentCb.addEventListener('change', function(){
-      urgentWrap.classList.toggle('checked', urgentCb.checked);
+    wrap.querySelector('.urgent-toggle').addEventListener('click', function(){
+      this.classList.toggle('active');
     });
   }
   addGroup();
@@ -368,7 +366,7 @@
       const purpose = b.querySelector('.g-purpose').value.trim();
       const kwRaw = b.querySelector('.g-keywords').value.trim();
       const keywords = kwRaw.split(',').map(s => s.trim()).filter(Boolean);
-      const urgent = b.querySelector('.g-urgent').checked;
+      const urgent = b.querySelector('.urgent-toggle').classList.contains('active');
       if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent });
     });
     return groups;
@@ -419,8 +417,7 @@
         lastBlock.querySelector('.g-name').value = g.name || '';
         lastBlock.querySelector('.g-purpose').value = g.purpose || '';
         lastBlock.querySelector('.g-keywords').value = (g.keywords || []).join(', ');
-        lastBlock.querySelector('.g-urgent').checked = !!g.urgent;
-        lastBlock.querySelector('.g-urgent-wrap').classList.toggle('checked', !!g.urgent);
+        lastBlock.querySelector('.urgent-toggle').classList.toggle('active', !!g.urgent);
       });
     }
 
