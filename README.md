@@ -16,15 +16,28 @@ src/muwon/
 ├── execution/       # 주문 실행기 (모의/실전 전환, Phase 2)
 ├── backtest/       # 백테스트 엔진 (Phase 1)
 ├── notify/         # 텔레그램 알림
+├── dashboard/      # 설정 관리 웹 대시보드 (Streamlit)
 └── db/             # 시세/신호/주문/설정 저장 (SQLite → 운영 시 Postgres 전환 가능)
 
 scripts/
-└── configure.py    # 대시보드 나오기 전까지 쓰는 임시 설정 CLI
+└── configure.py    # 대시보드와 동일한 SettingsService를 쓰는 설정 CLI
 ```
 
 KIS 인증정보·텔레그램 토큰·리스크 정책은 `.env`가 아니라 DB에 저장되어,
-재시작 없이 CLI나 (Phase 2+) 대시보드에서 값을 바꿀 수 있습니다. 설계
-배경은 [`docs/config_architecture.md`](docs/config_architecture.md) 참고.
+재시작 없이 CLI나 웹 대시보드에서 값을 바꿀 수 있습니다. 설계 배경은
+[`docs/config_architecture.md`](docs/config_architecture.md) 참고.
+
+## 설정 대시보드
+
+```bash
+pip install -e ".[dashboard]"
+streamlit run src/muwon/dashboard/app.py
+```
+
+KIS 인증정보·텔레그램·리스크 정책을 웹에서 조회/수정할 수 있습니다.
+`scripts/configure.py`와 동일한 `SettingsService`를 거치므로 저장 위치·
+형식은 CLI와 완전히 같습니다. 비밀값(앱시크릿, 봇토큰 등)을 저장/조회하려면
+`MUWON_MASTER_KEY`가 `.env`에 설정되어 있어야 합니다.
 
 ## 로드맵
 

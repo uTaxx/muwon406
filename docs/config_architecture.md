@@ -27,11 +27,11 @@ SettingsStore (DB app_settings 테이블 + TTL 캐시 + 비밀값 암호화)
         ▼
 SettingsService (타입 안전한 get/set: 리스크정책 / KIS인증정보 / 텔레그램)
         │
-        ├── scripts/configure.py (임시 CLI, 대시보드 나오기 전까지)
+        ├── scripts/configure.py (CLI)
+        ├── src/muwon/dashboard/app.py (웹 대시보드, Streamlit)
         ├── RiskManager (매 검사마다 최신 정책을 읽음)
         ├── TelegramNotifier (매 전송마다 최신 토큰을 읽음)
-        ├── KISClient.from_settings() (실행 시점의 최신 인증정보로 생성)
-        └── (Phase 2+) 웹 대시보드 API
+        └── KISClient.from_settings() (실행 시점의 최신 인증정보로 생성)
 ```
 
 ## 값이 바뀌면 언제 반영되나
@@ -48,7 +48,9 @@ SettingsService (타입 안전한 get/set: 리스크정책 / KIS인증정보 / �
 비밀값을 저장하거나 읽을 수 없다 — 실수로 평문 저장되는 걸 막기 위한
 안전장치다. 리스크 정책 같은 비민감 값은 암호화하지 않는다.
 
-## 지금 당장 값 넣는 법 (대시보드 완성 전)
+## 값 넣는 법
+
+CLI로:
 
 ```bash
 python scripts/configure.py kis --env paper --app-key XXX --app-secret YYY \
@@ -58,4 +60,11 @@ python scripts/configure.py risk --max-position-weight 0.15 \
     --stop-loss-pct -0.05 --daily-loss-limit-pct -0.03 \
     --max-concurrent-positions 8
 python scripts/configure.py show
+```
+
+또는 웹 대시보드로:
+
+```bash
+pip install -e ".[dashboard]"
+streamlit run src/muwon/dashboard/app.py
 ```
