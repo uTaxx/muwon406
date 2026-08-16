@@ -1,6 +1,6 @@
-"""KIS 인증정보/텔레그램/리스크 정책을 관리하는 설정 대시보드.
+"""설정 관리 + 변경 이력 + 개발 로그를 한 화면에서 보는 통합 대시보드.
 
-scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 값을
+scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 설정값을
 읽고 쓴다 — 저장 위치·형식이 CLI와 완전히 동일하다. 실행:
 
     streamlit run src/muwon/dashboard/app.py
@@ -8,18 +8,21 @@ scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 값�
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
+import pandas as pd
 import streamlit as st
 
 from muwon.config import bootstrap_settings
 from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
 from muwon.settings.service import SettingsService, build_settings_service
 
-st.set_page_config(page_title="muwon406 설정 대시보드", layout="centered")
+st.set_page_config(page_title="muwon406 대시보드", layout="wide")
 
 
 @st.cache_resource
@@ -34,7 +37,7 @@ def _mask(value: str) -> str:
 
 
 def main() -> None:
-    st.title("muwon406 설정 대시보드")
+    st.title("muwon406 대시보드")
 
     if not bootstrap_settings.master_key:
         st.warning(
@@ -44,13 +47,19 @@ def main() -> None:
         )
 
     service = get_service()
-    tab_risk, tab_kis, tab_telegram = st.tabs(["리스크 정책", "KIS 인증정보", "텔레그램"])
+    tab_risk, tab_kis, tab_telegram, tab_history, tab_devlog = st.tabs(
+        ["리스크 정책", "KIS 인증정보", "텔레그램", "변경 이력", "개발 로그"]
+    )
     with tab_risk:
         render_risk_tab(service)
     with tab_kis:
         render_kis_tab(service)
     with tab_telegram:
         render_telegram_tab(service)
+    with tab_history:
+        render_history_tab(service)
+    with tab_devlog:
+        render_devlog_tab()
 
 
 def render_risk_tab(service: SettingsService) -> None:
@@ -176,6 +185,65 @@ def render_telegram_tab(service: SettingsService) -> None:
             st.rerun()
         except RuntimeError as e:
             st.error(str(e))
+
+
+def _display_setting_value(value: str | None, is_secret: bool, decrypted: bool) -> str:
+    if is_secret and not decrypted:
+        return "(복호화 불가)"
+    if value is None:
+        return "(신규)"
+    if is_secret:
+        return _mask(value)
+    return value
+
+
+def render_history_tab(service: SettingsService) -> None:
+    st.subheader("설정 변경 이력")
+    st.caption("리스크 정책·KIS 인증정보·텔레그램 값이 바뀔 때마다 자동으로 남는 기록입니다.")
+
+    entries = service.get_settings_history(limit=200)
+    if not entries:
+        st.info("아직 변경 이력이 없습니다.")
+        return
+
+    rows = [
+        {
+            "변경시각": e.changed_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "설정키": e.key,
+            "이전값": _display_setting_value(e.old_value, e.is_secret, e.decrypted),
+            "새값": _display_setting_value(e.new_value, e.is_secret, e.decrypted),
+            "비밀값": "예" if e.is_secret else "",
+        }
+        for e in entries
+    ]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def render_devlog_tab() -> None:
+    st.subheader("개발 로그 (git 커밋 이력)")
+
+    try:
+        output = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "log", "-n", "50", "--pretty=format:%h|%ad|%s", "--date=short"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        st.error(f"git 로그를 읽을 수 없습니다: {e}")
+        return
+
+    rows = []
+    for line in output.splitlines():
+        parts = line.split("|", 2)
+        if len(parts) == 3:
+            rows.append({"커밋": parts[0], "날짜": parts[1], "메시지": parts[2]})
+
+    if not rows:
+        st.info("커밋 기록이 없습니다.")
+        return
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":

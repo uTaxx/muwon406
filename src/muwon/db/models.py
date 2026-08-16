@@ -21,6 +21,22 @@ class AppSettingRow(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class AppSettingHistoryRow(Base):
+    """AppSettingRow 값이 바뀔 때마다 이전/이후 값을 남기는 append-only 로그.
+    대시보드의 '변경 이력' 탭이 이 테이블을 읽는다. 비밀값은 원문(is_secret=True
+    이면 암호문)이 그대로 저장되므로, 조회 시 AppSettingRow와 같은 마스터키로
+    복호화해야 한다."""
+
+    __tablename__ = "app_settings_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(100), index=True)
+    old_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_value: Mapped[str] = mapped_column(Text, default="")
+    is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class PriceBarRow(Base):
     __tablename__ = "price_bars"
 

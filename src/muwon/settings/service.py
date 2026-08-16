@@ -1,5 +1,18 @@
+from dataclasses import dataclass
+from datetime import datetime
+
 from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
 from muwon.settings.store import SettingsStore
+
+
+@dataclass
+class SettingHistoryEntry:
+    key: str
+    old_value: str | None
+    new_value: str | None
+    is_secret: bool
+    changed_at: datetime
+    decrypted: bool  # is_secret인데 마스터키가 없어 값을 못 읽었으면 False
 
 
 class SettingsService:
@@ -67,6 +80,27 @@ class SettingsService:
     def set_telegram_config(self, cfg: TelegramConfig) -> None:
         self._store.set("telegram.bot_token", cfg.bot_token, secret=True)
         self._store.set("telegram.chat_id", cfg.chat_id)
+
+    def get_settings_history(self, limit: int = 100) -> list[SettingHistoryEntry]:
+        entries = []
+        for row in self._store.get_history(limit=limit):
+            if not row.is_secret:
+                old_value, new_value, decrypted = row.old_value, row.new_value, True
+            else:
+                old_value = self._store.try_decrypt(row.old_value)
+                new_value = self._store.try_decrypt(row.new_value)
+                decrypted = self._store.has_master_key
+            entries.append(
+                SettingHistoryEntry(
+                    key=row.key,
+                    old_value=old_value,
+                    new_value=new_value,
+                    is_secret=row.is_secret,
+                    changed_at=row.changed_at,
+                    decrypted=decrypted,
+                )
+            )
+        return entries
 
 
 def build_settings_service(

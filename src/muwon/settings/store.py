@@ -1,9 +1,21 @@
 import time
+from dataclasses import dataclass
+from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
-from muwon.db.models import AppSettingRow
+from muwon.db.models import AppSettingHistoryRow, AppSettingRow
 from muwon.settings.crypto import decrypt, encrypt
+
+
+@dataclass
+class HistoryRow:
+    key: str
+    old_value: str | None
+    new_value: str
+    is_secret: bool
+    changed_at: datetime
 
 
 class SettingsStore:
@@ -25,6 +37,16 @@ class SettingsStore:
         self._cache_ttl = cache_ttl_seconds
         self._cache: dict[str, tuple[str, bool]] = {}
         self._cache_loaded_at: float = 0.0
+
+    @property
+    def has_master_key(self) -> bool:
+        return self._master_key is not None
+
+    def try_decrypt(self, value: str | None) -> str | None:
+        """복호화 가능하면 평문을, 값이 없거나 마스터키가 없으면 None을 돌려준다."""
+        if value is None or not self._master_key:
+            return None
+        return decrypt(value, self._master_key)
 
     def _refresh_cache_if_stale(self) -> None:
         if time.time() - self._cache_loaded_at < self._cache_ttl:
@@ -56,11 +78,36 @@ class SettingsStore:
         stored_value = encrypt(value, self._master_key) if secret else value
         with self._session_factory() as session:
             row = session.get(AppSettingRow, key)
+            old_value = row.value if row is not None else None
             if row is None:
                 session.add(AppSettingRow(key=key, value=stored_value, is_secret=secret))
             else:
                 row.value = stored_value
                 row.is_secret = secret
+            if old_value != stored_value:
+                session.add(
+                    AppSettingHistoryRow(
+                        key=key, old_value=old_value, new_value=stored_value, is_secret=secret
+                    )
+                )
             session.commit()
         self._cache[key] = (stored_value, secret)
         self._cache_loaded_at = time.time()
+
+    def get_history(self, limit: int = 100) -> list[HistoryRow]:
+        with self._session_factory() as session:
+            rows = session.scalars(
+                select(AppSettingHistoryRow)
+                .order_by(AppSettingHistoryRow.changed_at.desc())
+                .limit(limit)
+            ).all()
+            return [
+                HistoryRow(
+                    key=r.key,
+                    old_value=r.old_value,
+                    new_value=r.new_value,
+                    is_secret=r.is_secret,
+                    changed_at=r.changed_at,
+                )
+                for r in rows
+            ]
