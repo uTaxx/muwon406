@@ -28,12 +28,14 @@ dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.4"]
 
 [tool.poetry]
 # Streamlit Community Cloud는 pyproject.toml을 Poetry로 읽어서 의존성을
-# 설치한다(pip/hatchling과는 별개). scripts/, dashboard/app.py는 muwon406을
-# 설치된 패키지로 쓰지 않고 sys.path에 src/를 직접 끼워 넣어 쓰므로, Poetry가
-# "이 프로젝트 자체"까지 패키지로 설치하려 들 필요가 없다 — 그러다 우리
-# src/muwon 레이아웃(프로젝트명 muwon406과 패키지명 muwon이 다름)을 못 찾아
-# 설치가 실패했다. package-mode = false로 의존성 설치만 하게 한다.
-package-mode = false
+# 설치한다(pip/hatchling과는 별개). Poetry는 기본적으로 프로젝트명(muwon406)과
+# 같은 이름의 폴더를 패키지로 찾는데, 우리는 src/muwon 레이아웃(패키지명이
+# muwon으로 다름)을 쓰므로 못 찾아서 실패했다 — package-mode = false로
+# 꺼봤더니 이번엔 Poetry가 [project.dependencies]까지 안 읽어서 pandas·
+# cryptography 같은 실제 의존성이 하나도 안 깔리는 부작용이 났다. 정답은
+# 패키지 위치를 직접 알려주는 것 — hatchling 쪽(tool.hatch.build.targets.wheel)과
+# 동일한 경로를 Poetry에도 알려준다.
+packages = [{ include = "muwon", from = "src" }]
 
 [build-system]
 requires = ["hatchling"]
