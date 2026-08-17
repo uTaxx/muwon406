@@ -26,6 +26,7 @@ scripts/
 ├── run_paper_trading.py   # KIS 모의투자 — 하루 1회 배치 모드 (GitHub Actions용)
 ├── run_realtime_trading.py  # KIS 모의투자 — 장중 실시간 모드 (VPS용, KIS 웹소켓)
 ├── run_hypothesis_sweep.py  # 등록된 전략 가설을 과거 데이터로 일괄 백테스트·비교
+├── run_daily_review.py    # 매일 자동매매 직후, "다른 전략이었다면?" 비교 리포트를 텔레그램으로 발송
 └── gdrive_sync.py         # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
 
 .github/workflows/
@@ -159,6 +160,16 @@ KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 �
   python scripts/configure.py strategy --active-key ma_rsi_fast5_20  # 실거래 전략 교체
   ```
 
+- **`scripts/run_daily_review.py`** — 매일 자동매매(GitHub Actions)가 끝날
+  때마다 자동으로 붙는 리뷰 단계입니다(`.github/workflows/paper-trading.yml`에
+  `run_paper_trading.py` 다음 스텝으로 추가돼 있음). 기준일(오늘)에서
+  `--lookback-days`(기본 90일)만큼 거슬러 올라간 최근 구간을 등록된 전략
+  전체로 다시 채점해서, "오늘 만약 다른 매수 전략이었다면 수익률이 더
+  좋았을지 나빴을지"를 지금 실거래 중인 전략 대비 %p 차이로 텔레그램에
+  보내줍니다. 결과는 `backtest_runs`에 `notes="daily_review"`로 쌓여서
+  수동 스윕(`notes="manual_sweep"`) 기록과 구분되고, 매일 쌓이므로 어느
+  전략이 꾸준히 앞서는지 시간에 따른 추세로도 볼 수 있습니다 — 사람이 손대지
+  않아도 매일 "지금이 최선인가"를 다시 묻는 루프입니다.
 - **매매 결과 학습 기반 (`TradeRow`)** — 실전/모의 매매에서 포지션이 청산될
   때마다 진입가·청산가·손익·진입 사유·청산 사유가 `strategy_key`와 함께
   `trades` 테이블에 기록됩니다(`src/muwon/execution/state_repository.py`의

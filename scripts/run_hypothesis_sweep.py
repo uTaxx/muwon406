@@ -15,19 +15,16 @@
 """
 
 import argparse
-import dataclasses
-import json
 import sys
 from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from muwon.backtest.engine import BacktestEngine
+from muwon.analysis.strategy_review import persist_sweep_results, sweep_strategies
 from muwon.config import bootstrap_settings
 from muwon.data.universe import UNIVERSE
 from muwon.data.yahoo_client import YahooFinanceDataSource
-from muwon.db.models import BacktestRunRow
 from muwon.db.session import make_session_factory
 from muwon.risk.manager import RiskManager
 from muwon.settings.schema import RiskPolicy
@@ -36,13 +33,6 @@ from muwon.strategy.registry import list_definitions
 
 def parse_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007 — 날짜만 필요, tz 무관
-
-
-def params_snapshot(strategy) -> str:
-    params = getattr(strategy, "params", None)
-    if params is not None and dataclasses.is_dataclass(params):
-        return json.dumps(dataclasses.asdict(params), ensure_ascii=False)
-    return "{}"
 
 
 def main() -> None:
@@ -71,54 +61,19 @@ def main() -> None:
             price_histories[ticker.symbol] = df
 
     session_factory = make_session_factory(bootstrap_settings.database_url)
-    policy_provider = lambda: RiskPolicy()
+    risk_manager = RiskManager(policy_provider=lambda: RiskPolicy())
 
-    rows = []
-    for definition in definitions:
-        strategy = definition.factory()
-        engine = BacktestEngine(
-            strategy=strategy,
-            risk_manager=RiskManager(policy_provider=policy_provider),
-            initial_cash=args.initial_cash,
-        )
-        result = engine.run(price_histories)
+    results = sweep_strategies(definitions, price_histories, risk_manager, args.initial_cash)
+    persist_sweep_results(session_factory, results, args.start, args.end, notes="manual_sweep")
 
-        run_row = BacktestRunRow(
-            strategy_key=definition.key,
-            params_json=params_snapshot(strategy),
-            period_start=args.start,
-            period_end=args.end,
-            total_return_pct=result.total_return_pct,
-            max_drawdown_pct=result.max_drawdown_pct,
-            win_rate_pct=result.win_rate_pct,
-            num_trades=result.num_trades,
-        )
-        with session_factory() as session:
-            session.add(run_row)
-            session.commit()
-
-        rows.append(
-            {
-                "key": definition.key,
-                "name": definition.display_name,
-                "return_pct": result.total_return_pct,
-                "mdd_pct": result.max_drawdown_pct,
-                "win_rate_pct": result.win_rate_pct,
-                "trades": result.num_trades,
-            }
-        )
-
-    rows.sort(key=lambda r: r["return_pct"], reverse=True)
+    rows = sorted(results, key=lambda r: r.return_pct, reverse=True)
 
     print(f"\n=== 가설 스윕 결과 ({args.start} ~ {args.end}) ===")
     header = f"{'전략키':<20}{'수익률':>10}{'MDD':>10}{'승률':>8}{'거래수':>8}"
     print(header)
     print("-" * len(header))
     for r in rows:
-        print(
-            f"{r['key']:<20}{r['return_pct']:>+9.2f}%{r['mdd_pct']:>9.2f}%"
-            f"{r['win_rate_pct']:>7.1f}%{r['trades']:>8}"
-        )
+        print(f"{r.key:<20}{r.return_pct:>+9.2f}%{r.mdd_pct:>9.2f}%{r.win_rate_pct:>7.1f}%{r.num_trades:>8}")
     print("\n결과는 backtest_runs 테이블에 누적 저장됩니다.")
     print("실거래에 반영하려면: python scripts/configure.py strategy --active-key <전략키>")
 

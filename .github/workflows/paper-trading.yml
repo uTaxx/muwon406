@@ -46,6 +46,9 @@ jobs:
       - name: 모의투자 실행
         run: python scripts/run_paper_trading.py
 
+      - name: 일일 전략 리뷰 (다른 전략이었다면 어땠을지 비교, 텔레그램 발송)
+        run: python scripts/run_daily_review.py
+
       - name: 상태 DB 구글드라이브에 업로드
         if: always()
         env:
