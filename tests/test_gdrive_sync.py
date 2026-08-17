@@ -1,17 +1,10 @@
-"""구글 계정 없이도 gdrive_sync.py의 로직(신규 파일이면 create, 있으면
-update, 없으면 새 상태로 시작)이 맞는지 Drive API를 모킹해서 검증한다."""
+"""구글 계정 없이도 gdrive_sync 로직(신규 파일이면 create, 있으면 update,
+없으면 새 상태로 시작, 다운로드는 원자적 교체)이 맞는지 Drive API를
+모킹해서 검증한다."""
 
-import importlib.util
-import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-SCRIPT_PATH = Path(__file__).resolve().parent.parent / "scripts" / "gdrive_sync.py"
-
-_spec = importlib.util.spec_from_file_location("gdrive_sync", SCRIPT_PATH)
-gdrive_sync = importlib.util.module_from_spec(_spec)
-sys.modules["gdrive_sync"] = gdrive_sync
-_spec.loader.exec_module(gdrive_sync)
+from muwon.cloud import gdrive_sync
 
 
 def make_fake_service(existing_file_id: str | None):
@@ -23,9 +16,9 @@ def make_fake_service(existing_file_id: str | None):
 
 
 @patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
-@patch("gdrive_sync.service_account.Credentials.from_service_account_info")
-@patch("gdrive_sync.build")
-@patch("gdrive_sync.MediaFileUpload")
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.MediaFileUpload")
 def test_upload_creates_new_file_when_absent(mock_media, mock_build, mock_creds, tmp_path):
     service = make_fake_service(existing_file_id=None)
     mock_build.return_value = service
@@ -42,9 +35,9 @@ def test_upload_creates_new_file_when_absent(mock_media, mock_build, mock_creds,
 
 
 @patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
-@patch("gdrive_sync.service_account.Credentials.from_service_account_info")
-@patch("gdrive_sync.build")
-@patch("gdrive_sync.MediaFileUpload")
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.MediaFileUpload")
 def test_upload_updates_existing_file(mock_media, mock_build, mock_creds, tmp_path):
     service = make_fake_service(existing_file_id="EXISTING456")
     mock_build.return_value = service
@@ -61,8 +54,8 @@ def test_upload_updates_existing_file(mock_media, mock_build, mock_creds, tmp_pa
 
 
 @patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
-@patch("gdrive_sync.service_account.Credentials.from_service_account_info")
-@patch("gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
 def test_download_skips_when_file_missing(mock_build, mock_creds, tmp_path):
     service = make_fake_service(existing_file_id=None)
     mock_build.return_value = service
@@ -72,6 +65,33 @@ def test_download_skips_when_file_missing(mock_build, mock_creds, tmp_path):
 
     assert not out_path.exists()
     service.files.return_value.get_media.assert_not_called()
+
+
+@patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.MediaIoBaseDownload")
+def test_download_writes_via_temp_file_then_atomic_replace(mock_downloader_cls, mock_build, mock_creds, tmp_path):
+    """대시보드가 백그라운드에서 주기적으로 다시 내려받는 동안, 그 파일을
+    동시에 읽는 쪽이 반쯤 쓰인 파일을 보지 않도록 임시 파일에 쓰고 나서
+    교체하는지 확인한다."""
+    service = make_fake_service(existing_file_id="EXISTING456")
+    mock_build.return_value = service
+
+    def fake_downloader(fileobj, request):
+        fileobj.write(b"downloaded-db-bytes")
+        instance = MagicMock()
+        instance.next_chunk.return_value = (None, True)
+        return instance
+
+    mock_downloader_cls.side_effect = fake_downloader
+
+    out_path = tmp_path / "muwon.db"
+    gdrive_sync.download("FOLDER123", "muwon.db", str(out_path))
+
+    assert out_path.exists()
+    assert out_path.read_bytes() == b"downloaded-db-bytes"
+    assert not (tmp_path / "muwon.db.tmp").exists()  # 교체 후 임시 파일이 남지 않아야 함
 
 
 def test_missing_master_key_env_raises_system_exit():

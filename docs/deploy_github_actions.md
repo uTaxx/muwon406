@@ -72,8 +72,11 @@ Gmail 계정은 공유 드라이브를 만들 수 없다 — 그 경우 워크�
 평일 15:30 KST(06:30 UTC)에 자동으로 돈다. 별도로 할 일 없음.
 
 **리스크 정책(종목당 비중, 손절선, 자동매매 on/off 등)을 바꾸고 싶으면**:
-지금은 대시보드가 로컬 `muwon.db`를 보게 되어 있어서, 구글드라이브에 있는
-"진짜" 운영 상태를 직접 보려면 로컬로 내려받아야 한다.
+대시보드가 이제 구글드라이브를 직접 보고/올린다 —
+[`docs/deploy_streamlit_cloud.md`](deploy_streamlit_cloud.md)대로 한 번
+배포해두면, 폰이든 PC든 그 화면에서 바로 바꾸면 된다(로컬로 내려받았다
+다시 올리는 수동 과정 불필요). 로컬에서 잠깐 확인만 하고 싶을 때는
+아래처럼 직접 내려받아도 된다:
 
 ```bash
 python scripts/gdrive_sync.py download --folder-id <폴더ID> --filename muwon.db --out ./muwon.db
@@ -82,8 +85,6 @@ python scripts/gdrive_sync.py upload --folder-id <폴더ID> --filename muwon.db 
 ```
 
 (`GDRIVE_SA_KEY_JSON`, `MUWON_MASTER_KEY`를 로컬 `.env`/환경변수에도 설정해야 함.)
-매번 로컬↔드라이브를 오가야 하는 건 번거로운 부분이라, 나중에 대시보드가
-구글드라이브를 직접 보게 만드는 것도 검토할 수 있다.
 
 ## 문제가 생기면
 

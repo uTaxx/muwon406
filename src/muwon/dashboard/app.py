@@ -3,14 +3,24 @@
 scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 설정값을
 읽고 쓴다 — 저장 위치·형식이 CLI와 완전히 동일하다. 변경 이력/개발 로그는
 st.fragment(run_every=...)로 자동 갱신되어, 다른 폼(예: KIS 인증정보 입력
-중)을 건드리지 않고 그 구역만 주기적으로 새로고침된다. 실행:
+중)을 건드리지 않고 그 구역만 주기적으로 새로고침된다.
 
+로컬 실행:
     streamlit run src/muwon/dashboard/app.py
+
+폰/PC 어디서든 접속 가능한 상시 대시보드로 쓰려면 Streamlit Community
+Cloud에 배포한다 — docs/deploy_streamlit_cloud.md 참고. 그 환경은 컨테이너가
+재배포될 때마다 로컬 디스크가 사라지므로, 이 파일이 뜰 때 구글드라이브에서
+muwon.db를 내려받고(아래 sync_db_from_drive), 설정을 바꿀 때마다 다시
+올린다(sync_db_to_drive) — GitHub Actions(scripts/gdrive_sync.py)와 같은
+구글드라이브 폴더를 공유해서, 대시보드에서 바꾼 설정이 다음 자동매매 실행에
+반영되고 자동매매가 만든 매매 기록이 대시보드에도 보이게 한다.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -22,6 +32,21 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 import pandas as pd
 import streamlit as st
 
+st.set_page_config(page_title="muwon406 대시보드", layout="wide")
+
+# Streamlit Community Cloud는 시크릿을 st.secrets로 주지 OS 환경변수로 주지
+# 않는다 — 이 프로젝트의 설정 로딩(BootstrapSettings, gdrive_sync)은 전부
+# os.environ/.env 기준이라, muwon.* 모듈을 import하기 전에(=BootstrapSettings가
+# 만들어지기 전에) 여기서 미리 os.environ에 복사해 둔다. 로컬에서 .env로
+# 실행할 때는 secrets.toml이 없어 아무 일도 안 하고 넘어간다.
+try:
+    for _key, _value in st.secrets.items():
+        os.environ.setdefault(_key, str(_value))
+except Exception:  # noqa: BLE001, S110 — secrets.toml 자체가 없는 로컬 실행은 정상 상황
+    pass
+
+from muwon.cloud.gdrive_sync import download as gdrive_download
+from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
 from muwon.data.universe import find_by_symbol
 from muwon.db.models import BacktestRunRow, OrderRow, PositionRow, TradeRow
@@ -35,11 +60,10 @@ from muwon.settings.schema import (
 from muwon.settings.service import SettingsService, build_settings_service
 from muwon.strategy.registry import get_definition, list_definitions
 
-st.set_page_config(page_title="muwon406 대시보드", layout="wide")
-
 HISTORY_REFRESH_SECONDS = 5
 DEVLOG_REFRESH_SECONDS = 20
 TRADING_REFRESH_SECONDS = 5
+DRIVE_SYNC_REFRESH_SECONDS = 30
 
 
 @st.cache_resource
@@ -58,8 +82,63 @@ def _mask(value: str) -> str:
     return value[:2] + "*" * max(len(value) - 2, 0)
 
 
+def _drive_sync_configured() -> bool:
+    return bool(os.environ.get("GDRIVE_SA_KEY_JSON")) and bool(os.environ.get("GDRIVE_FOLDER_ID"))
+
+
+def _local_db_path() -> str | None:
+    prefix = "sqlite:///"
+    url = bootstrap_settings.database_url
+    if not url.startswith(prefix):
+        return None  # Postgres 등 파일 기반이 아닌 DB는 동기화 대상이 아니다
+    return url[len(prefix) :]
+
+
+def sync_db_from_drive() -> None:
+    if not _drive_sync_configured():
+        return
+    path = _local_db_path()
+    if path is None:
+        return
+    gdrive_download(os.environ["GDRIVE_FOLDER_ID"], Path(path).name, path)
+
+
+def sync_db_to_drive() -> None:
+    """설정을 바꾼 직후 호출한다 — 안 그러면 이 서버가 재배포되거나 다음
+    GitHub Actions 실행이 구글드라이브에서 옛 상태를 받아가서, 방금 화면에서
+    바꾼 값이 없던 일이 된다."""
+    if not _drive_sync_configured():
+        return
+    path = _local_db_path()
+    if path is None or not Path(path).exists():
+        return
+    gdrive_upload(os.environ["GDRIVE_FOLDER_ID"], Path(path).name, path)
+
+
+@st.cache_resource
+def _initial_drive_sync() -> bool:
+    """프로세스가 뜰 때 딱 한 번만 — st.cache_resource라 위젯 조작으로
+    화면이 다시 그려질 때마다(rerun) 다시 받지 않고, 이 서버 프로세스가
+    살아있는 동안 최초 1회만 실행된다. 그 뒤로는 아래 주기적 갱신
+    (render_drive_sync_fragment)이 최신 상태를 이어받는다."""
+    sync_db_from_drive()
+    return True
+
+
+@st.fragment(run_every=DRIVE_SYNC_REFRESH_SECONDS)
+def render_drive_sync_fragment() -> None:
+    sync_db_from_drive()
+    st.caption(
+        f"☁️ 구글드라이브 동기화: {datetime.now():%H:%M:%S}"  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
+        " (자동매매가 만든 최신 상태를 주기적으로 받아옵니다)"
+    )
+
+
 def main() -> None:
+    _initial_drive_sync()
     st.title("muwon406 대시보드")
+    if _drive_sync_configured():
+        render_drive_sync_fragment()
 
     if not bootstrap_settings.master_key:
         st.warning(
@@ -111,6 +190,7 @@ def render_status_bar(service: SettingsService) -> None:
         )
         if enabled != policy.trading_enabled:
             service.set_risk_policy(dataclasses.replace(policy, trading_enabled=enabled))
+            sync_db_to_drive()
             st.rerun()
 
     with col_env:
@@ -165,6 +245,7 @@ def render_strategy_tab(service: SettingsService) -> None:
 
     if submitted:
         service.set_strategy_selection(StrategySelection(active_key=selected))
+        sync_db_to_drive()
         st.success(f"실거래 활성 전략을 '{selected}'로 변경했습니다 — 다음 매매 실행부터 반영됩니다.")
         st.rerun()
 
@@ -216,6 +297,7 @@ def render_risk_tab(service: SettingsService) -> None:
                 trading_enabled=current.trading_enabled,  # 상단 토글이 이 값의 유일한 창구
             )
         )
+        sync_db_to_drive()
         st.success("리스크 정책 저장 완료 — 봇 프로세스는 최대 5초(캐시 TTL) 내 반영됩니다.")
         st.rerun()
 
@@ -259,6 +341,7 @@ def render_kis_tab(service: SettingsService) -> None:
                     account_product_cd=account_product_cd or current.account_product_cd,
                 )
             )
+            sync_db_to_drive()
             st.success("KIS 인증정보 저장 완료")
             st.rerun()
         except RuntimeError as e:
@@ -286,6 +369,7 @@ def render_telegram_tab(service: SettingsService) -> None:
             service.set_telegram_config(
                 TelegramConfig(bot_token=bot_token or current.bot_token, chat_id=chat_id)
             )
+            sync_db_to_drive()
             st.success("텔레그램 설정 저장 완료")
             st.rerun()
         except RuntimeError as e:

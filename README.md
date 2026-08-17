@@ -15,8 +15,10 @@ src/muwon/
 ├── risk/           # 리스크 매니저 — 주문 실행 전 최종 검증
 ├── execution/       # 주문 실행기 (모의/실전 전환, Phase 2)
 ├── backtest/       # 백테스트 엔진 (Phase 1)
+├── analysis/       # 전략 가설 비교(스윕/일일 리뷰) 공용 로직
 ├── notify/         # 텔레그램 알림
-├── dashboard/      # 설정 관리 웹 대시보드 (Streamlit)
+├── dashboard/      # 설정 관리 웹 대시보드 (Streamlit, 폰/PC 상시 접속 가능)
+├── cloud/          # 상태 DB 구글드라이브 동기화 (GitHub Actions·대시보드 공용)
 └── db/             # 시세/신호/주문/설정 저장 (SQLite → 운영 시 Postgres 전환 가능)
 
 scripts/
@@ -67,6 +69,16 @@ streamlit run src/muwon/dashboard/app.py
 설정되어 있어야 합니다. 대시보드 하단 "보유 종목 & 최근 주문"에서 실제
 매매 파이프라인(아래 참고)이 만든 포지션·주문을 5초마다 자동 갱신되는
 표로 볼 수 있습니다.
+
+### 폰/PC 어디서든 상시 접속 (Streamlit Community Cloud)
+
+매번 `streamlit run`을 직접 실행하는 대신, 무료로 상시 호스팅되는 웹 주소
+하나를 만들어 둘 수 있습니다. `GDRIVE_SA_KEY_JSON`/`GDRIVE_FOLDER_ID`가
+설정되어 있으면 대시보드가 뜰 때·30초마다 구글드라이브에서 최신 `muwon.db`를
+받아오고, 화면에서 설정을 바꾸면 즉시 다시 올립니다(`src/muwon/cloud/gdrive_sync.py`) —
+GitHub Actions가 매일 만드는 매매 기록과 대시보드에서 바꾼 설정이 같은
+구글드라이브 폴더를 통해 서로에게 반영됩니다. 배포 방법은
+[`docs/deploy_streamlit_cloud.md`](docs/deploy_streamlit_cloud.md) 참고.
 
 ## 매매 파이프라인 (Phase 2)
 
