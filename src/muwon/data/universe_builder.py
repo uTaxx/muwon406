@@ -53,34 +53,65 @@ def to_ticker(symbol: str, name: str, market: str) -> Ticker:
     return Ticker(symbol=symbol, name=name, market=market, yahoo_symbol=f"{symbol}{suffix}")
 
 
-def build_universe(client, size: int = 30) -> list[Ticker]:
+# 코스닥에 할당할 비율. 시가총액만으로 줄을 세우면 코스닥은 한 종목도 못
+# 남는다 — 실제로 상위 30을 뽑았더니 전부 코스피였고, 기존 유니버스에 있던
+# 에코프로비엠·에코프로가 빠졌다. 단타는 변동성이 큰 코스닥에서 기회가
+# 나오는 경우가 많아 통째로 빠지면 전략 자체가 좁아지므로, 시장별로 자리를
+# 따로 할당한다.
+DEFAULT_KOSDAQ_RATIO = 0.3
+
+
+def build_universe(
+    client, size: int = 30, kosdaq_ratio: float = DEFAULT_KOSDAQ_RATIO
+) -> list[Ticker]:
     """코스피·코스닥 시총 상위에서 매매 대상 종목을 골라 온다.
 
-    두 시장을 따로 조회한 뒤 시가총액 기준으로 합쳐 상위 size개를 남긴다 —
-    "전체" 한 번으로 받으면 코스닥이 거의 안 잡혀서, 단타 기회가 많은
-    코스닥 종목이 통째로 빠지기 때문이다."""
-    collected: list[tuple[str, str, str, int]] = []  # (symbol, name, market, cap)
+    두 시장을 하나로 합쳐 시가총액순으로 자르지 않고 **시장별로 자리를
+    나눠 각각 상위를 뽑는다**. 합쳐서 자르면 코스피 대형주가 자리를 전부
+    차지해 코스닥이 0종목이 되기 때문이다(실측으로 확인).
+
+    kosdaq_ratio=0.3, size=30이면 코스피 21 + 코스닥 9종목이 된다.
+    한쪽 시장에서 조건에 맞는 종목이 모자라면 다른 쪽에서 채운다."""
+    if not 0.0 <= kosdaq_ratio <= 1.0:
+        raise ValueError(f"kosdaq_ratio는 0~1 사이여야 합니다: {kosdaq_ratio}")
+
+    quotas = {
+        "KOSDAQ": round(size * kosdaq_ratio),
+        "KOSPI": size - round(size * kosdaq_ratio),
+    }
+
+    picked: dict[str, list[Ticker]] = {}
+    leftovers: list[tuple[str, str, str, int]] = []  # 할당량을 넘어 남은 후보
 
     for market_key, market_name in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
         # 걸러낼 종목(ETF·우선주 등)을 감안해 넉넉히 받아 온다
         rows = client.get_top_market_cap(market=market_key, limit=size * 2)
         logger.info(f"{market_name} 시총 상위 {len(rows)}종목 수신")
-        for symbol, name, cap in rows:
-            if is_tradable_stock(name):
-                collected.append((symbol, name, market_name, cap))
 
-    collected.sort(key=lambda row: row[3], reverse=True)
+        tradable = [(s, n, market_name, c) for s, n, c in rows if is_tradable_stock(n)]
+        quota = quotas[market_name]
+        picked[market_name] = [to_ticker(s, n, m) for s, n, m, _c in tradable[:quota]]
+        leftovers.extend(tradable[quota:])
 
-    seen: set[str] = set()
     universe: list[Ticker] = []
-    for symbol, name, market, _cap in collected:
-        if symbol in seen:
-            continue
-        seen.add(symbol)
-        universe.append(to_ticker(symbol, name, market))
-        if len(universe) >= size:
-            break
-    return universe
+    seen: set[str] = set()
+    for market_name in ("KOSPI", "KOSDAQ"):
+        for ticker in picked.get(market_name, []):
+            if ticker.symbol not in seen:
+                seen.add(ticker.symbol)
+                universe.append(ticker)
+
+    # 한쪽 시장이 할당량을 못 채웠으면 남은 후보 중 시총 큰 순으로 채운다
+    if len(universe) < size:
+        leftovers.sort(key=lambda row: row[3], reverse=True)
+        for symbol, name, market, _cap in leftovers:
+            if len(universe) >= size:
+                break
+            if symbol not in seen:
+                seen.add(symbol)
+                universe.append(to_ticker(symbol, name, market))
+
+    return universe[:size]
 
 
 def save_snapshot(session_factory, tickers: list[Ticker], market_caps: dict[str, int]) -> datetime:

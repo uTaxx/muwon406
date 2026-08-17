@@ -39,6 +39,12 @@ from muwon.settings.service import build_settings_service
 def main() -> None:
     parser = argparse.ArgumentParser(description="시가총액 상위로 매매 대상 종목 갱신")
     parser.add_argument("--size", type=int, default=30, help="유니버스 종목 수 (기본 30)")
+    parser.add_argument(
+        "--kosdaq-ratio",
+        type=float,
+        default=0.3,
+        help="코스닥에 할당할 비율 (기본 0.3 — 시총만으로 뽑으면 코스닥이 0종목이 된다)",
+    )
     parser.add_argument("--apply", action="store_true", help="실제로 저장한다(없으면 미리보기만)")
     parser.add_argument("--notify", action="store_true", help="변경 내역을 텔레그램으로 발송")
     args = parser.parse_args()
@@ -52,7 +58,7 @@ def main() -> None:
     session_factory = make_session_factory(bootstrap_settings.database_url)
 
     try:
-        new_universe = build_universe(client, size=args.size)
+        new_universe = build_universe(client, size=args.size, kosdaq_ratio=args.kosdaq_ratio)
     except RuntimeError as e:
         raise SystemExit(
             f"❌ 유니버스 갱신 실패: {e}\n"

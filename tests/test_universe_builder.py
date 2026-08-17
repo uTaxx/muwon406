@@ -61,18 +61,34 @@ def make_client(kospi_rows, kosdaq_rows) -> MagicMock:
     return client
 
 
-def test_build_universe_merges_both_markets_by_market_cap():
-    """코스피만 조회하면 코스닥이 통째로 빠진다 — 두 시장을 각각 받아
-    시가총액으로 합쳐야 한다."""
+def test_build_universe_reserves_slots_for_kosdaq():
+    """시가총액만으로 줄을 세우면 코스피 대형주가 자리를 전부 차지해
+    코스닥이 0종목이 된다(실제 실행에서 상위 30이 전부 코스피였다).
+    단타 기회가 많은 코스닥이 통째로 빠지지 않도록 시장별로 자리를 나눈다."""
     client = make_client(
-        kospi_rows=[("005930", "삼성전자", 5_000_000), ("000660", "SK하이닉스", 1_000_000)],
-        kosdaq_rows=[("247540", "에코프로비엠", 2_000_000)],
+        kospi_rows=[(f"KP{i}", f"코스피{i}", 10_000_000 - i) for i in range(10)],
+        kosdaq_rows=[(f"KQ{i}", f"코스닥{i}", 100 - i) for i in range(10)],  # 시총 훨씬 작음
     )
 
-    universe = build_universe(client, size=3)
+    universe = build_universe(client, size=10, kosdaq_ratio=0.3)
 
-    assert [t.symbol for t in universe] == ["005930", "247540", "000660"]  # 시총 내림차순
-    assert universe[1].market == "KOSDAQ"
+    markets = [t.market for t in universe]
+    assert markets.count("KOSDAQ") == 3  # 시총이 작아도 자리를 확보한다
+    assert markets.count("KOSPI") == 7
+
+
+def test_build_universe_fills_from_other_market_when_quota_unmet():
+    """한쪽 시장에 조건 맞는 종목이 모자라면 다른 쪽에서 채워 요청 개수를
+    맞춘다 — 코스닥 후보가 적다고 유니버스가 쪼그라들면 안 된다."""
+    client = make_client(
+        kospi_rows=[(f"KP{i}", f"코스피{i}", 10_000_000 - i) for i in range(10)],
+        kosdaq_rows=[("KQ0", "코스닥0", 100)],  # 1종목뿐
+    )
+
+    universe = build_universe(client, size=10, kosdaq_ratio=0.3)
+
+    assert len(universe) == 10
+    assert [t.market for t in universe].count("KOSDAQ") == 1
 
 
 def test_build_universe_filters_then_respects_size():
@@ -88,9 +104,19 @@ def test_build_universe_filters_then_respects_size():
         kosdaq_rows=[],
     )
 
-    universe = build_universe(client, size=2)
+    universe = build_universe(client, size=2, kosdaq_ratio=0.0)
 
     assert [t.name for t in universe] == ["삼성전자", "SK하이닉스"]
+
+
+def test_build_universe_rejects_invalid_ratio():
+    client = make_client(kospi_rows=[], kosdaq_rows=[])
+    for bad_ratio in (-0.1, 1.5):
+        try:
+            build_universe(client, size=10, kosdaq_ratio=bad_ratio)
+            raise AssertionError("ValueError가 발생해야 한다")
+        except ValueError:
+            pass
 
 
 def test_build_universe_deduplicates_symbols_across_markets():
