@@ -13,10 +13,12 @@
         --max-concurrent-positions 8
     python scripts/configure.py strategy --active-key ma_rsi_v1
     python scripts/configure.py strategy --list
+    python scripts/configure.py kill-switch --enabled false
     python scripts/configure.py show
 """
 
 import argparse
+import dataclasses
 import sys
 from pathlib import Path
 
@@ -60,6 +62,11 @@ def main() -> None:
     risk.add_argument("--max-concurrent-positions", type=int, required=True)
     risk.add_argument("--trading-enabled", choices=["true", "false"], default="true")
 
+    kill_switch = sub.add_parser(
+        "kill-switch", help="다른 리스크 값은 그대로 두고 자동매매 on/off만 전환"
+    )
+    kill_switch.add_argument("--enabled", choices=["true", "false"], required=True)
+
     strategy = sub.add_parser("strategy", help="실거래에 쓸 전략 선택/조회")
     strategy_group = strategy.add_mutually_exclusive_group(required=True)
     strategy_group.add_argument("--active-key", help="strategy/registry.py에 등록된 전략 키")
@@ -97,6 +104,10 @@ def main() -> None:
             )
         )
         print("리스크 정책 저장 완료")
+    elif args.command == "kill-switch":
+        current = service.get_risk_policy()
+        service.set_risk_policy(dataclasses.replace(current, trading_enabled=args.enabled == "true"))
+        print(f"자동매매 킬스위치를 {'ON' if args.enabled == 'true' else 'OFF'}로 변경 완료")
     elif args.command == "strategy":
         if args.list:
             for d in list_definitions():

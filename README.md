@@ -101,6 +101,13 @@ PC를 계속 켜둘 필요 없이, GitHub Actions가 평일 장마감 후 자동
 [`docs/deploy_github_actions.md`](docs/deploy_github_actions.md)에
 순서대로 정리되어 있습니다.
 
+**PC 없이 폰/브라우저로 할 수 있는 것**: 저장소 Actions 탭 →
+"KIS 모의투자 일일 자동매매" → Run workflow로 수동 실행할 수 있습니다.
+이때 `trading_enabled` 입력값을 `true`/`false`로 지정하면 다른 리스크
+설정은 그대로 두고 자동매매 킬스위치만 즉시 전환됩니다(`scripts/configure.py
+kill-switch`) — 이상 징후가 보일 때 PC 앞이 아니어도 바로 멈출 수 있게 만든
+용도입니다. 값을 "유지"로 두면 지금 저장된 설정 그대로 실행됩니다.
+
 ## 장중 실시간 매매 (VPS 또는 상시 켜진 PC)
 
 하루 1회 배치 대신, 장중(09:00~15:30 KST) 체결이 들어올 때마다 반응하는
