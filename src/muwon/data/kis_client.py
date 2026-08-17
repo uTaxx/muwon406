@@ -12,11 +12,17 @@ SimulatedOrderExecutor로 파이프라인을 검증하고, 이 클래스는 실�
 문서 기준으로 작성했지만, 이 개발 환경에서는 KIS 서버에 접근할 수 없어
 실제 호출로 검증하지 못했다 — 실거래 전환 전 반드시 최신 문서와 대조하고
 모의투자 계좌로 먼저 검증할 것.
+
+실제 GitHub Actions에서 모의투자 계좌로 처음 인증에 성공한 실행에서,
+유니버스 종목을 아무 간격 없이 연달아 조회하다 9번째 요청부터 500(모의투자
+초당 호출 제한 추정)이 나는 걸 확인했다 — _throttle()로 요청 간 최소
+간격을 두는 것으로 대응함(아래 _MIN_REQUEST_INTERVAL_*).
 """
 
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from datetime import date
 
 import pandas as pd
@@ -34,6 +40,14 @@ _BUY_TR_ID = {"paper": "VTTC0802U", "real": "TTTC0802U"}
 _SELL_TR_ID = {"paper": "VTTC0801U", "real": "TTTC0801U"}
 _MARKET_ORDER_DVSN = "01"  # 시장가
 
+# KIS는 초당 호출 횟수를 제한한다 — 모의투자가 실전투자보다 훨씬 빡빡하다
+# (문서상 모의투자 초당 2건, 실전투자 초당 20건). 유니버스 종목 수만큼
+# get_daily_ohlcv를 아무 간격 없이 연달아 호출하면 이 제한에 걸려 500을
+# 반환하는 게 실제로 관찰됨(9번째 요청부터 500) — 요청 간 최소 간격을 둬서
+# 이를 피한다.
+_MIN_REQUEST_INTERVAL_PAPER = 0.5
+_MIN_REQUEST_INTERVAL_REAL = 0.05
+
 
 class KISClient(MarketDataSource):
     def __init__(
@@ -43,6 +57,7 @@ class KISClient(MarketDataSource):
         account_no: str = "",
         account_product_cd: str = "01",
         is_paper: bool = True,
+        sleep_fn: Callable[[float], None] = time.sleep,
     ):
         self.app_key = app_key
         self.app_secret = app_secret
@@ -52,6 +67,23 @@ class KISClient(MarketDataSource):
         self.base_url = PAPER_BASE_URL if is_paper else REAL_BASE_URL
         self._access_token: str | None = None
         self._token_expires_at: float = 0.0
+        self._sleep = sleep_fn
+        self._min_request_interval = _MIN_REQUEST_INTERVAL_PAPER if is_paper else _MIN_REQUEST_INTERVAL_REAL
+        self._last_request_at: float = 0.0
+
+    def _throttle(self) -> None:
+        wait = self._min_request_interval - (time.time() - self._last_request_at)
+        if wait > 0:
+            self._sleep(wait)
+        self._last_request_at = time.time()
+
+    def _post(self, url: str, **kwargs) -> requests.Response:
+        self._throttle()
+        return requests.post(url, **kwargs)
+
+    def _get(self, url: str, **kwargs) -> requests.Response:
+        self._throttle()
+        return requests.get(url, **kwargs)
 
     @classmethod
     def from_settings(cls, settings_service: SettingsService) -> KISClient:
@@ -71,7 +103,7 @@ class KISClient(MarketDataSource):
         if self._access_token and time.time() < self._token_expires_at:
             return self._access_token
 
-        response = requests.post(
+        response = self._post(
             f"{self.base_url}/oauth2/tokenP",
             json={
                 "grant_type": "client_credentials",
@@ -96,7 +128,7 @@ class KISClient(MarketDataSource):
         }
 
     def get_daily_ohlcv(self, symbol: str, start: date, end: date) -> pd.DataFrame:
-        response = requests.get(
+        response = self._get(
             f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
             headers=self._auth_headers("FHKST03010100"),
             params={
@@ -139,7 +171,7 @@ class KISClient(MarketDataSource):
         env = "paper" if self.is_paper else "real"
         tr_id = _BUY_TR_ID[env] if side == OrderSide.BUY else _SELL_TR_ID[env]
 
-        response = requests.post(
+        response = self._post(
             f"{self.base_url}/uapi/domestic-stock/v1/trading/order-cash",
             headers=self._auth_headers(tr_id),
             json={

@@ -99,6 +99,84 @@ def test_place_cash_order_uses_real_sell_tr_id(mock_post):
     assert mock_post.call_args.kwargs["headers"]["tr_id"] == "TTTC0801U"
 
 
+class FakeClock:
+    """time.time()을 테스트가 제어하는 값으로 대체 — 실제로 잠들지 않고도
+    요청 간격 로직(_throttle)을 검증한다."""
+
+    def __init__(self, start: float = 1000.0):
+        self.now = start
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
+@patch("muwon.data.kis_client.requests.get")
+@patch("muwon.data.kis_client.time.time")
+def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
+    """모의투자 계좌로 유니버스 종목을 연달아 조회하다 9번째 요청부터
+    500이 난 실제 사고를 재현한 회귀 테스트 — 요청 간격이 0.5초보다 짧으면
+    다음 요청 전에 부족한 만큼 대기해야 한다."""
+    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value.raise_for_status = lambda: None
+
+    clock = FakeClock()
+    mock_time.side_effect = clock
+    sleeps: list[float] = []
+
+    client = make_client(is_paper=True)
+    client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
+
+    client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+    clock.advance(0.1)  # 다음 요청 전 0.1초만 경과 — 0.5초 제한에 못 미침
+    client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert len(sleeps) == 1
+    assert round(sleeps[0], 4) == 0.4  # 0.5 - 0.1
+
+
+@patch("muwon.data.kis_client.requests.get")
+@patch("muwon.data.kis_client.time.time")
+def test_throttle_skips_wait_once_interval_already_elapsed(mock_time, mock_get):
+    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value.raise_for_status = lambda: None
+
+    clock = FakeClock()
+    mock_time.side_effect = clock
+    sleeps: list[float] = []
+
+    client = make_client(is_paper=True)
+    client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
+
+    client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+    clock.advance(1.0)  # 제한(0.5초)보다 충분히 지남
+    client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert sleeps == []
+
+
+@patch("muwon.data.kis_client.requests.get")
+@patch("muwon.data.kis_client.time.time")
+def test_real_trading_uses_shorter_throttle_interval_than_paper(mock_time, mock_get):
+    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value.raise_for_status = lambda: None
+
+    clock = FakeClock()
+    mock_time.side_effect = clock
+    sleeps: list[float] = []
+
+    client = make_client(is_paper=False)
+    client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
+
+    client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+    clock.advance(0.1)  # 실전투자 제한(0.05초)보다 지남 — 대기 불필요
+    client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert sleeps == []
+
+
 @patch("muwon.data.kis_client.requests.post")
 def test_place_cash_order_raises_on_kis_error(mock_post):
     mock_post.return_value = MagicMock(
