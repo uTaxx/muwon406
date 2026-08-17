@@ -6,7 +6,9 @@ TR_ID·바디)과 응답 파싱이 KIS Developers 문서와 어긋나지 않는�
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from muwon.data.kis_client import KISClient
+import pytest
+
+from muwon.data.kis_client import KISClient, KISOrderRejected
 from muwon.domain.types import OrderSide
 
 
@@ -227,3 +229,24 @@ def test_place_cash_order_raises_on_kis_error(mock_post):
         raise AssertionError("RuntimeError가 발생해야 한다")
     except RuntimeError as e:
         assert "잔고 부족" in str(e)
+
+
+@patch("muwon.data.kis_client.requests.post")
+def test_order_rejection_exposes_kis_codes_separately_from_network_errors(mock_post):
+    """KIS가 업무 규칙으로 거부한 것(요청 형식은 맞음)과 네트워크·인증
+    실패(요청 자체가 틀림)를 호출부가 구분할 수 있어야 한다 — 주문 경로
+    검증 스크립트가 이 구분으로 성공/실패를 판정한다."""
+    mock_post.return_value = MagicMock(
+        json=lambda: {"rt_cd": "1", "msg_cd": "40570000", "msg1": "장시간이 아닙니다"}
+    )
+    mock_post.return_value.raise_for_status = lambda: None
+
+    client = make_client()
+    with pytest.raises(KISOrderRejected) as excinfo:
+        client.place_cash_order("005930", OrderSide.BUY, 1, 71000.0)
+
+    rejection = excinfo.value
+    assert rejection.rt_cd == "1"
+    assert rejection.msg_cd == "40570000"
+    assert rejection.msg1 == "장시간이 아닙니다"
+    assert isinstance(rejection, RuntimeError)  # 기존 호출부 호환

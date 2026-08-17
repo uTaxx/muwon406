@@ -50,6 +50,23 @@ _MARKET_ORDER_DVSN = "01"  # 시장가
 _MIN_REQUEST_INTERVAL_PAPER = 0.5
 _MIN_REQUEST_INTERVAL_REAL = 0.05
 
+
+class KISOrderRejected(RuntimeError):
+    """KIS가 요청 자체는 정상적으로 받아들였지만 업무 규칙상 거부한 경우
+    (장 시간 아님, 주문가능금액 부족, 수량 초과 등).
+
+    네트워크·인증 오류(requests의 HTTPError)와 반드시 구분해야 한다 —
+    이 예외가 났다는 건 엔드포인트·TR_ID·인증·요청 바디 형식이 전부
+    맞았다는 뜻이기도 하다. 주문 경로를 검증할 때 이 구분이 핵심이라
+    별도 예외로 뒀고, 나중에 "장 시간 아님"처럼 재시도할 만한 거부와
+    "잔고 부족"처럼 재시도하면 안 되는 거부를 코드로 나눌 여지도 남긴다."""
+
+    def __init__(self, rt_cd: str, msg_cd: str, msg1: str):
+        self.rt_cd = rt_cd
+        self.msg_cd = msg_cd
+        self.msg1 = msg1
+        super().__init__(f"KIS 주문 거부: {msg1} (rt_cd={rt_cd}, msg_cd={msg_cd})")
+
 # get_daily_ohlcv(GET, 멱등)만 재시도한다 — place_cash_order(POST, 주문)는
 # 재시도하면 중복 체결 위험이 있어 대상에서 뺐다.
 _MAX_RETRIES = 3
@@ -203,7 +220,11 @@ class KISClient(MarketDataSource):
         response.raise_for_status()
         payload = response.json()
         if payload.get("rt_cd") != "0":
-            raise RuntimeError(f"KIS 주문 실패: {payload.get('msg1', payload)}")
+            raise KISOrderRejected(
+                rt_cd=str(payload.get("rt_cd", "")),
+                msg_cd=str(payload.get("msg_cd", "")),
+                msg1=str(payload.get("msg1", payload)),
+            )
 
         return OrderResult(
             symbol=symbol,

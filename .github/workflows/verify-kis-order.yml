@@ -1,0 +1,63 @@
+name: KIS 주문 경로 검증
+
+# 자동매매가 매번 "체결 없음"으로 끝나서 한 번도 실행된 적 없는 주문 코드를,
+# 신호와 무관하게 강제로 한 번 태워 보는 진단용 워크플로우. 수동 실행 전용이며
+# 모의투자 계좌에만 동작한다(스크립트가 실거래 계좌면 거부한다).
+#
+# 장 시간 밖(09:00~15:30 KST 이외)에 돌리면 KIS가 "장 시간 아님"으로 거부하는데,
+# 그것만으로도 엔드포인트·TR_ID·인증·요청 형식이 맞다는 검증이 된다 — 실제
+# 체결 없이 안전하게 확인하고 싶으면 장 시간 밖에 돌릴 것.
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "종목코드 6자리"
+        default: "005930"
+      quantity:
+        description: "주문 수량"
+        default: "1"
+      side:
+        description: "매수/매도"
+        type: choice
+        options: ["buy", "sell"]
+        default: "buy"
+      confirm:
+        description: "실제로 주문을 넣을지 (false면 예행연습만)"
+        type: choice
+        options: ["false", "true"]
+        default: "false"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      # 상태 DB는 건드리지 않는다 — 이 검증은 포지션·가상현금과 무관하고,
+      # 잘못 올려서 운영 상태를 덮어쓰는 사고를 막으려고 다운로드/업로드를 뺐다.
+      - name: .env 구성
+        run: |
+          echo "DATABASE_URL=sqlite:///./verify.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: KIS 설정 주입
+        run: |
+          python scripts/configure.py kis --env paper \
+            --app-key "${{ secrets.KIS_APP_KEY }}" --app-secret "${{ secrets.KIS_APP_SECRET }}" \
+            --account-no "${{ secrets.KIS_ACCOUNT_NO }}" --account-product-cd "01"
+
+      - name: 주문 경로 검증
+        run: |
+          python scripts/verify_kis_order.py \
+            --symbol "${{ github.event.inputs.symbol }}" \
+            --quantity "${{ github.event.inputs.quantity }}" \
+            --side "${{ github.event.inputs.side }}" \
+            ${{ github.event.inputs.confirm == 'true' && '--confirm' || '' }}
