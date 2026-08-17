@@ -24,10 +24,16 @@ import streamlit as st
 
 from muwon.config import bootstrap_settings
 from muwon.data.universe import find_by_symbol
-from muwon.db.models import OrderRow, PositionRow
+from muwon.db.models import BacktestRunRow, OrderRow, PositionRow, TradeRow
 from muwon.db.session import make_session_factory
-from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
+from muwon.settings.schema import (
+    KISCredentials,
+    RiskPolicy,
+    StrategySelection,
+    TelegramConfig,
+)
 from muwon.settings.service import SettingsService, build_settings_service
+from muwon.strategy.registry import get_definition, list_definitions
 
 st.set_page_config(page_title="muwon406 대시보드", layout="wide")
 
@@ -69,6 +75,8 @@ def main() -> None:
 
     col_left, col_right = st.columns(2)
     with col_left:
+        with st.expander("활성 전략 (실거래에 쓰는 가설)", expanded=True):
+            render_strategy_tab(service)
         with st.expander("리스크 정책", expanded=True):
             render_risk_tab(service)
         with st.expander("KIS 인증정보", expanded=False):
@@ -83,6 +91,12 @@ def main() -> None:
 
     with st.expander(f"보유 종목 & 최근 주문 · {TRADING_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
         render_trading_fragment()
+
+    with st.expander("매매 기록 (전략별, 청산 완료된 건만)", expanded=True):
+        render_trades_tab()
+
+    with st.expander("전략 리뷰 결과 (다른 전략이었다면?)", expanded=True):
+        render_strategy_review_tab(service)
 
 
 def render_status_bar(service: SettingsService) -> None:
@@ -111,6 +125,48 @@ def render_status_bar(service: SettingsService) -> None:
 
     with col_time:
         st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
+
+
+def render_strategy_tab(service: SettingsService) -> None:
+    """실거래에 쓰는 전략(가설)을 보여주고 바꾼다.
+
+    "가설"이 뭔지: 이동평균/RSI 계산에 쓰는 숫자(며칠짜리 창을 볼지 등)를
+    바꾸면 같은 로직이라도 다른 결과가 나온다 — 그 숫자 조합 하나하나가
+    strategy/registry.py에 이름표(전략 키)를 달고 등록되어 있다. 여기서
+    "활성"으로 고른 것 하나만 실제 매매(run_paper_trading.py /
+    run_realtime_trading.py)에 쓰인다."""
+    definitions = list_definitions()
+    current_key = service.get_strategy_selection().active_key
+
+    rows = [
+        {
+            "키": d.key,
+            "이름": d.display_name,
+            "상태": d.status,
+            "설명": d.description,
+            "활성": "⭐" if d.key == current_key else "",
+        }
+        for d in definitions
+    ]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.caption(
+        "상태(status)는 코드가 강제하지 않는 참고용 메모입니다 — "
+        "'live'는 실거래로 검증된 전략, 'hypothesis'는 아직 검증 중인 가설이라는 뜻입니다."
+    )
+
+    options = [d.key for d in definitions]
+    with st.form("strategy_form"):
+        selected = st.selectbox(
+            "실거래에 쓸 전략",
+            options=options,
+            index=options.index(current_key) if current_key in options else 0,
+        )
+        submitted = st.form_submit_button("이 전략으로 전환")
+
+    if submitted:
+        service.set_strategy_selection(StrategySelection(active_key=selected))
+        st.success(f"실거래 활성 전략을 '{selected}'로 변경했습니다 — 다음 매매 실행부터 반영됩니다.")
+        st.rerun()
 
 
 def render_risk_tab(service: SettingsService) -> None:
@@ -357,6 +413,113 @@ def render_trading_tab() -> None:
                 for o in orders
             ]
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def render_trades_tab() -> None:
+    """청산까지 끝난 매매(진입+청산 한 왕복)만 보여준다 — 아직 들고 있는
+    포지션은 위 '보유 종목' 표에 있다. 어떤 전략(strategy_key)이 어떤
+    조건에서 이기고 졌는지를 보려는 용도라, 향후 이 데이터를 AI가 읽고
+    전략 수정을 제안하는 단계로 이어질 수 있도록 만들어 둔 표다."""
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        trades = session.query(TradeRow).order_by(TradeRow.exited_at.desc()).limit(50).all()
+
+    if not trades:
+        st.info("아직 청산까지 완료된 매매 기록이 없습니다.")
+        return
+
+    rows = [
+        {
+            "종목": f"{_symbol_name(t.symbol)}({t.symbol})",
+            "전략": t.strategy_key,
+            "수량": t.quantity,
+            "진입가": f"{t.entry_price:,.0f}",
+            "청산가": f"{t.exit_price:,.0f}",
+            "손익": f"{t.pnl_amount:+,.0f}",
+            "손익률": f"{t.pnl_pct:+.2f}%",
+            "진입사유": t.entry_reason,
+            "청산사유": t.exit_reason,
+            "청산일시": t.exited_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for t in trades
+    ]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def _display_name_for(strategy_key: str) -> str:
+    try:
+        return get_definition(strategy_key).display_name
+    except KeyError:
+        return strategy_key  # 이후 레지스트리에서 빠진 옛 전략 키일 수 있음
+
+
+def _latest_daily_review(session_factory) -> tuple[BacktestRunRow | None, list[BacktestRunRow]]:
+    """scripts/run_daily_review.py가 매일 남기는 기록(notes="daily_review")
+    중, 가장 최근 기준일(period_end)의 전략별 결과를 하나씩만 골라 돌려준다
+    (같은 날 여러 번 재실행했으면 가장 최근 것만 남긴다)."""
+    with session_factory() as session:
+        rows = (
+            session.query(BacktestRunRow)
+            .filter(BacktestRunRow.notes == "daily_review")
+            .order_by(BacktestRunRow.period_end.desc(), BacktestRunRow.created_at.desc())
+            .all()
+        )
+    if not rows:
+        return None, []
+
+    latest_period_end = rows[0].period_end
+    seen: set[str] = set()
+    latest_rows = []
+    for row in rows:
+        if row.period_end != latest_period_end or row.strategy_key in seen:
+            continue
+        seen.add(row.strategy_key)
+        latest_rows.append(row)
+    return rows[0], latest_rows
+
+
+def render_strategy_review_tab(service: SettingsService) -> None:
+    """"오늘 다른 전략이었다면 수익률이 어땠을까"를 매일 자동으로 계산해
+    쌓아둔 결과(scripts/run_daily_review.py)를 표로 보여준다. GitHub
+    Actions가 평일마다 자동으로 채워주므로, 여기서는 DB에 이미 쌓인
+    값을 읽기만 한다."""
+    session_factory = get_session_factory()
+    latest, rows = _latest_daily_review(session_factory)
+
+    if latest is None:
+        st.info(
+            "아직 일일 전략 리뷰 결과가 없습니다 — "
+            "scripts/run_daily_review.py가 최소 한 번은 실행되어야 합니다 "
+            "(GitHub Actions가 평일마다 자동으로 실행합니다)."
+        )
+        return
+
+    active_key = service.get_strategy_selection().active_key
+    active_row = next((r for r in rows if r.strategy_key == active_key), None)
+
+    st.caption(f"기준 기간: {latest.period_start} ~ {latest.period_end} (최근 일일 리뷰)")
+
+    table_rows = [
+        {
+            "전략": f"{_display_name_for(r.strategy_key)} ({r.strategy_key})"
+            + (" ⭐ 활성" if r.strategy_key == active_key else ""),
+            "수익률": f"{r.total_return_pct:+.2f}%",
+            "MDD": f"{r.max_drawdown_pct:.2f}%",
+            "승률": f"{r.win_rate_pct:.1f}%",
+            "거래수": r.num_trades,
+            "활성 전략 대비": (
+                "-"
+                if active_row is None
+                else f"{r.total_return_pct - active_row.total_return_pct:+.2f}%p"
+            ),
+        }
+        for r in sorted(rows, key=lambda r: r.total_return_pct, reverse=True)
+    ]
+    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+    st.caption(
+        "MDD(최대낙폭)는 그 기간 중 고점 대비 최대 몇 %까지 떨어졌었는지, "
+        "승률은 전체 매매 중 이익으로 끝난 비율입니다."
+    )
 
 
 if __name__ == "__main__":
