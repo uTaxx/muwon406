@@ -28,6 +28,7 @@ from muwon.data.universe import UNIVERSE
 from muwon.db.session import make_session_factory
 from muwon.execution.kis_order_executor import KISOrderExecutor
 from muwon.execution.realtime_engine import RealtimeTradingEngine
+from muwon.execution.realtime_runner import run_forever
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 from muwon.settings.service import build_settings_service
@@ -46,8 +47,6 @@ async def main() -> None:
         raise SystemExit("KIS 인증정보가 없습니다. python scripts/configure.py kis ...로 먼저 설정하세요.")
 
     client = KISClient.from_settings(settings_service)
-    approval_key = get_approval_key(creds.app_key, creds.app_secret, is_paper=True)
-    ws_client = KISWebSocketClient(approval_key, is_paper=True)
 
     session_factory = make_session_factory(bootstrap_settings.database_url)
     engine = RealtimeTradingEngine(
@@ -63,11 +62,12 @@ async def main() -> None:
     symbols = [t.symbol for t in UNIVERSE]
     logger.info(f"실시간 매매 시작 — {len(symbols)}종목 구독")
 
-    async for tick in ws_client.stream_ticks(symbols):
-        try:
-            engine.on_tick(tick)
-        except Exception:  # noqa: BLE001 — 틱 하나 처리 실패로 웹소켓 루프 전체가 죽으면 안 됨
-            logger.exception(f"틱 처리 중 오류 (symbol={tick.symbol}) — 다음 틱은 계속 처리")
+    def make_stream():
+        # 재연결마다 approval_key도 새로 받는다 — 오래 붙들고 있으면 만료될 수 있어서다.
+        approval_key = get_approval_key(creds.app_key, creds.app_secret, is_paper=True)
+        return KISWebSocketClient(approval_key, is_paper=True).stream_ticks(symbols)
+
+    await run_forever(engine, make_stream)
 
 
 if __name__ == "__main__":
