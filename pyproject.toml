@@ -26,6 +26,15 @@ dashboard = ["streamlit>=1.35", "google-api-python-client>=2.100", "google-auth>
 realtime = ["websockets>=12.0"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.4"]
 
+[tool.poetry]
+# Streamlit Community Cloud는 pyproject.toml을 Poetry로 읽어서 의존성을
+# 설치한다(pip/hatchling과는 별개). scripts/, dashboard/app.py는 muwon406을
+# 설치된 패키지로 쓰지 않고 sys.path에 src/를 직접 끼워 넣어 쓰므로, Poetry가
+# "이 프로젝트 자체"까지 패키지로 설치하려 들 필요가 없다 — 그러다 우리
+# src/muwon 레이아웃(프로젝트명 muwon406과 패키지명 muwon이 다름)을 못 찾아
+# 설치가 실패했다. package-mode = false로 의존성 설치만 하게 한다.
+package-mode = false
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
