@@ -99,7 +99,7 @@ PC를 계속 켜둘 필요 없이, GitHub Actions가 평일 장마감 후 자동
 [`docs/deploy_github_actions.md`](docs/deploy_github_actions.md)에
 순서대로 정리되어 있습니다.
 
-## 장중 실시간 매매 (VPS)
+## 장중 실시간 매매 (VPS 또는 상시 켜진 PC)
 
 하루 1회 배치 대신, 장중(09:00~15:30 KST) 체결이 들어올 때마다 반응하는
 운영 모드도 있습니다. `src/muwon/execution/realtime_engine.py`의
@@ -109,8 +109,8 @@ PC를 계속 켜둘 필요 없이, GitHub Actions가 평일 장마감 후 자동
 모드와 완전히 동일하게 재사용하고, "언제 판단하느냐"만 다릅니다.
 
 이건 장중 내내 떠 있어야 하는 상시 프로세스라 GitHub Actions로는 안 되고
-**VPS가 필요합니다** — 두 운영 모드(배치/실시간)는 같은 계좌에 동시에
-쓰는 게 아니라 둘 중 하나를 고르는 대안입니다.
+**VPS 또는 계속 켜져 있는 PC가 필요합니다** — 두 운영 모드(배치/실시간)는
+같은 계좌에 동시에 쓰는 게 아니라 둘 중 하나를 고르는 대안입니다.
 
 ```bash
 pip install -e ".[realtime]"
@@ -118,9 +118,11 @@ python scripts/run_realtime_trading.py
 ```
 
 KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 검증을 못 했습니다
-(KIS 포트 자체가 막혀 있음) — 공식 문서 기준으로 작성했으니 VPS 배포 후
-첫 실행에서 재검증이 필요합니다. 설정 방법은
-[`docs/deploy_vps_realtime.md`](docs/deploy_vps_realtime.md) 참고.
+(KIS 포트 자체가 막혀 있음) — 공식 문서 기준으로 작성했으니 실제 배포 후
+첫 실행에서 재검증이 필요합니다. 설정 방법:
+
+- VPS(리눅스, systemd)에 배포 → [`docs/deploy_vps_realtime.md`](docs/deploy_vps_realtime.md)
+- 집 윈도우 PC를 상시 서버로 활용 → [`docs/deploy_windows_pc.md`](docs/deploy_windows_pc.md)
 
 ## 로드맵
 
