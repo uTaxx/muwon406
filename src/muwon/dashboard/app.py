@@ -58,7 +58,7 @@ from muwon.settings.schema import (
     TelegramConfig,
 )
 from muwon.settings.service import SettingsService, build_settings_service
-from muwon.strategy.registry import get_definition, list_definitions
+from muwon.strategy.registry import CATEGORIES, get_definition, list_definitions
 
 HISTORY_REFRESH_SECONDS = 5
 DEVLOG_REFRESH_SECONDS = 20
@@ -220,6 +220,22 @@ def render_status_bar(service: SettingsService) -> None:
         st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
 
 
+def _best_backtest_by_key(session_factory) -> dict[str, BacktestRunRow]:
+    """전략별로 가장 최근 백테스트 기록 하나씩 — 전략 목록 옆에 성적을
+    같이 보여주기 위한 것(수동 스윕/일일 리뷰 구분 없이 최신 것)."""
+    with session_factory() as session:
+        rows = (
+            session.query(BacktestRunRow)
+            .order_by(BacktestRunRow.created_at.desc())
+            .limit(500)
+            .all()
+        )
+    latest: dict[str, BacktestRunRow] = {}
+    for row in rows:
+        latest.setdefault(row.strategy_key, row)
+    return latest
+
+
 def render_strategy_tab(service: SettingsService) -> None:
     """실거래에 쓰는 전략(가설)을 보여주고 바꾼다.
 
@@ -227,25 +243,70 @@ def render_strategy_tab(service: SettingsService) -> None:
     바꾸면 같은 로직이라도 다른 결과가 나온다 — 그 숫자 조합 하나하나가
     strategy/registry.py에 이름표(전략 키)를 달고 등록되어 있다. 여기서
     "활성"으로 고른 것 하나만 실제 매매(run_paper_trading.py /
-    run_realtime_trading.py)에 쓰인다."""
-    definitions = list_definitions()
-    current_key = service.get_strategy_selection().active_key
+    run_realtime_trading.py)에 쓰인다.
 
-    rows = [
-        {
-            "키": d.key,
-            "이름": d.display_name,
-            "상태": d.status,
-            "설명": d.description,
-            "활성": "⭐" if d.key == current_key else "",
-        }
-        for d in definitions
-    ]
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-    st.caption(
-        "상태(status)는 코드가 강제하지 않는 참고용 메모입니다 — "
-        "'live'는 실거래로 검증된 전략, 'hypothesis'는 아직 검증 중인 가설이라는 뜻입니다."
+    전략이 20개가 넘어가면 한 표에 다 늘어놓는 게 오히려 안 읽히므로,
+    계열(추세추종/평균회귀/돌파·모멘텀/복합) 필터와 백테스트 성적을 함께
+    붙여 "어떤 계열이 지금 장에 통하는가"를 바로 볼 수 있게 했다."""
+    current_key = service.get_strategy_selection().active_key
+    backtests = _best_backtest_by_key(get_session_factory())
+
+    selected_categories = st.multiselect(
+        "계열 필터",
+        options=CATEGORIES,
+        default=CATEGORIES,
+        help=(
+            "추세추종=오르는 걸 따라 사고 꺾이면 판다(승률 낮고 손익비 큼) · "
+            "평균회귀=많이 빠지면 되돌아온다에 베팅(승률 높고 한 번에 크게 잃을 위험) · "
+            "돌파·모멘텀=박스를 뚫으면 그 방향으로 간다(가짜 돌파가 약점) · "
+            "복합=여러 규칙을 섞은 것"
+        ),
     )
+    only_traded = st.toggle(
+        "백테스트에서 거래가 있었던 전략만",
+        value=False,
+        help="조건이 너무 빡빡해 한 번도 진입하지 않은 가설을 숨깁니다.",
+    )
+
+    definitions = [d for d in list_definitions() if d.category in selected_categories]
+    if only_traded:
+        definitions = [d for d in definitions if (backtests.get(d.key) is not None and backtests[d.key].num_trades > 0)]
+
+    if not definitions:
+        st.info("조건에 맞는 전략이 없습니다 — 필터를 넓혀 보세요.")
+        return
+
+    rows = []
+    for d in definitions:
+        run = backtests.get(d.key)
+        rows.append(
+            {
+                "활성": "⭐" if d.key == current_key else "",
+                "계열": d.category,
+                "전략": d.display_name,
+                "키": d.key,
+                "수익률": f"{run.total_return_pct:+.2f}%" if run else "-",
+                "MDD": f"{run.max_drawdown_pct:.1f}%" if run else "-",
+                "승률": f"{run.win_rate_pct:.0f}%" if run else "-",
+                "거래": run.num_trades if run else "-",
+                "상태": d.status,
+            }
+        )
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True,
+        hide_index=True,
+        height=min(38 * (len(rows) + 1) + 3, 460),
+    )
+    st.caption(
+        f"등록 {len(list_definitions())}개 중 {len(definitions)}개 표시 · "
+        "성적은 가장 최근 백테스트 기준(`run_hypothesis_sweep.py` / 매일 도는 `run_daily_review.py`)입니다. "
+        "MDD=고점 대비 최대 하락폭, 승률=이익으로 끝난 매매 비율."
+    )
+
+    with st.expander("전략별 상세 설명", expanded=False):
+        for d in definitions:
+            st.markdown(f"**{d.display_name}** `{d.key}` · {d.category}  \n{d.description}")
 
     options = [d.key for d in definitions]
     with st.form("strategy_form"):
@@ -253,6 +314,7 @@ def render_strategy_tab(service: SettingsService) -> None:
             "실거래에 쓸 전략",
             options=options,
             index=options.index(current_key) if current_key in options else 0,
+            format_func=lambda k: f"{get_definition(k).display_name}  ({k})",
         )
         submitted = st.form_submit_button("이 전략으로 전환")
 
@@ -550,6 +612,13 @@ def _display_name_for(strategy_key: str) -> str:
         return strategy_key  # 이후 레지스트리에서 빠진 옛 전략 키일 수 있음
 
 
+def _category_for(strategy_key: str) -> str:
+    try:
+        return get_definition(strategy_key).category
+    except KeyError:
+        return "-"
+
+
 def _latest_daily_review(session_factory) -> tuple[BacktestRunRow | None, list[BacktestRunRow]]:
     """scripts/run_daily_review.py가 매일 남기는 기록(notes="daily_review")
     중, 가장 최근 기준일(period_end)의 전략별 결과를 하나씩만 골라 돌려준다
@@ -596,26 +665,54 @@ def render_strategy_review_tab(service: SettingsService) -> None:
 
     st.caption(f"기준 기간: {latest.period_start} ~ {latest.period_end} (최근 일일 리뷰)")
 
+    sorted_rows = sorted(rows, key=lambda r: r.total_return_pct, reverse=True)
     table_rows = [
         {
-            "전략": f"{_display_name_for(r.strategy_key)} ({r.strategy_key})"
-            + (" ⭐ 활성" if r.strategy_key == active_key else ""),
+            "활성": "⭐" if r.strategy_key == active_key else "",
+            "계열": _category_for(r.strategy_key),
+            "전략": _display_name_for(r.strategy_key),
             "수익률": f"{r.total_return_pct:+.2f}%",
-            "MDD": f"{r.max_drawdown_pct:.2f}%",
-            "승률": f"{r.win_rate_pct:.1f}%",
-            "거래수": r.num_trades,
-            "활성 전략 대비": (
+            "MDD": f"{r.max_drawdown_pct:.1f}%",
+            "승률": f"{r.win_rate_pct:.0f}%",
+            "거래": r.num_trades,
+            "활성 대비": (
                 "-"
                 if active_row is None
                 else f"{r.total_return_pct - active_row.total_return_pct:+.2f}%p"
             ),
         }
-        for r in sorted(rows, key=lambda r: r.total_return_pct, reverse=True)
+        for r in sorted_rows
     ]
-    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+    st.dataframe(
+        pd.DataFrame(table_rows),
+        use_container_width=True,
+        hide_index=True,
+        height=min(38 * (len(table_rows) + 1) + 3, 460),
+    )
+
+    # 계열별 평균 — 개별 전략의 운을 걷어내고 "지금 장에 어떤 성격이 통하는가"를 본다
+    by_category: dict[str, list[float]] = {}
+    for r in sorted_rows:
+        by_category.setdefault(_category_for(r.strategy_key), []).append(r.total_return_pct)
+    if len(by_category) > 1:
+        summary = sorted(
+            ((cat, sum(v) / len(v), len(v)) for cat, v in by_category.items()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+        st.caption("계열별 평균 수익률 — 개별 전략의 운보다 '지금 장의 성격'을 보여준다")
+        st.dataframe(
+            pd.DataFrame(
+                [{"계열": c, "평균 수익률": f"{avg:+.2f}%", "전략 수": n} for c, avg, n in summary]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
     st.caption(
         "MDD(최대낙폭)는 그 기간 중 고점 대비 최대 몇 %까지 떨어졌었는지, "
-        "승률은 전체 매매 중 이익으로 끝난 비율입니다."
+        "승률은 전체 매매 중 이익으로 끝난 비율입니다. "
+        "승률이 낮아도 이길 때 크게 이기면 총수익은 플러스일 수 있으니 함께 봐야 합니다."
     )
 
 

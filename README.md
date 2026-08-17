@@ -11,7 +11,8 @@ src/muwon/
 ├── settings/       # 런타임 설정 (KIS 인증정보/텔레그램/리스크 정책, DB 저장)
 ├── domain/         # 공통 타입/인터페이스 (Strategy, MarketDataSource, OrderExecutor)
 ├── data/           # KIS API 클라이언트 — 시세 수집
-├── strategy/       # 규칙기반 → ML 전략 (Phase 1~3)
+├── strategy/       # 전략 21종 — trend/reversion/breakout/rule_based + registry
+├── indicators/     # 기술적 지표 (이동평균·RSI·MACD·볼린저·스토캐스틱·돈치안·ATR·ADX)
 ├── risk/           # 리스크 매니저 — 주문 실행 전 최종 검증
 ├── execution/       # 주문 실행기 (모의/실전 전환, Phase 2)
 ├── backtest/       # 백테스트 엔진 (Phase 1)
@@ -57,8 +58,9 @@ streamlit run src/muwon/dashboard/app.py
   자동 새로고침되어, 다른 프로세스(CLI, 봇)가 값을 바꿔도 클릭 없이 반영됩니다.
 - **변경 이력**: 설정값이 바뀔 때마다 이전값→새값이 자동 기록됩니다. 비밀값은
   `MUWON_MASTER_KEY`가 있을 때만 마스킹 표시됩니다.
-- **활성 전략**: `strategy/registry.py`에 등록된 전략 목록과 지금 실거래에
-  쓰는 키를 보여주고, 화면에서 바로 다른 전략으로 전환할 수 있습니다
+- **활성 전략**: 등록된 21개 전략을 계열 필터·"거래가 있었던 전략만" 토글로
+  좁혀 보면서, 각 전략의 최근 백테스트 성적(수익률/MDD/승률/거래수)을 한 표에서
+  비교하고 화면에서 바로 전환할 수 있습니다
   (`scripts/configure.py strategy --active-key`와 동일한 동작).
 - **매매 기록**: 청산까지 끝난 매매를 전략별로 보여줍니다(진입가·청산가·
   손익·진입/청산 사유) — `trades` 테이블을 그대로 읽습니다.
@@ -163,11 +165,19 @@ KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 �
 "단타 가설을 세우고 → 과거 데이터로 검증하고 → 실전에 반영한다"를
 코드 배포 없이 반복할 수 있도록 만든 구조입니다.
 
-- **`src/muwon/strategy/registry.py`** — 전략을 파라미터 조합(`StrategyDefinition`)으로
-  등록하는 곳. 같은 `MovingAverageRsiStrategy` 코드라도 이동평균 기간·RSI
-  기간·거래량 급증 배수 같은 파라미터만 바꿔서 서로 다른 "가설"을 여러 개
-  등록할 수 있습니다. 각 항목은 `status="live"`(실거래 중) 또는
-  `"hypothesis"`(검증 중)로 표시됩니다.
+- **`src/muwon/strategy/registry.py`** — 전략을 `StrategyDefinition`으로 등록하는
+  곳. **21개 가설이 4개 계열로 등록되어 있습니다.** 같은 전략 코드라도
+  파라미터(이동평균 기간·RSI 기간·거래량 배수 등)만 바꾸면 다른 가설이 되고,
+  아예 다른 로직도 같은 인터페이스로 등록됩니다.
+
+  | 계열 | 성격 | 구현 파일 | 예 |
+  |---|---|---|---|
+  | 추세추종 | 오르는 걸 따라 사고 꺾이면 판다. 승률 낮고 손익비 큼 | `strategy/trend.py` | 골든크로스, EMA교차, MACD, 돈치안(터틀) |
+  | 평균회귀 | 많이 빠지면 되돌아온다에 베팅. 승률 높지만 추세장에서 크게 물림 | `strategy/reversion.py` | RSI 반등, RSI(2) 눌림목, 볼린저 하단, 스토캐스틱 |
+  | 돌파·모멘텀 | 박스를 뚫으면 그 방향으로 간다. 가짜 돌파가 약점 | `strategy/breakout.py` | 볼린저 상단돌파, 거래량 급증, 종가 신고가 |
+  | 복합 | 여러 규칙을 섞은 것 | `strategy/rule_based.py` | 이동평균+RSI |
+
+  각 항목은 `status="live"`(실거래 중) 또는 `"hypothesis"`(검증 중)로 표시됩니다.
 - **`scripts/run_hypothesis_sweep.py`** — 등록된 가설 전체(또는 `--keys`로
   고른 일부)를 같은 기간·같은 종목 유니버스로 백테스트하고 수익률/MDD/승률/거래수를
   비교표로 출력합니다. 결과는 `backtest_runs` 테이블에 파라미터 스냅샷과
