@@ -326,3 +326,93 @@ def test_order_rejection_exposes_kis_codes_separately_from_network_errors(mock_p
     assert rejection.msg_cd == "40570000"
     assert rejection.msg1 == "장시간이 아닙니다"
     assert isinstance(rejection, RuntimeError)  # 기존 호출부 호환
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_fill_parses_actual_fill_price_and_quantity(mock_get):
+    """체결 조회 응답에서 실제 체결가·수량을 뽑아낸다. 필드명은 한국투자증권
+    공식 예제 저장소의 COLUMN_MAPPING과 대조한 것이다."""
+    mock_get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "rt_cd": "0",
+            "output1": [
+                {"odno": "0000111111", "pdno": "000660", "ord_qty": "5", "tot_ccld_qty": "5", "avg_prvs": "180000"},
+                {"odno": "0000123456", "pdno": "005930", "ord_qty": "10", "tot_ccld_qty": "10", "avg_prvs": "70450"},
+            ],
+        },
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    client = make_client()
+    fill = client.get_fill("0000123456", order_date=date(2026, 8, 18))
+
+    assert fill is not None
+    assert fill.symbol == "005930"
+    assert fill.filled_quantity == 10
+    assert fill.avg_fill_price == 70450.0
+    assert fill.is_fully_filled is True
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_fill_matches_order_id_ignoring_leading_zeros(mock_get):
+    """KIS가 돌려주는 주문번호는 앞자리가 0으로 채워져 있어, 주문 시 받은
+    번호와 문자열이 정확히 일치하지 않을 수 있다."""
+    mock_get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "rt_cd": "0",
+            "output1": [
+                {"odno": "0000123456", "pdno": "005930", "ord_qty": "10", "tot_ccld_qty": "10", "avg_prvs": "70450"}
+            ],
+        },
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    fill = make_client().get_fill("123456", order_date=date(2026, 8, 18))
+    assert fill is not None and fill.filled_quantity == 10
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_fill_returns_none_when_order_not_found(mock_get):
+    mock_get.return_value = MagicMock(
+        status_code=200, json=lambda: {"rt_cd": "0", "output1": []}
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    assert make_client().get_fill("0000999999", order_date=date(2026, 8, 18)) is None
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_fill_reports_unfilled_order(mock_get):
+    """접수는 됐지만 아직 체결 전이면 filled_quantity=0으로 알려줘야 한다 —
+    호출부가 이걸 보고 기준가를 유지할지 판단한다."""
+    mock_get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "rt_cd": "0",
+            "output1": [
+                {"odno": "0000123456", "pdno": "005930", "ord_qty": "10", "tot_ccld_qty": "0", "avg_prvs": ""}
+            ],
+        },
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    fill = make_client().get_fill("0000123456", order_date=date(2026, 8, 18))
+    assert fill is not None
+    assert fill.is_unfilled is True
+    assert fill.avg_fill_price == 0.0
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_fill_uses_paper_tr_id(mock_get):
+    mock_get.return_value = MagicMock(
+        status_code=200, json=lambda: {"rt_cd": "0", "output1": []}
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    make_client(is_paper=True).get_fill("0000123456", order_date=date(2026, 8, 18))
+    assert mock_get.call_args.kwargs["headers"]["tr_id"] == "VTTC0081R"
+
+    make_client(is_paper=False).get_fill("0000123456", order_date=date(2026, 8, 18))
+    assert mock_get.call_args.kwargs["headers"]["tr_id"] == "TTTC0081R"

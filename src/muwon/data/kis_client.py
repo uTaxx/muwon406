@@ -32,7 +32,7 @@ import requests
 from loguru import logger
 
 from muwon.domain.interfaces import MarketDataSource
-from muwon.domain.types import OrderResult, OrderSide
+from muwon.domain.types import FillInfo, OrderResult, OrderSide
 from muwon.settings.service import SettingsService
 
 REAL_BASE_URL = "https://openapi.koreainvestment.com:9443"
@@ -42,6 +42,10 @@ PAPER_BASE_URL = "https://openapivts.koreainvestment.com:29443"
 _BUY_TR_ID = {"paper": "VTTC0802U", "real": "TTTC0802U"}
 _SELL_TR_ID = {"paper": "VTTC0801U", "real": "TTTC0801U"}
 _MARKET_ORDER_DVSN = "01"  # 시장가
+
+# 주문체결조회(최근 3개월 이내) TR_ID. 필드명은 한국투자증권 공식 예제
+# 저장소(koreainvestment/open-trading-api)의 COLUMN_MAPPING과 대조해 확인했다.
+_DAILY_CCLD_TR_ID = {"paper": "VTTC0081R", "real": "TTTC0081R"}
 
 # KIS는 초당 호출 횟수를 제한한다 — 모의투자가 실전투자보다 훨씬 빡빡하다
 # (문서상 모의투자 초당 2건, 실전투자 초당 20건). 요청 간 최소 간격을 둬서
@@ -75,7 +79,9 @@ class KISOrderRejected(RuntimeError):
         self.msg1 = msg1
         super().__init__(f"KIS 주문 거부: {msg1} (rt_cd={rt_cd}, msg_cd={msg_cd})")
 
+
 _MAX_RETRIES = 3
+_RETRY_BACKOFF_SECONDS = 1.0
 
 
 def _kis_payload(response: requests.Response) -> dict | None:
@@ -91,7 +97,6 @@ def _kis_payload(response: requests.Response) -> dict | None:
     except ValueError:
         return None
     return payload if isinstance(payload, dict) and "rt_cd" in payload else None
-_RETRY_BACKOFF_SECONDS = 1.0
 
 
 class KISClient(MarketDataSource):
@@ -289,3 +294,63 @@ class KISClient(MarketDataSource):
             order_id=payload["output"]["ODNO"],
             is_paper=self.is_paper,
         )
+
+    def get_fill(self, order_id: str, order_date: date | None = None) -> FillInfo | None:
+        """주문번호로 실제 체결 수량·평균 체결가를 조회한다.
+
+        시장가 주문은 넣어봐야 얼마에 체결되는지 알 수 있어서, 주문 시점의
+        기준가(직전 종가)만 기록하면 손익 집계에 오차가 쌓인다. 체결 직후
+        이걸로 실제 값을 받아와 기록을 바로잡는다.
+
+        해당 주문번호를 못 찾으면 None을 돌려준다(조회 시점에 아직 반영되지
+        않았을 수 있다). 필드명은 한국투자증권 공식 예제 저장소의
+        COLUMN_MAPPING과 대조했다: odno=주문번호, tot_ccld_qty=총체결수량,
+        avg_prvs=평균가, ord_qty=주문수량."""
+        env = "paper" if self.is_paper else "real"
+        day = (order_date or date.today()).strftime("%Y%m%d")  # noqa: DTZ011 — 날짜만 필요
+
+        response = self._get_with_retry(
+            f"{self.base_url}/uapi/domestic-stock/v1/trading/inquire-daily-ccld",
+            headers=self._auth_headers(_DAILY_CCLD_TR_ID[env]),
+            params={
+                "CANO": self.account_no,
+                "ACNT_PRDT_CD": self.account_product_cd,
+                "INQR_STRT_DT": day,
+                "INQR_END_DT": day,
+                "SLL_BUY_DVSN_CD": "00",  # 00: 전체
+                "INQR_DVSN": "00",  # 00: 역순
+                "PDNO": "",
+                "CCLD_DVSN": "00",  # 00: 전체(체결/미체결 모두)
+                "ORD_GNO_BRNO": "",
+                "ODNO": "",
+                "INQR_DVSN_3": "00",
+                "INQR_DVSN_1": "",
+                "CTX_AREA_FK100": "",
+                "CTX_AREA_NK100": "",
+            },
+            timeout=10,
+        )
+        payload = _kis_payload(response)
+        if payload is None:
+            response.raise_for_status()
+            raise RuntimeError(f"KIS 체결조회 응답을 해석할 수 없습니다: {response.text[:300]}")
+        if payload.get("rt_cd") != "0":
+            logger.warning(
+                f"체결조회 거부: {payload.get('msg1')} (msg_cd={payload.get('msg_cd')})"
+            )
+            return None
+
+        for row in payload.get("output1") or []:
+            if str(row.get("odno", "")).lstrip("0") != str(order_id).lstrip("0"):
+                continue
+            filled = int(float(row.get("tot_ccld_qty") or 0))
+            # 미체결이면 평균가가 0/빈 값으로 오므로 그대로 두면 손익이 왜곡된다
+            avg_price = float(row.get("avg_prvs") or 0)
+            return FillInfo(
+                order_id=str(row.get("odno", order_id)),
+                symbol=str(row.get("pdno", "")),
+                ordered_quantity=int(float(row.get("ord_qty") or 0)),
+                filled_quantity=filled,
+                avg_fill_price=avg_price,
+            )
+        return None
