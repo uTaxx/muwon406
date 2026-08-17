@@ -27,6 +27,7 @@ from muwon.data.universe import UNIVERSE
 from muwon.db.session import make_session_factory
 from muwon.execution.engine import TradingEngine
 from muwon.execution.kis_order_executor import KISOrderExecutor
+from muwon.execution.reconciliation import check_account_consistency
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 from muwon.settings.service import build_settings_service
@@ -49,12 +50,21 @@ def main() -> None:
     strategy_key = settings_service.get_strategy_selection().active_key
     print(f"활성 전략: {strategy_key}", file=sys.stderr)
 
+    notifier = TelegramNotifier(settings_service)
+
+    # 매매 전에 우리 기록과 실제 계좌를 대조한다. 어긋난 채로 매매하면
+    # 비중 계산·손실한도가 전부 틀린 현금값 위에서 돌아가므로, 최소한
+    # 알고는 있어야 한다(자동으로 덮어쓰진 않는다 — 사람이 판단할 일이다).
+    report = check_account_consistency(client, session_factory)
+    if report is not None and not report.is_consistent:
+        notifier.send("🔍 계좌 대조 결과\n" + "\n".join(report.summary_lines()))
+
     engine = TradingEngine(
         strategy=build_strategy(strategy_key),
         risk_manager=RiskManager(policy_provider=settings_service.get_risk_policy),
         data_source=client,
         order_executor=KISOrderExecutor(client),
-        notifier=TelegramNotifier(settings_service),
+        notifier=notifier,
         session_factory=session_factory,
         universe=UNIVERSE,
         source_symbol=lambda ticker: ticker.symbol,

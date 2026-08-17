@@ -416,3 +416,78 @@ def test_get_fill_uses_paper_tr_id(mock_get):
 
     make_client(is_paper=False).get_fill("0000123456", order_date=date(2026, 8, 18))
     assert mock_get.call_args.kwargs["headers"]["tr_id"] == "TTTC0081R"
+
+
+BALANCE_RESPONSE = {
+    "rt_cd": "0",
+    "output1": [
+        {
+            "pdno": "005930",
+            "prdt_name": "삼성전자",
+            "hldg_qty": "10",
+            "pchs_avg_pric": "70000",
+            "prpr": "71000",
+            "evlu_amt": "710000",
+            "evlu_pfls_amt": "10000",
+        },
+        {
+            # 과거에 보유했다 청산한 종목이 수량 0으로 남아 오기도 한다
+            "pdno": "000660",
+            "prdt_name": "SK하이닉스",
+            "hldg_qty": "0",
+            "pchs_avg_pric": "0",
+            "prpr": "180000",
+            "evlu_amt": "0",
+            "evlu_pfls_amt": "0",
+        },
+    ],
+    "output2": [
+        {"dnca_tot_amt": "9290000", "scts_evlu_amt": "710000", "nass_amt": "10000000"}
+    ],
+}
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_balance_parses_cash_and_holdings(mock_get):
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: BALANCE_RESPONSE)
+    mock_get.return_value.raise_for_status = lambda: None
+
+    balance = make_client().get_balance()
+
+    assert balance.cash == 9_290_000.0
+    assert balance.net_asset == 10_000_000.0
+    assert len(balance.holdings) == 1  # 수량 0인 종목은 제외
+    holding = balance.holdings[0]
+    assert holding.symbol == "005930"
+    assert holding.quantity == 10
+    assert holding.avg_buy_price == 70_000.0
+    assert balance.holding_for("005930") is holding
+    assert balance.holding_for("035720") is None
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_balance_uses_correct_tr_id_per_environment(mock_get):
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: BALANCE_RESPONSE)
+    mock_get.return_value.raise_for_status = lambda: None
+
+    make_client(is_paper=True).get_balance()
+    assert mock_get.call_args.kwargs["headers"]["tr_id"] == "VTTC8434R"
+
+    make_client(is_paper=False).get_balance()
+    assert mock_get.call_args.kwargs["headers"]["tr_id"] == "TTTC8434R"
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_balance_raises_with_kis_reason_on_rejection(mock_get):
+    """잔고를 못 읽으면 그 뒤 대조가 의미 없으므로 조용히 넘어가지 않고
+    사유와 함께 올린다."""
+    mock_get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {"rt_cd": "1", "msg_cd": "40580000", "msg1": "계좌번호가 올바르지 않습니다"},
+    )
+    mock_get.return_value.raise_for_status = lambda: None
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+    with pytest.raises(RuntimeError, match="계좌번호가 올바르지 않습니다"):
+        client.get_balance()

@@ -32,7 +32,13 @@ import requests
 from loguru import logger
 
 from muwon.domain.interfaces import MarketDataSource
-from muwon.domain.types import FillInfo, OrderResult, OrderSide
+from muwon.domain.types import (
+    AccountBalance,
+    FillInfo,
+    Holding,
+    OrderResult,
+    OrderSide,
+)
 from muwon.settings.service import SettingsService
 
 REAL_BASE_URL = "https://openapi.koreainvestment.com:9443"
@@ -46,6 +52,9 @@ _MARKET_ORDER_DVSN = "01"  # 시장가
 # 주문체결조회(최근 3개월 이내) TR_ID. 필드명은 한국투자증권 공식 예제
 # 저장소(koreainvestment/open-trading-api)의 COLUMN_MAPPING과 대조해 확인했다.
 _DAILY_CCLD_TR_ID = {"paper": "VTTC0081R", "real": "TTTC0081R"}
+
+# 주식잔고조회 TR_ID (같은 저장소에서 확인).
+_BALANCE_TR_ID = {"paper": "VTTC8434R", "real": "TTTC8434R"}
 
 # KIS는 초당 호출 횟수를 제한한다 — 모의투자가 실전투자보다 훨씬 빡빡하다
 # (문서상 모의투자 초당 2건, 실전투자 초당 20건). 요청 간 최소 간격을 둬서
@@ -354,3 +363,68 @@ class KISClient(MarketDataSource):
                 avg_fill_price=avg_price,
             )
         return None
+
+    def get_balance(self) -> AccountBalance:
+        """증권사 계좌의 실제 잔고(현금·보유종목)를 조회한다.
+
+        이 프로그램은 그동안 현금을 스스로 계산해 왔는데(engine_state.cash),
+        주문이 일부만 체결되거나 거부되면 그 값이 실제 계좌와 조용히 어긋난다.
+        대조할 "정답지"가 필요해서 붙였다.
+
+        필드명은 한국투자증권 공식 예제 저장소의 COLUMN_MAPPING과 대조했다:
+        output1(보유종목) pdno/hldg_qty/pchs_avg_pric/prpr/evlu_amt/evlu_pfls_amt,
+        output2(계좌요약) dnca_tot_amt(예수금)/scts_evlu_amt(유가평가)/nass_amt(순자산).
+        """
+        env = "paper" if self.is_paper else "real"
+        response = self._get_with_retry(
+            f"{self.base_url}/uapi/domestic-stock/v1/trading/inquire-balance",
+            headers=self._auth_headers(_BALANCE_TR_ID[env]),
+            params={
+                "CANO": self.account_no,
+                "ACNT_PRDT_CD": self.account_product_cd,
+                "AFHR_FLPR_YN": "N",  # 시간외단일가 반영 안 함
+                "OFL_YN": "",
+                "INQR_DVSN": "02",  # 종목별
+                "UNPR_DVSN": "01",
+                "FUND_STTL_ICLD_YN": "N",
+                "FNCG_AMT_AUTO_RDPT_YN": "N",
+                "PRCS_DVSN": "00",  # 전일매매 포함
+                "CTX_AREA_FK100": "",
+                "CTX_AREA_NK100": "",
+            },
+            timeout=10,
+        )
+        payload = _kis_payload(response)
+        if payload is None:
+            response.raise_for_status()
+            raise RuntimeError(f"KIS 잔고조회 응답을 해석할 수 없습니다: {response.text[:300]}")
+        if payload.get("rt_cd") != "0":
+            raise RuntimeError(
+                f"KIS 잔고조회 실패: {payload.get('msg1')} (msg_cd={payload.get('msg_cd')})"
+            )
+
+        holdings = []
+        for row in payload.get("output1") or []:
+            quantity = int(float(row.get("hldg_qty") or 0))
+            if quantity <= 0:
+                continue  # 과거에 보유했다 청산한 종목이 수량 0으로 남아 오기도 한다
+            holdings.append(
+                Holding(
+                    symbol=str(row.get("pdno", "")),
+                    name=str(row.get("prdt_name", "")),
+                    quantity=quantity,
+                    avg_buy_price=float(row.get("pchs_avg_pric") or 0),
+                    current_price=float(row.get("prpr") or 0),
+                    eval_amount=float(row.get("evlu_amt") or 0),
+                    pnl_amount=float(row.get("evlu_pfls_amt") or 0),
+                )
+            )
+
+        summary_rows = payload.get("output2") or []
+        summary = summary_rows[0] if summary_rows else {}
+        return AccountBalance(
+            cash=float(summary.get("dnca_tot_amt") or 0),
+            total_eval_amount=float(summary.get("scts_evlu_amt") or 0),
+            net_asset=float(summary.get("nass_amt") or 0),
+            holdings=holdings,
+        )

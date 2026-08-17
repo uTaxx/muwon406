@@ -63,6 +63,37 @@ class FillInfo:
 
 
 @dataclass(frozen=True)
+class Holding:
+    """증권사 계좌가 실제로 들고 있다고 말하는 보유 종목 하나."""
+
+    symbol: str
+    name: str
+    quantity: int
+    avg_buy_price: float
+    current_price: float
+    eval_amount: float
+    pnl_amount: float
+
+
+@dataclass(frozen=True)
+class AccountBalance:
+    """증권사 계좌의 실제 잔고 — 우리 DB가 자체 계산해 온 가상 현금과
+    대조하기 위한 "정답지"다.
+
+    이 프로그램은 그동안 현금을 스스로 계산해 왔다(engine_state.cash).
+    주문이 일부만 체결되거나 거부되면 그 계산이 실제 계좌와 조용히
+    어긋나는데, 대조할 기준이 없어 눈치챌 방법이 없었다."""
+
+    cash: float  # 주문 가능 현금(예수금)
+    total_eval_amount: float  # 보유 주식 평가금액 합계
+    net_asset: float  # 순자산(현금+주식)
+    holdings: list[Holding]
+
+    def holding_for(self, symbol: str) -> Holding | None:
+        return next((h for h in self.holdings if h.symbol == symbol), None)
+
+
+@dataclass(frozen=True)
 class OrderResult:
     symbol: str
     side: OrderSide
