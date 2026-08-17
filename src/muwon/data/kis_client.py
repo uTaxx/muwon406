@@ -29,6 +29,7 @@ from datetime import date
 
 import pandas as pd
 import requests
+from loguru import logger
 
 from muwon.domain.interfaces import MarketDataSource
 from muwon.domain.types import OrderResult, OrderSide
@@ -44,11 +45,18 @@ _MARKET_ORDER_DVSN = "01"  # 시장가
 
 # KIS는 초당 호출 횟수를 제한한다 — 모의투자가 실전투자보다 훨씬 빡빡하다
 # (문서상 모의투자 초당 2건, 실전투자 초당 20건). 요청 간 최소 간격을 둬서
-# 이를 피한다. 다만 실제로 관찰해보니 이 간격을 둬도 산발적으로 500이
-# 나서(요청 순서와 무관), 시세조회는 추가로 재시도까지 한다 — 아래
-# _MAX_RETRIES 참고.
-_MIN_REQUEST_INTERVAL_PAPER = 0.5
+# 이를 피한다.
+#
+# 실제 검증에서 시세조회 0.5초 간격은 통과했지만, 그 직후의 주문 요청이
+# 곧바로 EGW00201(초당 거래건수 초과)로 거부됐다 — 주문 엔드포인트가 더
+# 빡빡하거나 별도 버킷을 쓰는 것으로 보인다. 그래서 모의투자 간격을 1초로
+# 올렸다(18종목 기준 실행이 9초 늘어나는 대신 제한에 걸릴 확률을 낮춘다).
+_MIN_REQUEST_INTERVAL_PAPER = 1.0
 _MIN_REQUEST_INTERVAL_REAL = 0.05
+
+# KIS가 초당 호출 제한을 알릴 때 쓰는 코드. 이 거부는 "요청이 접수되지
+# 않았다"는 뜻이므로 주문이라도 재시도해도 중복 체결 위험이 없다.
+_RATE_LIMIT_MSG_CD = "EGW00201"
 
 
 class KISOrderRejected(RuntimeError):
@@ -67,9 +75,22 @@ class KISOrderRejected(RuntimeError):
         self.msg1 = msg1
         super().__init__(f"KIS 주문 거부: {msg1} (rt_cd={rt_cd}, msg_cd={msg_cd})")
 
-# get_daily_ohlcv(GET, 멱등)만 재시도한다 — place_cash_order(POST, 주문)는
-# 재시도하면 중복 체결 위험이 있어 대상에서 뺐다.
 _MAX_RETRIES = 3
+
+
+def _kis_payload(response: requests.Response) -> dict | None:
+    """응답 본문이 KIS의 업무 응답(rt_cd를 담은 JSON)이면 그걸 돌려준다.
+
+    KIS는 업무 오류를 HTTP 200이 아니라 500으로 내려주면서 본문에 사유를
+    담는다(예: 초당 호출 제한 → HTTP 500 + {"rt_cd":"1","msg_cd":"EGW00201"}).
+    그래서 상태 코드만 보고 raise_for_status()로 먼저 터뜨리면 정작 사유를
+    못 읽고 "정체불명의 서버 오류"로 오판하게 된다 — 실제로 그렇게 오판했다.
+    본문을 먼저 확인하고, KIS 업무 응답이 아닐 때만 HTTP 오류로 취급한다."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    return payload if isinstance(payload, dict) and "rt_cd" in payload else None
 _RETRY_BACKOFF_SECONDS = 1.0
 
 
@@ -109,10 +130,38 @@ class KISClient(MarketDataSource):
         self._throttle()
         return requests.get(url, **kwargs)
 
+    def _post_with_rate_limit_retry(self, url: str, **kwargs) -> requests.Response:
+        """초당 호출 제한(EGW00201)으로 거부된 경우에만 재시도한다.
+
+        POST(주문)를 무턱대고 재시도하면 중복 체결 위험이 있지만, 이 거부는
+        "요청이 아예 접수되지 않았다"는 뜻이라 재시도해도 안전하다. 그 외의
+        거부(잔고 부족·장 시간 아님 등)는 재시도하지 않고 그대로 올린다."""
+        response = self._post(url, **kwargs)
+        for attempt in range(1, _MAX_RETRIES):
+            payload = _kis_payload(response)
+            if payload is None or payload.get("msg_cd") != _RATE_LIMIT_MSG_CD:
+                return response
+            logger.warning(
+                f"KIS 초당 호출 제한으로 거부됨 — {attempt}차 재시도 "
+                f"({_RETRY_BACKOFF_SECONDS * attempt:.1f}초 대기)"
+            )
+            self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
+            response = self._post(url, **kwargs)
+        return response
+
     def _get_with_retry(self, url: str, **kwargs) -> requests.Response:
         response = self._get(url, **kwargs)
         attempt = 1
         while response.status_code >= 500 and attempt < _MAX_RETRIES:
+            # 예전엔 "원인 모를 500"으로 뭉뚱그려 재시도했는데, 주문 검증 과정에서
+            # KIS가 초당 호출 제한을 500+EGW00201로 내려준다는 걸 확인했다.
+            # 사유를 남겨 두면 다음에 같은 문제를 추측하지 않아도 된다.
+            payload = _kis_payload(response)
+            if payload is not None:
+                logger.warning(
+                    f"KIS 시세조회 거부({response.status_code}) — "
+                    f"{payload.get('msg1', '')} (msg_cd={payload.get('msg_cd', '')}), {attempt}차 재시도"
+                )
             self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
             response = self._get(url, **kwargs)
             attempt += 1
@@ -204,7 +253,7 @@ class KISClient(MarketDataSource):
         env = "paper" if self.is_paper else "real"
         tr_id = _BUY_TR_ID[env] if side == OrderSide.BUY else _SELL_TR_ID[env]
 
-        response = self._post(
+        response = self._post_with_rate_limit_retry(
             f"{self.base_url}/uapi/domestic-stock/v1/trading/order-cash",
             headers=self._auth_headers(tr_id),
             json={
@@ -217,8 +266,14 @@ class KISClient(MarketDataSource):
             },
             timeout=10,
         )
-        response.raise_for_status()
-        payload = response.json()
+        # 상태 코드보다 본문을 먼저 본다 — KIS는 업무 거부도 HTTP 500으로
+        # 내려주면서 본문에 사유를 담기 때문에, raise_for_status()를 먼저
+        # 호출하면 "초당 호출 제한" 같은 명확한 사유를 놓치게 된다.
+        payload = _kis_payload(response)
+        if payload is None:
+            response.raise_for_status()
+            raise RuntimeError(f"KIS 주문 응답을 해석할 수 없습니다: {response.text[:300]}")
+
         if payload.get("rt_cd") != "0":
             raise KISOrderRejected(
                 rt_cd=str(payload.get("rt_cd", "")),

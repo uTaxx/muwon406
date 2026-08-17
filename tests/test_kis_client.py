@@ -8,7 +8,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from muwon.data.kis_client import KISClient, KISOrderRejected
+from muwon.data.kis_client import (
+    _MIN_REQUEST_INTERVAL_PAPER,
+    KISClient,
+    KISOrderRejected,
+)
 from muwon.domain.types import OrderSide
 
 
@@ -120,7 +124,7 @@ class FakeClock:
 @patch("muwon.data.kis_client.time.time")
 def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     """모의투자 계좌로 유니버스 종목을 연달아 조회하다 9번째 요청부터
-    500이 난 실제 사고를 재현한 회귀 테스트 — 요청 간격이 0.5초보다 짧으면
+    500이 난 실제 사고를 재현한 회귀 테스트 — 요청 간격이 제한보다 짧으면
     다음 요청 전에 부족한 만큼 대기해야 한다."""
     mock_get.return_value = MagicMock(status_code=200, json=lambda: {"output2": []})
     mock_get.return_value.raise_for_status = lambda: None
@@ -133,11 +137,14 @@ def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
 
     client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
-    clock.advance(0.1)  # 다음 요청 전 0.1초만 경과 — 0.5초 제한에 못 미침
+    elapsed = 0.1  # 다음 요청 전 아주 조금만 경과 — 제한 간격에 못 미침
+    clock.advance(elapsed)
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
     assert len(sleeps) == 1
-    assert round(sleeps[0], 4) == 0.4  # 0.5 - 0.1
+    # 간격 값 자체를 상수에서 읽는다 — 제한을 조정할 때마다 테스트가 깨지면
+    # 정작 검증하려는 "부족한 만큼 기다린다"는 성질이 가려진다.
+    assert round(sleeps[0], 4) == round(_MIN_REQUEST_INTERVAL_PAPER - elapsed, 4)
 
 
 @patch("muwon.data.kis_client.requests.get")
@@ -154,7 +161,7 @@ def test_throttle_skips_wait_once_interval_already_elapsed(mock_time, mock_get):
     client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
 
     client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
-    clock.advance(1.0)  # 제한(0.5초)보다 충분히 지남
+    clock.advance(_MIN_REQUEST_INTERVAL_PAPER * 2)  # 제한보다 충분히 지남
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
     assert sleeps == []
@@ -229,6 +236,75 @@ def test_place_cash_order_raises_on_kis_error(mock_post):
         raise AssertionError("RuntimeError가 발생해야 한다")
     except RuntimeError as e:
         assert "잔고 부족" in str(e)
+
+
+@patch("muwon.data.kis_client.requests.post")
+def test_order_rate_limit_arrives_as_http_500_and_is_retried(mock_post):
+    """실제로 겪은 상황의 회귀 테스트: KIS는 초당 호출 제한을 HTTP 500에
+    본문 EGW00201로 내려준다. 상태 코드만 보고 raise_for_status()로 먼저
+    터뜨리면 사유를 못 읽고 '정체불명의 서버 오류'로 오판한다(그렇게 오판했다).
+    이 거부는 주문이 접수되지 않았다는 뜻이라 재시도해도 안전하다."""
+    rate_limited = MagicMock(
+        status_code=500,
+        json=lambda: {
+            "rt_cd": "1",
+            "msg_cd": "EGW00201",
+            "msg1": "초당 거래건수를 초과하였습니다.",
+        },
+    )
+    rate_limited.raise_for_status = MagicMock(
+        side_effect=AssertionError("본문을 먼저 해석해야 하므로 raise_for_status를 부르면 안 된다")
+    )
+    accepted = MagicMock(
+        status_code=200, json=lambda: {"rt_cd": "0", "output": {"ODNO": "ORDER789"}}
+    )
+    mock_post.side_effect = [rate_limited, accepted]
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    result = client.place_cash_order("005930", OrderSide.BUY, 1, 274_500.0)
+
+    assert result.order_id == "ORDER789"
+    assert mock_post.call_count == 2
+
+
+@patch("muwon.data.kis_client.requests.post")
+def test_order_business_rejection_is_not_retried(mock_post):
+    """잔고 부족처럼 재시도해도 결과가 같은 거부는 다시 보내지 않아야 한다 —
+    주문 POST를 불필요하게 반복하면 중복 체결 위험만 커진다."""
+    rejected = MagicMock(
+        status_code=200,
+        json=lambda: {"rt_cd": "1", "msg_cd": "40240000", "msg1": "주문가능금액이 부족합니다"},
+    )
+    mock_post.return_value = rejected
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    with pytest.raises(KISOrderRejected, match="주문가능금액"):
+        client.place_cash_order("005930", OrderSide.BUY, 100, 274_500.0)
+    assert mock_post.call_count == 1
+
+
+@patch("muwon.data.kis_client.requests.post")
+def test_order_raises_http_error_when_body_is_not_a_kis_response(mock_post):
+    """KIS 업무 응답이 아닌 진짜 서버 오류(HTML 오류 페이지 등)는 그대로
+    HTTP 오류로 올려야 한다 — 업무 거부와 뭉뚱그리면 원인을 못 찾는다."""
+    import requests as requests_module
+
+    broken = MagicMock(status_code=502, text="<html>Bad Gateway</html>")
+    broken.json = MagicMock(side_effect=ValueError("not json"))
+    broken.raise_for_status = MagicMock(
+        side_effect=requests_module.HTTPError("502 Server Error")
+    )
+    mock_post.return_value = broken
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    with pytest.raises(requests_module.HTTPError):
+        client.place_cash_order("005930", OrderSide.BUY, 1, 274_500.0)
 
 
 @patch("muwon.data.kis_client.requests.post")
