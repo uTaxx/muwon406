@@ -97,8 +97,16 @@ class BacktestEngine:
         self._costs = costs or TransactionCosts()
         self._initial_cash = initial_cash
 
-    def run(self, price_histories: dict[str, pd.DataFrame]) -> BacktestResult:
-        """price_histories: {symbol: DataFrame[trade_date, open, high, low, close, volume]}"""
+    def run(
+        self, price_histories: dict[str, pd.DataFrame], trade_from: date | None = None
+    ) -> BacktestResult:
+        """price_histories: {symbol: DataFrame[trade_date, open, high, low, close, volume]}
+
+        trade_from을 주면 그 날짜부터만 매매하고, 그 이전 구간은 지표 예열에만
+        쓴다(신호는 전체 히스토리로 계산되므로 이동평균·RSI가 충분히 채워진
+        상태로 매매를 시작한다). 기간을 잘라 여러 구간에서 검증할 때 필요하다 —
+        예열 없이 잘라 넣으면 각 구간 초반의 지표가 NaN이라 신호가 안 나와
+        짧은 구간일수록 결과가 과소평가된다."""
         enriched = {
             symbol: add_indicators(df).set_index("trade_date")
             for symbol, df in price_histories.items()
@@ -121,6 +129,9 @@ class BacktestEngine:
         day_start_equity = self._initial_cash
 
         for current_date in all_dates:
+            if trade_from is not None and current_date < trade_from:
+                continue  # 지표 예열 구간 — 매매도 평가금액 기록도 하지 않는다
+
             closes_today = {
                 symbol: df.loc[current_date, "close"]
                 for symbol, df in enriched.items()
