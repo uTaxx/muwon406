@@ -14,9 +14,11 @@ SimulatedOrderExecutor로 파이프라인을 검증하고, 이 클래스는 실�
 모의투자 계좌로 먼저 검증할 것.
 
 실제 GitHub Actions에서 모의투자 계좌로 처음 인증에 성공한 실행에서,
-유니버스 종목을 아무 간격 없이 연달아 조회하다 9번째 요청부터 500(모의투자
-초당 호출 제한 추정)이 나는 걸 확인했다 — _throttle()로 요청 간 최소
-간격을 두는 것으로 대응함(아래 _MIN_REQUEST_INTERVAL_*).
+유니버스 종목을 아무 간격 없이 연달아 조회하다 9번째 요청부터 500이 나는
+걸 확인했다 — 초당 호출 제한으로 보고 _throttle()로 요청 간 최소 간격을
+뒀는데(아래 _MIN_REQUEST_INTERVAL_*), 그 다음 실행에서도 이번엔 2번째
+요청부터 500이 나서 단순 횟수 제한만은 아닌 것으로 보인다. get_daily_ohlcv
+(GET, 멱등)에는 재시도(_get_with_retry)까지 추가해 둘 다 대응한다.
 """
 
 from __future__ import annotations
@@ -41,12 +43,17 @@ _SELL_TR_ID = {"paper": "VTTC0801U", "real": "TTTC0801U"}
 _MARKET_ORDER_DVSN = "01"  # 시장가
 
 # KIS는 초당 호출 횟수를 제한한다 — 모의투자가 실전투자보다 훨씬 빡빡하다
-# (문서상 모의투자 초당 2건, 실전투자 초당 20건). 유니버스 종목 수만큼
-# get_daily_ohlcv를 아무 간격 없이 연달아 호출하면 이 제한에 걸려 500을
-# 반환하는 게 실제로 관찰됨(9번째 요청부터 500) — 요청 간 최소 간격을 둬서
-# 이를 피한다.
+# (문서상 모의투자 초당 2건, 실전투자 초당 20건). 요청 간 최소 간격을 둬서
+# 이를 피한다. 다만 실제로 관찰해보니 이 간격을 둬도 산발적으로 500이
+# 나서(요청 순서와 무관), 시세조회는 추가로 재시도까지 한다 — 아래
+# _MAX_RETRIES 참고.
 _MIN_REQUEST_INTERVAL_PAPER = 0.5
 _MIN_REQUEST_INTERVAL_REAL = 0.05
+
+# get_daily_ohlcv(GET, 멱등)만 재시도한다 — place_cash_order(POST, 주문)는
+# 재시도하면 중복 체결 위험이 있어 대상에서 뺐다.
+_MAX_RETRIES = 3
+_RETRY_BACKOFF_SECONDS = 1.0
 
 
 class KISClient(MarketDataSource):
@@ -84,6 +91,15 @@ class KISClient(MarketDataSource):
     def _get(self, url: str, **kwargs) -> requests.Response:
         self._throttle()
         return requests.get(url, **kwargs)
+
+    def _get_with_retry(self, url: str, **kwargs) -> requests.Response:
+        response = self._get(url, **kwargs)
+        attempt = 1
+        while response.status_code >= 500 and attempt < _MAX_RETRIES:
+            self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
+            response = self._get(url, **kwargs)
+            attempt += 1
+        return response
 
     @classmethod
     def from_settings(cls, settings_service: SettingsService) -> KISClient:
@@ -128,7 +144,7 @@ class KISClient(MarketDataSource):
         }
 
     def get_daily_ohlcv(self, symbol: str, start: date, end: date) -> pd.DataFrame:
-        response = self._get(
+        response = self._get_with_retry(
             f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
             headers=self._auth_headers("FHKST03010100"),
             params={

@@ -38,6 +38,7 @@ def test_ensure_token_requests_once_and_caches(mock_post):
 @patch("muwon.data.kis_client.requests.get")
 def test_get_daily_ohlcv_parses_output2(mock_get):
     mock_get.return_value = MagicMock(
+        status_code=200,
         json=lambda: {
             "output2": [
                 {
@@ -119,7 +120,7 @@ def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     """모의투자 계좌로 유니버스 종목을 연달아 조회하다 9번째 요청부터
     500이 난 실제 사고를 재현한 회귀 테스트 — 요청 간격이 0.5초보다 짧으면
     다음 요청 전에 부족한 만큼 대기해야 한다."""
-    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: {"output2": []})
     mock_get.return_value.raise_for_status = lambda: None
 
     clock = FakeClock()
@@ -140,7 +141,7 @@ def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
 @patch("muwon.data.kis_client.requests.get")
 @patch("muwon.data.kis_client.time.time")
 def test_throttle_skips_wait_once_interval_already_elapsed(mock_time, mock_get):
-    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: {"output2": []})
     mock_get.return_value.raise_for_status = lambda: None
 
     clock = FakeClock()
@@ -160,7 +161,7 @@ def test_throttle_skips_wait_once_interval_already_elapsed(mock_time, mock_get):
 @patch("muwon.data.kis_client.requests.get")
 @patch("muwon.data.kis_client.time.time")
 def test_real_trading_uses_shorter_throttle_interval_than_paper(mock_time, mock_get):
-    mock_get.return_value = MagicMock(json=lambda: {"output2": []})
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: {"output2": []})
     mock_get.return_value.raise_for_status = lambda: None
 
     clock = FakeClock()
@@ -175,6 +176,42 @@ def test_real_trading_uses_shorter_throttle_interval_than_paper(mock_time, mock_
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
     assert sleeps == []
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_daily_ohlcv_retries_on_500_then_succeeds(mock_get):
+    """throttle을 둬도 산발적으로 500이 나는 걸 실제로 관찰해서 추가한
+    재시도 로직 — 두 번째 시도에서 성공하면 그 결과를 그대로 써야 한다."""
+    error_response = MagicMock(status_code=500)
+    ok_response = MagicMock(status_code=200, json=lambda: {"output2": []})
+    ok_response.raise_for_status = lambda: None
+    mock_get.side_effect = [error_response, ok_response]
+
+    client = make_client()
+    client._sleep = lambda seconds: None  # 테스트에서 실제로 잠들지 않는다
+
+    df = client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert len(df) == 0
+    assert mock_get.call_count == 2
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_get_daily_ohlcv_gives_up_after_max_retries(mock_get):
+    error_response = MagicMock(status_code=500)
+    error_response.raise_for_status = MagicMock(side_effect=RuntimeError("500 Server Error"))
+    mock_get.return_value = error_response
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    try:
+        client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+        raise AssertionError("예외가 발생해야 한다")
+    except RuntimeError:
+        pass
+
+    assert mock_get.call_count == 3  # _MAX_RETRIES
 
 
 @patch("muwon.data.kis_client.requests.post")
