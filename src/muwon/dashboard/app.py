@@ -149,6 +149,19 @@ def main() -> None:
 
     service = get_service()
 
+    broken_keys = service.undecryptable_secret_keys()
+    if broken_keys:
+        st.warning(
+            "다음 값들이 **지금 MUWON_MASTER_KEY로는 열리지 않습니다** — "
+            "마스터키를 새로 발급했는데 DB에는 이전 키로 암호화된 값이 남아 있는 "
+            "상태입니다: `" + "`, `".join(broken_keys) + "`\n\n"
+            "해당 항목(아래 KIS 인증정보 / 텔레그램 알림)에 값을 다시 입력해 "
+            "저장하면 새 키로 다시 암호화되어 정상으로 돌아옵니다. GitHub "
+            "Actions가 매 실행마다 KIS·텔레그램 값을 다시 써 주므로, 다음 "
+            "자동매매 실행 뒤에 저절로 해결되기도 합니다.",
+            icon="🔑",
+        )
+
     render_status_bar(service)
     st.divider()
 

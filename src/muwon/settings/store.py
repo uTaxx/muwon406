@@ -2,6 +2,8 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 
+from cryptography.fernet import InvalidToken
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
@@ -43,10 +45,14 @@ class SettingsStore:
         return self._master_key is not None
 
     def try_decrypt(self, value: str | None) -> str | None:
-        """복호화 가능하면 평문을, 값이 없거나 마스터키가 없으면 None을 돌려준다."""
+        """복호화 가능하면 평문을, 값이 없거나·마스터키가 없거나·지금 마스터키로는
+        열리지 않으면(=다른 키로 암호화된 값) None을 돌려준다."""
         if value is None or not self._master_key:
             return None
-        return decrypt(value, self._master_key)
+        try:
+            return decrypt(value, self._master_key)
+        except InvalidToken:
+            return None
 
     def _refresh_cache_if_stale(self) -> None:
         if time.time() - self._cache_loaded_at < self._cache_ttl:
@@ -68,7 +74,36 @@ class SettingsStore:
                 f"'{key}' 값은 암호화되어 있는데 MUWON_MASTER_KEY가 설정되지 "
                 "않아 복호화할 수 없습니다."
             )
-        return decrypt(stored_value, self._master_key)
+        try:
+            return decrypt(stored_value, self._master_key)
+        except InvalidToken:
+            # MUWON_MASTER_KEY를 새로 발급했는데 DB에는 옛 키로 암호화된 값이
+            # 남아 있는 상황 — 실제로 겪었다. 여기서 예외를 그대로 올리면
+            # 대시보드 전체가 죽고 다른 정상 설정까지 못 보게 되므로, 못 읽는
+            # 값 하나로 처리하고 넘어간다(경고는 남긴다). 어느 키가 안 열리는지는
+            # undecryptable_secret_keys()로 조회할 수 있고, 해당 값을 다시
+            # 저장하면 새 키로 재암호화되어 복구된다.
+            logger.warning(
+                f"'{key}'를 현재 MUWON_MASTER_KEY로 복호화할 수 없습니다 "
+                "(다른 키로 암호화된 값). 해당 값을 다시 저장하면 복구됩니다."
+            )
+            return default
+
+    def undecryptable_secret_keys(self) -> list[str]:
+        """지금 마스터키로 열리지 않는 비밀값 키 목록 — 화면에 "이 값들은 다시
+        입력해야 한다"고 알려주기 위한 용도."""
+        self._refresh_cache_if_stale()
+        if not self._master_key:
+            return []
+        broken = []
+        for key, (stored_value, is_secret) in self._cache.items():
+            if not is_secret:
+                continue
+            try:
+                decrypt(stored_value, self._master_key)
+            except InvalidToken:
+                broken.append(key)
+        return sorted(broken)
 
     def set(self, key: str, value: str, secret: bool = False) -> None:
         if secret and not self._master_key:

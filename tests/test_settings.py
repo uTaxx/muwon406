@@ -63,6 +63,64 @@ def test_secret_write_without_master_key_raises():
         service.set_kis_credentials(KISCredentials(app_key="x", app_secret="y"))
 
 
+def make_services_sharing_db(old_key: str, new_key: str) -> tuple[SettingsService, SettingsService]:
+    """같은 DB를 옛 마스터키/새 마스터키로 각각 여는 서비스 한 쌍 — 마스터키를
+    새로 발급했는데 DB에는 옛 키로 암호화된 값이 남아 있는 상황을 재현한다."""
+    session_factory = make_session_factory("sqlite:///:memory:")
+    old = SettingsService(SettingsStore(session_factory, master_key=old_key, cache_ttl_seconds=0))
+    new = SettingsService(SettingsStore(session_factory, master_key=new_key, cache_ttl_seconds=0))
+    return old, new
+
+
+def test_rotated_master_key_does_not_crash_and_reports_broken_keys():
+    """마스터키를 새로 발급하면 옛 키로 암호화된 값은 못 읽는다 — 이때 예외로
+    죽지 않고(대시보드 전체가 멈추면 안 됨) 빈 값으로 넘어가면서, 어떤 키가
+    안 열리는지 알려줘야 한다."""
+    old_service, new_service = make_services_sharing_db(generate_master_key(), generate_master_key())
+    old_service.set_kis_credentials(
+        KISCredentials(kis_env="paper", app_key="key-a", app_secret="secret-a", account_no="12345678")
+    )
+
+    creds = new_service.get_kis_credentials()  # 예외 없이 반환되어야 한다
+    assert creds.app_key == ""
+    assert creds.app_secret == ""
+    assert creds.kis_env == "paper"  # 비밀값이 아닌 항목은 정상적으로 읽힌다
+
+    broken = new_service.undecryptable_secret_keys()
+    assert "kis.app_key" in broken
+    assert "kis.app_secret" in broken
+    assert "kis.env" not in broken  # 비밀값이 아니므로 대상 아님
+
+
+def test_resaving_with_new_master_key_clears_broken_keys():
+    """못 읽던 값을 새 키로 다시 저장하면 복구되어야 한다 — 화면 안내가
+    약속하는 동작."""
+    old_service, new_service = make_services_sharing_db(generate_master_key(), generate_master_key())
+    old_service.set_kis_credentials(KISCredentials(app_key="key-a", app_secret="secret-a"))
+    assert new_service.undecryptable_secret_keys() != []
+
+    new_service.set_kis_credentials(KISCredentials(app_key="key-b", app_secret="secret-b"))
+
+    assert new_service.undecryptable_secret_keys() == []
+    assert new_service.get_kis_credentials().app_key == "key-b"
+
+
+def test_rotated_master_key_marks_history_entry_undecrypted():
+    old_service, new_service = make_services_sharing_db(generate_master_key(), generate_master_key())
+    old_service.set_telegram_config(TelegramConfig(bot_token="123:ABC", chat_id="999"))
+
+    entry = next(h for h in new_service.get_settings_history() if h.key == "telegram.bot_token")
+    assert entry.decrypted is False
+    assert entry.new_value is None
+
+
+def test_undecryptable_keys_empty_when_master_key_matches():
+    master_key = generate_master_key()
+    service = make_service(master_key=master_key)
+    service.set_kis_credentials(KISCredentials(app_key="key-a", app_secret="secret-a"))
+    assert service.undecryptable_secret_keys() == []
+
+
 def test_strategy_selection_defaults_to_live_key():
     service = make_service()
     assert service.get_strategy_selection() == StrategySelection()

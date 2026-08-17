@@ -98,6 +98,12 @@ class SettingsService:
     def set_strategy_selection(self, selection: StrategySelection) -> None:
         self._store.set("strategy.active_key", selection.active_key)
 
+    def undecryptable_secret_keys(self) -> list[str]:
+        """지금 MUWON_MASTER_KEY로 열리지 않는 비밀값 키 목록. 마스터키를 새로
+        발급한 뒤 DB에 옛 키로 암호화된 값이 남아 있으면 여기 잡힌다 — 해당
+        값을 다시 저장하면 새 키로 재암호화되어 사라진다."""
+        return self._store.undecryptable_secret_keys()
+
     def get_settings_history(self, limit: int = 100) -> list[SettingHistoryEntry]:
         entries = []
         for row in self._store.get_history(limit=limit):
@@ -106,7 +112,9 @@ class SettingsService:
             else:
                 old_value = self._store.try_decrypt(row.old_value)
                 new_value = self._store.try_decrypt(row.new_value)
-                decrypted = self._store.has_master_key
+                # 마스터키가 있어도 옛 키로 암호화된 값은 못 읽는다 —
+                # 키 보유 여부가 아니라 실제 복호화 성공 여부로 판단한다.
+                decrypted = self._store.has_master_key and new_value is not None
             entries.append(
                 SettingHistoryEntry(
                     key=row.key,
