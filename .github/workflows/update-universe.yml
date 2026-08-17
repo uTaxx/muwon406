@@ -1,0 +1,70 @@
+name: 매매 대상 종목 갱신
+
+# 손으로 고른 고정 종목 목록은 시간이 지나면 낡는다(상장폐지·순위 역전·
+# 신규 대형주 누락). 시가총액 상위로 주기적으로 다시 뽑아 스냅샷으로 쌓고,
+# 매매 스크립트가 자동으로 최신 스냅샷을 쓰게 한다.
+#
+# 매주 일요일 밤(한국시간 월요일 새벽)에 돌려 새 주가 시작되기 전에 갱신한다.
+
+on:
+  schedule:
+    - cron: "0 15 * * 0" # 일요일 15:00 UTC = 월요일 00:00 KST
+  workflow_dispatch:
+    inputs:
+      size:
+        description: "유니버스 종목 수"
+        default: "30"
+      apply:
+        description: "실제로 저장할지 (false면 미리보기만)"
+        type: choice
+        options: ["false", "true"]
+        default: "false"
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db
+
+      - name: .env 구성
+        run: |
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: KIS/텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py kis --env paper \
+            --app-key "${{ secrets.KIS_APP_KEY }}" --app-secret "${{ secrets.KIS_APP_SECRET }}" \
+            --account-no "${{ secrets.KIS_ACCOUNT_NO }}" --account-product-cd "01"
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
+      - name: 종목 목록 갱신
+        run: |
+          python scripts/update_universe.py \
+            --size "${{ github.event.inputs.size || '30' }}" \
+            ${{ (github.event_name == 'schedule' || github.event.inputs.apply == 'true') && '--apply --notify' || '' }}
+
+      # 갱신에 실패해도(모의투자 미지원 등) 기존 스냅샷은 그대로 남아야 하므로
+      # 업로드는 성공했을 때만 한다.
+      - name: 상태 DB 구글드라이브에 업로드
+        if: success()
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py upload \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --path ./muwon.db

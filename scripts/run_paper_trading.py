@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from muwon.config import bootstrap_settings
 from muwon.data.kis_client import KISClient
 from muwon.data.universe import UNIVERSE
+from muwon.data.universe_builder import active_universe
 from muwon.db.session import make_session_factory
 from muwon.execution.engine import TradingEngine
 from muwon.execution.kis_order_executor import KISOrderExecutor
@@ -52,6 +53,11 @@ def main() -> None:
 
     notifier = TelegramNotifier(settings_service)
 
+    # 유니버스는 update_universe.py가 저장한 최신 스냅샷을 쓰고, 아직
+    # 갱신된 적이 없으면 손으로 고른 기본 목록으로 돌아간다.
+    universe = active_universe(session_factory, list(UNIVERSE))
+    print(f"매매 대상 {len(universe)}종목", file=sys.stderr)
+
     # 매매 전에 우리 기록과 실제 계좌를 대조한다. 어긋난 채로 매매하면
     # 비중 계산·손실한도가 전부 틀린 현금값 위에서 돌아가므로, 최소한
     # 알고는 있어야 한다(자동으로 덮어쓰진 않는다 — 사람이 판단할 일이다).
@@ -66,7 +72,7 @@ def main() -> None:
         order_executor=KISOrderExecutor(client),
         notifier=notifier,
         session_factory=session_factory,
-        universe=UNIVERSE,
+        universe=universe,
         source_symbol=lambda ticker: ticker.symbol,
     )
 

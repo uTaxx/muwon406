@@ -147,3 +147,22 @@ class BacktestRunRow(Base):
     num_trades: Mapped[int] = mapped_column(Integer)
     notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class UniverseSnapshotRow(Base):
+    """유니버스(매매 대상 종목 목록)를 갱신할 때마다 남기는 스냅샷.
+
+    손으로 고른 고정 목록은 시간이 지나면 낡는다(상장폐지·순위 역전 등).
+    시가총액 상위로 주기적으로 다시 뽑되, 덮어쓰지 않고 스냅샷으로 쌓는다 —
+    "어제와 오늘 종목이 뭐가 달라졌는지"를 볼 수 있어야 성과 변화를 종목
+    교체 탓인지 전략 탓인지 구분할 수 있기 때문이다."""
+
+    __tablename__ = "universe_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    snapshot_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    symbol: Mapped[str] = mapped_column(String(20), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    market: Mapped[str] = mapped_column(String(20))  # KOSPI | KOSDAQ
+    market_cap: Mapped[int] = mapped_column(Integer, default=0)  # 억원
+    rank: Mapped[int] = mapped_column(Integer, default=0)

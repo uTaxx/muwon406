@@ -33,6 +33,7 @@ from muwon.analysis.strategy_review import (
 )
 from muwon.config import bootstrap_settings
 from muwon.data.universe import UNIVERSE
+from muwon.data.universe_builder import active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.db.session import make_session_factory
 from muwon.notify.telegram import TelegramNotifier
@@ -55,9 +56,13 @@ def main() -> None:
     settings_service = build_settings_service()
     live_key = settings_service.get_strategy_selection().active_key
 
+    session_factory = make_session_factory(bootstrap_settings.database_url)
+    # 리뷰 대상은 실제 매매 대상과 같아야 비교가 의미 있다
+    universe = active_universe(session_factory, list(UNIVERSE))
+
     data_source = YahooFinanceDataSource()
     price_histories = {}
-    for ticker in UNIVERSE:
+    for ticker in universe:
         df = data_source.get_daily_ohlcv(ticker.yahoo_symbol, start, end)
         if len(df) > 0:
             price_histories[ticker.symbol] = df
@@ -65,7 +70,6 @@ def main() -> None:
     risk_manager = RiskManager(policy_provider=settings_service.get_risk_policy)
     results = sweep_strategies(list_definitions(), price_histories, risk_manager, args.initial_cash)
 
-    session_factory = make_session_factory(bootstrap_settings.database_url)
     persist_sweep_results(session_factory, results, start, end, notes="daily_review")
 
     report = build_review_report(results, live_key, start, end)

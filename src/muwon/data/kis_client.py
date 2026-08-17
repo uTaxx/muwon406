@@ -428,3 +428,59 @@ class KISClient(MarketDataSource):
             net_asset=float(summary.get("nass_amt") or 0),
             holdings=holdings,
         )
+
+    def get_top_market_cap(
+        self, market: str = "all", limit: int = 100
+    ) -> list[tuple[str, str, int]]:
+        """시가총액 상위 종목을 (종목코드, 종목명, 시가총액) 목록으로 돌려준다.
+
+        손으로 고른 종목 목록은 시간이 지나면 낡는다(상장폐지·순위 역전 등).
+        이걸로 주기적으로 다시 뽑아 유니버스를 갱신한다.
+
+        market: "all" | "kospi" | "kosdaq"
+        보통주만 조회한다(fid_div_cls_code=1) — 우선주는 같은 회사가 중복으로
+        잡히는 데다 거래량도 훨씬 적어 단타 대상으로 부적절하다.
+
+        주의: KIS의 순위·시세 API 일부는 모의투자를 지원하지 않는다. 모의투자
+        키로 거부되면 KISOrderRejected가 아니라 RuntimeError로 사유가 올라온다.
+        """
+        market_codes = {"all": "0000", "kospi": "0001", "kosdaq": "1001"}
+        if market not in market_codes:
+            raise ValueError(f"market은 {list(market_codes)} 중 하나여야 합니다: {market}")
+
+        response = self._get_with_retry(
+            f"{self.base_url}/uapi/domestic-stock/v1/ranking/market-cap",
+            headers=self._auth_headers("FHPST01740000"),
+            params={
+                "fid_cond_mrkt_div_code": "J",  # 주식
+                "fid_cond_scr_div_code": "20174",  # 화면번호(고정)
+                "fid_div_cls_code": "1",  # 0:전체 1:보통주 2:우선주
+                "fid_input_iscd": market_codes[market],
+                "fid_trgt_cls_code": "0",
+                "fid_trgt_exls_cls_code": "0",
+                "fid_input_price_1": "",  # 가격 하한 없음
+                "fid_input_price_2": "",  # 가격 상한 없음
+                "fid_vol_cnt": "",  # 거래량 하한 없음
+            },
+            timeout=10,
+        )
+        payload = _kis_payload(response)
+        if payload is None:
+            response.raise_for_status()
+            raise RuntimeError(f"KIS 시총순위 응답을 해석할 수 없습니다: {response.text[:300]}")
+        if payload.get("rt_cd") != "0":
+            raise RuntimeError(
+                f"KIS 시총순위 조회 실패: {payload.get('msg1')} "
+                f"(msg_cd={payload.get('msg_cd')}) — 모의투자 미지원 API일 수 있습니다."
+            )
+
+        rows = []
+        for row in (payload.get("output") or [])[:limit]:
+            symbol = str(row.get("mksc_shrn_iscd", "")).strip()
+            name = str(row.get("hts_kor_isnm", "")).strip()
+            if not symbol or not name:
+                continue
+            # 시가총액은 억원 단위 문자열로 온다
+            market_cap = int(float(row.get("stck_avls") or 0))
+            rows.append((symbol, name, market_cap))
+        return rows

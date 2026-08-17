@@ -29,11 +29,15 @@ scripts/
 ├── run_paper_trading.py   # KIS 모의투자 — 하루 1회 배치 모드 (GitHub Actions용)
 ├── run_realtime_trading.py  # KIS 모의투자 — 장중 실시간 모드 (VPS용, KIS 웹소켓)
 ├── run_hypothesis_sweep.py  # 등록된 전략 가설을 과거 데이터로 일괄 백테스트·비교
+├── update_universe.py     # 매매 대상 종목을 시가총액 상위로 갱신(스냅샷 저장)
+├── verify_kis_order.py    # KIS 주문 실행 경로 검증(모의투자 전용, 진단용)
 ├── run_daily_review.py    # 매일 자동매매 직후, "다른 전략이었다면?" 비교 리포트를 텔레그램으로 발송
 └── gdrive_sync.py         # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
 
 .github/workflows/
 ├── paper-trading.yml            # 평일 장마감 후 자동으로 run_paper_trading.py 실행
+├── update-universe.yml          # 매주 매매 대상 종목 갱신
+├── verify-kis-order.yml         # 주문 경로 진단 (수동 실행)
 └── check-kis-connectivity.yml   # KIS 접속 가능 여부만 확인하는 진단용 (비밀값 불필요)
 ```
 
@@ -159,6 +163,32 @@ KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 �
 
 - VPS(리눅스, systemd)에 배포 → [`docs/deploy_vps_realtime.md`](docs/deploy_vps_realtime.md)
 - 집 윈도우 PC를 상시 서버로 활용 → [`docs/deploy_windows_pc.md`](docs/deploy_windows_pc.md)
+
+## 매매 대상 종목 자동 갱신
+
+`data/universe.py`의 기본 목록은 사람이 골라 고정해 둔 것이라 시간이 지나면
+낡습니다(상장폐지·순위 역전·신규 대형주 누락). `scripts/update_universe.py`가
+KIS 시가총액 순위로 다시 뽑아 `universe_snapshots` 테이블에 **스냅샷으로
+쌓습니다** — 덮어쓰지 않는 이유는, 성과가 달라졌을 때 그게 전략 탓인지 종목이
+바뀐 탓인지 구분하려면 그날 무엇을 대상으로 삼았는지가 남아 있어야 하기
+때문입니다.
+
+```bash
+python scripts/update_universe.py                 # 미리보기(저장 안 함)
+python scripts/update_universe.py --apply --size 30
+```
+
+ETF·ETN·스팩·우선주는 자동으로 제외합니다 — 개별 종목 전략(이동평균·RSI)의
+전제가 맞지 않거나(바스켓 상품), 합병 전까지 가격이 거의 고정이거나(스팩),
+같은 회사가 중복으로 잡히고 거래량도 적기 때문입니다(우선주).
+
+매매·리뷰 스크립트는 최신 스냅샷을 자동으로 쓰고, 갱신된 적이 없거나 갱신에
+실패하면 기존 기본 목록으로 돌아갑니다 — 종목 갱신 실패가 매매를 멈추게
+해서는 안 되기 때문입니다. 매주 일요일 밤 `update-universe.yml`이 자동 실행되며,
+변경된 종목은 텔레그램으로 알려줍니다.
+
+> ⚠️ KIS의 순위 조회 API는 모의투자를 지원하지 않을 수 있습니다. 거부되면
+> 사유를 출력하고 종료하며, 기존 종목 목록이 그대로 유지됩니다.
 
 ## 전략 가설 검증 & 진화
 
