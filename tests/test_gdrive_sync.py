@@ -4,6 +4,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from muwon.cloud import gdrive_sync
 
 
@@ -91,7 +93,70 @@ def test_download_writes_via_temp_file_then_atomic_replace(mock_downloader_cls, 
 
     assert out_path.exists()
     assert out_path.read_bytes() == b"downloaded-db-bytes"
-    assert not (tmp_path / "muwon.db.tmp").exists()  # 교체 후 임시 파일이 남지 않아야 함
+    assert list(tmp_path.iterdir()) == [out_path]  # 교체 후 임시 파일이 남지 않아야 함
+
+
+@patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.MediaIoBaseDownload")
+def test_download_uses_unique_temp_file_per_call(mock_downloader_cls, mock_build, mock_creds, tmp_path):
+    """대시보드는 시작 시 1회 동기화와 30초 주기 동기화가 겹칠 수 있다.
+    임시 파일 이름이 고정이면 먼저 끝난 쪽이 그 파일을 치워서 나중 쪽의
+    os.replace가 FileNotFoundError로 죽는다(실제로 발생) — 호출마다 임시
+    파일 경로가 달라야 한다."""
+    service = make_fake_service(existing_file_id="EXISTING456")
+    mock_build.return_value = service
+
+    used_temp_names = []
+
+    def fake_downloader(fileobj, request):
+        # 다운로드가 진행 중인 시점에 실제로 디렉터리에 존재하는 임시 파일 이름을
+        # 본다 (fileobj.name은 os.fdopen으로 연 파일이라 경로가 아닌 fd 번호다).
+        used_temp_names.extend(p.name for p in tmp_path.iterdir() if p.name.endswith(".tmp"))
+        fileobj.write(b"bytes")
+        instance = MagicMock()
+        instance.next_chunk.return_value = (None, True)
+        return instance
+
+    mock_downloader_cls.side_effect = fake_downloader
+
+    out_path = tmp_path / "muwon.db"
+    gdrive_sync.download("FOLDER123", "muwon.db", str(out_path))
+    gdrive_sync.download("FOLDER123", "muwon.db", str(out_path))
+
+    assert len(used_temp_names) == 2
+    assert used_temp_names[0] != used_temp_names[1]
+    assert list(tmp_path.iterdir()) == [out_path]
+
+
+@patch.dict("os.environ", {"GDRIVE_SA_KEY_JSON": '{"type": "service_account"}'})
+@patch("muwon.cloud.gdrive_sync.service_account.Credentials.from_service_account_info")
+@patch("muwon.cloud.gdrive_sync.build")
+@patch("muwon.cloud.gdrive_sync.MediaIoBaseDownload")
+def test_download_failure_leaves_no_temp_file_and_keeps_existing_db(
+    mock_downloader_cls, mock_build, mock_creds, tmp_path
+):
+    """다운로드가 중간에 끊겨도 임시 파일을 남기지 않고, 기존 muwon.db를
+    망가뜨리지 않아야 한다(원자적 교체 전에 실패했으므로)."""
+    service = make_fake_service(existing_file_id="EXISTING456")
+    mock_build.return_value = service
+
+    def failing_downloader(fileobj, request):
+        instance = MagicMock()
+        instance.next_chunk.side_effect = OSError("네트워크 끊김")
+        return instance
+
+    mock_downloader_cls.side_effect = failing_downloader
+
+    out_path = tmp_path / "muwon.db"
+    out_path.write_bytes(b"existing-db")
+
+    with pytest.raises(OSError, match="네트워크 끊김"):
+        gdrive_sync.download("FOLDER123", "muwon.db", str(out_path))
+
+    assert out_path.read_bytes() == b"existing-db"  # 기존 파일 보존
+    assert list(tmp_path.iterdir()) == [out_path]  # 임시 파일 잔재 없음
 
 
 def test_missing_master_key_env_raises_system_exit():

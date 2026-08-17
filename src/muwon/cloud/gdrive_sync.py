@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -63,16 +64,29 @@ def download(folder_id: str, filename: str, out_path: str) -> None:
         return
 
     request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
-    tmp_path = f"{out_path}.tmp"
-    with open(tmp_path, "wb") as f:
-        downloader = MediaIoBaseDownload(f, request)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-    # 다운로드 도중 임시 파일에 쓰고 끝나면 원자적으로 교체 — 대시보드처럼
-    # 백그라운드에서 주기적으로 다시 내려받는 동안에도, 그 파일을 동시에
-    # 읽는 쪽(DB 쿼리)이 반쯤 쓰인 파일을 보는 일이 없게 한다.
-    os.replace(tmp_path, out_path)
+
+    # 임시 파일에 다 받은 다음 원자적으로 교체한다 — 대시보드처럼 백그라운드에서
+    # 주기적으로 다시 내려받는 동안에도, 그 파일을 동시에 읽는 쪽(DB 쿼리)이
+    # 반쯤 쓰인 파일을 보는 일이 없게 한다.
+    #
+    # 임시 파일 이름은 호출마다 고유해야 한다 — 대시보드는 시작 시 1회
+    # 동기화와 30초 주기 동기화가 겹칠 수 있는데, 고정된 이름("<out>.tmp")을
+    # 쓰면 먼저 끝난 쪽이 그 파일을 치워버려서 나중 쪽의 os.replace가
+    # FileNotFoundError로 죽는다(실제로 발생).
+    out_dir = os.path.dirname(os.path.abspath(out_path)) or "."
+    os.makedirs(out_dir, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(dir=out_dir, prefix=f".{os.path.basename(out_path)}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            downloader = MediaIoBaseDownload(f, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+        os.replace(tmp_path, out_path)
+    finally:
+        # 성공하면 os.replace로 이미 사라졌으니 no-op, 중간에 실패했으면 정리한다.
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
     print(f"다운로드 완료: {filename} -> {out_path}")
 
 
