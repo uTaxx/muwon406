@@ -6,11 +6,16 @@ REST(KISClient)와는 별도 프로토콜이다. 접속키(approval_key)는 REST
 공통이고 접속키 발급 엔드포인트만 모의/실전이 다르다.
 
 **이 환경(개발 샌드박스)은 KIS 비표준 포트(9443/29443 등)가 막혀 있어
-이 클래스는 실제 접속 검증을 못 했다** — KIS Developers 공식 문서
-(실시간시세 H0STCNT0, 웹소켓 접속키 발급) 기준으로 작성했으니, VPS 등
-실제 KIS 네트워크 접근이 되는 환경에 배포한 뒤 첫 실행에서 URL·포트·
-메시지 필드 순서를 반드시 재검증할 것 — 특히 _parse_price_message의
-필드 인덱스는 문서 기준 추정치라 실제 수신 메시지로 대조가 필요하다."""
+이 클래스는 실제 접속으로는 검증 못 했다.** 대신 한국투자증권이 공식
+운영하는 예제 저장소(github.com/koreainvestment/open-trading-api,
+examples_user/kis_auth.py・domestic_stock_functions_ws.py)의 현재 코드와
+대조해 다음을 확인했다: Approval 발급 바디의 파라미터명이 appsecret이
+아니라 secretkey인 것, 구독 메시지의 header/body 구조(approval_key・
+custtype・tr_type + body.input.tr_id), 그리고 _parse_price_message가
+쓰는 필드 인덱스(0=MKSC_SHRN_ISCD 종목코드, 2=STCK_PRPR 현재가,
+12=CNTG_VOL 체결거래량)까지 전부 일치한다. 그래도 실제 TCP 연결·인증·
+장중 수신 자체는 못 해봤으니, 배포 후 첫 실행에서 실제 메시지로 한 번
+더 확인은 필요하다."""
 
 from __future__ import annotations
 
