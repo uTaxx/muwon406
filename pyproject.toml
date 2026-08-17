@@ -22,7 +22,7 @@ dependencies = [
 backtest = ["vectorbt>=0.26"]
 ml = ["scikit-learn>=1.4", "lightgbm>=4.3"]
 cloud = ["google-api-python-client>=2.100", "google-auth>=2.23"]
-dashboard = ["streamlit>=1.35", "muwon406[cloud]"]
+dashboard = ["streamlit>=1.35", "google-api-python-client>=2.100", "google-auth>=2.23"]
 realtime = ["websockets>=12.0"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.4"]
 
