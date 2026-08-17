@@ -25,6 +25,7 @@ scripts/
 ├── run_dry_run.py         # KIS 없이 신호→리스크→체결→알림→기록 파이프라인 검증(가짜 체결)
 ├── run_paper_trading.py   # KIS 모의투자 — 하루 1회 배치 모드 (GitHub Actions용)
 ├── run_realtime_trading.py  # KIS 모의투자 — 장중 실시간 모드 (VPS용, KIS 웹소켓)
+├── run_hypothesis_sweep.py  # 등록된 전략 가설을 과거 데이터로 일괄 백테스트·비교
 └── gdrive_sync.py         # GitHub Actions용 상태 DB 구글드라이브 업/다운로드
 
 .github/workflows/
@@ -129,6 +130,43 @@ KIS 웹소켓 연동은 이 저장소를 개발한 환경에서 실제 접속 �
 
 - VPS(리눅스, systemd)에 배포 → [`docs/deploy_vps_realtime.md`](docs/deploy_vps_realtime.md)
 - 집 윈도우 PC를 상시 서버로 활용 → [`docs/deploy_windows_pc.md`](docs/deploy_windows_pc.md)
+
+## 전략 가설 검증 & 진화
+
+"단타 가설을 세우고 → 과거 데이터로 검증하고 → 실전에 반영한다"를
+코드 배포 없이 반복할 수 있도록 만든 구조입니다.
+
+- **`src/muwon/strategy/registry.py`** — 전략을 파라미터 조합(`StrategyDefinition`)으로
+  등록하는 곳. 같은 `MovingAverageRsiStrategy` 코드라도 이동평균 기간·RSI
+  기간·거래량 급증 배수 같은 파라미터만 바꿔서 서로 다른 "가설"을 여러 개
+  등록할 수 있습니다. 각 항목은 `status="live"`(실거래 중) 또는
+  `"hypothesis"`(검증 중)로 표시됩니다.
+- **`scripts/run_hypothesis_sweep.py`** — 등록된 가설 전체(또는 `--keys`로
+  고른 일부)를 같은 기간·같은 종목 유니버스로 백테스트하고 수익률/MDD/승률/거래수를
+  비교표로 출력합니다. 결과는 `backtest_runs` 테이블에 파라미터 스냅샷과
+  함께 누적 저장되므로, 나중에 다시 돌려도 시간에 따른 비교가 가능합니다.
+
+  ```bash
+  python scripts/run_hypothesis_sweep.py --start 2023-01-01 --end 2024-12-31
+  ```
+
+- **`scripts/configure.py strategy`** — 가설이 마음에 들면 코드를 고치거나
+  다시 배포할 필요 없이 설정값 하나로 실거래 전략을 바꿉니다. 이 변경도
+  기존 설정 변경 이력에 자동으로 남습니다.
+
+  ```bash
+  python scripts/configure.py strategy --list                    # 등록된 가설 + 현재 활성 전략 확인
+  python scripts/configure.py strategy --active-key ma_rsi_fast5_20  # 실거래 전략 교체
+  ```
+
+- **매매 결과 학습 기반 (`TradeRow`)** — 실전/모의 매매에서 포지션이 청산될
+  때마다 진입가·청산가·손익·진입 사유·청산 사유가 `strategy_key`와 함께
+  `trades` 테이블에 기록됩니다(`src/muwon/execution/state_repository.py`의
+  `record_trade`). 지금은 이 데이터를 사람이 조회하는 용도지만, 어떤 전략이
+  어떤 조건에서 이기고 지는지가 이미 구조화되어 쌓이고 있어서, 향후 AI가
+  이 로그를 읽고 전략 파라미터 수정이나 새 가설을 제안하는 단계로 자연스럽게
+  이어질 수 있도록 설계했습니다(아직 AI 연동 자체는 구현 전 — 데이터 기반만
+  마련된 상태).
 
 ## 로드맵
 

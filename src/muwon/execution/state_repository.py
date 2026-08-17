@@ -8,7 +8,9 @@
 
 from __future__ import annotations
 
-from muwon.db.models import EngineStateRow, OrderRow, PositionRow
+from datetime import datetime
+
+from muwon.db.models import EngineStateRow, OrderRow, PositionRow, TradeRow
 from muwon.domain.types import OrderResult
 
 
@@ -44,6 +46,36 @@ def record_order(session_factory, order: OrderResult, reason: str) -> None:
                 is_paper=order.is_paper,
                 kis_order_id=order.order_id,
                 reason=reason,
+            )
+        )
+        session.commit()
+
+
+def record_trade(session_factory, position: PositionRow, exit_order: OrderResult, exit_reason: str) -> None:
+    """진입(position)~청산(exit_order)을 하나로 묶어 손익까지 계산해
+    trades 테이블에 남긴다. 이 테이블이 "이 가설이 실전에서 어떻게
+    됐는지"를 판단하는 근거 데이터가 된다 — 사람이 보든, 나중에 AI가
+    보든 마찬가지다."""
+    entry_value = position.quantity * position.entry_price
+    exit_value = exit_order.quantity * exit_order.price
+    pnl_amount = exit_value - entry_value
+    pnl_pct = (exit_order.price / position.entry_price - 1) * 100 if position.entry_price > 0 else 0.0
+
+    with session_factory() as session:
+        session.add(
+            TradeRow(
+                symbol=position.symbol,
+                strategy_key=position.strategy_key,
+                quantity=position.quantity,
+                entry_price=position.entry_price,
+                exit_price=exit_order.price,
+                entry_reason=position.entry_reason,
+                exit_reason=exit_reason,
+                pnl_amount=pnl_amount,
+                pnl_pct=pnl_pct,
+                is_paper=exit_order.is_paper,
+                entered_at=position.entered_at,
+                exited_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
             )
         )
         session.commit()

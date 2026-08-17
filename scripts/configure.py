@@ -11,6 +11,8 @@
     python scripts/configure.py risk --max-position-weight 0.15 \
         --stop-loss-pct -0.05 --daily-loss-limit-pct -0.03 \
         --max-concurrent-positions 8
+    python scripts/configure.py strategy --active-key ma_rsi_v1
+    python scripts/configure.py strategy --list
     python scripts/configure.py show
 """
 
@@ -23,9 +25,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from muwon.settings.schema import (
     KISCredentials,
     RiskPolicy,
+    StrategySelection,
     TelegramConfig,
 )
 from muwon.settings.service import build_settings_service
+from muwon.strategy.registry import get_definition, list_definitions
 
 
 def _mask(value: str) -> str:
@@ -55,6 +59,11 @@ def main() -> None:
     risk.add_argument("--daily-loss-limit-pct", type=float, required=True)
     risk.add_argument("--max-concurrent-positions", type=int, required=True)
     risk.add_argument("--trading-enabled", choices=["true", "false"], default="true")
+
+    strategy = sub.add_parser("strategy", help="실거래에 쓸 전략 선택/조회")
+    strategy_group = strategy.add_mutually_exclusive_group(required=True)
+    strategy_group.add_argument("--active-key", help="strategy/registry.py에 등록된 전략 키")
+    strategy_group.add_argument("--list", action="store_true", help="등록된 전략 목록만 보여주고 종료")
 
     sub.add_parser("show", help="현재 설정 조회 (비밀값은 마스킹)")
 
@@ -88,10 +97,20 @@ def main() -> None:
             )
         )
         print("리스크 정책 저장 완료")
+    elif args.command == "strategy":
+        if args.list:
+            for d in list_definitions():
+                marker = " [현재 활성]" if d.key == service.get_strategy_selection().active_key else ""
+                print(f"{d.key} ({d.status}){marker}: {d.display_name} — {d.description}")
+        else:
+            get_definition(args.active_key)  # 등록 안 된 키면 여기서 바로 에러
+            service.set_strategy_selection(StrategySelection(active_key=args.active_key))
+            print(f"실거래 활성 전략을 '{args.active_key}'로 변경 완료")
     elif args.command == "show":
         creds = service.get_kis_credentials()
         telegram_cfg = service.get_telegram_config()
         risk_policy = service.get_risk_policy()
+        strategy_selection = service.get_strategy_selection()
         print(
             f"KIS: env={creds.kis_env} app_key={_mask(creds.app_key)} "
             f"app_secret={_mask(creds.app_secret)} account_no={_mask(creds.account_no)}"
@@ -102,6 +121,7 @@ def main() -> None:
         )
         print(f"Risk: {risk_policy}")
         print(f"자동매매: {'ON' if risk_policy.trading_enabled else 'OFF'}")
+        print(f"활성 전략: {strategy_selection.active_key}")
 
 
 if __name__ == "__main__":

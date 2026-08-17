@@ -19,7 +19,7 @@ engine.py와 이게 같은 DB를 공유하는 건 코드 재사용 때문이지,
 from __future__ import annotations
 
 from collections import deque
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
@@ -145,7 +145,9 @@ class RealtimeTradingEngine:
             quantity=order.quantity,
             entry_price=order.price,
             entry_date=date.today(),  # noqa: DTZ011 — 기록용, tz 무관
+            entered_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
             entry_reason=buy_signals[0].reason,
+            strategy_key=self._strategy.name,
         )
         state_repository.save_position(self._session_factory, new_position)
         state_repository.record_order(self._session_factory, order, buy_signals[0].reason)
@@ -161,6 +163,7 @@ class RealtimeTradingEngine:
         self._cash += proceeds
         state_repository.delete_position(self._session_factory, position.symbol)
         state_repository.record_order(self._session_factory, order, reason)
+        state_repository.record_trade(self._session_factory, position, order, reason)
         state_repository.save_engine_state(self._session_factory, self._cash, self._day_start_equity)
         self._notifier.send(
             f"🔴 매도 체결(장중)\n종목: {ticker.name}({position.symbol})\n수량: {order.quantity}주\n"

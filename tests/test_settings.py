@@ -2,7 +2,12 @@ import pytest
 
 from muwon.db.session import make_session_factory
 from muwon.settings.crypto import generate_master_key
-from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
+from muwon.settings.schema import (
+    KISCredentials,
+    RiskPolicy,
+    StrategySelection,
+    TelegramConfig,
+)
 from muwon.settings.service import SettingsService
 from muwon.settings.store import SettingsStore
 
@@ -56,6 +61,22 @@ def test_secret_write_without_master_key_raises():
     service = make_service(master_key=None)
     with pytest.raises(RuntimeError, match="MUWON_MASTER_KEY"):
         service.set_kis_credentials(KISCredentials(app_key="x", app_secret="y"))
+
+
+def test_strategy_selection_defaults_to_live_key():
+    service = make_service()
+    assert service.get_strategy_selection() == StrategySelection()
+
+
+def test_strategy_selection_roundtrip_and_is_logged_in_history():
+    service = make_service()
+    service.set_strategy_selection(StrategySelection(active_key="ma_rsi_v1"))
+    service.set_strategy_selection(StrategySelection(active_key="ma_rsi_fast5_20"))
+    assert service.get_strategy_selection().active_key == "ma_rsi_fast5_20"
+
+    entry = next(h for h in service.get_settings_history() if h.key == "strategy.active_key")
+    assert entry.old_value == "ma_rsi_v1"
+    assert entry.new_value == "ma_rsi_fast5_20"
 
 
 def test_telegram_config_roundtrip():

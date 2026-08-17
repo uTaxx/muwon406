@@ -28,15 +28,17 @@ from muwon.execution.simulated_executor import SimulatedOrderExecutor
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 from muwon.settings.service import build_settings_service
-from muwon.strategy.rule_based import MovingAverageRsiStrategy
+from muwon.strategy.registry import build_strategy
 
 
 def main() -> None:
     settings_service = build_settings_service()
     session_factory = make_session_factory(bootstrap_settings.database_url)
+    strategy_key = settings_service.get_strategy_selection().active_key
+    print(f"활성 전략: {strategy_key}", file=sys.stderr)
 
     engine = TradingEngine(
-        strategy=MovingAverageRsiStrategy(),
+        strategy=build_strategy(strategy_key),
         risk_manager=RiskManager(policy_provider=settings_service.get_risk_policy),
         data_source=YahooFinanceDataSource(),
         order_executor=SimulatedOrderExecutor(),

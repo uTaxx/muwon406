@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import sessionmaker
 
@@ -125,6 +125,7 @@ class TradingEngine:
             cash += proceeds
             del positions[symbol]
             state_repository.record_order(self._session_factory, order, exit_reason)
+            state_repository.record_trade(self._session_factory, position, order, exit_reason)
             state_repository.delete_position(self._session_factory, symbol)
             summary.actions.append(
                 ExecutedAction(symbol, ticker.name, OrderSide.SELL, order.quantity, order.price, exit_reason)
@@ -173,7 +174,9 @@ class TradingEngine:
                 quantity=order.quantity,
                 entry_price=order.price,
                 entry_date=run_date,
+                entered_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
                 entry_reason=buy_signals[0].reason,
+                strategy_key=self._strategy.name,
             )
             state_repository.record_order(self._session_factory, order, buy_signals[0].reason)
             state_repository.save_position(self._session_factory, positions[symbol])

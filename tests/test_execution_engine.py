@@ -1,7 +1,7 @@
 import pandas as pd
 
 from muwon.data.universe import Ticker
-from muwon.db.models import OrderRow, PositionRow
+from muwon.db.models import OrderRow, PositionRow, TradeRow
 from muwon.db.session import make_session_factory
 from muwon.domain.types import OrderSide
 from muwon.execution.engine import TradingEngine
@@ -85,13 +85,19 @@ def test_dead_cross_sells_existing_position_and_notifies():
     assert len(summary.actions) == 1
     action = summary.actions[0]
     assert action.side == OrderSide.SELL
-    assert action.reason == "20일선 하향이탈"
+    assert action.reason == "단기선 하향이탈"
 
     with session_factory() as session:
         positions = session.query(PositionRow).all()
         orders = session.query(OrderRow).all()
+        trades = session.query(TradeRow).all()
     assert len(positions) == 0
     assert len(orders) == 2  # 매수 1건 + 매도 1건
+
+    assert len(trades) == 1
+    assert trades[0].strategy_key == "ma_rsi_v1"
+    assert trades[0].exit_reason == "단기선 하향이탈"
+    assert trades[0].pnl_pct < 0  # 진입가보다 낮은 가격에 청산됐으므로 손실
 
     assert any("매도 체결" in m for m in notifier.messages)
 

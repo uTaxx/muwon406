@@ -1,7 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from muwon.settings.schema import KISCredentials, RiskPolicy, TelegramConfig
+from muwon.settings.schema import (
+    KISCredentials,
+    RiskPolicy,
+    StrategySelection,
+    TelegramConfig,
+)
 from muwon.settings.store import SettingsStore
 
 
@@ -85,6 +90,13 @@ class SettingsService:
     def set_telegram_config(self, cfg: TelegramConfig) -> None:
         self._store.set("telegram.bot_token", cfg.bot_token, secret=True)
         self._store.set("telegram.chat_id", cfg.chat_id)
+
+    def get_strategy_selection(self) -> StrategySelection:
+        d = StrategySelection()
+        return StrategySelection(active_key=self._store.get("strategy.active_key", d.active_key))
+
+    def set_strategy_selection(self, selection: StrategySelection) -> None:
+        self._store.set("strategy.active_key", selection.active_key)
 
     def get_settings_history(self, limit: int = 100) -> list[SettingHistoryEntry]:
         entries = []

@@ -24,7 +24,7 @@ def test_buy_and_sell_round_trip_produces_closed_trade():
     assert result.num_trades == 1
     trade = result.closed_trades[0]
     assert trade.symbol == "TEST"
-    assert trade.exit_reason == "20일선 하향이탈"
+    assert trade.exit_reason == "단기선 하향이탈"
     assert trade.exit_price < trade.entry_price
 
 

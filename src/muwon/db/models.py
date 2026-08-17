@@ -98,4 +98,52 @@ class PositionRow(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     entry_price: Mapped[float] = mapped_column(Float)
     entry_date: Mapped[date] = mapped_column(Date)
+    entered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     entry_reason: Mapped[str] = mapped_column(String(100), default="")
+    strategy_key: Mapped[str] = mapped_column(String(50), default="")
+
+
+class TradeRow(Base):
+    """진입~청산이 하나로 묶인 '완결된 매매' 기록 — OrderRow는 체결 하나하나를
+    남기지만(매수/매도가 서로 안 엮여 있음), 이건 손익까지 계산된 라운드트립
+    이라 "이 전략/가설이 실전에서 어떻게 됐는지"를 바로 분석할 수 있다.
+    사람이든, 나중에 붙을 AI 제언 로직이든, 전략을 고치자는 판단은 결국 이
+    테이블을 근거로 한다 — 그래서 strategy_key를 반드시 채워서 가설별로
+    묶어 볼 수 있게 한다."""
+
+    __tablename__ = "trades"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(10), index=True)
+    strategy_key: Mapped[str] = mapped_column(String(50), index=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    entry_price: Mapped[float] = mapped_column(Float)
+    exit_price: Mapped[float] = mapped_column(Float)
+    entry_reason: Mapped[str] = mapped_column(String(100), default="")
+    exit_reason: Mapped[str] = mapped_column(String(100), default="")
+    pnl_amount: Mapped[float] = mapped_column(Float)
+    pnl_pct: Mapped[float] = mapped_column(Float)
+    is_paper: Mapped[bool] = mapped_column(Boolean, default=True)
+    entered_at: Mapped[datetime] = mapped_column(DateTime)
+    exited_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BacktestRunRow(Base):
+    """가설 스윕(scripts/run_hypothesis_sweep.py)이 남기는 백테스트 실행
+    기록. 콘솔에 찍고 끝나면 다음 실행과 비교할 방법이 없어서, 같은 스키마로
+    누적 저장해 시간이 지나도(파라미터를 바꿔가며 여러 번 돌려도) 가설별
+    성과를 추적할 수 있게 한다."""
+
+    __tablename__ = "backtest_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    strategy_key: Mapped[str] = mapped_column(String(50), index=True)
+    params_json: Mapped[str] = mapped_column(Text, default="")  # 재현 가능하도록 실제 파라미터 스냅샷
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+    total_return_pct: Mapped[float] = mapped_column(Float)
+    max_drawdown_pct: Mapped[float] = mapped_column(Float)
+    win_rate_pct: Mapped[float] = mapped_column(Float)
+    num_trades: Mapped[int] = mapped_column(Integer)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)

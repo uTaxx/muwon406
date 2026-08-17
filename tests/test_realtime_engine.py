@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 
 from muwon.data.tick_aggregator import Tick
 from muwon.data.universe import Ticker
-from muwon.db.models import OrderRow, PositionRow
+from muwon.db.models import OrderRow, PositionRow, TradeRow
 from muwon.db.session import make_session_factory
 from muwon.execution.realtime_engine import RealtimeTradingEngine
 from muwon.execution.simulated_executor import SimulatedOrderExecutor
@@ -90,11 +90,17 @@ def test_dead_cross_bar_sells_existing_position():
     with session_factory() as session:
         positions = session.query(PositionRow).all()
         orders = session.query(OrderRow).all()
+        trades = session.query(TradeRow).all()
     assert len(positions) == 0
     assert len(orders) == 2
     assert orders[0].side == "buy"
     assert orders[1].side == "sell"
-    assert orders[1].reason == "20일선 하향이탈"
+    assert orders[1].reason == "단기선 하향이탈"
+
+    assert len(trades) == 1
+    assert trades[0].strategy_key == "ma_rsi_v1"
+    assert trades[0].exit_reason == "단기선 하향이탈"
+
     assert any("매도 체결(장중)" in m for m in notifier.messages)
 
 
