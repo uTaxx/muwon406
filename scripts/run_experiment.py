@@ -35,6 +35,7 @@ from muwon.analysis.experiment import (
     run_experiment,
     run_header,
     sleeve_curves,
+    slippage_sweep,
     weight_sweep,
 )
 from muwon.analysis.market_data import load_histories
@@ -65,7 +66,7 @@ def load_universe_histories(
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
     parser.add_argument(
-        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation", "blend"]
+        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation", "blend", "slippage"]
     )
     parser.add_argument(
         "--universe",
@@ -133,6 +134,25 @@ def main() -> None:
         results = param_sweep(
             config, args.factor, args.param, values, histories, years, base_params=base
         )
+
+    elif args.mode == "slippage":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        rates = [float(v) / 100 for v in args.values.split(",")]
+        emit("■ 슬리피지 민감도 — 종가에 체결됐다는 가정을 얼마나 믿을 수 있는가")
+        emit("  회전율이 높은 전략일수록 이 가정이 결과를 부풀린다.")
+        emit("  0.1%에서 결론이 뒤집히면 그 결론은 원래 없던 것이다.\n")
+        results = []
+        for key in keys:
+            results.extend(
+                slippage_sweep(
+                    key, (lambda k=key: build_strategy(k)), rates, histories, years
+                )
+            )
+        emit(format_comparison(results, years))
+        save({"슬리피지(%)": args.values})
+        return
 
     elif args.mode == "blend":
         pairs = [k.strip() for k in args.keys.split(",") if k.strip()]

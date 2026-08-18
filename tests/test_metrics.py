@@ -206,3 +206,29 @@ def test_compute_metrics_fills_every_field():
         "보유일",
         "노출%",
     }
+
+
+# ── 체결 가정 ────────────────────────────────────────────────────
+
+
+def test_slippage_makes_you_buy_higher_and_sell_lower():
+    """체결가는 종가보다 항상 불리한 쪽으로 잡혀야 한다.
+    부호가 하나만 뒤집혀도 백테스트가 슬리피지를 이익으로 계산한다."""
+    from muwon.backtest.costs import TransactionCosts
+
+    costs = TransactionCosts(slippage_pct=0.001)
+
+    assert costs.buy_price(10_000) == pytest.approx(10_010)
+    assert costs.sell_price(10_000) == pytest.approx(9_990)
+
+
+def test_default_costs_keep_the_close_price_assumption():
+    """기본값을 바꾸면 지금까지 낸 모든 숫자와 비교가 안 된다.
+    얼마가 맞는지는 실측으로 정할 문제라 기본은 0으로 둔다."""
+    from muwon.backtest.costs import TransactionCosts
+
+    costs = TransactionCosts()
+
+    assert costs.slippage_pct == 0.0
+    assert costs.buy_price(10_000) == 10_000
+    assert costs.sell_price(10_000) == 10_000

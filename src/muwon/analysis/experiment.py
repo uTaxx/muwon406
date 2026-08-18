@@ -24,6 +24,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import pandas as pd
 
+from muwon.backtest.costs import TransactionCosts
 from muwon.backtest.engine import BacktestEngine
 from muwon.backtest.metrics import (
     BacktestMetrics,
@@ -112,6 +113,7 @@ def run_experiment(
     histories: dict[str, pd.DataFrame],
     years: list[int],
     policy: RiskPolicy | None = None,
+    costs: TransactionCosts | None = None,
 ) -> ExperimentResult:
     """같은 설정을 연도별로 각각 돌린다.
 
@@ -127,6 +129,7 @@ def run_experiment(
         result = BacktestEngine(
             strategy=strategy_factory(),
             risk_manager=RiskManager(policy_provider=lambda p=policy: p),
+            costs=costs,
         ).run(sliced, trade_from=date(year, 1, 1))
         periods.append(PeriodResult(str(year), compute_metrics(result)))
     return ExperimentResult(name, periods)
@@ -199,6 +202,36 @@ def weight_sweep(
             )
         )
     return results
+
+
+def slippage_sweep(
+    name: str,
+    strategy_factory,
+    slippages: list[float],
+    histories: dict[str, pd.DataFrame],
+    years: list[int],
+    policy: RiskPolicy | None = None,
+) -> list[ExperimentResult]:
+    """체결가 가정만 바꿔 가며 돌린다.
+
+    지금까지 낸 모든 숫자는 "종가에 원하는 만큼 체결됐다"는 가정 위에 있다.
+    회전율이 높은 전략일수록 이 가정이 결과를 크게 부풀린다 — 1년에 250번
+    사고파는 전략은 편도 0.1%만 잡아도 연 수 %가 사라진다.
+
+    어느 값이 맞는지는 실거래로만 알 수 있다. 그래서 하나를 고르지 않고
+    민감도를 본다 — 0.1%에서 결론이 뒤집히는 전략이면 그 결론은 원래
+    없던 것이다."""
+    return [
+        run_experiment(
+            f"{name} 슬리피지 {s * 100:.2f}%",
+            strategy_factory,
+            histories,
+            years,
+            policy,
+            costs=TransactionCosts(slippage_pct=s),
+        )
+        for s in slippages
+    ]
 
 
 def param_sweep(

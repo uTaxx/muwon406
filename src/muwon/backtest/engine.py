@@ -221,10 +221,12 @@ class BacktestEngine:
                 if not decision.approved:
                     continue
 
-                price = float(price)
+                # 체결가는 종가가 아니다 — 호가가 벌어져 있고 시장가로 치면
+                # 반대 호가를 먹고 들어간다. 사는 쪽은 종가보다 비싸게 잡힌다.
+                fill = self._costs.buy_price(float(price))
                 target_value = equity_after_exits * policy.max_position_weight
-                quantity = int(target_value / (price * (1 + self._costs.buy_fee_pct)))
-                cost = quantity * price * (1 + self._costs.buy_fee_pct)
+                quantity = int(target_value / (fill * (1 + self._costs.buy_fee_pct)))
+                cost = quantity * fill * (1 + self._costs.buy_fee_pct)
                 if quantity <= 0 or cost > cash:
                     continue
 
@@ -232,7 +234,7 @@ class BacktestEngine:
                 positions[symbol] = OpenPosition(
                     symbol=symbol,
                     quantity=quantity,
-                    entry_price=price,
+                    entry_price=fill,
                     entry_date=current_date,
                     entry_reason=buy_signals[0].reason,
                 )
@@ -263,11 +265,15 @@ class BacktestEngine:
     def _close_position(
         self,
         position: OpenPosition,
-        exit_price: float,
+        close_price: float,
         exit_date: date,
         exit_reason: str,
         closed_trades: list[ClosedTrade],
     ) -> float:
+        """close_price는 그날 종가다. 실제 체결가는 그보다 불리하다 —
+        파는 쪽은 더 싸게 잡힌다. 손익도 체결가 기준으로 계산해야 실제로
+        계좌에 남는 돈과 맞는다."""
+        exit_price = self._costs.sell_price(close_price)
         proceeds = position.quantity * exit_price * (1 - self._costs.total_sell_cost_pct)
         cost_basis = position.quantity * position.entry_price
         pnl_amount = proceeds - cost_basis
