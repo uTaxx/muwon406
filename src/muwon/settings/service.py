@@ -50,6 +50,19 @@ class SettingsService:
                 "risk.trading_enabled", str(d.trading_enabled)
             )
             == "True",
+            atr_stop_enabled=self._store.get("risk.atr_stop_enabled", str(d.atr_stop_enabled))
+            == "True",
+            atr_stop_multiple=float(
+                self._store.get("risk.atr_stop_multiple", str(d.atr_stop_multiple))
+            ),
+            trailing_stop_enabled=self._store.get(
+                "risk.trailing_stop_enabled", str(d.trailing_stop_enabled)
+            )
+            == "True",
+            trailing_stop_multiple=float(
+                self._store.get("risk.trailing_stop_multiple", str(d.trailing_stop_multiple))
+            ),
+            atr_window=int(self._store.get("risk.atr_window", str(d.atr_window))),
         )
 
     def set_risk_policy(self, policy: RiskPolicy) -> None:
@@ -60,6 +73,11 @@ class SettingsService:
             "risk.max_concurrent_positions", str(policy.max_concurrent_positions)
         )
         self._store.set("risk.trading_enabled", str(policy.trading_enabled))
+        self._store.set("risk.atr_stop_enabled", str(policy.atr_stop_enabled))
+        self._store.set("risk.atr_stop_multiple", str(policy.atr_stop_multiple))
+        self._store.set("risk.trailing_stop_enabled", str(policy.trailing_stop_enabled))
+        self._store.set("risk.trailing_stop_multiple", str(policy.trailing_stop_multiple))
+        self._store.set("risk.atr_window", str(policy.atr_window))
 
     def get_kis_credentials(self) -> KISCredentials:
         d = KISCredentials()

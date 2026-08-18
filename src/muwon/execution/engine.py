@@ -30,6 +30,7 @@ from muwon.domain.interfaces import MarketDataSource, OrderExecutor, Strategy
 from muwon.domain.types import OrderSide, SignalType
 from muwon.execution import state_repository
 from muwon.notify.telegram import TelegramNotifier
+from muwon.risk.exits import atr_series, evaluate_exit
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -141,8 +142,20 @@ class TradingEngine:
             price = latest_prices[symbol]
             exit_reason = None
             max_holding_days = self._strategy.max_holding_days
-            if self._risk_manager.should_stop_loss(position.entry_price, price):
-                exit_reason = "손절"
+            policy = self._risk_manager.get_policy()
+            stop = evaluate_exit(
+                entry_price=position.entry_price,
+                entry_date=position.entry_date,
+                current_price=price,
+                as_of=run_date,
+                policy=policy,
+                atr=atr_series(histories[symbol], policy.atr_window)
+                if (policy.atr_stop_enabled or policy.trailing_stop_enabled)
+                else None,
+                history=histories.get(symbol),
+            )
+            if stop.should_exit:
+                exit_reason = stop.reason
             elif max_holding_days is not None and bars_since(
                 all_trade_dates.get(symbol, []), position.entry_date, trade_date
             ) >= max_holding_days:

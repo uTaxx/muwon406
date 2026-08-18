@@ -19,6 +19,7 @@ from muwon.backtest.costs import TransactionCosts
 from muwon.domain.interfaces import Strategy
 from muwon.domain.types import SignalType
 from muwon.indicators.technical import add_indicators
+from muwon.risk.exits import atr_series, evaluate_exit
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -120,6 +121,12 @@ class BacktestEngine:
         }
         self._strategy.prepare(price_histories)
         trade_dates_by_symbol = {symbol: list(df.index) for symbol, df in enriched.items()}
+        policy0 = self._risk_manager.get_policy()
+        atr_by_symbol = (
+            {s: atr_series(df, policy0.atr_window) for s, df in price_histories.items()}
+            if (policy0.atr_stop_enabled or policy0.trailing_stop_enabled)
+            else {}
+        )
         max_holding_days = self._strategy.max_holding_days
 
         all_dates = sorted({d for df in enriched.values() for d in df.index})
@@ -158,8 +165,17 @@ class BacktestEngine:
                 position = positions[symbol]
                 exit_reason = None
 
-                if self._risk_manager.should_stop_loss(position.entry_price, price):
-                    exit_reason = "손절"
+                stop = evaluate_exit(
+                    entry_price=position.entry_price,
+                    entry_date=position.entry_date,
+                    current_price=price,
+                    as_of=current_date,
+                    policy=self._risk_manager.get_policy(),
+                    atr=atr_by_symbol.get(symbol),
+                    history=price_histories.get(symbol),
+                )
+                if stop.should_exit:
+                    exit_reason = stop.reason
                 elif max_holding_days is not None and bars_since(
                     trade_dates_by_symbol.get(symbol, []), position.entry_date, current_date
                 ) >= max_holding_days:

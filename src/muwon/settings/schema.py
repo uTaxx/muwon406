@@ -9,6 +9,16 @@ class RiskPolicy:
     max_concurrent_positions: int = 8
     trading_enabled: bool = True  # 전체 킬스위치 — False면 신규 진입을 전부 거부
 
+    # 변동성 기반 청산. 고정 %는 모든 종목에 같은 자를 들이대는데, 하루 1%
+    # 움직이는 종목과 4% 움직이는 종목에 같은 -5%를 적용하면 후자는 이틀치
+    # 잡음에 손절당한다. ATR(그 종목이 하루에 보통 움직이는 폭)의 배수로
+    # 잡으면 종목 성격에 맞춰진다. 끄면 위의 고정 stop_loss_pct로 돌아간다.
+    atr_stop_enabled: bool = False
+    atr_stop_multiple: float = 2.0
+    trailing_stop_enabled: bool = False
+    trailing_stop_multiple: float = 3.0
+    atr_window: int = 14
+
 
 @dataclass(frozen=True)
 class KISCredentials:
