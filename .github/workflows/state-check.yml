@@ -1,0 +1,40 @@
+name: 운영 상태 점검
+
+# 운영 DB에 무엇이 들어 있는지 그대로 찍는다. 읽기만 하고 다시 올리지
+# 않는다 — 확인하려고 돌린 것이 운영 상태를 바꾸면 안 된다.
+#
+# 대시보드가 비어 있을 때 '아직 안 샀다'인지 '기록이 저장되지 못했다'인지
+# 구분하려고 만들었다. 둘은 고치는 방법이 전혀 다르다.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db
+          ls -la muwon.db || echo "muwon.db 자체가 없다 — 드라이브에 파일이 없다는 뜻"
+
+      - name: .env 구성
+        run: |
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 상태 찍기
+        run: python scripts/inspect_state.py
