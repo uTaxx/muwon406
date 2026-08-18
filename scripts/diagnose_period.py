@@ -95,6 +95,9 @@ def main() -> None:
     parser.add_argument("--strategy", default="factor_score_v1")
     parser.add_argument("--year", type=int, required=True)
     parser.add_argument(
+        "--universe", choices=["market_cap", "volume"], default="market_cap"
+    )
+    parser.add_argument(
         "--regime-params",
         default="",
         help='국면 Factor 파라미터를 JSON으로 덮어쓴다 (예: \'{"uptrend_ma": 200}\')',
@@ -105,7 +108,7 @@ def main() -> None:
     trade_to = date(args.year, 12, 31)
 
     session_factory = make_session_factory(bootstrap_settings.database_url)
-    universe = active_universe(session_factory, list(UNIVERSE))
+    universe = active_universe(session_factory, list(UNIVERSE), kind=args.universe)
     source = YahooFinanceDataSource()
 
     histories = load_histories(

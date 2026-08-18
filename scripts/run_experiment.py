@@ -39,16 +39,16 @@ from muwon.analysis.experiment import (
 from muwon.analysis.market_data import load_histories
 from muwon.config import bootstrap_settings
 from muwon.data.universe import UNIVERSE
-from muwon.data.universe_builder import active_universe
+from muwon.data.universe_builder import KIND_MARKET_CAP, active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.db.session import make_session_factory
 from muwon.scoring.config import StrategyConfig
 from muwon.strategy.registry import build_strategy
 
 
-def load_universe_histories(years: list[int]):
+def load_universe_histories(years: list[int], kind: str = KIND_MARKET_CAP):
     session_factory = make_session_factory(bootstrap_settings.database_url)
-    universe = active_universe(session_factory, list(UNIVERSE))
+    universe = active_universe(session_factory, list(UNIVERSE), kind=kind)
     return load_histories(
         YahooFinanceDataSource(),
         universe,
@@ -61,6 +61,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
     parser.add_argument(
         "mode", choices=["contribution", "sweep", "param", "strategies", "correlation", "blend"]
+    )
+    parser.add_argument(
+        "--universe",
+        choices=["market_cap", "volume"],
+        default="market_cap",
+        help="어느 유니버스로 돌릴지. volume은 거래대금 상위(update_universe.py --kind volume)",
     )
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
@@ -75,7 +81,7 @@ def main() -> None:
     args = parser.parse_args()
 
     years = list(range(args.from_year, args.to_year + 1))
-    histories = load_universe_histories(years)
+    histories = load_universe_histories(years, args.universe)
     config = StrategyConfig()
 
     if args.mode == "contribution":

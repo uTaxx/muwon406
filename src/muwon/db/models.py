@@ -165,4 +165,17 @@ class UniverseSnapshotRow(Base):
     name: Mapped[str] = mapped_column(String(100))
     market: Mapped[str] = mapped_column(String(20))  # KOSPI | KOSDAQ
     market_cap: Mapped[int] = mapped_column(Integer, default=0)  # 억원
+    #: 거래대금 상위로 뽑은 스냅샷일 때의 누적거래대금(백만원). 시총 스냅샷은 0.
+    #: market_cap 컬럼에 뜻이 다른 값을 같이 담지 않는다 — 나중에 표를 읽는
+    #: 사람이 어느 쪽 숫자인지 알 수 없게 된다.
+    #: 나중에 추가된 컬럼이라 nullable이다. _add_missing_columns가 기존 DB에
+    #: ALTER TABLE ADD COLUMN으로 붙이면 기존 행은 NULL이 된다 — 새로 만든
+    #: 스키마만 NOT NULL로 두면 테스트가 운영 DB 상태를 재현하지 못한다.
+    turnover: Mapped[int | None] = mapped_column(Integer, default=0, nullable=True)
     rank: Mapped[int] = mapped_column(Integer, default=0)
+    #: "market_cap" | "volume" — 어떤 기준으로 뽑은 목록인지.
+    #: 이게 없으면 거래량 유니버스를 저장하는 순간 실거래가 그걸 집어 간다.
+    #: 실험용 목록 하나가 실계좌의 매매 대상을 바꾸는 일은 없어야 한다.
+    kind: Mapped[str | None] = mapped_column(
+        String(20), default="market_cap", index=True, nullable=True
+    )

@@ -26,6 +26,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from datetime import date
+from typing import ClassVar
 
 import pandas as pd
 import requests
@@ -428,6 +429,83 @@ class KISClient(MarketDataSource):
             net_asset=float(summary.get("nass_amt") or 0),
             holdings=holdings,
         )
+
+    #: fid_blng_cls_code — 어떤 기준으로 줄을 세울지.
+    #: 거래대금을 기본으로 쓴다. 주식 수(거래량)로 세우면 주가가 싼 종목이
+    #: 위를 차지하는데, 100원짜리 100만주는 1억원이고 10만원짜리 1만주는
+    #: 10억원이다. 실제로 돈이 몰린 곳은 후자다.
+    VOLUME_RANK_BASIS: ClassVar[dict[str, str]] = {
+        "amount": "3",  # 거래금액순
+        "volume": "0",  # 평균거래량
+        "surge": "1",  # 거래증가율
+    }
+
+    def get_top_volume(
+        self,
+        market: str = "all",
+        limit: int = 100,
+        basis: str = "amount",
+        min_price: int = 0,
+    ) -> list[tuple[str, str, int]]:
+        """거래가 몰린 상위 종목을 (종목코드, 종목명, 누적거래대금) 목록으로.
+
+        시가총액 순위와 다른 종목군을 준다. 시총 상위는 대형주라 하루
+        1~2% 움직이는 반면, 거래가 몰리는 쪽은 변동성이 크고 단기 전략의
+        전제(눌림목·거래량 급증)가 성립하는 자리다. 단기 갈래를 검토하려면
+        그 종목군에서 재 봐야 한다 — 시총 상위에서 단타 전략을 시험하는 건
+        틀린 운동장에서 재는 것이다.
+
+        min_price를 주면 그 아래 가격의 종목을 뺀다. 저가주는 호가 단위가
+        가격 대비 커서 백테스트의 종가 체결 가정이 실제와 크게 벌어진다.
+
+        주의: 순위 API는 모의투자를 지원하지 않을 수 있다(시총 순위와 동일).
+        """
+        market_codes = {"all": "0000", "kospi": "0001", "kosdaq": "1001"}
+        if market not in market_codes:
+            raise ValueError(f"market은 {list(market_codes)} 중 하나여야 합니다: {market}")
+        if basis not in self.VOLUME_RANK_BASIS:
+            raise ValueError(
+                f"basis는 {list(self.VOLUME_RANK_BASIS)} 중 하나여야 합니다: {basis}"
+            )
+
+        response = self._get_with_retry(
+            f"{self.base_url}/uapi/domestic-stock/v1/quotations/volume-rank",
+            headers=self._auth_headers("FHPST01710000"),
+            params={
+                "fid_cond_mrkt_div_code": "J",  # 주식
+                "fid_cond_scr_div_code": "20171",  # 화면번호(고정)
+                "fid_input_iscd": market_codes[market],
+                "fid_div_cls_code": "1",  # 0:전체 1:보통주 2:우선주
+                "fid_blng_cls_code": self.VOLUME_RANK_BASIS[basis],
+                "fid_trgt_cls_code": "111111111",  # 대상 구분 9자리(전체 포함)
+                "fid_trgt_exls_cls_code": "000000",  # 제외 구분 6자리(제외 없음)
+                "fid_input_price_1": str(min_price) if min_price else "",
+                "fid_input_price_2": "",
+                "fid_vol_cnt": "",
+                "fid_input_date_1": "",
+            },
+            timeout=10,
+        )
+        payload = _kis_payload(response)
+        if payload is None:
+            response.raise_for_status()
+            raise RuntimeError(f"KIS 거래량순위 응답을 해석할 수 없습니다: {response.text[:300]}")
+        if payload.get("rt_cd") != "0":
+            raise RuntimeError(
+                f"KIS 거래량순위 조회 실패: {payload.get('msg1')} "
+                f"(msg_cd={payload.get('msg_cd')}) — 모의투자 미지원 API일 수 있습니다."
+            )
+
+        rows = []
+        for row in (payload.get("output") or [])[:limit]:
+            symbol = str(row.get("mksc_shrn_iscd", "")).strip()
+            name = str(row.get("hts_kor_isnm", "")).strip()
+            if not symbol or not name:
+                continue
+            # 누적거래대금은 원 단위 문자열로 온다 — 백만원으로 줄여 담는다
+            turnover = int(float(row.get("acml_tr_pbmn") or 0) / 1_000_000)
+            rows.append((symbol, name, turnover))
+        return rows
 
     def get_top_market_cap(
         self, market: str = "all", limit: int = 100

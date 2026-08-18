@@ -16,7 +16,7 @@ import re
 from datetime import datetime
 
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from muwon.data.universe import Ticker
 from muwon.db.models import UniverseSnapshotRow
@@ -64,14 +64,54 @@ DEFAULT_KOSDAQ_RATIO = 0.3
 def build_universe(
     client, size: int = 30, kosdaq_ratio: float = DEFAULT_KOSDAQ_RATIO
 ) -> list[Ticker]:
-    """코스피·코스닥 시총 상위에서 매매 대상 종목을 골라 온다.
+    """코스피·코스닥 시총 상위에서 매매 대상 종목을 골라 온다."""
+    return _build_by_ranking(
+        lambda market_key, limit: client.get_top_market_cap(market=market_key, limit=limit),
+        "시총 상위",
+        size,
+        kosdaq_ratio,
+    )
 
-    두 시장을 하나로 합쳐 시가총액순으로 자르지 않고 **시장별로 자리를
-    나눠 각각 상위를 뽑는다**. 합쳐서 자르면 코스피 대형주가 자리를 전부
-    차지해 코스닥이 0종목이 되기 때문이다(실측으로 확인).
+
+def build_volume_universe(
+    client,
+    size: int = 30,
+    kosdaq_ratio: float = DEFAULT_KOSDAQ_RATIO,
+    basis: str = "amount",
+    min_price: int = 1000,
+) -> list[Ticker]:
+    """거래가 몰린 상위 종목으로 별도 유니버스를 만든다.
+
+    시총 상위와 다른 종목군이 목적이다. 단기 전략(눌림목·거래량 급증)은
+    하루 1~2% 움직이는 대형주에서는 전제가 성립하지 않는다 — 그 전략들을
+    시총 상위에서 시험하는 건 틀린 운동장에서 재는 것이다.
+
+    min_price 기본 1000원. 저가주는 호가 단위가 가격 대비 커서(100원짜리의
+    1호가는 1%다) 백테스트의 종가 체결 가정이 실제와 크게 벌어진다."""
+    return _build_by_ranking(
+        lambda market_key, limit: client.get_top_volume(
+            market=market_key, limit=limit, basis=basis, min_price=min_price
+        ),
+        f"거래 상위({basis})",
+        size,
+        kosdaq_ratio,
+    )
+
+
+def _build_by_ranking(
+    fetch, label: str, size: int, kosdaq_ratio: float
+) -> list[Ticker]:
+    """순위 API 하나를 받아 시장별 할당·필터·부족분 보충까지 처리한다.
+
+    두 시장을 하나로 합쳐 순위대로 자르지 않고 **시장별로 자리를 나눠 각각
+    상위를 뽑는다**. 합쳐서 자르면 코스피 대형주가 자리를 전부 차지해
+    코스닥이 0종목이 되기 때문이다(실측으로 확인).
 
     kosdaq_ratio=0.3, size=30이면 코스피 21 + 코스닥 9종목이 된다.
-    한쪽 시장에서 조건에 맞는 종목이 모자라면 다른 쪽에서 채운다."""
+    한쪽 시장에서 조건에 맞는 종목이 모자라면 다른 쪽에서 채운다.
+
+    시총 기준과 거래 기준이 이 로직을 공유한다 — 같은 규칙을 두 벌 두면
+    한쪽만 고쳐져 갈라진다."""
     if not 0.0 <= kosdaq_ratio <= 1.0:
         raise ValueError(f"kosdaq_ratio는 0~1 사이여야 합니다: {kosdaq_ratio}")
 
@@ -85,10 +125,10 @@ def build_universe(
 
     for market_key, market_name in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
         # 걸러낼 종목(ETF·우선주 등)을 감안해 넉넉히 받아 온다
-        rows = client.get_top_market_cap(market=market_key, limit=size * 2)
-        logger.info(f"{market_name} 시총 상위 {len(rows)}종목 수신")
+        rows = fetch(market_key, size * 2)
+        logger.info(f"{market_name} {label} {len(rows)}종목 수신")
 
-        tradable = [(s, n, market_name, c) for s, n, c in rows if is_tradable_stock(n)]
+        tradable = [(s, n, market_name, v) for s, n, v in rows if is_tradable_stock(n)]
         quota = quotas[market_name]
         picked[market_name] = [to_ticker(s, n, m) for s, n, m, _c in tradable[:quota]]
         leftovers.extend(tradable[quota:])
@@ -101,10 +141,10 @@ def build_universe(
                 seen.add(ticker.symbol)
                 universe.append(ticker)
 
-    # 한쪽 시장이 할당량을 못 채웠으면 남은 후보 중 시총 큰 순으로 채운다
+    # 한쪽 시장이 할당량을 못 채웠으면 남은 후보 중 순위 지표가 큰 순으로 채운다
     if len(universe) < size:
         leftovers.sort(key=lambda row: row[3], reverse=True)
-        for symbol, name, market, _cap in leftovers:
+        for symbol, name, market, _metric in leftovers:
             if len(universe) >= size:
                 break
             if symbol not in seen:
@@ -114,47 +154,80 @@ def build_universe(
     return universe[:size]
 
 
-def save_snapshot(session_factory, tickers: list[Ticker], market_caps: dict[str, int]) -> datetime:
-    """유니버스 스냅샷을 저장하고 그 시각을 돌려준다."""
+KIND_MARKET_CAP = "market_cap"
+KIND_VOLUME = "volume"
+
+
+def _kind_filter(kind: str):
+    """kind가 붙기 전에 저장된 행은 kind가 NULL이다. 그건 전부 시총 기준이었으니
+    market_cap을 물을 때 함께 잡아 준다 — 안 그러면 컬럼 하나 추가한 순간
+    운영 DB의 기존 유니버스가 통째로 안 보이게 된다."""
+    if kind == KIND_MARKET_CAP:
+        return or_(UniverseSnapshotRow.kind == kind, UniverseSnapshotRow.kind.is_(None))
+    return UniverseSnapshotRow.kind == kind
+
+
+def save_snapshot(
+    session_factory,
+    tickers: list[Ticker],
+    metrics: dict[str, int],
+    kind: str = KIND_MARKET_CAP,
+) -> datetime:
+    """유니버스 스냅샷을 저장하고 그 시각을 돌려준다.
+
+    metrics는 kind에 따라 뜻이 다르다 — 시총 기준이면 시가총액(억원),
+    거래 기준이면 누적거래대금(백만원). 컬럼을 나눠 담아 나중에 표를 읽는
+    사람이 어느 쪽 숫자인지 헷갈리지 않게 한다."""
     snapshot_at = datetime.utcnow()  # noqa: DTZ003 — 기록용, tz 무관
     with session_factory() as session:
         for rank, ticker in enumerate(tickers, start=1):
+            value = metrics.get(ticker.symbol, 0)
             session.add(
                 UniverseSnapshotRow(
                     snapshot_at=snapshot_at,
                     symbol=ticker.symbol,
                     name=ticker.name,
                     market=ticker.market,
-                    market_cap=market_caps.get(ticker.symbol, 0),
+                    market_cap=value if kind == KIND_MARKET_CAP else 0,
+                    turnover=value if kind == KIND_VOLUME else 0,
                     rank=rank,
+                    kind=kind,
                 )
             )
         session.commit()
     return snapshot_at
 
 
-def load_latest_universe(session_factory) -> list[Ticker]:
+def load_latest_universe(session_factory, kind: str = KIND_MARKET_CAP) -> list[Ticker]:
     """가장 최근 스냅샷의 유니버스를 돌려준다. 스냅샷이 없으면 빈 목록."""
     with session_factory() as session:
-        latest_at = session.scalar(select(UniverseSnapshotRow.snapshot_at).order_by(
-            UniverseSnapshotRow.snapshot_at.desc()
-        ))
+        latest_at = session.scalar(
+            select(UniverseSnapshotRow.snapshot_at)
+            .where(_kind_filter(kind))
+            .order_by(UniverseSnapshotRow.snapshot_at.desc())
+        )
         if latest_at is None:
             return []
         rows = session.scalars(
             select(UniverseSnapshotRow)
-            .where(UniverseSnapshotRow.snapshot_at == latest_at)
+            .where(UniverseSnapshotRow.snapshot_at == latest_at, _kind_filter(kind))
             .order_by(UniverseSnapshotRow.rank)
         ).all()
         return [to_ticker(r.symbol, r.name, r.market) for r in rows]
 
 
-def active_universe(session_factory, fallback: list[Ticker]) -> list[Ticker]:
+def active_universe(
+    session_factory, fallback: list[Ticker], kind: str = KIND_MARKET_CAP
+) -> list[Ticker]:
     """실제 매매에 쓸 유니버스 — 스냅샷이 있으면 그걸, 없으면 fallback을 쓴다.
+
+    kind 기본값이 market_cap인 것이 중요하다. 실험용으로 거래 기준 목록을
+    저장해도 실거래가 그걸 집어 가면 안 된다 — 실계좌의 매매 대상이 실험
+    한 번에 바뀌는 일은 없어야 한다.
 
     갱신이 한 번도 안 됐거나 실패한 상태에서 매매가 멈추면 안 되므로,
     손으로 고른 기존 목록을 안전망으로 남겨 둔다."""
-    latest = load_latest_universe(session_factory)
+    latest = load_latest_universe(session_factory, kind)
     if latest:
         return latest
     logger.info("저장된 유니버스 스냅샷이 없어 기본 목록을 사용합니다.")

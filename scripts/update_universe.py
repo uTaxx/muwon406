@@ -26,8 +26,11 @@ from muwon.config import bootstrap_settings
 from muwon.data.kis_client import KISClient
 from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import (
+    KIND_MARKET_CAP,
+    KIND_VOLUME,
     active_universe,
     build_universe,
+    build_volume_universe,
     diff_universe,
     save_snapshot,
 )
@@ -37,7 +40,13 @@ from muwon.settings.service import build_settings_service
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="시가총액 상위로 매매 대상 종목 갱신")
+    parser = argparse.ArgumentParser(description="순위 기준으로 매매 대상 종목 갱신")
+    parser.add_argument(
+        "--kind",
+        choices=[KIND_MARKET_CAP, KIND_VOLUME],
+        default=KIND_MARKET_CAP,
+        help="market_cap: 시가총액 상위(실거래가 쓰는 목록) / volume: 거래대금 상위(실험용)",
+    )
     parser.add_argument("--size", type=int, default=30, help="유니버스 종목 수 (기본 30)")
     parser.add_argument(
         "--kosdaq-ratio",
@@ -47,6 +56,19 @@ def main() -> None:
     )
     parser.add_argument("--apply", action="store_true", help="실제로 저장한다(없으면 미리보기만)")
     parser.add_argument("--notify", action="store_true", help="변경 내역을 텔레그램으로 발송")
+    parser.add_argument(
+        "--basis",
+        default="amount",
+        choices=["amount", "volume", "surge"],
+        help="volume 종류일 때 줄 세우는 기준 (기본 amount=거래대금)",
+    )
+    parser.add_argument(
+        "--min-price",
+        type=int,
+        default=1000,
+        help="volume 종류일 때 제외할 최저 가격 (기본 1000원 — 저가주는 호가 단위가 커서 "
+        "종가 체결 가정이 실제와 벌어진다)",
+    )
     args = parser.parse_args()
 
     settings_service = build_settings_service()
@@ -58,7 +80,18 @@ def main() -> None:
     session_factory = make_session_factory(bootstrap_settings.database_url)
 
     try:
-        new_universe = build_universe(client, size=args.size, kosdaq_ratio=args.kosdaq_ratio)
+        if args.kind == KIND_VOLUME:
+            new_universe = build_volume_universe(
+                client,
+                size=args.size,
+                kosdaq_ratio=args.kosdaq_ratio,
+                basis=args.basis,
+                min_price=args.min_price,
+            )
+        else:
+            new_universe = build_universe(
+                client, size=args.size, kosdaq_ratio=args.kosdaq_ratio
+            )
     except RuntimeError as e:
         raise SystemExit(
             f"❌ 유니버스 갱신 실패: {e}\n"
@@ -69,10 +102,10 @@ def main() -> None:
     if not new_universe:
         raise SystemExit("❌ 조건에 맞는 종목이 하나도 없습니다 — 갱신을 중단합니다.")
 
-    current = active_universe(session_factory, list(UNIVERSE))
+    current = active_universe(session_factory, list(UNIVERSE), kind=args.kind)
     added, removed = diff_universe(current, new_universe)
 
-    print(f"\n=== 유니버스 갱신 {'(미리보기)' if not args.apply else ''} ===")
+    print(f"\n=== 유니버스 갱신 [{args.kind}] {'(미리보기)' if not args.apply else ''} ===")
     print(f"현재 {len(current)}종목 → 신규 {len(new_universe)}종목")
     for rank, ticker in enumerate(new_universe, start=1):
         print(f"{rank:>3}. {ticker.name}({ticker.symbol}) {ticker.market}")
@@ -84,8 +117,16 @@ def main() -> None:
         print("\n미리보기 모드입니다 — 저장하려면 --apply 를 붙이세요.")
         return
 
-    save_snapshot(session_factory, new_universe, {})
-    print(f"\n✅ 저장 완료 — 다음 매매 실행부터 이 {len(new_universe)}종목을 대상으로 합니다.")
+    save_snapshot(session_factory, new_universe, {}, kind=args.kind)
+    if args.kind == KIND_VOLUME:
+        print(
+            f"\n✅ 저장 완료 — 실험용 목록 {len(new_universe)}종목입니다. "
+            "실거래 대상은 바뀌지 않습니다(실거래는 market_cap 목록만 읽습니다)."
+        )
+    else:
+        print(
+            f"\n✅ 저장 완료 — 다음 매매 실행부터 이 {len(new_universe)}종목을 대상으로 합니다."
+        )
 
     if args.notify and (added or removed):
         message = (

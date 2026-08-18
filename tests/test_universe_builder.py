@@ -9,6 +9,7 @@ from muwon.data.universe import Ticker
 from muwon.data.universe_builder import (
     active_universe,
     build_universe,
+    build_volume_universe,
     diff_universe,
     is_tradable_stock,
     load_latest_universe,
@@ -182,3 +183,81 @@ def test_diff_reports_added_and_removed():
 
     assert added == ["SK하이닉스(000660)"]
     assert removed == ["카카오(035720)"]
+
+
+# ── 거래대금 유니버스 ────────────────────────────────────────────
+
+
+class FakeVolumeClient:
+    """거래대금 순위 API를 흉내낸다."""
+
+    def __init__(self, kospi, kosdaq):
+        self._rows = {"kospi": kospi, "kosdaq": kosdaq}
+        self.calls = []
+
+    def get_top_volume(self, market, limit, basis="amount", min_price=0):
+        self.calls.append((market, limit, basis, min_price))
+        return self._rows[market][:limit]
+
+
+def test_volume_universe_keeps_a_kosdaq_quota():
+    """거래대금으로 줄을 세워도 시장별 자리 배분은 그대로 지켜야 한다.
+
+    합쳐서 자르면 한쪽 시장이 0종목이 되는 문제는 기준을 바꿔도 그대로다."""
+    client = FakeVolumeClient(
+        kospi=[(f"00{i:04d}", f"코스피{i}", 100_000 - i) for i in range(20)],
+        kosdaq=[(f"90{i:04d}", f"코스닥{i}", 50_000 - i) for i in range(20)],
+    )
+
+    universe = build_volume_universe(client, size=10, kosdaq_ratio=0.3)
+
+    assert len(universe) == 10
+    assert sum(1 for t in universe if t.market == "KOSDAQ") == 3
+    assert client.calls[0][2] == "amount", "기본 기준은 거래대금이어야 한다"
+    assert client.calls[0][3] == 1000, "기본 최저가 필터가 걸려야 한다"
+
+
+def test_volume_universe_filters_etf_and_preferred():
+    client = FakeVolumeClient(
+        kospi=[
+            ("069500", "KODEX 200", 900),
+            ("005935", "삼성전자우", 800),
+            ("005930", "삼성전자", 700),
+        ],
+        kosdaq=[("900001", "코스닥종목", 100)],
+    )
+
+    universe = build_volume_universe(client, size=3, kosdaq_ratio=0.34)
+
+    assert [t.symbol for t in universe] == ["005930", "900001"]
+
+
+def test_volume_snapshot_does_not_change_what_live_trading_reads(tmp_path):
+    """실험용 거래대금 목록을 저장해도 실거래 대상은 그대로여야 한다."""
+    from muwon.data.universe_builder import KIND_MARKET_CAP, KIND_VOLUME
+
+    factory = make_session_factory(f"sqlite:///{tmp_path / 'test.db'}")
+    core = [to_ticker("005930", "삼성전자", "KOSPI")]
+    aggressive = [to_ticker("900001", "어떤코스닥", "KOSDAQ")]
+
+    save_snapshot(factory, core, {"005930": 5_000_000}, kind=KIND_MARKET_CAP)
+    save_snapshot(factory, aggressive, {"900001": 9_000}, kind=KIND_VOLUME)
+
+    assert [t.symbol for t in load_latest_universe(factory)] == ["005930"]
+    assert [t.symbol for t in load_latest_universe(factory, KIND_VOLUME)] == ["900001"]
+
+
+def test_legacy_rows_without_kind_still_load_as_market_cap(tmp_path):
+    """kind 컬럼이 붙기 전에 저장된 행이 안 보이게 되면 안 된다 —
+    컬럼 하나 추가한 순간 운영 DB의 유니버스가 통째로 사라진다."""
+    from sqlalchemy import update
+
+    from muwon.db.models import UniverseSnapshotRow
+
+    factory = make_session_factory(f"sqlite:///{tmp_path / 'legacy.db'}")
+    save_snapshot(factory, [to_ticker("005930", "삼성전자", "KOSPI")], {})
+    with factory() as session:  # 옛 행을 흉내내 kind를 비운다
+        session.execute(update(UniverseSnapshotRow).values(kind=None))
+        session.commit()
+
+    assert [t.symbol for t in load_latest_universe(factory)] == ["005930"]
