@@ -21,6 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from muwon.analysis.market_data import load_histories
 from muwon.backtest.engine import BacktestEngine
 from muwon.config import bootstrap_settings
 from muwon.data.universe import UNIVERSE
@@ -76,13 +77,9 @@ def main() -> None:
     universe = active_universe(session_factory, list(UNIVERSE))
     source = YahooFinanceDataSource()
 
-    histories = {}
-    for ticker in universe:
-        df = source.get_daily_ohlcv(
-            ticker.yahoo_symbol, trade_from - timedelta(days=WARMUP_DAYS), trade_to
-        )
-        if len(df):
-            histories[ticker.symbol] = df
+    histories = load_histories(
+        source, universe, trade_from - timedelta(days=WARMUP_DAYS), trade_to
+    )
     names = {t.symbol: t.name for t in universe}
     print(f"{args.strategy} · {args.year}년 · {len(histories)}종목\n")
 

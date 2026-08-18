@@ -29,6 +29,7 @@ from muwon.analysis.experiment import (
     run_experiment,
     weight_sweep,
 )
+from muwon.analysis.market_data import load_histories
 from muwon.config import bootstrap_settings
 from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import active_universe
@@ -38,20 +39,15 @@ from muwon.scoring.config import StrategyConfig
 from muwon.strategy.registry import build_strategy
 
 
-def load_histories(years: list[int]):
+def load_universe_histories(years: list[int]):
     session_factory = make_session_factory(bootstrap_settings.database_url)
     universe = active_universe(session_factory, list(UNIVERSE))
-    source = YahooFinanceDataSource()
-    start = date(min(years), 1, 1) - timedelta(days=WARMUP_DAYS)
-    end = date(max(years), 12, 31)
-
-    histories = {}
-    for ticker in universe:
-        df = source.get_daily_ohlcv(ticker.yahoo_symbol, start, end)
-        if len(df):
-            histories[ticker.symbol] = df
-    print(f"시세 {len(histories)}종목 · {start} ~ {end}\n", file=sys.stderr)
-    return histories
+    return load_histories(
+        YahooFinanceDataSource(),
+        universe,
+        date(min(years), 1, 1) - timedelta(days=WARMUP_DAYS),
+        date(max(years), 12, 31),
+    )
 
 
 def main() -> None:
@@ -65,7 +61,7 @@ def main() -> None:
     args = parser.parse_args()
 
     years = list(range(args.from_year, args.to_year + 1))
-    histories = load_histories(years)
+    histories = load_universe_histories(years)
     config = StrategyConfig()
 
     if args.mode == "contribution":
