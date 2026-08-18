@@ -10,7 +10,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from muwon.db.models import EngineStateRow, OrderRow, PositionRow, TradeRow
+from muwon.db.models import (
+    EngineStateRow,
+    OrderRow,
+    PositionRow,
+    RunLogRow,
+    SignalRow,
+    TradeRow,
+)
 from muwon.domain.types import OrderResult
 
 
@@ -48,6 +55,68 @@ def record_order(session_factory, order: OrderResult, reason: str) -> None:
                 reason=reason,
                 reference_price=order.reference_price or None,
                 fill_confirmed=order.fill_confirmed,
+            )
+        )
+        session.commit()
+
+
+def record_signals(session_factory, signals) -> int:
+    """전략이 낸 신호를 그대로 남긴다.
+
+    signals 테이블은 스키마에만 있고 아무도 쓰지 않았다. 그래서 "0건"이
+    "신호가 없었다"인지 "기록을 안 했다"인지 알 수 없었다 — 실제로 오늘
+    그 구분이 안 돼서 한참 헤맸다. 여기서 남기는 건 매수/매도 신호가 실제로
+    떴는지이고, 그게 떴는데도 안 샀다면 이유는 run_logs.rejections에 있다.
+
+    같은 날 두 번 돌리면 같은 신호가 두 줄 남는다. 합치지 않는다 —
+    실행 자체가 두 번 있었다는 것도 사실이기 때문이다."""
+    if not signals:
+        return 0
+    with session_factory() as session:
+        for signal in signals:
+            session.add(
+                SignalRow(
+                    symbol=signal.symbol,
+                    trade_date=signal.trade_date,
+                    strategy_name=signal.strategy_name,
+                    signal_type=signal.signal_type.value,
+                    score=signal.score,
+                )
+            )
+        session.commit()
+    return len(signals)
+
+
+def record_run(
+    session_factory,
+    *,
+    run_date,
+    strategy_key: str,
+    universe_size: int,
+    checked_symbols: int,
+    buy_signals: int,
+    sell_signals: int,
+    orders: int,
+    rejections: list[str],
+    cash: float,
+    equity: float,
+) -> None:
+    """한 회차가 무엇을 보고 무엇을 했는지 한 줄로 남긴다.
+
+    체결이 없어도 남긴다. 그래야 "살 게 없었다"와 "안 돌았다"가 갈린다."""
+    with session_factory() as session:
+        session.add(
+            RunLogRow(
+                run_date=run_date,
+                strategy_key=strategy_key,
+                universe_size=universe_size,
+                checked_symbols=checked_symbols,
+                buy_signals=buy_signals,
+                sell_signals=sell_signals,
+                orders=orders,
+                rejections="\n".join(rejections),
+                cash=cash,
+                equity=equity,
             )
         )
         session.commit()

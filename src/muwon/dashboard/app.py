@@ -45,11 +45,19 @@ try:
 except Exception:  # noqa: BLE001, S110 — secrets.toml 자체가 없는 로컬 실행은 정상 상황
     pass
 
+from sqlalchemy import select
+
 from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
 from muwon.data.universe import find_by_symbol
-from muwon.db.models import BacktestRunRow, OrderRow, PositionRow, TradeRow
+from muwon.db.models import (
+    BacktestRunRow,
+    OrderRow,
+    PositionRow,
+    RunLogRow,
+    TradeRow,
+)
 from muwon.db.session import make_session_factory
 from muwon.settings.schema import (
     KISCredentials,
@@ -322,12 +330,50 @@ def render_notifications_tab() -> None:
     )
 
 
+def render_run_log(limit: int = 15) -> None:
+    """엔진이 회차마다 남긴 한 줄을 그대로 보여 준다.
+
+    빈 대시보드는 두 가지를 동시에 뜻한다 — "살 게 없었다"와 "안 돌았다".
+    이 표가 그 둘을 가른다. 신호는 났는데 주문이 0이면 막은 이유가 함께
+    보인다."""
+    with get_session_factory()() as session:
+        rows = session.scalars(
+            select(RunLogRow).order_by(RunLogRow.created_at.desc()).limit(limit)
+        ).all()
+    if not rows:
+        st.info(
+            "실행 기록이 없습니다. 기록을 남기기 시작한 2026-08-18 이전 회차이거나, "
+            "아직 한 번도 돌지 않은 것입니다."
+        )
+        return
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "실행": row.created_at.strftime("%m-%d %H:%M"),
+                    "기준일": row.run_date.isoformat() if row.run_date else "시세없음",
+                    "전략": row.strategy_key,
+                    "대상/판단": f"{row.universe_size}/{row.checked_symbols}",
+                    "신호(매수/매도)": f"{row.buy_signals}/{row.sell_signals}",
+                    "주문": row.orders,
+                    "막힌 이유": row.rejections.replace("\n", " · ") or "—",
+                }
+                for row in rows
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+    )
+
+
 def render_admin_tab(service: SettingsService) -> None:
     """설정·운영 관리 — 목업의 '관리' 탭.
 
     매매를 보는 화면과 설정을 바꾸는 화면을 갈라 놓는 게 이 탭의 목적이다.
     지금까지는 한 페이지에 섞여 있어서, 상태를 확인하러 들어와도 인증정보
     입력란이 먼저 보였다."""
+    with st.expander("최근 실행 · 돌긴 돌았나", expanded=False):
+        render_run_log()
     with st.expander("KIS 인증정보 · API 키 및 계좌 연결", expanded=False):
         render_kis_tab(service)
     with st.expander("텔레그램 알림 · 체결·오류·리포트", expanded=False):

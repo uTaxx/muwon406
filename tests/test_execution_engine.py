@@ -315,3 +315,82 @@ def test_engine_enforces_time_exit_from_actual_entry_date():
     exit_summary = engine.run_once(as_of=dates[8])
     assert [a.side for a in exit_summary.actions] == [OrderSide.SELL]
     assert "보유 3일 경과" in exit_summary.actions[0].reason
+
+
+def _runs(session_factory):
+    from sqlalchemy import select
+
+    from muwon.db.models import RunLogRow
+
+    with session_factory() as session:
+        return session.scalars(select(RunLogRow).order_by(RunLogRow.id)).all()
+
+
+def test_a_quiet_day_still_leaves_a_record():
+    """살 게 없던 날과 아예 안 돈 날은 대시보드에서 똑같이 '빈 화면'이다.
+
+    오늘 실제로 그 구분이 안 돼서, 운영 DB를 통째로 받아 보고 나서야
+    '기록이 유실된 게 아니라 한 번도 안 샀다'는 걸 알았다. 체결이 없어도
+    한 줄은 남아야 한다."""
+    df = flat_then_breakout(tail_days=0)
+    flat = df.copy()
+    flat["close"] = 50_000.0  # 아무 신호도 안 나는 평평한 시세
+    flat["open"] = flat["high"] = flat["low"] = 50_000.0
+    engine, session_factory, _ = make_engine(FakeDataSource({TEST_TICKER.symbol: flat}))
+
+    summary = engine.run_once()
+
+    assert not summary.actions
+    rows = _runs(session_factory)
+    assert len(rows) == 1
+    assert rows[0].checked_symbols == 1
+    assert rows[0].orders == 0
+    assert rows[0].universe_size == 1
+
+
+def test_no_price_data_is_recorded_as_such_not_as_silence():
+    """시세를 하나도 못 받은 회차는 '조용한 날'이 아니라 공급이 끊긴 날이다."""
+    engine, session_factory, _ = make_engine(FakeDataSource({}))
+
+    engine.run_once()
+
+    rows = _runs(session_factory)
+    assert len(rows) == 1
+    assert rows[0].run_date is None
+    assert rows[0].checked_symbols == 0
+
+
+def test_signals_are_persisted_so_we_can_ask_why_nothing_was_bought():
+    """signals 테이블은 스키마에만 있고 아무도 쓰지 않았다 — 그래서 '0건'이
+    신호가 없었다는 뜻인지 기록을 안 했다는 뜻인지 알 수 없었다."""
+    from sqlalchemy import select
+
+    from muwon.db.models import SignalRow
+
+    df = flat_then_breakout(tail_days=0)
+    engine, session_factory, _ = make_engine(FakeDataSource({TEST_TICKER.symbol: df}))
+
+    engine.run_once()
+
+    with session_factory() as session:
+        signals = session.scalars(select(SignalRow)).all()
+    assert [s.signal_type for s in signals] == ["buy"]
+    assert signals[0].symbol == TEST_TICKER.symbol
+    assert _runs(session_factory)[0].buy_signals == 1
+
+
+def test_a_blocked_signal_records_the_reason():
+    """신호는 났는데 주문이 없으면 이유가 어딘가 남아야 한다 — 안 그러면
+    '신호가 없었다'와 구분이 안 된다."""
+    df = flat_then_breakout(tail_days=0)
+    engine, session_factory, _ = make_engine(
+        FakeDataSource({TEST_TICKER.symbol: df}),
+        policy=RiskPolicy(trading_enabled=False),
+    )
+
+    engine.run_once()
+
+    row = _runs(session_factory)[0]
+    assert row.buy_signals == 1
+    assert row.orders == 0
+    assert row.rejections, "막은 이유가 비어 있으면 안 된다"

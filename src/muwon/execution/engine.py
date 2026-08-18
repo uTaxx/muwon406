@@ -120,20 +120,30 @@ class TradingEngine:
             histories[ticker.symbol] = df
 
         summary = RunSummary(run_date=run_date, checked_symbols=len(latest_prices))
-        if run_date is None:
-            return summary
-
         cash, day_start_equity = state_repository.load_engine_state(
             self._session_factory, self._initial_cash
         )
+        if run_date is None:
+            # 시세를 하나도 못 받은 회차다. 조용히 돌아가면 대시보드에는
+            # "아무 일도 없었음"으로 보이는데, 실제로는 데이터 공급이 끊긴
+            # 것이다. 그 구분이 남도록 한 줄은 반드시 남긴다.
+            self._record_run(summary, cash, cash, buy=0, sell=0)
+            return summary
+
         positions = state_repository.load_positions(self._session_factory)
 
         # 전략은 유니버스 전체와 보유 현황을 함께 보고 하루치를 판단한다.
         self._strategy.prepare(histories)
-        for signal in self._strategy.evaluate(
-            MarketContext(as_of=run_date, histories=histories, held=frozenset(positions))
-        ):
+        signals = list(
+            self._strategy.evaluate(
+                MarketContext(as_of=run_date, histories=histories, held=frozenset(positions))
+            )
+        )
+        for signal in signals:
             latest_signals.setdefault(signal.symbol, []).append(signal)
+        # 신호는 주문이 나가든 안 나가든 남긴다 — "안 산 이유"를 나중에
+        # 되짚으려면 무엇을 봤는지가 먼저 있어야 한다.
+        state_repository.record_signals(self._session_factory, signals)
 
         # 1) 청산: 손절 우선, 그다음 전략 매도 신호
         for symbol, position in list(positions.items()):
@@ -250,7 +260,31 @@ class TradingEngine:
         # day_start_equity는 "직전 실행 종료 시점 평가금액"이다 — 하루 한 번만
         # 도는 엔진이라 이번 실행의 최종 평가금액이 곧 다음 실행의 기준점이 된다.
         state_repository.save_engine_state(self._session_factory, cash, final_equity)
+        self._record_run(
+            summary,
+            cash,
+            final_equity,
+            buy=sum(1 for s in signals if s.signal_type == SignalType.BUY),
+            sell=sum(1 for s in signals if s.signal_type == SignalType.SELL),
+        )
         return summary
+
+    def _record_run(
+        self, summary: RunSummary, cash: float, equity: float, *, buy: int, sell: int
+    ) -> None:
+        state_repository.record_run(
+            self._session_factory,
+            run_date=summary.run_date,
+            strategy_key=self._strategy.name,
+            universe_size=len(self._universe),
+            checked_symbols=summary.checked_symbols,
+            buy_signals=buy,
+            sell_signals=sell,
+            orders=len(summary.actions),
+            rejections=summary.rejections,
+            cash=cash,
+            equity=equity,
+        )
 
     def _notify(self, message: str) -> None:
         self._notifier.send(message)

@@ -186,3 +186,35 @@ class UniverseSnapshotRow(Base):
     kind: Mapped[str | None] = mapped_column(
         String(20), default="market_cap", index=True, nullable=True
     )
+
+
+class RunLogRow(Base):
+    """엔진이 한 번 돌 때마다 남기는 '무엇을 보고 무엇을 했나' 한 줄.
+
+    이게 없으면 빈 대시보드가 서로 다른 두 가지를 동시에 뜻한다 — "오늘은
+    살 게 없었다"와 "오늘은 아예 안 돌았다". 둘은 고치는 방법이 정반대다.
+    그래서 체결이 없어도 한 줄은 남긴다.
+
+    같은 날 손으로 여러 번 돌리면 줄도 여러 개 남는다. 합치지 않는다 —
+    "몇 번 돌았나"도 알아야 할 정보다."""
+
+    __tablename__ = "run_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    #: 판단에 쓴 마지막 '완성된' 일봉의 날짜. 시세를 하나도 못 받으면 NULL —
+    #: 그 자체가 "데이터 공급이 끊겼다"는 신호다.
+    run_date: Mapped[date | None] = mapped_column(Date, index=True, nullable=True)
+    strategy_key: Mapped[str] = mapped_column(String(50), default="")
+    #: 매매 대상 종목 수와, 그중 실제로 시세를 받아 판단한 종목 수.
+    #: 둘이 벌어지면 데이터 공급 쪽 문제다.
+    universe_size: Mapped[int] = mapped_column(Integer, default=0)
+    checked_symbols: Mapped[int] = mapped_column(Integer, default=0)
+    buy_signals: Mapped[int] = mapped_column(Integer, default=0)
+    sell_signals: Mapped[int] = mapped_column(Integer, default=0)
+    orders: Mapped[int] = mapped_column(Integer, default=0)
+    #: 리스크 매니저가 막은 이유들(줄바꿈 구분). 신호는 났는데 주문이 없으면
+    #: 여기에 이유가 있다 — 없으면 애초에 신호가 안 난 것이다.
+    rejections: Mapped[str] = mapped_column(Text, default="")
+    cash: Mapped[float] = mapped_column(Float, default=0.0)
+    equity: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)

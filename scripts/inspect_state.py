@@ -23,6 +23,7 @@ from muwon.db.models import (
     EngineStateRow,
     OrderRow,
     PositionRow,
+    RunLogRow,
     SignalRow,
     TradeRow,
     UniverseSnapshotRow,
@@ -38,6 +39,7 @@ def main() -> None:
     session_factory = make_session_factory(path)
     with session_factory() as session:
         counts = {
+            "실행기록(run_logs)": session.scalar(select(func.count()).select_from(RunLogRow)),
             "신호(signals)": session.scalar(select(func.count()).select_from(SignalRow)),
             "주문(orders)": session.scalar(select(func.count()).select_from(OrderRow)),
             "보유(positions)": session.scalar(select(func.count()).select_from(PositionRow)),
@@ -61,6 +63,23 @@ def main() -> None:
             print("  비어 있음 — 실거래 엔진이 한 번도 상태를 저장한 적이 없다는 뜻이다.")
         for row in states:
             print(f"  {row.key:<20} {row.value}")
+
+        print("\n■ 최근 실행 10회 — 무엇을 보고 무엇을 했나")
+        runs = session.scalars(
+            select(RunLogRow).order_by(RunLogRow.created_at.desc()).limit(10)
+        ).all()
+        if not runs:
+            print("  없음 — 실행 기록을 남기기 전(2026-08-18) 회차이거나, 한 번도 안 돈 것이다.")
+        for r in runs:
+            when = r.run_date.isoformat() if r.run_date else "시세없음"
+            print(
+                f"  {r.created_at:%m-%d %H:%M} [{when}] {r.strategy_key:<18} "
+                f"대상 {r.universe_size:>3}/판단 {r.checked_symbols:>3} "
+                f"신호 매수{r.buy_signals} 매도{r.sell_signals} 주문 {r.orders}"
+            )
+            if r.rejections:
+                for line in r.rejections.splitlines():
+                    print(f"      거부: {line}")
 
         print("\n■ 최근 신호 10건")
         signals = session.scalars(
@@ -87,6 +106,19 @@ def main() -> None:
                 f"  {o.created_at:%Y-%m-%d %H:%M} {o.symbol} {o.side:<4} "
                 f"{o.quantity}주 체결 {o.price:,.0f} / 기준 {ref} [{confirmed}]"
             )
+
+        print("\n■ 유니버스 스냅샷 — 기준별로 몇 줄씩 있나")
+        # 실거래는 market_cap 기준만 집어 간다. 거래대금(volume) 스냅샷만
+        # 쌓여 있으면 실거래는 여전히 기본 18종목으로 돈다 — 실제로 그랬다.
+        by_kind = session.execute(
+            select(UniverseSnapshotRow.kind, func.count())
+            .group_by(UniverseSnapshotRow.kind)
+        ).all()
+        for kind, count in by_kind:
+            label = kind or "(NULL=시총으로 간주)"
+            print(f"  {label:<24} {count:>6}줄")
+        if not any((k or "market_cap") == "market_cap" for k, _ in by_kind):
+            print("  ⚠ 시총 기준 스냅샷이 하나도 없다 → 실거래는 기본 18종목으로 돈다.")
 
         print("\n■ 최근 유니버스 스냅샷")
         latest = session.scalars(
