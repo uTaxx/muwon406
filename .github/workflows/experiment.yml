@@ -35,7 +35,7 @@ on:
         description: "param 모드에서 쓸 값 (쉼표 구분)"
         default: "0,120,200"
       regime_params:
-        description: "diagnose 모드에서 국면 Factor 설정 덮어쓰기 (JSON)"
+        description: "국면 Factor 설정 덮어쓰기 JSON — diagnose는 그대로, param 모드는 고정값"
         default: ""
       keys:
         description: "strategies 모드는 비교할 전략 키(쉼표 구분), diagnose 모드는 전략 하나"
@@ -85,4 +85,5 @@ jobs:
             --weights "${{ github.event.inputs.weights || '0,10,20,30,40' }}" \
             --param "${{ github.event.inputs.param || 'uptrend_ma' }}" \
             --values "${{ github.event.inputs.values || '0,120,200' }}" \
+            --base-params '${{ github.event.inputs.regime_params }}' \
             --keys "${{ github.event.inputs.keys }}"

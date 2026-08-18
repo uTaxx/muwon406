@@ -108,6 +108,7 @@ class MarketRegimeFactor(Factor):
         smoothing = int(self.params.get("breadth_smoothing", 10))
         confirm_days = int(self.params.get("confirm_days", 5))
         uptrend_ma = int(self.params.get("uptrend_ma", 0))
+        uptrend_slope = int(self.params.get("uptrend_slope", 0))
 
         above_short, above_long, daily_returns = [], [], []
         for df in histories.values():
@@ -136,7 +137,7 @@ class MarketRegimeFactor(Factor):
         short_pct = short_pct.rolling(smoothing, min_periods=1).mean()
         long_pct = long_pct.rolling(smoothing, min_periods=1).mean()
 
-        uptrend = self._market_uptrend(daily_returns, uptrend_ma, short_pct.index)
+        uptrend = self._market_uptrend(daily_returns, uptrend_ma, uptrend_slope, short_pct.index)
         # 필터가 실제로 몇 날이나 강세 선언을 막았는지. 이걸 안 남기면
         # '필터가 효과 없었다'와 '필터가 켜지지도 않았다'를 구분할 수 없다 —
         # 58종목 스윕에서 네 설정이 완전히 같은 결과를 내서 실제로 막혔다.
@@ -183,7 +184,7 @@ class MarketRegimeFactor(Factor):
         self.regime, self.breadth_short, self.breadth_long = found
 
     @staticmethod
-    def _market_uptrend(daily_returns: list, window: int, index) -> pd.Series:
+    def _market_uptrend(daily_returns: list, window: int, slope_days: int, index) -> pd.Series:
         """유니버스 동일가중 지수가 자기 장기 이동평균 위에 있는가.
 
         Breadth만으로는 '하락 추세 안의 반등'과 '추세 전환'이 구분되지 않는다.
@@ -196,15 +197,25 @@ class MarketRegimeFactor(Factor):
         평균하면 주가가 비싼 종목이 지수를 지배하고, 첫날 종가로 나눠 맞추면
         중간에 상장한 종목이 지수를 튀게 한다. 수익률 평균은 둘 다 피한다.
 
+        slope_days를 주면 '평균선 자체가 오르고 있는가'까지 함께 본다.
+        '지수가 평균 위' 하나만으로는 부족했다 — 58종목 실측에서 이 조건이
+        529일 중 152일만 통과했는데도 2022년 강세 오판이 그대로 남았다.
+        하락 추세에서도 반등이 크면 가격이 잠시 평균선을 넘고, 그 자리가
+        정확히 반등 꼭지다. 평균선의 기울기는 그때도 아직 아래를 향한다.
+
         window가 0이면 이 조건을 쓰지 않는다(전부 True) — 검증 전에는 켜지
         않는다."""
         if window <= 0 or not daily_returns:
             return pd.Series(True, index=index)
         market = pd.concat(daily_returns, axis=1).mean(axis=1).fillna(0.0)
         proxy = (1 + market).cumprod()
+        line = proxy.rolling(window, min_periods=window).mean()
         # min_periods를 채우기 전에는 판단을 보류하고 False로 둔다. 지수가
         # 자기 평균 위인지 모르는 상태에서 강세를 선언할 이유가 없다.
-        return proxy > proxy.rolling(window, min_periods=window).mean()
+        above = proxy > line
+        if slope_days <= 0:
+            return above
+        return above & (line > line.shift(slope_days))
 
     def _classify(self, short_pct: float, long_pct: float, uptrend: bool = True) -> str:
         strong = float(self.params.get("strong_bull_breadth", 65))

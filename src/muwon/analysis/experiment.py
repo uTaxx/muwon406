@@ -202,6 +202,7 @@ def param_sweep(
     histories: dict[str, pd.DataFrame],
     years: list[int],
     policy: RiskPolicy | None = None,
+    base_params: dict | None = None,
 ) -> list[ExperimentResult]:
     """한 Factor의 파라미터 하나만 바꿔 가며 돌린다.
 
@@ -209,6 +210,11 @@ def param_sweep(
     이건 '이 변수를 어떻게 계산할 것인가'를 묻는다. 국면 판정 기준을 바꾸는
     실험처럼 가중치로는 표현할 수 없는 가설이 여기에 들어간다."""
     results = []
+    # 조건 두 개가 맞물려야 뜻이 생기는 경우가 있다 — 시장 필터는 '평균선 위'
+    # 없이 '평균선 기울기'만 보면 의미가 없다. 고정할 값은 base_params로 받고,
+    # 이름표에 함께 찍어 어떤 조건에서 잰 결과인지 표에 남게 한다.
+    base = base_params or {}
+    fixed = " ".join(f"{k}={v}" for k, v in base.items())
     for value in values:
         factor_config = config.factors[factor_key]
         varied = replace(
@@ -216,13 +222,13 @@ def param_sweep(
             factors={
                 **config.factors,
                 factor_key: replace(
-                    factor_config, params={**factor_config.params, param: value}
+                    factor_config, params={**factor_config.params, **base, param: value}
                 ),
             },
         )
         results.append(
             run_experiment(
-                f"{param}={value}",
+                f"{fixed} {param}={value}".strip(),
                 lambda c=varied: FactorScoreStrategy(c),
                 histories,
                 years,

@@ -16,6 +16,7 @@
 """
 
 import argparse
+import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -61,6 +62,9 @@ def main() -> None:
     parser.add_argument("--keys", default="", help="strategies 모드에서 비교할 전략 키")
     parser.add_argument("--param", default="uptrend_ma", help="param 모드에서 바꿀 파라미터")
     parser.add_argument("--values", default="0,120,200", help="param 모드에서 쓸 값들")
+    parser.add_argument(
+        "--base-params", default="", help="param 모드에서 함께 고정할 파라미터 (JSON)"
+    )
     args = parser.parse_args()
 
     years = list(range(args.from_year, args.to_year + 1))
@@ -81,7 +85,10 @@ def main() -> None:
     elif args.mode == "param":
         values = [int(v) for v in args.values.split(",")]
         print(f"■ 파라미터 스윕 — {args.factor}.{args.param}만 바꾼다\n")
-        results = param_sweep(config, args.factor, args.param, values, histories, years)
+        base = json.loads(args.base_params) if args.base_params else {}
+        results = param_sweep(
+            config, args.factor, args.param, values, histories, years, base_params=base
+        )
 
     else:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
