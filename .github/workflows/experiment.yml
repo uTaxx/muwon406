@@ -16,6 +16,11 @@ on:
         type: choice
         options: ["contribution", "sweep", "param", "strategies", "correlation", "blend", "diagnose"]
         default: "contribution"
+      universe:
+        description: "market_cap=시총 상위(실거래 목록) / volume=거래대금 상위"
+        type: choice
+        options: ["market_cap", "volume"]
+        default: "market_cap"
       from_year:
         description: "시작 연도"
         default: "2021"
@@ -73,12 +78,14 @@ jobs:
           python scripts/diagnose_period.py \
             --strategy "${{ github.event.inputs.keys }}" \
             --year "${{ github.event.inputs.from_year }}" \
+            --universe "${{ github.event.inputs.universe || 'market_cap' }}" \
             --regime-params '${{ github.event.inputs.regime_params }}' 
 
       - name: 실험 실행
         if: github.event.inputs.mode != 'diagnose'
         run: |
           python scripts/run_experiment.py "${{ github.event.inputs.mode || 'contribution' }}" \
+            --universe "${{ github.event.inputs.universe || 'market_cap' }}" \
             --from-year "${{ github.event.inputs.from_year || '2021' }}" \
             --to-year "${{ github.event.inputs.to_year || '2025' }}" \
             --factor "${{ github.event.inputs.factor || 'relative_strength' }}" \
