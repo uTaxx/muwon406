@@ -314,3 +314,44 @@ def test_regime_confirmation_looks_backward_only():
         return factor.regime
 
     assert regime_at(short) == regime_at(long)
+
+
+def test_market_filter_rejects_a_bounce_inside_a_downtrend():
+    """하락 추세의 반등 꼭지를 강세로 부르지 않아야 한다.
+
+    반등이 크면 가격이 잠시 장기 평균선을 넘는다 — 그리고 그 자리가 정확히
+    반등 꼭지다. 그래서 '평균선 위'만으로는 부족하고, 평균선 자체가 아직
+    내려가고 있다는 것까지 봐야 한다. 2022년 58종목에서 이 조건 하나가
+    최악 구간을 -39.1%에서 -29.2%로 바꿨다."""
+    # 300일 하락 뒤 40일 급반등 — 반등 끝에서 가격은 200일선을 넘지만
+    # 200일선 자체는 여전히 내려가는 중이다
+    falling = [200.0 - i * 0.4 for i in range(300)]
+    bounce = [falling[-1] + i * 2.0 for i in range(40)]
+    # _market_uptrend는 종가가 아니라 일간 수익률을 받는다
+    returns = pd.Series(falling + bounce).pct_change()
+
+    above_only = MarketRegimeFactor._market_uptrend([returns], 200, 0, returns.index)
+    with_slope = MarketRegimeFactor._market_uptrend([returns], 200, 60, returns.index)
+
+    assert bool(above_only.iloc[-1]), "반등 꼭지에서 가격은 평균선을 넘는다"
+    assert not bool(with_slope.iloc[-1]), "평균선이 아직 내려가면 강세가 아니다"
+
+
+def test_market_filter_allows_a_real_uptrend():
+    """고치면서 필터가 전부 막아 버리면 안 된다 — 진짜 상승장은 통과해야 한다."""
+    rising = pd.Series([100.0 + i * 0.5 for i in range(400)]).pct_change()
+
+    result = MarketRegimeFactor._market_uptrend([rising], 200, 60, rising.index)
+
+    assert bool(result.iloc[-1])
+
+
+def test_stored_config_without_params_keeps_factor_defaults():
+    """params 없이 저장된 설정 하나가 시장 필터를 조용히 꺼서는 안 된다."""
+    from muwon.scoring.config import StrategyConfig
+
+    restored = StrategyConfig.from_json(
+        '{"factors": {"market_regime": {"enabled": true, "weight": 15}}}'
+    )
+
+    assert restored.factors["market_regime"].params["uptrend_slope"] == 60

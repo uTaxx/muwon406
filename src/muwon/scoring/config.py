@@ -27,7 +27,13 @@ class FactorConfig:
 
 #: 인수인계서 37항의 V1 벤치마크 설정. 확정값이 아니라 실험의 출발점이다.
 DEFAULT_FACTORS: dict[str, FactorConfig] = {
-    "market_regime": FactorConfig(enabled=True, weight=15),
+    # 시장 필터를 켠 상태가 기본이다. 58종목 실측에서 최악 구간 -39.1 → -29.2,
+    # Sharpe 0.27 → 0.42, PF 0.80 → 1.03으로 전 지표가 함께 좋아졌다.
+    # 다만 평균 수익률에 대한 효과는 유니버스를 타므로(18종목에서는 +14.2 →
+    # +9.9로 떨어졌다) '최악 구간을 줄이는 장치'로 이해해야 한다.
+    "market_regime": FactorConfig(
+        enabled=True, weight=15, params={"uptrend_ma": 200, "uptrend_slope": 60}
+    ),
     "trend": FactorConfig(enabled=True, weight=15),
     "momentum": FactorConfig(enabled=True, weight=20),
     "relative_strength": FactorConfig(enabled=True, weight=20),
@@ -115,7 +121,11 @@ class StrategyConfig:
                 factors[key],
                 enabled=bool(value.get("enabled", factors[key].enabled)),
                 weight=float(value.get("weight", factors[key].weight)),
-                params=dict(value.get("params") or {}),
+                # params는 덮어쓰지 않고 기본값 위에 얹는다. 통째로 갈아 끼우면
+                # params 없이 저장된 오래된 설정 하나가 시장 필터를 조용히
+                # 꺼 버린다 — 문서가 "빠진 키는 기본값"이라고 약속한 것과도
+                # 어긋난다.
+                params={**factors[key].params, **(value.get("params") or {})},
             )
 
         return cls(
