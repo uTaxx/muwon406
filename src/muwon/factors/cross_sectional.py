@@ -126,6 +126,7 @@ class MarketRegimeFactor(Factor):
         self.regime: str | None = None
         self.breadth_short = self.breadth_long = 0.0
         self._by_date: dict = {}
+        self.uptrend_days = self.total_days = 0
         if not above_short:
             return
 
@@ -136,6 +137,11 @@ class MarketRegimeFactor(Factor):
         long_pct = long_pct.rolling(smoothing, min_periods=1).mean()
 
         uptrend = self._market_uptrend(daily_returns, uptrend_ma, short_pct.index)
+        # 필터가 실제로 몇 날이나 강세 선언을 막았는지. 이걸 안 남기면
+        # '필터가 효과 없었다'와 '필터가 켜지지도 않았다'를 구분할 수 없다 —
+        # 58종목 스윕에서 네 설정이 완전히 같은 결과를 내서 실제로 막혔다.
+        self.uptrend_days = int(uptrend.sum())
+        self.total_days = len(uptrend)
 
         raw = [
             self._classify(s, long, up) if pd.notna(s) and pd.notna(long) else None

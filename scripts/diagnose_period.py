@@ -14,13 +14,16 @@
 """
 
 import argparse
+import json
 import sys
 from collections import Counter, defaultdict
+from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from muwon.analysis.experiment import WARMUP_DAYS
 from muwon.analysis.market_data import load_histories
 from muwon.backtest.engine import BacktestEngine
 from muwon.config import bootstrap_settings
@@ -28,13 +31,36 @@ from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.db.session import make_session_factory
+from muwon.factors.cross_sectional import MarketRegimeFactor
 from muwon.risk.manager import RiskManager
 from muwon.scoring.engine import FactorScoreStrategy, threshold_reachability
 from muwon.settings.schema import RiskPolicy
 from muwon.strategy.portfolio import MarketContext, as_portfolio_strategy
 from muwon.strategy.registry import build_strategy
 
-WARMUP_DAYS = 200  # 120일선까지 채우려면 넉넉히 필요
+# 예열 길이는 실험 쪽과 같은 값을 쓴다. 여기만 200으로 두었더니 200거래일
+# 이동평균이 거의 안 채워져(상승추세 24/381일) 같은 설정인데 실험과 진단이
+# 다른 국면을 냈다. 두 곳에 같은 뜻의 상수를 따로 두면 반드시 갈라진다.
+
+
+def apply_regime_params(strategy, raw: str):
+    """국면 Factor의 파라미터만 바꿔 같은 전략을 다시 만든다.
+
+    '필터를 켜면 무엇이 달라지는가'를 보려면 전략 전체가 아니라 그 Factor의
+    설정 하나만 갈아 끼울 수 있어야 한다."""
+    if not raw or not isinstance(strategy, FactorScoreStrategy):
+        return strategy
+    overrides = json.loads(raw)
+    config = strategy.config
+    factor = config.factors["market_regime"]
+    varied = replace(
+        config,
+        factors={
+            **config.factors,
+            "market_regime": replace(factor, params={**factor.params, **overrides}),
+        },
+    )
+    return FactorScoreStrategy(varied)
 
 
 def scan_regimes(strategy, histories, dates):
@@ -68,6 +94,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="구간별 전략 성과 원인 분석")
     parser.add_argument("--strategy", default="factor_score_v1")
     parser.add_argument("--year", type=int, required=True)
+    parser.add_argument(
+        "--regime-params",
+        default="",
+        help='국면 Factor 파라미터를 JSON으로 덮어쓴다 (예: \'{"uptrend_ma": 200}\')',
+    )
     args = parser.parse_args()
 
     trade_from = date(args.year, 1, 1)
@@ -84,17 +115,28 @@ def main() -> None:
     print(f"{args.strategy} · {args.year}년 · {len(histories)}종목\n")
 
     result = BacktestEngine(
-        strategy=build_strategy(args.strategy),
+        strategy=apply_regime_params(
+            as_portfolio_strategy(build_strategy(args.strategy)), args.regime_params
+        ),
         risk_manager=RiskManager(policy_provider=lambda: RiskPolicy()),
     ).run(histories, trade_from=trade_from)
 
     dates = sorted({d for df in histories.values() for d in df["trade_date"] if d >= trade_from})
-    timeline, observed = scan_regimes(
-        as_portfolio_strategy(build_strategy(args.strategy)), histories, dates
+    scanner = apply_regime_params(
+        as_portfolio_strategy(build_strategy(args.strategy)), args.regime_params
     )
+    timeline, observed = scan_regimes(scanner, histories, dates)
 
     print(f"수익률 {result.total_return_pct:+.2f}%  MDD {result.max_drawdown_pct:.2f}%  "
           f"거래 {result.num_trades}건\n")
+
+    if isinstance(scanner, FactorScoreStrategy):
+        for factor in scanner._engine.factors:
+            if isinstance(factor, MarketRegimeFactor) and factor.total_days:
+                print(
+                    f"■ 시장 필터  상승추세 판정 {factor.uptrend_days}/{factor.total_days}일"
+                    f"  (설정 {args.regime_params or '기본'})\n"
+                )
 
     if timeline:
         counts = Counter(timeline.values())
