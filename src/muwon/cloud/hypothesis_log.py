@@ -101,9 +101,29 @@ def find_or_create_sheet(folder_id: str, title: str = DEFAULT_TITLE) -> str:
         )
         .execute()
     )
-    sheet_id = created["id"]
-    _append_values(creds, sheet_id, [header_row()])
-    return sheet_id
+    return created["id"]
+
+
+def needs_header(existing: dict) -> bool:
+    """머리글을 넣어야 하는가 — 첫 칸이 비어 있으면 넣는다.
+
+    시트를 만들 때 한 번만 넣으면 안 된다. 실제로 시트 생성(Drive API)은
+    성공하고 값 쓰기(Sheets API)만 실패한 적이 있는데, 그러면 다음 실행은
+    '시트가 이미 있다'고 판단해 머리글 없이 데이터부터 채운다. 칸 이름이
+    없는 표는 아무도 못 읽는다."""
+    return not existing.get("values")
+
+
+def _ensure_header(creds, sheet_id: str) -> None:
+    sheets = build("sheets", "v4", credentials=creds)
+    existing = (
+        sheets.spreadsheets()
+        .values()
+        .get(spreadsheetId=sheet_id, range="A1:A1")
+        .execute()
+    )
+    if needs_header(existing):
+        _append_values(creds, sheet_id, [header_row()])
 
 
 def _append_values(creds, sheet_id: str, values: list[list[str]]) -> int:
@@ -130,8 +150,10 @@ def append(folder_id: str, rows: list[HypothesisRow], title: str = DEFAULT_TITLE
     if not rows:
         raise ValueError("남길 줄이 없습니다")
     try:
+        creds = _credentials()
         sheet_id = find_or_create_sheet(folder_id, title)
-        _append_values(_credentials(), sheet_id, [r.as_values() for r in rows])
+        _ensure_header(creds, sheet_id)
+        _append_values(creds, sheet_id, [r.as_values() for r in rows])
     except HttpError as e:
         raise SystemExit(_explain(e)) from e
     return f"https://docs.google.com/spreadsheets/d/{sheet_id}"

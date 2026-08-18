@@ -51,3 +51,14 @@ def test_backfill_file_parses_and_keeps_the_rejections():
     assert all(r.가설 and r.판정 and r.어떻게_확인했나 for r in rows), (
         "가설·판정·확인 방법이 빈 줄은 기록으로 쓸모가 없다"
     )
+
+
+def test_header_is_written_whenever_the_sheet_is_empty():
+    """시트 생성은 성공하고 값 쓰기만 실패하면, 다음 실행이 '시트가 이미
+    있다'고 보고 머리글 없이 데이터부터 채운다 — 실제로 그 상태가 됐다.
+    칸 이름 없는 표는 아무도 못 읽는다."""
+    from muwon.cloud.hypothesis_log import needs_header
+
+    assert needs_header({}), "빈 시트면 머리글을 넣어야 한다"
+    assert needs_header({"values": []})
+    assert not needs_header({"values": [["날짜", "무엇을 알고 싶었나"]]})
