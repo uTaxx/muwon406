@@ -73,5 +73,5 @@ jobs:
               --verdict "${{ github.event.inputs.verdict }}" \
               --action "${{ github.event.inputs.action }}" \
               --target "${{ github.event.inputs.target }}" \
-              --링크 "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              --link "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
