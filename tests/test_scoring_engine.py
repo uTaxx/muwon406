@@ -268,3 +268,28 @@ def test_strategy_sells_held_symbol_when_score_collapses():
     signals = strategy.evaluate(ctx)
 
     assert [(s.symbol, s.signal_type) for s in signals] == [("HELD", SignalType.SELL)]
+
+
+# ── 설정 저장소 연동 ─────────────────────────────────────────────
+
+
+def test_strategy_config_round_trips_through_settings_store():
+    """가중치를 바꾸면 다음 실행부터 반영돼야 한다 — 저장이 실제로 되는지."""
+    from muwon.db.session import make_session_factory
+    from muwon.settings.service import SettingsService
+    from muwon.settings.store import SettingsStore
+
+    service = SettingsService(
+        SettingsStore(make_session_factory("sqlite:///:memory:"), master_key="")
+    )
+
+    assert service.get_strategy_config().buy_threshold == StrategyConfig().buy_threshold
+
+    changed = StrategyConfig(buy_threshold=60)
+    changed.factors["momentum"] = FactorConfig(enabled=False, weight=20)
+    service.set_strategy_config(changed)
+
+    loaded = service.get_strategy_config()
+    assert loaded.buy_threshold == 60
+    assert loaded.factors["momentum"].enabled is False
+    assert "momentum" not in loaded.enabled_weights()

@@ -166,3 +166,16 @@ def top_reason(result: ScoredSymbol, limit: int = 2) -> str:
     """가장 크게 기여한 근거만 짧게 — 텔레그램 한 줄에 들어가야 한다."""
     ranked = sorted(result.factor_scores.items(), key=lambda kv: kv[1], reverse=True)
     return ", ".join(f"{key} {value:.0f}" for key, value in ranked[:limit])
+
+
+def load_strategy_config() -> StrategyConfig:
+    """DB에 저장된 설정을 읽되, 읽을 수 없으면 기본값으로 계속 간다.
+
+    백테스트·테스트처럼 DB가 없는 자리에서도 전략을 만들 수 있어야 한다 —
+    설정 저장소에 못 닿는다고 전략 생성이 실패하면 registry 전체가 죽는다."""
+    try:
+        from muwon.settings.service import build_settings_service
+
+        return build_settings_service().get_strategy_config()
+    except Exception:  # noqa: BLE001 — DB 부재·연결 실패 등 무엇이든 기본값으로
+        return StrategyConfig()

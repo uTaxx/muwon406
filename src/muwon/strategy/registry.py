@@ -25,7 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from muwon.domain.interfaces import Strategy
-from muwon.scoring.engine import FactorScoreStrategy
+from muwon.scoring.engine import FactorScoreStrategy, load_strategy_config
 from muwon.strategy.breakout import (
     BollingerBreakoutParams,
     BollingerBreakoutStrategy,
@@ -282,7 +282,7 @@ REGISTRY: list[StrategyDefinition] = [
             "상대강도(유니버스 내 순위)와 시장국면(Breadth)은 종목 하나만 보던 "
             "기존 구조에서는 만들 수 없던 변수다."
         ),
-        factory=lambda: FactorScoreStrategy(),
+        factory=lambda: FactorScoreStrategy(load_strategy_config()),
         category=CATEGORY_SCORE,
     ),
 ]

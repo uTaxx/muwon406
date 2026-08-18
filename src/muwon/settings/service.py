@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from muwon.scoring.config import StrategyConfig
 from muwon.settings.schema import (
     KISCredentials,
     RiskPolicy,
@@ -97,6 +98,15 @@ class SettingsService:
 
     def set_strategy_selection(self, selection: StrategySelection) -> None:
         self._store.set("strategy.active_key", selection.active_key)
+
+    def get_strategy_config(self) -> StrategyConfig:
+        """Factor 가중치·ON/OFF·임계값. 저장된 게 없으면 V1 기본값을 쓴다."""
+        return StrategyConfig.from_json(self._store.get("strategy.factor_config", ""))
+
+    def set_strategy_config(self, config: StrategyConfig) -> None:
+        """JSON 한 덩어리로 저장한다. 필드마다 키를 나누면 Factor를 추가할
+        때마다 스키마를 손대야 하고, 변경 이력도 조각나 읽기 어려워진다."""
+        self._store.set("strategy.factor_config", config.to_json())
 
     def undecryptable_secret_keys(self) -> list[str]:
         """지금 MUWON_MASTER_KEY로 열리지 않는 비밀값 키 목록. 마스터키를 새로
