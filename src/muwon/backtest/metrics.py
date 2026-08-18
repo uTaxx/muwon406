@@ -67,6 +67,15 @@ def cagr_pct(equity_curve: pd.DataFrame) -> float:
     return ((end_value / start_value) ** (365.25 / days) - 1) * 100
 
 
+def max_drawdown_pct(equity: pd.Series) -> float:
+    """고점 대비 최대 낙폭. 엔진 밖에서 만든 곡선(예: 갈래를 합친 곡선)도
+    같은 자로 재려면 곡선만 받아 계산할 수 있어야 한다."""
+    if len(equity) < 2:
+        return 0.0
+    peak = equity.cummax()
+    return float((equity / peak - 1).min() * 100)
+
+
 def sharpe(equity_curve: pd.DataFrame, risk_free_rate: float = 0.0) -> float:
     """수익률을 변동성으로 나눈 값 — 같은 수익이면 덜 흔들린 쪽이 낫다.
 

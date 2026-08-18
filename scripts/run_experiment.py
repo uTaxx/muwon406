@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from muwon.analysis.experiment import (
     WARMUP_DAYS,
+    blend_sleeves,
     correlation_matrix,
     daily_returns_by_strategy,
     factor_contribution,
@@ -32,6 +33,7 @@ from muwon.analysis.experiment import (
     format_correlation,
     param_sweep,
     run_experiment,
+    sleeve_curves,
     weight_sweep,
 )
 from muwon.analysis.market_data import load_histories
@@ -58,7 +60,7 @@ def load_universe_histories(years: list[int]):
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
     parser.add_argument(
-        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation"]
+        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation", "blend"]
     )
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
@@ -94,6 +96,24 @@ def main() -> None:
         results = param_sweep(
             config, args.factor, args.param, values, histories, years, base_params=base
         )
+
+    elif args.mode == "blend":
+        pairs = [k.strip() for k in args.keys.split(",") if k.strip()]
+        shares = [float(w) for w in args.weights.split(",")]
+        if len(pairs) != len(shares):
+            raise SystemExit("--keys와 --weights의 개수가 같아야 합니다")
+        print("■ 갈래 배분 — 나눠서 굴렸을 때 합친 계좌가 어떻게 되는가")
+        print("  비중은 연 단위로만 맞춘다. 연중에 갈래끼리 자금을 옮기지 않는다 —")
+        print("  매일 맞추면 깨진 쪽에 계속 돈을 부어 주는 셈이라 결과가 부풀려진다.\n")
+        curves, trades = sleeve_curves(
+            {key: (lambda k=key: build_strategy(k)) for key in pairs}, histories, years
+        )
+        results = [blend_sleeves(curves, {key: 100.0}, years, trades) for key in pairs]
+        results.append(
+            blend_sleeves(curves, dict(zip(pairs, shares, strict=True)), years, trades)
+        )
+        print(format_comparison(results, years))
+        return
 
     elif args.mode == "correlation":
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]

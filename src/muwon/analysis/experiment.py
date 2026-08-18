@@ -17,13 +17,19 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 
 import pandas as pd
 
 from muwon.backtest.engine import BacktestEngine
-from muwon.backtest.metrics import BacktestMetrics, compute_metrics
+from muwon.backtest.metrics import (
+    BacktestMetrics,
+    compute_metrics,
+    max_drawdown_pct,
+    sharpe,
+)
 from muwon.risk.manager import RiskManager
 from muwon.scoring.config import StrategyConfig
 from muwon.scoring.engine import FactorScoreStrategy
@@ -277,6 +283,90 @@ def daily_returns_by_strategy(
     return series, exposure
 
 
+def sleeve_curves(
+    named_factories: dict,
+    histories: dict[str, pd.DataFrame],
+    years: list[int],
+    policy: RiskPolicy | None = None,
+) -> tuple[dict[str, dict[int, pd.Series]], dict[str, dict[int, int]]]:
+    """갈래별·연도별 자금 곡선(1.0 시작으로 정규화)과 거래 건수.
+
+    정규화하는 이유는 갈래마다 배정 자금이 다르기 때문이다. 비중을 나중에
+    곱해서 합치려면 곡선이 '배수'여야 한다."""
+    policy = policy or RiskPolicy()
+    out: dict[str, dict[int, pd.Series]] = {}
+    trades: dict[str, dict[int, int]] = {}
+    for name, factory in named_factories.items():
+        per_year: dict[int, pd.Series] = {}
+        per_year_trades: dict[int, int] = {}
+        for year in years:
+            sliced = slice_for_year(histories, year)
+            if not sliced:
+                continue
+            result = BacktestEngine(
+                strategy=factory(),
+                risk_manager=RiskManager(policy_provider=lambda p=policy: p),
+            ).run(sliced, trade_from=date(year, 1, 1))
+            curve = result.equity_curve
+            if len(curve) < 2:
+                continue
+            equity = curve.set_index("trade_date")["equity"]
+            per_year[year] = equity / float(equity.iloc[0])
+            per_year_trades[year] = result.num_trades
+        out[name] = per_year
+        trades[name] = per_year_trades
+    return out, trades
+
+
+def blend_sleeves(
+    curves: dict[str, dict[int, pd.Series]],
+    weights: dict[str, float],
+    years: list[int],
+    trades: dict[str, dict[int, int]] | None = None,
+) -> ExperimentResult:
+    """갈래들을 비중대로 합친 계좌의 성과.
+
+    갈래를 실제로 만들기 전에, 이미 잰 곡선만으로 합친 결과를 낼 수 있다.
+    구조를 짜는 데 드는 비용을 치르기 전에 그럴 값어치가 있는지부터 확인하는
+    게 순서다.
+
+    연 단위로만 비중을 맞춘다(연중에는 갈래끼리 자금을 옮기지 않는다). 매일
+    맞추면 실제 운영과 달라지고, 한쪽이 깨질 때 다른 쪽 돈을 계속 부어 주는
+    셈이라 결과가 실제보다 좋게 나온다."""
+    total = sum(weights.values())
+    share = {k: v / total for k, v in weights.items()} if total else {}
+    periods = []
+    for year in years:
+        parts = {k: c[year] for k, c in curves.items() if year in c and k in share}
+        if not parts:
+            continue
+        frame = pd.DataFrame(parts).ffill().dropna(how="all")
+        combined = sum(frame[k].fillna(1.0) * share[k] for k in parts)
+        # 합친 계좌에서는 낼 수 없는 값(승률·손익비·기대값)은 NaN으로 둔다.
+        # 거래는 갈래별로 일어나므로 '합친 계좌의 한 거래'라는 게 없다.
+        # 0으로 채우면 표에서 '최악의 전략'으로 잘못 읽힌다.
+        counted = sum(
+            (trades or {}).get(key, {}).get(year, 0) for key in parts
+        )
+        metrics = BacktestMetrics(
+            total_return_pct=float(combined.iloc[-1] - 1) * 100,
+            cagr_pct=float(combined.iloc[-1] - 1) * 100,  # 한 해 구간이라 총수익률과 같다
+            max_drawdown_pct=max_drawdown_pct(combined),
+            sharpe=sharpe(pd.DataFrame({"equity": combined.to_numpy()})),
+            sortino=float("nan"),
+            profit_factor=float("nan"),
+            expectancy_pct=float("nan"),
+            win_rate_pct=float("nan"),
+            num_trades=counted,
+            avg_holding_days=float("nan"),
+            exposure_pct=float("nan"),
+            turnover=float("nan"),
+        )
+        periods.append(PeriodResult(str(year), metrics))
+    label = " + ".join(f"{k} {share[k] * 100:.0f}%" for k in share)
+    return ExperimentResult(label, periods)
+
+
 def correlation_matrix(series: dict[str, pd.Series]) -> pd.DataFrame:
     """전략끼리 같은 날 같이 움직였는가.
 
@@ -337,8 +427,10 @@ def format_comparison(results: list[ExperimentResult], years: list[int]) -> str:
             f"{result.worst_drawdown_pct:>8.1f}"
         )
         pf = [p.metrics.profit_factor for p in result.periods]
-        finite = [v for v in pf if v != float("inf")]
-        row += f"{(sum(finite) / len(finite) if finite else 0.0):>7.2f}{result.total_trades:>6}"
+        finite = [v for v in pf if math.isfinite(v)]
+        # 낼 수 없는 값은 '—'로. 0으로 찍으면 최악의 전략처럼 읽힌다.
+        row += f"{(sum(finite) / len(finite)):>7.2f}" if finite else f"{'—':>7}"
+        row += f"{result.total_trades:>6}"
         if result is not baseline:
             delta = result.worst_return_pct - baseline.worst_return_pct
             row += f"   최악 {delta:+.1f}%p"
