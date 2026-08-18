@@ -40,11 +40,14 @@
   input:focus, textarea:focus, select:focus{outline:none; border-color:var(--green); background:#fff;}
   textarea{resize:vertical; min-height:64px;}
   .block{background:var(--bg); border-radius:12px; padding:16px; margin-bottom:12px; position:relative; border:1px solid var(--line);}
-  .block .rm{position:absolute; top:12px; right:12px; background:#fff; border:1px solid var(--line); color:var(--danger); font-size:11.5px; cursor:pointer; font-weight:600; padding:4px 10px; border-radius:14px;}
-  .block .urgent-toggle{position:absolute; top:12px; right:76px; background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .block .block-actions{position:absolute; top:12px; right:12px; display:flex; gap:8px;}
+  .block .rm{background:#fff; border:1px solid var(--line); color:var(--danger); font-size:11.5px; cursor:pointer; font-weight:600; padding:4px 10px; border-radius:14px;}
+  .block .urgent-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
   .block .urgent-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .block .en-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .block .en-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
   #groupList .block{padding:12px;}
-  #groupList .block .rm, #groupList .block .urgent-toggle{top:12px;}
+  #groupList .block .block-actions{top:12px; right:12px;}
   #groupList .block label{margin-bottom:4px; font-size:12px;}
   #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
   #groupList .block textarea.g-keywords{min-height:56px;}
@@ -319,8 +322,11 @@
     wrap.className = 'block';
     wrap.id = 'group-' + id;
     wrap.innerHTML = `
-      <button type="button" class="rm">삭제</button>
-      <button type="button" class="urgent-toggle" title="긴급 그룹: 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)">🚨 긴급</button>
+      <div class="block-actions">
+        <button type="button" class="en-toggle" title="구글 뉴스 영문판도 함께 검색합니다 (해외 이슈 등 영어로만 보도되는 기사용)">🌐 영문</button>
+        <button type="button" class="urgent-toggle" title="긴급 그룹: 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)">🚨 긴급</button>
+        <button type="button" class="rm">삭제</button>
+      </div>
       <label>그룹명</label>
       <input type="text" class="g-name" placeholder="예: 경쟁사">
       <label>AI 분석 목표(본 그룹의 AI 검색 지침)</label>
@@ -338,6 +344,9 @@
       document.getElementById('group-' + id).remove();
     });
     wrap.querySelector('.urgent-toggle').addEventListener('click', function(){
+      this.classList.toggle('active');
+    });
+    wrap.querySelector('.en-toggle').addEventListener('click', function(){
       this.classList.toggle('active');
     });
   }
@@ -488,7 +497,8 @@
       const kwRaw = b.querySelector('.g-keywords').value.trim();
       const keywords = kwRaw.split(',').map(s => s.trim()).filter(Boolean);
       const urgent = b.querySelector('.urgent-toggle').classList.contains('active');
-      if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent });
+      const googleEn = b.querySelector('.en-toggle').classList.contains('active');
+      if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent, googleEn });
     });
     return groups;
   }
@@ -539,6 +549,7 @@
         lastBlock.querySelector('.g-purpose').value = g.purpose || '';
         lastBlock.querySelector('.g-keywords').value = (g.keywords || []).join(', ');
         lastBlock.querySelector('.urgent-toggle').classList.toggle('active', !!g.urgent);
+        lastBlock.querySelector('.en-toggle').classList.toggle('active', !!g.googleEn);
       });
     }
 
