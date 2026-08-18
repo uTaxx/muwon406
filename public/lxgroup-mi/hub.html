@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LX Group MI</title>
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#A32B26; --green-dark:#7A211D; --green-tint:#F1EBE5;
+    --bg:#FAF7F4; --card:#FFFFFF; --line:#DED2C4;
+    --text:#201D1B; --muted:#726A61; --danger:#F04452; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Noto Sans KR', -apple-system, sans-serif; line-height:1.6;}
+  #prefillNotice{display:none; background:#FFF3CD; color:#8A6D00; text-align:center; padding:10px; font-size:13px; font-weight:600; border-radius:10px; margin-bottom:12px;}
+  .cover{background:var(--green); padding:36px 20px 46px; position:relative; overflow:hidden;}
+  .cover::after{content:""; position:absolute; right:-40px; top:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.12);}
+  .cover::before{content:""; position:absolute; right:60px; bottom:-60px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.10);}
+  .badge{display:inline-block; background:rgba(255,255,255,0.22); color:#fff; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.02em; margin-bottom:14px; position:relative;}
+  .cover h1{color:#fff; font-size:22px; font-weight:700; margin:0 0 8px; position:relative; line-height:1.4;}
+  .cover p{color:rgba(255,255,255,0.92); font-size:14px; margin:0; max-width:520px; position:relative;}
+  .excel-link{display:none; align-items:center; gap:6px; margin-top:14px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none; width:fit-content; position:relative;}
+  .excel-link:hover{background:rgba(255,255,255,0.26);}
+  main{max-width:680px; margin:-24px auto 0; padding:0 16px 90px; position:relative;}
+  section.card{background:var(--card); border-radius:var(--radius); padding:24px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .step-num{width:26px; height:26px; border-radius:50%; background:var(--green-tint); color:var(--green-dark); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .step-title{font-size:16px; font-weight:700; color:var(--text);}
+  .optional-tag{font-size:11px; color:var(--muted); font-weight:500; background:var(--bg); padding:2px 8px; border-radius:10px; margin-left:4px;}
+  .step-desc{color:var(--muted); font-size:13px; margin:4px 0 16px 36px;}
+  label{display:block; font-size:13px; color:#555; margin-bottom:7px; font-weight:600;}
+  input[type=text], input[type=email], input[type=date], select, textarea{
+    width:100%; background:#FAFAFA; border:1.5px solid var(--line); color:var(--text);
+    border-radius:10px; padding:12px 14px; font-size:14.5px; font-family:inherit;
+    margin-bottom:16px; transition:border-color .15s, background .15s;
+  }
+  input::placeholder, textarea::placeholder{color:#B4B7BE;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--green); background:#fff;}
+  textarea{resize:vertical; min-height:64px;}
+  .code-row{display:flex; gap:8px; align-items:flex-start;}
+  .code-row input{flex:1; margin-bottom:0;}
+  .small-btn{background:var(--green); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:13.5px; font-weight:700; cursor:pointer; flex-shrink:0;}
+  .small-btn:hover{background:var(--green-dark);}
+  .small-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .status{display:none; text-align:center; padding:14px; border-radius:12px; font-size:13.5px; margin-top:12px; font-weight:600;}
+  .status.show{display:block;}
+  .status.ok{background:var(--green-tint); border:1.5px solid var(--green); color:var(--green-dark);}
+  .status.err{background:#FDECEE; border:1.5px solid var(--danger); color:var(--danger);}
+
+  .tab-nav{display:flex; gap:6px; margin-bottom:14px;}
+  .tab-btn{flex:1; background:var(--card); border:1.5px solid var(--line); color:var(--muted); border-radius:10px; padding:11px 6px; font-size:12.5px; font-weight:700; cursor:pointer; text-align:center; transition:border-color .15s, background .15s, color .15s; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+  .tab-btn.active{background:var(--green); border-color:var(--green); color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .filter-row{display:flex; gap:10px; margin-top:14px;}
+  .filter-row > div{flex:1;}
+  .filter-row label{margin-bottom:6px;}
+  .filter-row input, .filter-row select{margin-bottom:0;}
+  .summary-line{font-size:12.5px; color:var(--muted); margin-top:12px;}
+  #resultsSection{display:none;}
+  .article-item{padding:14px 0; border-bottom:1px solid var(--line);}
+  .article-item:last-child{border-bottom:none;}
+  .article-top{display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;}
+  .group-chip{font-size:10.5px; font-weight:700; color:var(--green-dark); background:var(--green-tint); padding:3px 9px; border-radius:10px; letter-spacing:0.02em;}
+  .article-date{font-size:11.5px; color:var(--muted);}
+  .article-title{font-size:14.5px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.5;}
+  .article-title:hover{color:var(--green-dark);}
+  .direction-icon{margin-right:2px;}
+  .stars{color:var(--green); font-size:12px; margin-left:2px;}
+  .article-reason{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
+  .add-btn{background:var(--green-tint); border:1.5px dashed var(--green); color:var(--green-dark); border-radius:10px; padding:12px; width:100%; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:16px;}
+  .add-btn:hover{background:#e9dfd6;}
+  .word-hint{font-size:12px; color:var(--muted); margin:-6px 0 14px; line-height:1.6;}
+  .source-check-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .source-check{display:flex; align-items:center; gap:6px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; flex:1; justify-content:center; transition:border-color .15s, background .15s;}
+  .source-check input{accent-color:var(--green); width:16px; height:16px;}
+  .source-check.checked{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .check-option{display:flex; align-items:flex-start; gap:10px; padding:14px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, background .15s;}
+  .check-option.checked{border-color:var(--green); background:var(--green-tint);}
+  .check-option input{width:18px; height:18px; margin-top:1px; accent-color:var(--green); flex-shrink:0;}
+  .check-option .opt-text{font-size:14px; font-weight:600;}
+  .check-option .opt-sub{font-size:12px; color:var(--muted); font-weight:400; margin-top:2px;}
+  .submit-btn{width:100%; background:var(--green); color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; box-shadow:0 4px 14px rgba(11,61,145,0.3);}
+  .submit-btn:hover{background:var(--green-dark);}
+  .submit-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none;}
+  .instant-result{margin-top:14px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .instant-summary{font-size:13.5px; font-weight:700; color:var(--green-dark); margin-bottom:8px; padding-bottom:10px; border-bottom:1px solid var(--line);}
+
+  .block{background:var(--bg); border-radius:12px; padding:16px; margin-bottom:12px; position:relative; border:1px solid var(--line);}
+  .block .block-actions{position:absolute; top:12px; right:12px; display:flex; gap:8px;}
+  .block .rm{background:#fff; border:1px solid var(--line); color:var(--danger); font-size:11.5px; cursor:pointer; font-weight:600; padding:4px 10px; border-radius:14px;}
+  .block .urgent-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .block .urgent-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .block .en-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .block .en-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  #groupList .block{padding:12px;}
+  #groupList .block .block-actions{top:12px; right:12px;}
+  #groupList .block label{margin-bottom:4px; font-size:12px;}
+  #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
+  #groupList .block textarea.g-keywords{min-height:56px;}
+  #groupList .block .word-hint{margin:-2px 0 0; font-size:11px; line-height:1.45;}
+  .company-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .company-row input{margin-bottom:0;}
+  .company-row .c-name{flex:1.4;}
+  .company-row .c-corpcode{flex:1;}
+  .company-row .c-rm{flex:none; width:34px; height:34px; border-radius:8px; border:1.5px solid var(--line); background:#fff; color:var(--danger); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
+  .company-row .c-rm:hover{background:#FDECEE; border-color:var(--danger);}
+  .lx-fixed-note{display:flex; align-items:center; gap:8px; background:var(--green-tint); border:1px solid var(--green); color:var(--green-dark); border-radius:10px; padding:11px 14px; font-size:13px; font-weight:600; margin-bottom:14px;}
+  .indent{margin-left:0; padding:14px; background:var(--bg); border-radius:10px; margin-bottom:12px;}
+  .time-check-grid{display:grid; grid-template-columns:repeat(6, 1fr); gap:6px;}
+  .time-check{display:flex; align-items:center; justify-content:center; gap:5px; background:var(--bg); border:1.5px solid var(--line); border-radius:9px; padding:9px 2px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--text); transition:border-color .15s, background .15s;}
+  .time-check input{width:17px; height:17px; margin:0; accent-color:var(--green); flex-shrink:0;}
+  .time-check.checked{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .range-group{margin-bottom:18px;}
+  .range-group:last-child{margin-bottom:0;}
+  .range-group label{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .range-val{color:var(--green); font-weight:700; font-size:14px;}
+  input[type=range]{width:100%; accent-color:var(--green); cursor:pointer; margin:0;}
+
+  .instant-actions{margin-top:10px;}
+  .small-btn.instant-btn{width:100%; background:#fff; border:1.5px solid var(--green); color:var(--green-dark);}
+  .small-btn.instant-btn:hover{background:var(--green-tint);}
+  .small-btn.instant-btn:disabled{opacity:.6; cursor:not-allowed;}
+  .instant-hint{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.6;}
+
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
+  footer a{color:var(--green); text-decoration:none; font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <span class="badge">LX Group MI · 사내 전용</span>
+  <h1>LX Group MI</h1>
+  <p>기사 검색, 키워드 신청/변경, 긴급 키워드 조사를 한 화면에서 이용하세요.</p>
+  <a id="excelLink" class="excel-link" href="#" target="_blank" rel="noopener">📊 엑셀 원본 보기</a>
+</div>
+
+<main>
+
+  <section class="card">
+    <div class="step-head"><span class="step-num">•</span><span class="step-title">식별코드</span></div>
+    <div class="step-desc">신청 시 사용한 식별코드입니다. 아래 모든 기능에 공통으로 사용됩니다.</div>
+    <div class="code-row">
+      <input type="text" id="sharedCode" placeholder="예: LXHOLDINGS" style="text-transform:uppercase;">
+      <button type="button" class="small-btn" id="sharedLoadBtn">조회</button>
+    </div>
+    <div class="status" id="sharedStatusBox"></div>
+  </section>
+
+  <div class="tab-nav">
+    <button type="button" class="tab-btn active" data-tab="search">수집된 기사<br>검색 조회</button>
+    <button type="button" class="tab-btn" data-tab="apply">키워드<br>신청/변경</button>
+    <button type="button" class="tab-btn" data-tab="adhoc">긴급 키워드<br>조사</button>
+  </div>
+
+  <!-- 탭 1: 수집된 기사 / 검색 조회 -->
+  <div id="tab-search" class="tab-panel active">
+    <section class="card" id="resultsSection">
+      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">검색 · 필터</span></div>
+      <div class="filter-row">
+        <div>
+          <label>검색어</label>
+          <input type="text" id="searchInput" placeholder="제목 또는 키워드">
+        </div>
+        <div>
+          <label>그룹</label>
+          <select id="groupSelect"><option value="">전체</option></select>
+        </div>
+      </div>
+      <div class="summary-line" id="summaryLine"></div>
+
+      <div id="articleList" style="margin-top:8px;"></div>
+      <div class="empty-note" id="emptyNote" style="display:none;">조건에 맞는 기사가 없습니다.</div>
+      <button type="button" class="add-btn" id="moreBtn" style="display:none;">더 보기</button>
+    </section>
+  </div>
+
+  <!-- 탭 2: 키워드 신청/변경 -->
+  <div id="tab-apply" class="tab-panel">
+    <div id="prefillNotice">이전 신청 내용을 불러왔습니다. 필요한 부분만 수정해서 제출해주세요.</div>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">0</span><span class="step-title">요청 유형</span></div>
+      <div class="step-desc">신규 계열사/팀 등록인지, 기존 설정 변경인지 선택해주세요.</div>
+
+      <label class="check-option" id="optTypeNew">
+        <input type="radio" name="requestType" id="typeNew" value="new" checked>
+        <div><div class="opt-text">신규 등록</div><div class="opt-sub">처음 등록하는 계열사/팀</div></div>
+      </label>
+
+      <label class="check-option" id="optTypeChange">
+        <input type="radio" name="requestType" id="typeChange" value="change">
+        <div><div class="opt-text">설정 변경</div><div class="opt-sub">이미 등록되어 있으며 키워드·시간대 등을 바꾸고 싶은 경우</div></div>
+      </label>
+
+      <div class="indent" id="changeNoteBlock" style="display:none; margin-bottom:0;">
+        <div class="word-hint" style="margin-top:0;">상단 식별코드(<b id="changeCodeLabel"></b>) 기준으로 불러옵니다.</div>
+        <button type="button" class="small-btn" id="loadCodeBtn" style="width:100%;">🔄 이 설정 불러오기</button>
+        <div class="instant-actions">
+          <button type="button" class="small-btn instant-btn" id="instantCheckBtn">⚡ 지금 조회하기</button>
+          <div class="instant-hint">최근 발송 이후 새로 올라온 기사를 지금 바로 찾아서 텔레그램/이메일로 보내드리고, 아래에도 함께 보여드립니다. (최대 1~2분 소요)</div>
+        </div>
+        <div class="instant-result" id="instantResult" style="display:none;"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">1</span><span class="step-title">계열사/팀 정보</span></div>
+      <div class="step-desc" id="codeDesc">식별코드는 영문 대문자로, 새로 만드시는 코드입니다 (예: LXHOLDINGS).</div>
+      <label id="newCodeLabel">식별코드</label>
+      <input type="text" id="newCodeInput" placeholder="예: LXSEMICON" style="text-transform:uppercase;">
+      <label>회사/팀명</label>
+      <input type="text" id="company" placeholder="예: LX세미콘">
+      <label>담당자</label>
+      <input type="text" id="person" placeholder="예: 홍길동">
+      <label>연락받을 이메일</label>
+      <input type="email" id="contactEmail" placeholder="you@lx.com">
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">2</span><span class="step-title">알림채널 정보</span></div>
+      <div class="step-desc">텔레그램·이메일 모두 항상 발송됩니다 (누계 엑셀 파일 첨부 포함).</div>
+
+      <label>텔레그램 채팅방 제목</label>
+      <input type="text" id="telegramTitle" placeholder="예: LX세미콘 MI">
+      <label>텔레그램 뉴스방 chatId</label>
+      <input type="text" id="newsChatId" placeholder="예: -1002345678901">
+      <div class="word-hint" style="margin-top:-6px;">관리자 봇을 해당 팀 채팅방에 초대한 뒤 확인한 chatId를 입력해주세요.</div>
+
+      <label>이메일 제목</label>
+      <input type="text" id="emailSubject" placeholder="예: LX세미콘 MI Report">
+      <label>첨부파일명</label>
+      <input type="text" id="filePrefix" placeholder="예: LXSemicon-MI">
+      <label>수신자 이메일 (쉼표로 구분)</label>
+      <textarea id="emailList" placeholder="a@lx.com, b@lx.com" style="margin-bottom:0;"></textarea>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">3</span><span class="step-title">발송 시각</span></div>
+      <div class="step-desc">원하시는 시간대를 모두 체크해주세요. 체크한 시간마다 1회씩 발송됩니다.</div>
+      <div id="timeCheckGrid" class="time-check-grid"></div>
+
+      <label class="check-option" id="optWeekendOff" style="margin-top:12px; margin-bottom:0;">
+        <input type="checkbox" id="excludeWeekend">
+        <div><div class="opt-text">주말 발송 제외</div><div class="opt-sub">토·일요일에는 수집·발송하지 않습니다</div></div>
+      </label>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">4</span><span class="step-title">기타 요청사항</span><span class="optional-tag">선택</span></div>
+      <textarea id="etc" placeholder="예: 특정 언론사 제외 희망 등" style="margin-bottom:0;"></textarea>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">5</span><span class="step-title">모니터링 키워드</span></div>
+      <div class="step-desc">그룹명 → 그룹 전용 AI 분석 목적 → 키워드 순서로, 그룹별로 나눠 입력해주세요.</div>
+      <div id="groupList"></div>
+      <button type="button" class="add-btn" id="addGroupBtn">+ 그룹 추가</button>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">6</span><span class="step-title">관심 기업 (공시 자료 수집)</span><span class="optional-tag">선택</span></div>
+      <div class="step-desc">신청하신 뉴스 다이제스트 하단에 공시 자료를 함께 받아보고 싶은 기업을 등록해주세요.</div>
+
+      <div class="lx-fixed-note">🏢 LX 그룹 관련 공시는 항상 출력됩니다</div>
+
+      <div id="companyList"></div>
+      <button type="button" class="add-btn" id="addCompanyBtn">+ 기업 추가</button>
+      <div class="word-hint" style="margin-top:10px; margin-bottom:0;">
+        고유번호(corp_code)는 <a href="https://drive.google.com/file/d/1F-5ZivPoDqcogkgP_qTox1PrTQcq7gTl/view?usp=drivesdk" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">DART 기업 고유번호 전체 목록(구글드라이브)</a>을
+        열어서 회사명으로 검색(Ctrl+F 또는 Cmd+F)하면 <code>&lt;corp_code&gt;</code> 태그 바로 옆에서 8자리 숫자를 찾을 수 있습니다.
+        파일이 커서(약 30MB) 여는 데 시간이 조금 걸릴 수 있습니다.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">7</span><span class="step-title">출력 기준</span><span class="optional-tag">선택</span></div>
+      <div class="step-desc">아래 세 기준을 모두 만족하는 기사만 다이제스트에 노출됩니다. 기본값을 권장합니다.</div>
+
+      <div class="range-group">
+        <label>중요도 <span id="minImportanceVal" class="range-val">2</span> 이상</label>
+        <input type="range" id="minImportance" min="1" max="5" step="1" value="2">
+      </div>
+      <div class="range-group">
+        <label>관련성 <span id="minRelevanceVal" class="range-val">1</span> 이상</label>
+        <input type="range" id="minRelevance" min="1" max="5" step="1" value="1">
+      </div>
+      <div class="range-group">
+        <label>긴급성 <span id="minUrgencyVal" class="range-val">1</span> 이상</label>
+        <input type="range" id="minUrgency" min="1" max="5" step="1" value="1">
+      </div>
+    </section>
+
+    <button type="button" class="submit-btn" id="submitBtn">제출하기</button>
+    <div class="status" id="statusBox"></div>
+  </div>
+
+  <!-- 탭 3: 긴급 키워드 조사 -->
+  <div id="tab-adhoc" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">특정 키워드 검색 (긴급 조사)</span></div>
+      <div class="step-desc">등록된 키워드와 별개로, 특정 키워드 하나를 지금 바로 조사합니다. 결과는 상단 식별코드의 텔레그램/이메일로 즉시 발송됩니다.</div>
+
+      <label>키워드</label>
+      <input type="text" id="adhocKeyword" placeholder="예: OO전자 인수합병">
+
+      <div class="filter-row">
+        <div>
+          <label>조회 시작일</label>
+          <input type="date" id="adhocDateFrom">
+        </div>
+        <div>
+          <label>조회 종료일</label>
+          <input type="date" id="adhocDateTo">
+        </div>
+      </div>
+      <div class="word-hint" style="margin:6px 0 14px;">비워두면 기간 제한 없이 검색합니다. (네이버는 API 특성상 기간 지정이 완전히 정확하지 않을 수 있습니다.)</div>
+
+      <label>조회 대상</label>
+      <div class="source-check-row">
+        <label class="source-check"><input type="checkbox" id="srcGoogle" checked> 구글 뉴스</label>
+        <label class="source-check"><input type="checkbox" id="srcNaver"> 네이버 뉴스</label>
+        <label class="source-check"><input type="checkbox" id="srcGoogleEn"> 구글 뉴스(영문)</label>
+      </div>
+
+      <label class="check-option" id="optAdhocAI" style="margin-top:14px;">
+        <input type="checkbox" id="adhocUseAI">
+        <div><div class="opt-text">AI 분석 포함</div><div class="opt-sub">관련성 분석 및 요약을 함께 진행합니다 (시간이 더 걸립니다)</div></div>
+      </label>
+
+      <div id="adhocAIPurposeBlock" style="display:none; margin-top:10px;">
+        <label>AI 분석 지침 (선택)</label>
+        <textarea id="adhocAIPurpose" placeholder="비워두면 'LX그룹 관점 시사점 도출'로 자동 적용됩니다." style="margin-bottom:0;"></textarea>
+      </div>
+
+      <button type="button" class="submit-btn" id="adhocSearchBtn" style="margin-top:16px;">🔍 지금 조사하기</button>
+      <div class="instant-result" id="adhocResult" style="display:none;"></div>
+    </section>
+  </div>
+
+</main>
+
+<footer>LX Group MI 사내 전용 도구입니다. · <a href="./manual.html">사용 매뉴얼</a></footer>
+
+<script>
+  // n8n 웹훅 주소
+  const LOOKUP_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-lookup';
+  const SUBMIT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-intake';
+  const INSTANT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-instant';
+  const ARTICLES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-articles';
+  const ADHOC_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-adhoc-search';
+  const PAGE_SIZE = 50;
+
+  let identifierCode = '';
+  let allArticles = [];
+  let filtered = [];
+  let shown = 0;
+
+  function sharedCode(){
+    return document.getElementById('sharedCode').value.trim().toUpperCase();
+  }
+
+  function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function getGroupEmoji(groupName){
+    const name = String(groupName || '').toLowerCase();
+    if (name.includes('경제') || name.includes('금융')) return '💰';
+    if (name.includes('정치')) return '🏛️';
+    if (name.includes('산업') || name.includes('기업')) return '🏭';
+    if (name.includes('기술') || name.includes('it') || name.includes('ai')) return '💡';
+    if (name.includes('국제')) return '🌍';
+    if (name.includes('사회')) return '👥';
+    if (name.includes('문화')) return '🎭';
+    if (name.includes('스포츠')) return '🏅';
+    if (name.includes('부동산')) return '🏠';
+    if (name.includes('증시') || name.includes('주식')) return '📈';
+    return '🗂';
+  }
+
+  function getStars(score){
+    const n = parseInt(score, 10);
+    if (!Number.isFinite(n)) return '';
+    if (n >= 5) return '⭐⭐⭐';
+    if (n === 4) return '⭐⭐';
+    if (n === 3) return '⭐';
+    return '';
+  }
+
+  function getDirectionIcon(direction){
+    if (direction === '긍정') return '📈';
+    if (direction === '부정') return '📉';
+    return '';
+  }
+
+  /* ---------- 탭 전환 ---------- */
+  function showTab(tabName){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabName);
+    history.replaceState(null, '', url);
+  }
+
+  /* ---------- 탭1: 기사 검색 ---------- */
+  function renderGroupOptions(){
+    const groups = [...new Set(allArticles.map(a => a.group).filter(Boolean))];
+    const sel = document.getElementById('groupSelect');
+    sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  }
+
+  function applyFilters(){
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const g = document.getElementById('groupSelect').value;
+    filtered = allArticles.filter(a => {
+      if (g && a.group !== g) return false;
+      if (!q) return true;
+      const hay = (a.title + ' ' + a.matched + ' ' + a.group).toLowerCase();
+      return hay.includes(q);
+    });
+    shown = 0;
+    renderList(true);
+  }
+
+  function renderList(reset){
+    const list = document.getElementById('articleList');
+    if (reset) list.innerHTML = '';
+
+    const next = filtered.slice(shown, shown + PAGE_SIZE);
+    next.forEach(a => {
+      const div = document.createElement('div');
+      div.className = 'article-item';
+      const stars = getStars(a.importance);
+      const dir = getDirectionIcon(a.direction);
+      div.innerHTML = `
+        <div class="article-top">
+          <span class="group-chip">${getGroupEmoji(a.group)} ${escapeHtml(a.group || '기타')}</span>
+          <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
+        </div>
+        <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+        ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
+      `;
+      list.appendChild(div);
+    });
+    shown += next.length;
+
+    document.getElementById('emptyNote').style.display = filtered.length === 0 ? 'block' : 'none';
+    document.getElementById('moreBtn').style.display = shown < filtered.length ? 'block' : 'none';
+    document.getElementById('summaryLine').textContent = `총 ${allArticles.length}건 중 ${filtered.length}건 검색됨`;
+  }
+
+  function loadArticles(){
+    const code = sharedCode();
+    const box = document.getElementById('sharedStatusBox');
+    box.className = 'status';
+    box.textContent = '';
+
+    if (!code){ alert('식별코드를 입력해주세요.'); return; }
+
+    const btn = document.getElementById('sharedLoadBtn');
+    btn.disabled = true;
+    btn.textContent = '조회 중...';
+
+    fetch(ARTICLES_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.textContent = '조회';
+
+        if (data.error || !data.articles){
+          box.className = 'status show err';
+          box.textContent = '✕ ' + (data.error || '조회 중 오류가 발생했습니다.');
+          document.getElementById('resultsSection').style.display = 'none';
+          document.getElementById('excelLink').style.display = 'none';
+          return;
+        }
+
+        localStorage.setItem('lxgroup_mi_code', code);
+
+        const excelLink = document.getElementById('excelLink');
+        if (data.sheetDownloadUrl){
+          excelLink.href = data.sheetDownloadUrl;
+          excelLink.style.display = 'inline-flex';
+        } else {
+          excelLink.style.display = 'none';
+        }
+
+        allArticles = data.articles;
+        document.getElementById('resultsSection').style.display = 'block';
+        renderGroupOptions();
+        applyFilters();
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = '조회';
+        box.className = 'status show err';
+        box.textContent = '✕ 조회 중 오류가 발생했습니다: ' + err.message;
+      });
+  }
+
+  /* ---------- 탭2: 키워드 신청/변경 ---------- */
+  const TIME_HOURS = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
+
+  function timeRangeLabel(h){
+    return String(parseInt(h, 10)).padStart(2,'0') + ':00';
+  }
+
+  function buildTimeCheckGrid(){
+    const box = document.getElementById('timeCheckGrid');
+    box.innerHTML = '';
+    TIME_HOURS.forEach(h => {
+      const wrap = document.createElement('label');
+      wrap.className = 'time-check';
+      wrap.id = 'timewrap-' + h;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = 'time-' + h;
+      cb.value = h + ':00';
+      cb.addEventListener('change', function(){ wrap.classList.toggle('checked', cb.checked); });
+      const span = document.createElement('span');
+      span.textContent = timeRangeLabel(h);
+      wrap.appendChild(cb);
+      wrap.appendChild(span);
+      box.appendChild(wrap);
+    });
+  }
+
+  function applyTimeSelection(selectedTimes){
+    TIME_HOURS.forEach(h => {
+      const cb = document.getElementById('time-' + h);
+      const wrap = document.getElementById('timewrap-' + h);
+      const checked = selectedTimes.includes(h + ':00');
+      cb.checked = checked;
+      wrap.classList.toggle('checked', checked);
+    });
+  }
+
+  function getSelectedTimes(){
+    return TIME_HOURS.filter(h => document.getElementById('time-' + h).checked).map(h => h + ':00');
+  }
+
+  function bindRangeDisplay(inputId, valId){
+    const input = document.getElementById(inputId);
+    const val = document.getElementById(valId);
+    input.addEventListener('input', function(){ val.textContent = input.value; });
+  }
+
+  let groupCount = 0;
+  function addGroup(){
+    groupCount++;
+    const id = groupCount;
+    const wrap = document.createElement('div');
+    wrap.className = 'block';
+    wrap.id = 'group-' + id;
+    wrap.innerHTML = `
+      <div class="block-actions">
+        <button type="button" class="en-toggle" title="구글 뉴스 영문판도 함께 검색합니다 (해외 이슈 등 영어로만 보도되는 기사용)">🌐 영문</button>
+        <button type="button" class="urgent-toggle" title="긴급 그룹: 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)">🚨 긴급</button>
+        <button type="button" class="rm">삭제</button>
+      </div>
+      <label>그룹명</label>
+      <input type="text" class="g-name" placeholder="예: 경쟁사">
+      <label>AI 분석 목표(본 그룹의 AI 검색 지침)</label>
+      <textarea class="g-purpose" placeholder="AI Tool 사용할 때처럼 구체적일수록 좋음" style="margin-bottom:8px;"></textarea>
+      <label>키워드 (쉼표로 구분, 동의어/표기 변형 전부 입력)</label>
+      <textarea class="g-keywords" placeholder="예: LX홀딩스, LX 홀딩스, 재건축+압구정, KCC-농구" style="margin-bottom:6px;"></textarea>
+      <div class="word-hint">
+        ・보통은 단어만 쓰면 됩니다. (예: LX홀딩스)<br>
+        ・두 단어 필수 포함이 필요한 경우 <b>+</b>로 연결하세요. (예: 재건축+압구정)<br>
+        ・특정 단어가 들어간 기사를 빼고 싶을 때는 <b>-</b>를 쓰세요. (예: KCC-농구-감독 * 제거 조건 복수가능)
+      </div>
+    `;
+    document.getElementById('groupList').appendChild(wrap);
+    wrap.querySelector('.rm').addEventListener('click', function(){
+      document.getElementById('group-' + id).remove();
+    });
+    wrap.querySelector('.urgent-toggle').addEventListener('click', function(){
+      this.classList.toggle('active');
+    });
+    wrap.querySelector('.en-toggle').addEventListener('click', function(){
+      this.classList.toggle('active');
+    });
+  }
+
+  let companyCount = 0;
+  function addCompanyRow(name, corpCode){
+    companyCount++;
+    const id = companyCount;
+    const wrap = document.createElement('div');
+    wrap.className = 'company-row';
+    wrap.id = 'company-' + id;
+    wrap.innerHTML = `
+      <input type="text" class="c-name" placeholder="기업명 (예: KCC)" value="${(name || '').replace(/"/g, '&quot;')}">
+      <input type="text" class="c-corpcode" placeholder="고유번호 8자리" value="${(corpCode || '').replace(/"/g, '&quot;')}">
+      <button type="button" class="c-rm" aria-label="삭제">✕</button>
+    `;
+    document.getElementById('companyList').appendChild(wrap);
+    wrap.querySelector('.c-rm').addEventListener('click', function(){
+      document.getElementById('company-' + id).remove();
+    });
+  }
+
+  function collectInterestCompanies(){
+    const list = [];
+    document.querySelectorAll('#companyList .company-row').forEach(function(row){
+      const name = row.querySelector('.c-name').value.trim();
+      const corpCode = row.querySelector('.c-corpcode').value.trim();
+      if (name) list.push({ name: name, corpCode: corpCode });
+    });
+    return list;
+  }
+
+  function updateChannelBlocks(){
+    const isChange = document.getElementById('typeChange').checked;
+    document.getElementById('optTypeNew').classList.toggle('checked', document.getElementById('typeNew').checked);
+    document.getElementById('optTypeChange').classList.toggle('checked', isChange);
+    document.getElementById('changeNoteBlock').style.display = isChange ? 'block' : 'none';
+    document.getElementById('newCodeInput').style.display = isChange ? 'none' : 'block';
+    document.getElementById('newCodeLabel').style.display = isChange ? 'none' : 'block';
+    document.getElementById('codeDesc').style.display = isChange ? 'none' : 'block';
+    document.getElementById('optWeekendOff').classList.toggle('checked', document.getElementById('excludeWeekend').checked);
+    document.getElementById('changeCodeLabel').textContent = sharedCode();
+  }
+
+  function val(id){ return document.getElementById(id).value; }
+
+  function renderInstantArticles(articles){
+    return articles.map(a => {
+      const stars = getStars(a.importance);
+      const dir = getDirectionIcon(a.direction);
+      return `
+        <div class="article-item">
+          <div class="article-top">
+            <span class="group-chip">${getGroupEmoji(a.group)} ${escapeHtml(a.group || '기타')}</span>
+            <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
+          </div>
+          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+          ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function instantCheck(){
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 입력해주세요.'); return; }
+
+    const btn = document.getElementById('instantCheckBtn');
+    const resultBox = document.getElementById('instantResult');
+    btn.disabled = true;
+    btn.textContent = '조회 중... (최대 1~2분)';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div class="empty-note">새 기사를 찾고 있습니다. 잠시만 기다려주세요...</div>';
+
+    fetch(INSTANT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        btn.disabled = false;
+        btn.textContent = '⚡ 지금 조회하기';
+
+        if (data.error){
+          resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(data.error) + '</div>';
+          return;
+        }
+
+        const count = data.count || 0;
+        if (count === 0){
+          resultBox.innerHTML = '<div class="instant-summary">✓ 확인 완료 — 새로 발견된 기사가 없습니다.</div>';
+          return;
+        }
+
+        resultBox.innerHTML =
+          '<div class="instant-summary">✓ 새 기사 ' + count + '건을 찾아 텔레그램/이메일로 발송했고 시트에 저장했습니다.</div>' +
+          renderInstantArticles(data.articles);
+      })
+      .catch(function(err){
+        btn.disabled = false;
+        btn.textContent = '⚡ 지금 조회하기';
+        resultBox.innerHTML = '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+      });
+  }
+
+  function collectGroups(){
+    const groups = [];
+    document.querySelectorAll('#groupList .block').forEach(b=>{
+      const name = b.querySelector('.g-name').value.trim();
+      const purpose = b.querySelector('.g-purpose').value.trim();
+      const kwRaw = b.querySelector('.g-keywords').value.trim();
+      const keywords = kwRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const urgent = b.querySelector('.urgent-toggle').classList.contains('active');
+      const googleEn = b.querySelector('.en-toggle').classList.contains('active');
+      if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent, googleEn });
+    });
+    return groups;
+  }
+
+  function applyPrefillData(data){
+    if (!data) {
+      alert('해당 코드로 등록된 내역을 찾을 수 없습니다. 코드를 다시 확인해주세요.');
+      return;
+    }
+    identifierCode = data.identifierCode || '';
+
+    document.getElementById('prefillNotice').style.display = 'block';
+    document.getElementById('typeChange').checked = true;
+    document.getElementById('sharedCode').value = identifierCode;
+
+    document.getElementById('company').value = data.company || '';
+    document.getElementById('person').value = data.person || '';
+    document.getElementById('contactEmail').value = data.contactEmail || '';
+    document.getElementById('telegramTitle').value = data.telegramTitle || '';
+    document.getElementById('newsChatId').value = data.newsChatId || '';
+    document.getElementById('emailSubject').value = data.emailSubject || '';
+    document.getElementById('filePrefix').value = data.filePrefix || '';
+    document.getElementById('emailList').value = data.emailList || '';
+    document.getElementById('excludeWeekend').checked = !!data.excludeWeekend;
+    document.getElementById('etc').value = data.etc || '';
+
+    const minImportance = data.minImportance || 2;
+    const minRelevance = data.minRelevance || 1;
+    const minUrgency = data.minUrgency || 1;
+    document.getElementById('minImportance').value = minImportance;
+    document.getElementById('minImportanceVal').textContent = minImportance;
+    document.getElementById('minRelevance').value = minRelevance;
+    document.getElementById('minRelevanceVal').textContent = minRelevance;
+    document.getElementById('minUrgency').value = minUrgency;
+    document.getElementById('minUrgencyVal').textContent = minUrgency;
+
+    if (data.sendTimes && data.sendTimes.length > 0) {
+      applyTimeSelection(data.sendTimes);
+    }
+
+    if (data.groups && data.groups.length > 0) {
+      document.getElementById('groupList').innerHTML = '';
+      groupCount = 0;
+      data.groups.forEach(function(g){
+        addGroup();
+        const lastBlock = document.querySelector('#groupList .block:last-child');
+        lastBlock.querySelector('.g-name').value = g.name || '';
+        lastBlock.querySelector('.g-purpose').value = g.purpose || '';
+        lastBlock.querySelector('.g-keywords').value = (g.keywords || []).join(', ');
+        lastBlock.querySelector('.urgent-toggle').classList.toggle('active', !!g.urgent);
+        lastBlock.querySelector('.en-toggle').classList.toggle('active', !!g.googleEn);
+      });
+    }
+
+    if (data.interestCompanies && data.interestCompanies.length > 0) {
+      document.getElementById('companyList').innerHTML = '';
+      companyCount = 0;
+      data.interestCompanies.forEach(function(c){
+        addCompanyRow(c.name || '', c.corpCode || '');
+      });
+    }
+
+    updateChannelBlocks();
+  }
+
+  function loadByCode(){
+    const code = sharedCode();
+    if (!code) { alert('상단에 식별코드를 입력해주세요.'); return; }
+    const btn = document.getElementById('loadCodeBtn');
+    btn.disabled = true;
+    btn.textContent = '조회 중...';
+    fetch(LOOKUP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        btn.disabled = false;
+        btn.textContent = '🔄 이 설정 불러오기';
+        applyPrefillData(data && data.identifierCode ? data : null);
+      })
+      .catch(function(err){
+        btn.disabled = false;
+        btn.textContent = '🔄 이 설정 불러오기';
+        alert('조회 중 오류가 발생했습니다: ' + err.message);
+      });
+  }
+
+  function submitForm(){
+    const isChange = document.getElementById('typeChange').checked;
+    const code = isChange ? sharedCode() : val('newCodeInput').trim().toUpperCase();
+
+    if(!code){ alert('식별코드를 입력해주세요.'); return; }
+    if(!val('emailList').trim()){ alert('이메일 수신자를 입력해주세요.'); return; }
+    if(!val('newsChatId').trim()){ alert('텔레그램 뉴스방 chatId를 입력해주세요.'); return; }
+    const selectedTimes = getSelectedTimes();
+    if(selectedTimes.length === 0){ alert('발송 시각을 1개 이상 체크해주세요.'); return; }
+    if(isChange && !sharedCode()){
+      alert('설정 변경은 식별코드가 필요합니다. 상단에 코드를 입력해주세요.'); return;
+    }
+    const groups = collectGroups();
+    if(groups.length === 0){ alert('모니터링 키워드 그룹을 1개 이상 입력해주세요.'); return; }
+    const groupMissingPurpose = groups.find(g => !g.purpose);
+    if(groupMissingPurpose){ alert('"' + (groupMissingPurpose.name || '이름없는 그룹') + '" 그룹의 AI 분석 활용목적을 입력해주세요.'); return; }
+
+    const payload = {
+      requestType: isChange ? 'change' : 'new',
+      identifierCode: code,
+      company: val('company'),
+      person: val('person'),
+      contactEmail: val('contactEmail'),
+      telegramTitle: val('telegramTitle'),
+      newsChatId: val('newsChatId'),
+      emailSubject: val('emailSubject'),
+      filePrefix: val('filePrefix'),
+      emailList: val('emailList'),
+      sendTimes: selectedTimes,
+      excludeWeekend: document.getElementById('excludeWeekend').checked,
+      groups: groups,
+      interestCompanies: collectInterestCompanies(),
+      minImportance: parseInt(val('minImportance'), 10),
+      minRelevance: parseInt(val('minRelevance'), 10),
+      minUrgency: parseInt(val('minUrgency'), 10),
+      etc: val('etc')
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '제출 중...';
+
+    fetch(SUBMIT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function(res){
+        if (!res.ok) throw new Error('서버 응답 오류 (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data){
+        const box = document.getElementById('statusBox');
+        box.className = 'status show ok';
+        box.textContent = '✓ 제출이 완료되었습니다.';
+        btn.textContent = '제출 완료';
+        alert('제출이 완료되었습니다.');
+      })
+      .catch(function(error){
+        const box = document.getElementById('statusBox');
+        box.className = 'status show err';
+        box.textContent = '✕ 제출 중 오류가 발생했습니다: ' + error.message;
+        btn.disabled = false;
+        btn.textContent = '다시 제출하기';
+        alert('제출에 실패했습니다. 다시 시도해주세요.\n' + error.message);
+      });
+  }
+
+  /* ---------- 탭3: 긴급 키워드 조사 ---------- */
+  function renderAdhocArticles(articles){
+    return articles.map(a => {
+      const stars = getStars(a.importance);
+      const dir = getDirectionIcon(a.direction);
+      return `
+        <div class="article-item">
+          <div class="article-top">
+            <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
+          </div>
+          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+          ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function runAdhocSearch(){
+    const code = sharedCode();
+    const keyword = document.getElementById('adhocKeyword').value.trim();
+    if (!code){ alert('먼저 상단에 식별코드를 입력해주세요.'); return; }
+    if (!keyword){ alert('검색할 키워드를 입력해주세요.'); return; }
+
+    const sources = [];
+    if (document.getElementById('srcGoogle').checked) sources.push('google');
+    if (document.getElementById('srcNaver').checked) sources.push('naver');
+    if (document.getElementById('srcGoogleEn').checked) sources.push('google_en');
+    if (sources.length === 0){ alert('조회 대상을 1개 이상 선택해주세요.'); return; }
+
+    const payload = {
+      code,
+      keyword,
+      dateFrom: document.getElementById('adhocDateFrom').value,
+      dateTo: document.getElementById('adhocDateTo').value,
+      sources,
+      useAI: document.getElementById('adhocUseAI').checked,
+      aiPurpose: document.getElementById('adhocAIPurpose').value.trim(),
+    };
+
+    const btn = document.getElementById('adhocSearchBtn');
+    const resultBox = document.getElementById('adhocResult');
+    btn.disabled = true;
+    btn.textContent = '조사 중... (최대 1~2분)';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div class="empty-note">\'' + escapeHtml(keyword) + '\' 관련 기사를 찾고 있습니다. 잠시만 기다려주세요...</div>';
+
+    fetch(ADHOC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.textContent = '🔍 지금 조사하기';
+
+        if (data.error){
+          resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(data.error) + '</div>';
+          return;
+        }
+
+        const count = data.count || 0;
+        if (count === 0){
+          resultBox.innerHTML = '<div class="instant-summary">✓ 조사 완료 — \'' + escapeHtml(keyword) + '\' 관련 기사를 찾지 못했습니다.</div>';
+          return;
+        }
+
+        resultBox.innerHTML =
+          '<div class="instant-summary">✓ \'' + escapeHtml(keyword) + '\' 관련 기사 ' + count + '건을 찾아 텔레그램/이메일로 발송했습니다.</div>' +
+          renderAdhocArticles(data.articles);
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = '🔍 지금 조사하기';
+        resultBox.innerHTML = '<div class="empty-note">✕ 조사 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+      });
+  }
+
+  /* ---------- 초기화 ---------- */
+  buildTimeCheckGrid();
+  applyTimeSelection(['07:00', '12:00', '18:00']);
+  addGroup();
+  addCompanyRow('', '');
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    });
+
+    document.getElementById('sharedLoadBtn').addEventListener('click', loadArticles);
+    document.getElementById('sharedCode').addEventListener('keydown', function(e){
+      if (e.key === 'Enter') loadArticles();
+    });
+    document.getElementById('sharedCode').addEventListener('input', function(){
+      document.getElementById('changeCodeLabel').textContent = sharedCode();
+    });
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('groupSelect').addEventListener('change', applyFilters);
+    document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
+
+    document.getElementById('addGroupBtn').addEventListener('click', addGroup);
+    document.getElementById('addCompanyBtn').addEventListener('click', function(){ addCompanyRow('', ''); });
+    document.getElementById('typeNew').addEventListener('change', updateChannelBlocks);
+    document.getElementById('typeChange').addEventListener('change', updateChannelBlocks);
+    document.getElementById('excludeWeekend').addEventListener('change', updateChannelBlocks);
+    document.getElementById('loadCodeBtn').addEventListener('click', loadByCode);
+    document.getElementById('instantCheckBtn').addEventListener('click', instantCheck);
+    document.getElementById('submitBtn').addEventListener('click', submitForm);
+    bindRangeDisplay('minImportance', 'minImportanceVal');
+    bindRangeDisplay('minRelevance', 'minRelevanceVal');
+    bindRangeDisplay('minUrgency', 'minUrgencyVal');
+    updateChannelBlocks();
+
+    document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
+    document.getElementById('adhocUseAI').addEventListener('change', function(){
+      document.getElementById('adhocAIPurposeBlock').style.display = this.checked ? 'block' : 'none';
+      document.getElementById('optAdhocAI').classList.toggle('checked', this.checked);
+    });
+    ['srcGoogle','srcNaver','srcGoogleEn'].forEach(function(id){
+      const cb = document.getElementById(id);
+      const wrap = cb.closest('.source-check');
+      wrap.classList.toggle('checked', cb.checked);
+      cb.addEventListener('change', function(){ wrap.classList.toggle('checked', cb.checked); });
+    });
+
+    const DEFAULT_CODE = 'LXHOLDINGS';
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    const codeFromStorage = localStorage.getItem('lxgroup_mi_code');
+    const initialCode = (codeFromUrl || codeFromStorage || DEFAULT_CODE).trim().toUpperCase();
+    document.getElementById('sharedCode').value = initialCode;
+    document.getElementById('changeCodeLabel').textContent = initialCode;
+
+    const tabFromUrl = urlParams.get('tab');
+    const initialTab = ['search','apply','adhoc'].includes(tabFromUrl) ? tabFromUrl : 'search';
+    showTab(initialTab);
+
+    loadArticles();
+
+    if (tabFromUrl === 'apply' && codeFromUrl) {
+      document.getElementById('typeChange').checked = true;
+      updateChannelBlocks();
+      loadByCode();
+    }
+  });
+</script>
+
+</body>
+</html>
