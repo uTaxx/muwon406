@@ -73,6 +73,13 @@ class OrderRow(Base):
     is_paper: Mapped[bool] = mapped_column(default=True)
     kis_order_id: Mapped[str] = mapped_column(String(50), default="")
     reason: Mapped[str] = mapped_column(String(100), default="")
+    #: 판단 근거가 된 가격(전략이 본 마지막 종가). price와 함께 있어야
+    #: "결정한 가격과 실제로 산 가격이 얼마나 벌어졌나"를 잴 수 있다.
+    #: 나중에 추가된 컬럼이라 nullable — 이전 주문에는 값이 없다.
+    reference_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    #: price가 실제 체결가인지(True), 조회 실패로 기준가를 쓴 것인지(False).
+    #: 구분이 없으면 슬리피지 통계에 '차이 0'인 가짜 표본이 섞인다.
+    fill_confirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 

@@ -303,6 +303,7 @@ class KISClient(MarketDataSource):
             price=reference_price,
             order_id=payload["output"]["ODNO"],
             is_paper=self.is_paper,
+            reference_price=reference_price,
         )
 
     def get_fill(self, order_id: str, order_date: date | None = None) -> FillInfo | None:

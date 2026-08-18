@@ -76,6 +76,10 @@ class KISOrderExecutor(OrderExecutor):
                     price=fill.avg_fill_price,
                     order_id=order.order_id,
                     is_paper=order.is_paper,
+                    # 기준가를 함께 남긴다 — 체결가로 덮어쓰면 "결정한 가격과
+                    # 실제로 산 가격이 얼마나 벌어졌나"를 영영 잴 수 없다.
+                    reference_price=order.reference_price or order.price,
+                    fill_confirmed=True,
                 )
 
             if attempt < _FILL_LOOKUP_ATTEMPTS - 1:

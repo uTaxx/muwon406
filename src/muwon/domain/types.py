@@ -98,6 +98,14 @@ class OrderResult:
     symbol: str
     side: OrderSide
     quantity: int
+    #: 실제 체결가(확인됐다면) 또는 기준가. fill_confirmed로 어느 쪽인지 구분한다.
     price: float
     order_id: str
     is_paper: bool
+    #: 판단 근거가 된 가격 — 전략이 본 마지막 종가.
+    #: 이걸 남겨야 "결정한 가격과 실제로 산 가격이 얼마나 벌어졌나"를 잴 수 있다.
+    #: 지금까지는 체결가가 확인되면 price를 덮어써서 기준가가 사라졌다.
+    reference_price: float = 0.0
+    #: price가 실제 체결가인지, 조회 실패로 기준가를 그대로 쓴 것인지.
+    #: 이 구분이 없으면 슬리피지 통계에 '차이 0'인 가짜 표본이 섞인다.
+    fill_confirmed: bool = False

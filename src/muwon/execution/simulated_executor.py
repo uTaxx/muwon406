@@ -28,4 +28,8 @@ class SimulatedOrderExecutor(OrderExecutor):
             price=reference_price,
             order_id=f"SIM-{uuid.uuid4().hex[:12]}",
             is_paper=True,
+            reference_price=reference_price,
+            # 가짜 체결이므로 확인된 체결이 아니다. 이걸 True로 두면
+            # 슬리피지 통계에 '차이 0'인 표본이 잔뜩 섞여 실제보다 작게 나온다.
+            fill_confirmed=False,
         )

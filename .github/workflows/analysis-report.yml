@@ -50,3 +50,8 @@ jobs:
       - name: 리포트 생성·발송
         run: |
           python scripts/run_analysis_report.py --days "${{ github.event.inputs.days || '30' }}"
+
+      # 백테스트의 슬리피지 값을 추측이 아니라 실측으로 정하기 위한 집계.
+      # 주문이 쌓여야 뜻이 생기므로 주간 리포트와 같이 돌린다.
+      - name: 결정가 대비 체결가 집계
+        run: python scripts/measure_execution_cost.py

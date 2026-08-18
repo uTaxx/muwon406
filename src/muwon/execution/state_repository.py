@@ -46,6 +46,8 @@ def record_order(session_factory, order: OrderResult, reason: str) -> None:
                 is_paper=order.is_paper,
                 kis_order_id=order.order_id,
                 reason=reason,
+                reference_price=order.reference_price or None,
+                fill_confirmed=order.fill_confirmed,
             )
         )
         session.commit()
