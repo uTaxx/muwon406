@@ -23,3 +23,16 @@ class TelegramNotifier:
             logger.info(f"[telegram:disabled] {message}")
             return
         asyncio.run(Bot(token=cfg.bot_token).send_message(chat_id=cfg.chat_id, text=message))
+
+    def send_long(self, message: str) -> int:
+        """길이 제한(4096자)을 넘는 긴 글을 여러 조각으로 나눠 보낸다.
+
+        분석 리포트처럼 통째로 복사해 쓸 글은 잘리면 못 쓰게 되므로,
+        줄 단위로 안전하게 나눠 순서대로 보낸다. 보낸 조각 수를 돌려준다."""
+        from muwon.analysis.report import split_for_telegram
+
+        chunks = split_for_telegram(message)
+        for index, chunk in enumerate(chunks, start=1):
+            prefix = f"({index}/{len(chunks)})\n" if len(chunks) > 1 else ""
+            self.send(prefix + chunk)
+        return len(chunks)
