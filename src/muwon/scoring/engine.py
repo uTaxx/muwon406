@@ -9,9 +9,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from loguru import logger
+
 from muwon.domain.types import Signal, SignalType
 from muwon.factors.base import Factor
-from muwon.factors.cross_sectional import MarketRegimeFactor, RelativeStrengthFactor
+from muwon.factors.cross_sectional import (
+    REGIME_SCORES,
+    MarketRegimeFactor,
+    RelativeStrengthFactor,
+)
 from muwon.factors.technical import (
     MomentumFactor,
     PullbackFactor,
@@ -60,11 +66,44 @@ def build_factors(config: StrategyConfig) -> list[Factor]:
     return factors
 
 
+def threshold_reachability(config: StrategyConfig) -> dict[str, tuple[float, float]]:
+    """국면별 (도달 가능한 최고 총점, 매수 문턱)을 돌려준다.
+
+    국면 Factor는 두 곳에서 동시에 작용한다. 점수를 끌어내리고(BEAR면 20점),
+    매수 문턱을 올린다(BEAR면 90). 방향이 같아 효과가 겹치기 때문에, 가중치를
+    조금만 만져도 '아무리 좋은 종목이어도 살 수 없는' 국면이 생긴다.
+
+    기본 설정이 이미 그렇다 — market_regime 가중치가 15이므로 BEAR에서 국면은
+    3점만 기여하고, 나머지 Factor가 전부 만점이어도 총점은 88점이다. 문턱은
+    90이다. 도달할 수 없다.
+
+    이걸 조용히 두면 설정의 90이라는 숫자가 거짓말이 된다. 85로 낮춰도 여전히
+    아무것도 안 바뀌므로, 값을 만지는 사람은 자기가 무엇을 바꿨는지 알 수 없다.
+    그래서 계산해서 드러낸다."""
+    weights = config.enabled_weights()
+    regime_weight = weights.get("market_regime", 0.0)
+    others = sum(w for key, w in weights.items() if key != "market_regime")
+    return {
+        regime: (others + regime_score * regime_weight / 100, config.threshold_for(regime))
+        for regime, regime_score in REGIME_SCORES.items()
+    }
+
+
 class ScoreEngine:
     def __init__(self, config: StrategyConfig, factors: list[Factor] | None = None):
         self.config = config
         self.factors = factors if factors is not None else build_factors(config)
         self._warmed = False
+        for regime, (ceiling, threshold) in threshold_reachability(config).items():
+            if threshold > ceiling:
+                logger.warning(
+                    "{} 국면은 매수가 수학적으로 불가능합니다 — 문턱 {:.0f}, "
+                    "도달 가능한 최고 총점 {:.1f}. 설정의 문턱 값이 실제로는 "
+                    "아무 일도 하지 않습니다.",
+                    regime,
+                    threshold,
+                    ceiling,
+                )
 
     def warmup(self, histories) -> None:
         for factor in self.factors:
@@ -81,7 +120,11 @@ class ScoreEngine:
 
         regime = self._current_regime()
         buy_threshold = self.config.threshold_for(regime)
-        strong = self.config.strong_buy_threshold
+        # STRONG_BUY 문턱이 국면 문턱보다 낮으면 그게 우회로가 된다. 약세장에서
+        # 매수 문턱을 90으로 올려 놨는데 85점짜리가 STRONG_BUY로 먼저 걸려
+        # 통과해 버리는 식이다 — 판정 사다리는 위에서부터 검사하기 때문이다.
+        # 더 강한 신호라는 이름표가 더 느슨한 관문이 되어서는 안 된다.
+        strong = max(self.config.strong_buy_threshold, buy_threshold)
 
         results: list[ScoredSymbol] = []
         for symbol in ctx.histories:

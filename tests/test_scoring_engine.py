@@ -294,3 +294,91 @@ def test_strategy_config_round_trips_through_settings_store():
     assert loaded.buy_threshold == 60
     assert loaded.factors["momentum"].enabled is False
     assert "momentum" not in loaded.enabled_weights()
+
+
+class FixedRegimeFactor(MarketRegimeFactor):
+    """국면을 고정해 두는 Factor — 판정 사다리만 떼어서 보기 위한 것."""
+
+    def __init__(self, regime, score=None):
+        # Factor.__init__이 곧바로 warmup()을 부르므로 먼저 채워 둔다
+        self._fixed = regime
+        self._score = REGIME_SCORES[regime] if score is None else score
+        super().__init__({})
+
+    def warmup(self, histories):  # 시세가 필요 없다
+        self.regime = self._fixed
+
+    def prepare(self, ctx):
+        self.regime = self._fixed
+
+    def score(self, symbol, ctx):
+        return FactorResult(self.key, self._score, self._fixed)
+
+
+def test_strong_buy_cannot_bypass_a_raised_regime_threshold():
+    """STRONG_BUY는 더 강한 신호라는 이름표지 더 느슨한 관문이 아니다.
+
+    판정 사다리는 위에서부터 검사한다. 그래서 STRONG_BUY 문턱(85)이 국면
+    문턱(BEAR 90)보다 낮으면, 87점짜리가 BUY 검사에 닿기도 전에 STRONG_BUY로
+    통과해 버린다. 약세장에 문턱을 올려 둔 설정이 통째로 무력화된다."""
+    config = StrategyConfig(
+        buy_threshold=75,
+        strong_buy_threshold=85,
+        factors={
+            "market_regime": FactorConfig(enabled=True, weight=1),
+            "trend": FactorConfig(enabled=True, weight=99),
+        },
+        regime_buy_threshold={"BEAR": 90.0},
+    )
+    # 국면 가중치를 1로 낮춰 총점 87을 만들 수 있게 한다 — 기본 가중치(15)에서는
+    # BEAR 천장이 88이라 87을 만들 수는 있어도 여유가 거의 없다
+    engine = ScoreEngine(
+        config,
+        factors=[FixedRegimeFactor("BEAR", score=0.0), StubFactor("trend", {"A": 88.0})],
+    )
+
+    result = engine.evaluate(MarketContext(as_of=date(2024, 1, 2), histories={"A": frame([1])}))[0]
+
+    assert result.total == pytest.approx(87.12)
+    assert result.decision != "STRONG_BUY", "85점 문턱이 90점 관문을 뚫으면 안 된다"
+    assert result.decision == "WATCH"
+
+
+def test_strong_buy_still_works_when_the_regime_threshold_is_lower():
+    """반대로 강세장에서는 STRONG_BUY가 원래대로 붙어야 한다 — 고치면서
+    STRONG_BUY 자체를 없애 버리면 안 된다."""
+    config = StrategyConfig(
+        buy_threshold=75,
+        strong_buy_threshold=85,
+        factors={
+            "market_regime": FactorConfig(enabled=True, weight=1),
+            "trend": FactorConfig(enabled=True, weight=99),
+        },
+        regime_buy_threshold={"STRONG_BULL": 70.0},
+    )
+    engine = ScoreEngine(
+        config,
+        factors=[FixedRegimeFactor("STRONG_BULL"), StubFactor("trend", {"A": 88.0})],
+    )
+
+    result = engine.evaluate(MarketContext(as_of=date(2024, 1, 2), histories={"A": frame([1])}))[0]
+    assert result.decision == "STRONG_BUY"
+
+
+def test_threshold_reachability_reports_the_impossible_regime():
+    """설정의 숫자가 거짓말인지 계산해서 드러낸다.
+
+    BEAR 문턱을 90에서 85로 낮춰도 천장이 88이라 여전히 잘 안 걸린다는 걸
+    값을 만지는 사람이 알아야 한다."""
+    from muwon.scoring.engine import threshold_reachability
+
+    table = threshold_reachability(StrategyConfig())
+
+    ceiling, threshold = table["BEAR"]
+    assert ceiling == pytest.approx(88.0)
+    assert threshold == 90.0
+    assert ceiling < threshold, "기본 설정의 BEAR는 도달 불가여야 한다(현 상태 고정)"
+
+    for regime in ("STRONG_BULL", "BULL", "NEUTRAL"):
+        ceiling, threshold = table[regime]
+        assert ceiling > threshold, f"{regime}은 도달 가능해야 한다"

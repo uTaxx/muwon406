@@ -28,7 +28,7 @@ from muwon.data.universe_builder import active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.db.session import make_session_factory
 from muwon.risk.manager import RiskManager
-from muwon.scoring.engine import FactorScoreStrategy
+from muwon.scoring.engine import FactorScoreStrategy, threshold_reachability
 from muwon.settings.schema import RiskPolicy
 from muwon.strategy.portfolio import MarketContext, as_portfolio_strategy
 from muwon.strategy.registry import build_strategy
@@ -36,20 +36,31 @@ from muwon.strategy.registry import build_strategy
 WARMUP_DAYS = 200  # 120일선까지 채우려면 넉넉히 필요
 
 
-def regime_timeline(strategy, histories, dates) -> dict[date, str]:
-    """날짜별 시장 국면. 국면 Factor가 없는 전략이면 빈 dict."""
+def scan_regimes(strategy, histories, dates):
+    """날짜별 국면과, 국면별로 실제 어떤 판정이 몇 번 나왔는지.
+
+    판정 분포까지 세는 이유는 '문턱이 일을 했는가'와 '문턱에 닿을 일이
+    아예 없었는가'가 다르기 때문이다. 약세장 문턱을 90으로 올려 뒀는데 그
+    구간의 최고 점수가 애초에 82였다면, 그 90은 아무 일도 안 한 것이다.
+
+    국면 Factor가 없는 전략이면 빈 값을 돌려준다."""
     if not isinstance(strategy, FactorScoreStrategy):
-        return {}
+        return {}, {}
     engine = strategy._engine
     engine.warmup(histories)
-    timeline = {}
+    timeline: dict[date, str] = {}
+    observed: dict[str, list] = defaultdict(lambda: [0.0, Counter()])
     for day in dates:
-        for factor in engine.factors:
-            factor.prepare(MarketContext(as_of=day, histories=histories))
+        results = engine.evaluate(MarketContext(as_of=day, histories=histories))
         regime = engine._current_regime()
-        if regime:
-            timeline[day] = regime
-    return timeline
+        if not regime:
+            continue
+        timeline[day] = regime
+        seen = observed[regime]
+        for r in results:
+            seen[0] = max(seen[0], r.total)
+            seen[1][r.decision] += 1
+    return timeline, dict(observed)
 
 
 def main() -> None:
@@ -81,7 +92,9 @@ def main() -> None:
     ).run(histories, trade_from=trade_from)
 
     dates = sorted({d for df in histories.values() for d in df["trade_date"] if d >= trade_from})
-    timeline = regime_timeline(as_portfolio_strategy(build_strategy(args.strategy)), histories, dates)
+    timeline, observed = scan_regimes(
+        as_portfolio_strategy(build_strategy(args.strategy)), histories, dates
+    )
 
     print(f"수익률 {result.total_return_pct:+.2f}%  MDD {result.max_drawdown_pct:.2f}%  "
           f"거래 {result.num_trades}건\n")
@@ -93,6 +106,28 @@ def main() -> None:
         for regime in ("STRONG_BULL", "BULL", "NEUTRAL", "BEAR"):
             if counts.get(regime):
                 print(f"  {regime:<12} {counts[regime]:>3}일 ({counts[regime] / total * 100:.0f}%)")
+
+        print("\n■ 국면별 문턱과 실제 도달 점수")
+        print("  문턱 옆의 '천장'은 나머지 Factor가 전부 만점일 때의 총점이다.")
+        print("  천장 < 문턱이면 그 국면은 매수가 수학적으로 불가능하다.")
+        strategy_config = build_strategy(args.strategy)
+        config = getattr(strategy_config, "config", None)
+        ceilings = threshold_reachability(config) if config else {}
+        for regime in ("STRONG_BULL", "BULL", "NEUTRAL", "BEAR"):
+            if regime not in observed:
+                continue
+            top, decisions = observed[regime]
+            ceiling, threshold = ceilings.get(regime, (float("nan"), float("nan")))
+            flag = "  ← 도달 불가" if ceiling < threshold else ""
+            dist = " ".join(
+                f"{key}={decisions[key]}"
+                for key in ("STRONG_BUY", "BUY", "WATCH")
+                if decisions[key]
+            )
+            print(
+                f"  {regime:<12} 문턱 {threshold:>3.0f}  천장 {ceiling:>5.1f}  "
+                f"실제최고 {top:>5.1f}  {dist}{flag}"
+            )
 
         print("\n■ 국면이 바뀐 시점")
         previous = None

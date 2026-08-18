@@ -14,7 +14,7 @@ on:
       mode:
         description: "무엇을 볼지"
         type: choice
-        options: ["contribution", "sweep", "strategies"]
+        options: ["contribution", "sweep", "strategies", "diagnose"]
         default: "contribution"
       from_year:
         description: "시작 연도"
@@ -29,7 +29,7 @@ on:
         description: "sweep에 쓸 가중치 (쉼표 구분)"
         default: "0,10,20,30,40"
       keys:
-        description: "strategies 모드에서 비교할 전략 키 (쉼표 구분)"
+        description: "strategies 모드는 비교할 전략 키(쉼표 구분), diagnose 모드는 전략 하나"
         default: "volume_surge_5d,factor_score_v1,macd_cross"
 
 jobs:
@@ -58,7 +58,15 @@ jobs:
           echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
           echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
 
+      - name: 구간 진단 (mode=diagnose)
+        if: github.event.inputs.mode == 'diagnose'
+        run: |
+          python scripts/diagnose_period.py \
+            --strategy "${{ github.event.inputs.keys }}" \
+            --year "${{ github.event.inputs.from_year }}"
+
       - name: 실험 실행
+        if: github.event.inputs.mode != 'diagnose'
         run: |
           python scripts/run_experiment.py "${{ github.event.inputs.mode || 'contribution' }}" \
             --from-year "${{ github.event.inputs.from_year || '2021' }}" \
