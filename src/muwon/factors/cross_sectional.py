@@ -88,49 +88,89 @@ class MarketRegimeFactor(Factor):
 
     아무리 좋은 종목도 시장이 무너지는 구간에서는 같이 빠진다. 그래서 이
     Factor는 점수에 들어갈 뿐 아니라, 국면에 따라 매수 기준선 자체를 올린다
-    (약세장에서는 웬만한 점수로는 못 사게 한다)."""
+    (약세장에서는 웬만한 점수로는 못 사게 한다).
+
+    **평활화와 확정 지연이 반드시 필요하다.** 하루치 Breadth를 그대로 쓰면
+    국면이 며칠마다 뒤집힌다 — 2022년 실측에서 245거래일 동안 67번 바뀌었다
+    (평균 3.7일마다). 하락장 한복판의 2~3일 반등에 STRONG_BULL이 선언되고
+    바로 그때 사서 손절당하는 일이 실제로 일어났다(STRONG_BULL 진입 7건 중
+    6건 손실). 3.7일마다 바뀌는 건 국면이 아니라 잡음이다.
+
+    두 장치 모두 과거만 본다 — 평활화는 뒤를 보는 이동평균이고, 확정 지연은
+    '최근 N일이 같은 판정이었는가'를 묻는다. 앞을 보면 그건 미래참조다.
+    """
 
     key = "market_regime"
 
     def warmup(self, histories: dict[str, pd.DataFrame]) -> None:
         short_ma = int(self.params.get("short_ma", 20))
         long_ma = int(self.params.get("long_ma", 60))
-        self._above: dict[str, pd.DataFrame] = {}
-        for symbol, df in histories.items():
+        smoothing = int(self.params.get("breadth_smoothing", 10))
+        confirm_days = int(self.params.get("confirm_days", 5))
+
+        above_short, above_long = [], []
+        for df in histories.values():
             if len(df) == 0:
                 continue
             closes = _closes(df)
-            short = closes.rolling(short_ma).mean()
-            long = closes.rolling(long_ma).mean()
+            long_line = closes.rolling(long_ma).mean()
             # 이동평균이 아직 안 만들어진 구간은 NaN으로 남겨 '집계 대상 아님'이
             # 되게 한다. 0으로 채우면 상장 초기 종목이 전부 '선 아래'로 잡혀
             # Breadth가 실제보다 낮게 나온다.
-            self._above[symbol] = pd.DataFrame(
-                {"short": (closes > short).where(long.notna()), "long": (closes > long).where(long.notna())}
-            )
+            valid = long_line.notna()
+            above_short.append((closes > closes.rolling(short_ma).mean()).where(valid))
+            above_long.append((closes > long_line).where(valid))
+
         self.regime: str | None = None
         self.breadth_short = self.breadth_long = 0.0
+        self._by_date: dict = {}
+        if not above_short:
+            return
+
+        short_pct = pd.concat(above_short, axis=1).mean(axis=1) * 100
+        long_pct = pd.concat(above_long, axis=1).mean(axis=1) * 100
+        # 평활화: 그날 하루가 아니라 최근 며칠의 평균으로 본다
+        short_pct = short_pct.rolling(smoothing, min_periods=1).mean()
+        long_pct = long_pct.rolling(smoothing, min_periods=1).mean()
+
+        raw = [
+            self._classify(s, long) if pd.notna(s) and pd.notna(long) else None
+            for s, long in zip(short_pct, long_pct, strict=True)
+        ]
+        confirmed = self._confirm(raw, confirm_days)
+
+        self._by_date = {
+            day: (regime, float(s), float(long))
+            for day, regime, s, long in zip(
+                short_pct.index, confirmed, short_pct, long_pct, strict=True
+            )
+            if regime is not None and pd.notna(s) and pd.notna(long)
+        }
+
+    @staticmethod
+    def _confirm(raw: list, confirm_days: int) -> list:
+        """같은 판정이 confirm_days일 연속돼야 국면 전환으로 인정한다.
+
+        직전 확정값을 유지하는 방식이라 앞을 보지 않는다 — 오늘의 국면은
+        오늘까지의 판정만으로 정해진다."""
+        confirmed, current, run_label, run_len = [], None, None, 0
+        for label in raw:
+            if label == run_label:
+                run_len += 1
+            else:
+                run_label, run_len = label, 1
+            if label is not None and run_len >= confirm_days:
+                current = label
+            confirmed.append(current)
+        return confirmed
 
     def prepare(self, ctx: MarketContext) -> None:
-        short_hits = long_hits = counted = 0
-        for table in self._above.values():
-            if ctx.as_of not in table.index:
-                continue
-            row = table.loc[ctx.as_of]
-            if pd.isna(row["long"]):
-                continue
-            counted += 1
-            short_hits += int(bool(row["short"]))
-            long_hits += int(bool(row["long"]))
-
-        if counted == 0:
+        found = self._by_date.get(ctx.as_of)
+        if found is None:
             self.regime = None
             self.breadth_short = self.breadth_long = 0.0
             return
-
-        self.breadth_short = short_hits / counted * 100
-        self.breadth_long = long_hits / counted * 100
-        self.regime = self._classify(self.breadth_short, self.breadth_long)
+        self.regime, self.breadth_short, self.breadth_long = found
 
     def _classify(self, short_pct: float, long_pct: float) -> str:
         strong = float(self.params.get("strong_bull_breadth", 65))

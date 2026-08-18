@@ -5,6 +5,7 @@
 파일의 핵심이다."""
 
 from datetime import date, timedelta
+from itertools import pairwise
 
 import pandas as pd
 import pytest
@@ -248,3 +249,68 @@ def test_cross_sectional_factors_ignore_data_after_as_of():
             assert a.score(symbol, trimmed_ctx).score == pytest.approx(
                 b.score(symbol, full_ctx).score
             ), f"{factor_cls.__name__}이 as_of 이후 데이터를 보고 있다"
+
+
+# ── 국면 안정성 ──────────────────────────────────────────────────
+
+
+def _regime_series(histories, params=None):
+    """전 거래일의 확정 국면을 순서대로 뽑는다."""
+    factor = MarketRegimeFactor(params)
+    factor.warmup(histories)
+    dates = sorted({d for df in histories.values() for d in df["trade_date"]})
+    out = []
+    for day in dates:
+        factor.prepare(MarketContext(as_of=day, histories=histories))
+        out.append(factor.regime)
+    return out
+
+
+def test_regime_does_not_flip_on_a_short_bounce():
+    """하락장 한복판의 2~3일 반등에 국면이 뒤집히면 안 된다.
+
+    실측에서 이 문제로 2022년 국면이 245거래일 동안 67번 바뀌었고, 그 짧은
+    STRONG_BULL 구간에 사서 손절당했다. 평활화와 확정 지연이 그걸 막는다."""
+    # 길게 하락하다 3일만 튀고 곧바로 원래 흐름으로 돌아가는 시장.
+    # 튄 뒤에도 높은 수준에 머물면 그건 반등이 아니라 추세 전환이므로,
+    # 반드시 직전 수준 아래로 되돌려야 의도한 상황이 된다.
+    decline = [300 - i for i in range(150)]  # 300 → 151
+    bounce = [175, 195, 205]
+    after = [148 - i for i in range(40)]
+    histories = {f"S{i}": frame(decline + bounce + after) for i in range(5)}
+
+    smoothed = _regime_series(histories)
+    raw = _regime_series(histories, {"breadth_smoothing": 1, "confirm_days": 1})
+
+    assert "STRONG_BULL" in raw, "평활화가 없으면 짧은 반등에 강세 국면이 선언된다"
+    assert "STRONG_BULL" not in smoothed, "3일 반등은 국면 전환으로 인정하면 안 된다"
+
+
+def test_regime_changes_are_far_fewer_when_smoothed():
+    """국면이 며칠마다 바뀌면 그건 국면이 아니라 잡음이다."""
+    closes = [100 + (12 if i % 5 in (0, 1) else -12) + i * 0.1 for i in range(220)]
+    histories = {f"S{i}": frame(closes) for i in range(5)}
+
+    def transitions(series):
+        return sum(1 for a, b in pairwise(series) if a != b)
+
+    assert transitions(_regime_series(histories)) < transitions(
+        _regime_series(histories, {"breadth_smoothing": 1, "confirm_days": 1})
+    )
+
+
+def test_regime_confirmation_looks_backward_only():
+    """확정 지연이 '앞으로 며칠 유지될지'를 보면 그건 미래참조다.
+    뒤에 붙는 데이터가 이전 날짜의 국면을 바꾸면 안 된다."""
+    closes = [100 + i for i in range(200)]
+    short = {f"S{i}": frame(closes) for i in range(3)}
+    long = {f"S{i}": frame(closes + [999.0] * 20) for i in range(3)}
+    as_of = short["S0"]["trade_date"].iloc[-1]
+
+    def regime_at(histories):
+        factor = MarketRegimeFactor()
+        factor.warmup(histories)
+        factor.prepare(MarketContext(as_of=as_of, histories=histories))
+        return factor.regime
+
+    assert regime_at(short) == regime_at(long)
