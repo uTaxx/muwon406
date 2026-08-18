@@ -20,6 +20,12 @@ from muwon.domain.interfaces import Strategy
 from muwon.domain.types import SignalType
 from muwon.indicators.technical import add_indicators
 from muwon.risk.manager import RiskManager
+from muwon.strategy.portfolio import (
+    MarketContext,
+    PortfolioStrategy,
+    as_portfolio_strategy,
+    bars_since,
+)
 
 
 @dataclass
@@ -87,12 +93,12 @@ class BacktestResult:
 class BacktestEngine:
     def __init__(
         self,
-        strategy: Strategy,
+        strategy: Strategy | PortfolioStrategy,
         risk_manager: RiskManager,
         costs: TransactionCosts | None = None,
         initial_cash: float = 10_000_000.0,
     ):
-        self._strategy = strategy
+        self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
         self._costs = costs or TransactionCosts()
         self._initial_cash = initial_cash
@@ -112,13 +118,9 @@ class BacktestEngine:
             for symbol, df in price_histories.items()
             if len(df) > 0
         }
-        signals_by_symbol_date: dict[str, dict[date, list]] = {}
-        for symbol, df in price_histories.items():
-            if len(df) == 0:
-                continue
-            signals_by_symbol_date[symbol] = {}
-            for signal in self._strategy.generate_signals(symbol, df):
-                signals_by_symbol_date[symbol].setdefault(signal.trade_date, []).append(signal)
+        self._strategy.prepare(price_histories)
+        trade_dates_by_symbol = {symbol: list(df.index) for symbol, df in enriched.items()}
+        max_holding_days = self._strategy.max_holding_days
 
         all_dates = sorted({d for df in enriched.values() for d in df.index})
 
@@ -138,7 +140,17 @@ class BacktestEngine:
                 if current_date in df.index
             }
 
-            # 1) 청산: 손절 우선, 그다음 전략 매도 신호
+            signals_today: dict[str, list] = {}
+            for signal in self._strategy.evaluate(
+                MarketContext(
+                    as_of=current_date,
+                    histories=price_histories,
+                    held=frozenset(positions),
+                )
+            ):
+                signals_today.setdefault(signal.symbol, []).append(signal)
+
+            # 1) 청산: 손절 → 보유기간 초과 → 전략 매도 신호
             for symbol in list(positions.keys()):
                 if symbol not in closes_today:
                     continue
@@ -148,8 +160,12 @@ class BacktestEngine:
 
                 if self._risk_manager.should_stop_loss(position.entry_price, price):
                     exit_reason = "손절"
+                elif max_holding_days is not None and bars_since(
+                    trade_dates_by_symbol.get(symbol, []), position.entry_date, current_date
+                ) >= max_holding_days:
+                    exit_reason = f"보유 {max_holding_days}일 경과 청산"
                 else:
-                    for signal in signals_by_symbol_date.get(symbol, {}).get(current_date, []):
+                    for signal in signals_today.get(symbol, []):
                         if signal.signal_type == SignalType.SELL:
                             exit_reason = signal.reason
                             break
@@ -175,9 +191,7 @@ class BacktestEngine:
                 if symbol in positions:
                     continue
                 buy_signals = [
-                    s
-                    for s in signals_by_symbol_date.get(symbol, {}).get(current_date, [])
-                    if s.signal_type == SignalType.BUY
+                    s for s in signals_today.get(symbol, []) if s.signal_type == SignalType.BUY
                 ]
                 if not buy_signals:
                     continue

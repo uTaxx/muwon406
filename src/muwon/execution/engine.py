@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import pandas as pd
 from sqlalchemy.orm import sessionmaker
 
 from muwon.backtest.costs import TransactionCosts
@@ -30,6 +31,12 @@ from muwon.domain.types import OrderSide, SignalType
 from muwon.execution import state_repository
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
+from muwon.strategy.portfolio import (
+    MarketContext,
+    PortfolioStrategy,
+    as_portfolio_strategy,
+    bars_since,
+)
 
 HISTORY_LOOKBACK_DAYS = 120  # 60일선 등 지표 계산에 필요한 최소 여유
 KST = ZoneInfo("Asia/Seoul")  # 실행 서버가 UTC라도 '오늘'은 한국 장 기준이어야 한다
@@ -60,7 +67,7 @@ class RunSummary:
 class TradingEngine:
     def __init__(
         self,
-        strategy: Strategy,
+        strategy: Strategy | PortfolioStrategy,
         risk_manager: RiskManager,
         data_source: MarketDataSource,
         order_executor: OrderExecutor,
@@ -71,7 +78,7 @@ class TradingEngine:
         costs: TransactionCosts | None = None,
         initial_cash: float = 10_000_000.0,
     ):
-        self._strategy = strategy
+        self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
         self._data_source = data_source
         self._order_executor = order_executor
@@ -90,6 +97,10 @@ class TradingEngine:
 
         latest_prices: dict[str, float] = {}
         latest_signals: dict[str, list] = {}
+        histories: dict[str, pd.DataFrame] = {}
+        # 보유일 계산에는 오늘까지 포함한 날짜가 필요하다. 판단용 histories는
+        # 미완성인 오늘 봉을 빼지만, "며칠 들고 있었나"는 오늘을 세야 맞다.
+        all_trade_dates: dict[str, list] = {}
         run_date: date | None = None
 
         for ticker in self._universe:
@@ -98,15 +109,14 @@ class TradingEngine:
             # 쌓여 "거래량 2배 급증" 같은 조건이 성립할 수 없고, 종가도
             # 확정이 아니다). 개장 직후 실행을 전제로 하므로, 판단은 항상
             # 마지막으로 '완성된' 일봉으로만 한다.
+            all_trade_dates[ticker.symbol] = list(df["trade_date"])
             df = df[df["trade_date"] < trade_date]
             if len(df) == 0:
                 continue
             last_row = df.iloc[-1]
             latest_prices[ticker.symbol] = float(last_row["close"])
             run_date = last_row["trade_date"]
-
-            signals = self._strategy.generate_signals(ticker.symbol, df)
-            latest_signals[ticker.symbol] = [s for s in signals if s.trade_date == run_date]
+            histories[ticker.symbol] = df
 
         summary = RunSummary(run_date=run_date, checked_symbols=len(latest_prices))
         if run_date is None:
@@ -117,14 +127,26 @@ class TradingEngine:
         )
         positions = state_repository.load_positions(self._session_factory)
 
+        # 전략은 유니버스 전체와 보유 현황을 함께 보고 하루치를 판단한다.
+        self._strategy.prepare(histories)
+        for signal in self._strategy.evaluate(
+            MarketContext(as_of=run_date, histories=histories, held=frozenset(positions))
+        ):
+            latest_signals.setdefault(signal.symbol, []).append(signal)
+
         # 1) 청산: 손절 우선, 그다음 전략 매도 신호
         for symbol, position in list(positions.items()):
             if symbol not in latest_prices:
                 continue
             price = latest_prices[symbol]
             exit_reason = None
+            max_holding_days = self._strategy.max_holding_days
             if self._risk_manager.should_stop_loss(position.entry_price, price):
                 exit_reason = "손절"
+            elif max_holding_days is not None and bars_since(
+                all_trade_dates.get(symbol, []), position.entry_date, trade_date
+            ) >= max_holding_days:
+                exit_reason = f"보유 {max_holding_days}일 경과 청산"
             else:
                 for signal in latest_signals.get(symbol, []):
                     if signal.signal_type == SignalType.SELL:

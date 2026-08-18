@@ -222,22 +222,38 @@ def test_bollinger_breakout_requires_volume_surge():
     assert buys(signals) == []
 
 
-def test_volume_surge_exits_after_holding_days():
-    """이 전략만 청산이 지표가 아니라 시간 기준이다 — 진입 후 정확히
-    holding_days 만큼 지나서 나와야 한다."""
+def test_volume_surge_declares_time_exit_instead_of_emitting_it():
+    """이 전략만 청산이 지표가 아니라 시간 기준인데, 그 집행은 전략이 아니라
+    엔진의 몫이다.
+
+    전에는 전략이 스스로 '보유 중'을 기억하고 매도 신호까지 냈다. 그 상태는
+    엔진이 실제로 샀는지와 무관해서, 리스크 한도로 매수가 거부된 종목도
+    전략은 샀다고 믿고 그 뒤 며칠간 신호를 막았다. 이제 전략은 '며칠 뒤
+    나가야 한다'는 사실만 선언하고, 실제 보유일 계산은 엔진이 한다."""
     closes = [100.0] * 30 + [110.0] + [110.0] * 20
     volumes = [100_000] * 30 + [400_000] + [100_000] * 20
     df = make_price_df(closes, volumes)
 
-    params = VolumeSurgeParams(holding_days=5)
-    signals = VolumeSurgeStrategy(params).generate_signals("TEST", df)
+    strategy = VolumeSurgeStrategy(VolumeSurgeParams(holding_days=5))
+    signals = strategy.generate_signals("TEST", df)
 
+    assert strategy.max_holding_days == 5
     assert len(buys(signals)) == 1
-    assert len(sells(signals)) == 1
-    entry_idx = df.index[df["trade_date"] == buys(signals)[0].trade_date][0]
-    exit_idx = df.index[df["trade_date"] == sells(signals)[0].trade_date][0]
-    assert exit_idx - entry_idx == params.holding_days
-    assert "보유 5일 경과" in sells(signals)[0].reason
+    assert sells(signals) == [], "청산은 엔진이 집행하므로 전략이 매도 신호를 내면 안 된다"
+
+
+def test_volume_surge_no_longer_suppresses_later_entries():
+    """자리가 없어 못 산 종목이 이후 기회까지 잃던 결함의 회귀 테스트.
+
+    급등이 두 번 오면 신호도 두 번 나야 한다 — 실제로 살지 말지는 엔진이
+    보유 현황과 리스크 한도를 보고 정할 일이다."""
+    closes = [100.0] * 21 + [110.0, 110.0, 110.0, 125.0] + [125.0] * 5
+    volumes = [100_000] * 21 + [500_000, 100_000, 100_000, 500_000] + [100_000] * 5
+    df = make_price_df(closes, volumes)
+
+    signals = VolumeSurgeStrategy(VolumeSurgeParams(holding_days=5)).generate_signals("TEST", df)
+
+    assert len(buys(signals)) == 2
 
 
 def test_volume_surge_ignores_volume_without_price_move():

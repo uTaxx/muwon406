@@ -258,3 +258,60 @@ def test_active_strategy_scores_its_buy_signals():
 
     assert buys, "매수 신호가 없으면 이 테스트는 아무것도 검증하지 못한다"
     assert all(s.score > 0 for s in buys)
+
+
+def test_engine_enforces_time_exit_from_actual_entry_date():
+    """시간 기반 청산은 엔진이 '실제로 산 날'을 기준으로 집행해야 한다.
+
+    전략이 스스로 보유일을 세면 엔진이 안 산 종목까지 보유 중으로 착각한다."""
+    from datetime import date
+
+    from muwon.domain.types import SignalType
+    from muwon.strategy.portfolio import PortfolioStrategy
+    from tests.price_series import make_price_df
+
+    class BuyOnceThenSilent(PortfolioStrategy):
+        """첫날만 매수 신호, 이후 아무 신호도 안 냄 + 3거래일 뒤 청산 선언."""
+
+        name = "buy_once"
+        max_holding_days = 3
+
+        def __init__(self, buy_on):
+            self.buy_on = buy_on
+
+        def evaluate(self, ctx):
+            from muwon.domain.types import Signal
+
+            if ctx.as_of != self.buy_on:
+                return []
+            return [
+                Signal(
+                    symbol="000001",
+                    trade_date=ctx.as_of,
+                    signal_type=SignalType.BUY,
+                    strategy_name=self.name,
+                    reason="테스트 진입",
+                )
+            ]
+
+    start = date(2026, 8, 3)
+    ticker = Ticker("000001", "테스트", "KOSPI", "000001.KS")
+    df = make_price_df([100.0] * 10, start=start)
+    dates = list(df["trade_date"])
+    frames = {ticker.symbol: df}
+
+    engine, _ = make_multi_engine(
+        BuyOnceThenSilent(buy_on=dates[4]), [ticker], frames, RiskPolicy()
+    )
+
+    # 진입일: 신호가 있는 날 다음날 실행(엔진은 완성된 마지막 봉으로 판단)
+    entry_summary = engine.run_once(as_of=dates[5])
+    assert [a.side for a in entry_summary.actions] == [OrderSide.BUY]
+
+    # 2거래일 경과 — 아직 청산 안 됨
+    assert engine.run_once(as_of=dates[7]).actions == []
+
+    # 3거래일 경과 — 청산
+    exit_summary = engine.run_once(as_of=dates[8])
+    assert [a.side for a in exit_summary.actions] == [OrderSide.SELL]
+    assert "보유 3일 경과" in exit_summary.actions[0].reason

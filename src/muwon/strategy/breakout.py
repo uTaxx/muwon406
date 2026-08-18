@@ -100,6 +100,12 @@ class VolumeSurgeStrategy(Strategy):
     def __init__(self, params: VolumeSurgeParams | None = None, name: str = "volume_surge"):
         self.params = params or VolumeSurgeParams()
         self.name = name
+        # 청산은 엔진이 '실제 보유일'로 집행한다. 전에는 이 전략이 스스로
+        # entry_index로 보유 상태를 기억했는데, 그건 엔진이 정말 샀는지와
+        # 무관한 값이었다 — 리스크 한도로 매수가 거부된 종목도 전략은 샀다고
+        # 믿고 그 뒤 며칠간 신호를 막았다. 자리 경쟁이 생기는 넓은 유니버스에서
+        # 특히 해롭다. 전략은 "지금 이 종목이 매력적인가"만 답한다.
+        self.max_holding_days = self.params.holding_days
 
     def generate_signals(self, symbol: str, price_history: pd.DataFrame) -> list[Signal]:
         p = self.params
@@ -107,19 +113,11 @@ class VolumeSurgeStrategy(Strategy):
             price_history, sma_short=p.sma_short, volume_ma_window=p.volume_ma_window
         )
         signals: list[Signal] = []
-        entry_index: int | None = None
 
         for i in range(1, len(df)):
             prev, cur = df.iloc[i - 1], df.iloc[i]
 
-            if entry_index is not None and i - entry_index >= p.holding_days:
-                signals.append(
-                    make_signal(symbol, cur, SignalType.SELL, self.name, f"보유 {p.holding_days}일 경과 청산")
-                )
-                entry_index = None
-                continue
-
-            if entry_index is not None or has_nan(cur, ["volume_ma"]):
+            if has_nan(cur, ["volume_ma"]):
                 continue
 
             price_change_pct = (cur["close"] / prev["close"] - 1) * 100 if prev["close"] > 0 else 0.0
@@ -136,7 +134,6 @@ class VolumeSurgeStrategy(Strategy):
                         score=volume_ratio(cur),
                     )
                 )
-                entry_index = i
         return signals
 
 
