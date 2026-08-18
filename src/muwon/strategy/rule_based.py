@@ -25,6 +25,7 @@ import pandas as pd
 from muwon.domain.interfaces import Strategy
 from muwon.domain.types import Signal, SignalType
 from muwon.indicators.technical import add_indicators
+from muwon.strategy.common import volume_ratio
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,7 @@ class MovingAverageRsiStrategy(Strategy):
                         signal_type=SignalType.BUY,
                         strategy_name=self.name,
                         reason="단기선 상향돌파 + 거래량 급증",
+                        score=volume_ratio(cur),
                     )
                 )
                 continue
@@ -92,6 +94,9 @@ class MovingAverageRsiStrategy(Strategy):
                         signal_type=SignalType.BUY,
                         strategy_name=self.name,
                         reason="RSI 과매도 반등",
+                        # 진입 사유가 둘인 전략이라 강도도 같은 자로 재야
+                        # 서로 비교가 된다 — 거래량 배수로 통일한다.
+                        score=volume_ratio(cur),
                     )
                 )
                 continue

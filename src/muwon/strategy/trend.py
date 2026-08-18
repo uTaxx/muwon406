@@ -21,7 +21,14 @@ from muwon.indicators.technical import (
     add_indicators,
     add_macd,
 )
-from muwon.strategy.common import crossed_above, crossed_below, has_nan, make_signal
+from muwon.strategy.common import (
+    crossed_above,
+    crossed_below,
+    has_nan,
+    make_signal,
+    pct_above,
+    volume_ratio,
+)
 
 
 @dataclass(frozen=True)
@@ -52,7 +59,14 @@ class GoldenCrossStrategy(Strategy):
                 continue
             if crossed_above(prev["sma_short"], cur["sma_short"], prev["sma_long"], cur["sma_long"]):
                 signals.append(
-                    make_signal(symbol, cur, SignalType.BUY, self.name, "골든크로스(단기선이 장기선 상향돌파)")
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        "골든크로스(단기선이 장기선 상향돌파)",
+                        score=volume_ratio(cur),
+                    )
                 )
             elif crossed_below(
                 prev["sma_short"], cur["sma_short"], prev["sma_long"], cur["sma_long"]
@@ -93,7 +107,12 @@ class MacdCrossStrategy(Strategy):
             if crossed_above(prev["macd"], cur["macd"], prev["macd_signal"], cur["macd_signal"]):
                 if p.require_positive_macd and cur["macd"] <= 0:
                     continue
-                signals.append(make_signal(symbol, cur, SignalType.BUY, self.name, "MACD 신호선 상향돌파"))
+                # 신호선과 벌어진 폭이 클수록 강한 전환. 주가로 나눠야
+                # 5만원짜리와 50만원짜리를 같은 자로 잴 수 있다.
+                gap_pct = (cur["macd"] - cur["macd_signal"]) / cur["close"] * 100 if cur["close"] > 0 else 0.0
+                signals.append(
+                    make_signal(symbol, cur, SignalType.BUY, self.name, "MACD 신호선 상향돌파", score=float(gap_pct))
+                )
             elif crossed_below(prev["macd"], cur["macd"], prev["macd_signal"], cur["macd_signal"]):
                 signals.append(make_signal(symbol, cur, SignalType.SELL, self.name, "MACD 신호선 하향이탈"))
         return signals
@@ -123,7 +142,16 @@ class EmaCrossStrategy(Strategy):
             if has_nan(cur, ["ema_short", "ema_long"]) or has_nan(prev, ["ema_short", "ema_long"]):
                 continue
             if crossed_above(prev["ema_short"], cur["ema_short"], prev["ema_long"], cur["ema_long"]):
-                signals.append(make_signal(symbol, cur, SignalType.BUY, self.name, "EMA 골든크로스"))
+                signals.append(
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        "EMA 골든크로스",
+                        score=pct_above(cur["ema_short"], cur["ema_long"]),
+                    )
+                )
             elif crossed_below(
                 prev["ema_short"], cur["ema_short"], prev["ema_long"], cur["ema_long"]
             ):
@@ -171,7 +199,14 @@ class DonchianBreakoutStrategy(Strategy):
                 if p.adx_filter > 0 and (pd.isna(cur["adx"]) or cur["adx"] < p.adx_filter):
                     continue
                 signals.append(
-                    make_signal(symbol, cur, SignalType.BUY, self.name, f"{p.entry_window}일 신고가 돌파")
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        f"{p.entry_window}일 신고가 돌파",
+                        score=pct_above(cur["close"], cur["dc_upper"]),
+                    )
                 )
             elif cur["close"] < cur["dc_exit_lower"]:
                 signals.append(

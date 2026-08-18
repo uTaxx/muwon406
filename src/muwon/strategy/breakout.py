@@ -14,7 +14,14 @@ import pandas as pd
 from muwon.domain.interfaces import Strategy
 from muwon.domain.types import Signal, SignalType
 from muwon.indicators.technical import add_bollinger, add_indicators
-from muwon.strategy.common import crossed_above, crossed_below, has_nan, make_signal
+from muwon.strategy.common import (
+    crossed_above,
+    crossed_below,
+    has_nan,
+    make_signal,
+    pct_above,
+    volume_ratio,
+)
 
 
 @dataclass(frozen=True)
@@ -57,7 +64,16 @@ class BollingerBreakoutStrategy(Strategy):
                     or cur["volume"] < cur["volume_ma"] * p.volume_surge_ratio
                 ):
                     continue
-                signals.append(make_signal(symbol, cur, SignalType.BUY, self.name, "볼린저 상단 돌파"))
+                signals.append(
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        "볼린저 상단 돌파",
+                        score=pct_above(cur["close"], cur["bb_upper"]),
+                    )
+                )
             # 청산은 상태 판정 — 갭 하락으로 중심선을 훌쩍 밑돈 채 머무르면
             # 교차 사건이 안 생겨 청산 신호를 놓친다(엔진은 보유 중일 때만 매도).
             elif cur["close"] < cur["bb_mid"]:
@@ -116,6 +132,8 @@ class VolumeSurgeStrategy(Strategy):
                         SignalType.BUY,
                         self.name,
                         f"거래량 {p.volume_surge_ratio:g}배 급증 + {price_change_pct:.1f}% 상승",
+                        # 이 전략의 진입 근거가 거래량이므로 배수가 곧 강도다
+                        score=volume_ratio(cur),
                     )
                 )
                 entry_index = i
@@ -157,7 +175,14 @@ class PriceChannelBreakoutStrategy(Strategy):
             threshold = cur["channel_high"] * (1 + p.breakout_pct / 100)
             if cur["close"] > threshold >= prev["close"]:
                 signals.append(
-                    make_signal(symbol, cur, SignalType.BUY, self.name, f"{p.lookback}일 종가 신고가 돌파")
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        f"{p.lookback}일 종가 신고가 돌파",
+                        score=pct_above(cur["close"], threshold),
+                    )
                 )
             elif not has_nan(cur, ["sma_short"]) and not has_nan(prev, ["sma_short"]) and crossed_below(
                 prev["close"], cur["close"], prev["sma_short"], cur["sma_short"]

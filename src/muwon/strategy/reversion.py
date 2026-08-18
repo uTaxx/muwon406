@@ -64,7 +64,15 @@ class RsiReversionStrategy(Strategy):
                 ):
                     continue
                 signals.append(
-                    make_signal(symbol, cur, SignalType.BUY, self.name, f"RSI 과매도({p.oversold:g}) 반등")
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        f"RSI 과매도({p.oversold:g}) 반등",
+                        # 더 깊이 빠졌다 올라올수록 되돌림 여력이 크다고 본다
+                        score=float(p.oversold - prev["rsi"]) if not pd.isna(prev["rsi"]) else 0.0,
+                    )
                 )
             elif cur["rsi"] > p.overbought:
                 signals.append(
@@ -104,7 +112,15 @@ class BollingerReversionStrategy(Strategy):
 
             # 하단 밴드 밖에 있다가 안으로 복귀 = 반등 시작
             if _recovered_from_below(prev["close"], cur["close"], prev["bb_lower"], cur["bb_lower"]):
-                signals.append(make_signal(symbol, cur, SignalType.BUY, self.name, "볼린저 하단 이탈 후 복귀"))
+                # 직전에 밴드 밖으로 더 많이 벗어나 있었을수록 되돌림 폭이 크다
+                depth_pct = (
+                    (1 - prev["close"] / prev["bb_lower"]) * 100 if prev["bb_lower"] > 0 else 0.0
+                )
+                signals.append(
+                    make_signal(
+                        symbol, cur, SignalType.BUY, self.name, "볼린저 하단 이탈 후 복귀", score=float(depth_pct)
+                    )
+                )
                 continue
 
             # 청산은 "교차한 순간"이 아니라 "지금 그 위에 있는가"라는 상태로 본다 —
@@ -152,7 +168,14 @@ class StochasticStrategy(Strategy):
                 and cur["stoch_k"] <= p.oversold
             ):
                 signals.append(
-                    make_signal(symbol, cur, SignalType.BUY, self.name, f"스토캐스틱 과매도({p.oversold:g}) 교차")
+                    make_signal(
+                        symbol,
+                        cur,
+                        SignalType.BUY,
+                        self.name,
+                        f"스토캐스틱 과매도({p.oversold:g}) 교차",
+                        score=float(p.oversold - cur["stoch_k"]),
+                    )
                 )
             elif (
                 crossed_below(prev["stoch_k"], cur["stoch_k"], prev["stoch_d"], cur["stoch_d"])
