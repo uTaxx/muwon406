@@ -63,8 +63,12 @@ DEFAULT_KOSDAQ_RATIO = 0.3
 
 def build_universe(
     client, size: int = 30, kosdaq_ratio: float = DEFAULT_KOSDAQ_RATIO
-) -> list[Ticker]:
-    """코스피·코스닥 시총 상위에서 매매 대상 종목을 골라 온다."""
+) -> tuple[list[Ticker], dict[str, int]]:
+    """코스피·코스닥 시총 상위에서 매매 대상 종목을 골라 온다.
+
+    (종목 목록, 종목코드→시가총액)을 함께 돌려준다. 순위 지표를 버리면
+    스냅샷에 남길 수가 없고, 나중에 '왜 이 종목이 들어왔나'를 되짚을 근거가
+    사라진다."""
     return _build_by_ranking(
         lambda market_key, limit: client.get_top_market_cap(market=market_key, limit=limit),
         "시총 상위",
@@ -79,7 +83,7 @@ def build_volume_universe(
     kosdaq_ratio: float = DEFAULT_KOSDAQ_RATIO,
     basis: str = "amount",
     min_price: int = 1000,
-) -> list[Ticker]:
+) -> tuple[list[Ticker], dict[str, int]]:
     """거래가 몰린 상위 종목으로 별도 유니버스를 만든다.
 
     시총 상위와 다른 종목군이 목적이다. 단기 전략(눌림목·거래량 급증)은
@@ -100,7 +104,7 @@ def build_volume_universe(
 
 def _build_by_ranking(
     fetch, label: str, size: int, kosdaq_ratio: float
-) -> list[Ticker]:
+) -> tuple[list[Ticker], dict[str, int]]:
     """순위 API 하나를 받아 시장별 할당·필터·부족분 보충까지 처리한다.
 
     두 시장을 하나로 합쳐 순위대로 자르지 않고 **시장별로 자리를 나눠 각각
@@ -122,6 +126,7 @@ def _build_by_ranking(
 
     picked: dict[str, list[Ticker]] = {}
     leftovers: list[tuple[str, str, str, int]] = []  # 할당량을 넘어 남은 후보
+    metrics: dict[str, int] = {}  # 종목코드 → 순위 지표(시총 또는 거래대금)
 
     for market_key, market_name in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
         # 걸러낼 종목(ETF·우선주 등)을 감안해 넉넉히 받아 온다
@@ -129,6 +134,7 @@ def _build_by_ranking(
         logger.info(f"{market_name} {label} {len(rows)}종목 수신")
 
         tradable = [(s, n, market_name, v) for s, n, v in rows if is_tradable_stock(n)]
+        metrics.update({s: v for s, _n, _m, v in tradable})
         quota = quotas[market_name]
         picked[market_name] = [to_ticker(s, n, m) for s, n, m, _c in tradable[:quota]]
         leftovers.extend(tradable[quota:])
@@ -151,7 +157,8 @@ def _build_by_ranking(
                 seen.add(symbol)
                 universe.append(to_ticker(symbol, name, market))
 
-    return universe[:size]
+    universe = universe[:size]
+    return universe, {t.symbol: metrics.get(t.symbol, 0) for t in universe}
 
 
 KIND_MARKET_CAP = "market_cap"

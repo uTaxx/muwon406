@@ -81,7 +81,7 @@ def main() -> None:
 
     try:
         if args.kind == KIND_VOLUME:
-            new_universe = build_volume_universe(
+            new_universe, metrics = build_volume_universe(
                 client,
                 size=args.size,
                 kosdaq_ratio=args.kosdaq_ratio,
@@ -89,7 +89,7 @@ def main() -> None:
                 min_price=args.min_price,
             )
         else:
-            new_universe = build_universe(
+            new_universe, metrics = build_universe(
                 client, size=args.size, kosdaq_ratio=args.kosdaq_ratio
             )
     except RuntimeError as e:
@@ -117,7 +117,7 @@ def main() -> None:
         print("\n미리보기 모드입니다 — 저장하려면 --apply 를 붙이세요.")
         return
 
-    save_snapshot(session_factory, new_universe, {}, kind=args.kind)
+    save_snapshot(session_factory, new_universe, metrics, kind=args.kind)
     if args.kind == KIND_VOLUME:
         print(
             f"\n✅ 저장 완료 — 실험용 목록 {len(new_universe)}종목입니다. "

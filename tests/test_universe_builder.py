@@ -71,7 +71,7 @@ def test_build_universe_reserves_slots_for_kosdaq():
         kosdaq_rows=[(f"KQ{i}", f"코스닥{i}", 100 - i) for i in range(10)],  # 시총 훨씬 작음
     )
 
-    universe = build_universe(client, size=10, kosdaq_ratio=0.3)
+    universe, _metrics = build_universe(client, size=10, kosdaq_ratio=0.3)
 
     markets = [t.market for t in universe]
     assert markets.count("KOSDAQ") == 3  # 시총이 작아도 자리를 확보한다
@@ -86,7 +86,7 @@ def test_build_universe_fills_from_other_market_when_quota_unmet():
         kosdaq_rows=[("KQ0", "코스닥0", 100)],  # 1종목뿐
     )
 
-    universe = build_universe(client, size=10, kosdaq_ratio=0.3)
+    universe, _metrics = build_universe(client, size=10, kosdaq_ratio=0.3)
 
     assert len(universe) == 10
     assert [t.market for t in universe].count("KOSDAQ") == 1
@@ -105,7 +105,7 @@ def test_build_universe_filters_then_respects_size():
         kosdaq_rows=[],
     )
 
-    universe = build_universe(client, size=2, kosdaq_ratio=0.0)
+    universe, _metrics = build_universe(client, size=2, kosdaq_ratio=0.0)
 
     assert [t.name for t in universe] == ["삼성전자", "SK하이닉스"]
 
@@ -125,7 +125,7 @@ def test_build_universe_deduplicates_symbols_across_markets():
         kospi_rows=[("005930", "삼성전자", 5_000_000)],
         kosdaq_rows=[("005930", "삼성전자", 5_000_000)],
     )
-    universe = build_universe(client, size=5)
+    universe, _metrics = build_universe(client, size=5)
     assert len(universe) == 1
 
 
@@ -209,7 +209,7 @@ def test_volume_universe_keeps_a_kosdaq_quota():
         kosdaq=[(f"90{i:04d}", f"코스닥{i}", 50_000 - i) for i in range(20)],
     )
 
-    universe = build_volume_universe(client, size=10, kosdaq_ratio=0.3)
+    universe, _metrics = build_volume_universe(client, size=10, kosdaq_ratio=0.3)
 
     assert len(universe) == 10
     assert sum(1 for t in universe if t.market == "KOSDAQ") == 3
@@ -227,7 +227,7 @@ def test_volume_universe_filters_etf_and_preferred():
         kosdaq=[("900001", "코스닥종목", 100)],
     )
 
-    universe = build_volume_universe(client, size=3, kosdaq_ratio=0.34)
+    universe, _metrics = build_volume_universe(client, size=3, kosdaq_ratio=0.34)
 
     assert [t.symbol for t in universe] == ["005930", "900001"]
 
@@ -261,3 +261,17 @@ def test_legacy_rows_without_kind_still_load_as_market_cap(tmp_path):
         session.commit()
 
     assert [t.symbol for t in load_latest_universe(factory)] == ["005930"]
+
+
+def test_builder_returns_the_ranking_metric_so_snapshots_can_keep_it():
+    """순위 지표를 버리면 스냅샷에 남길 수 없고, 나중에 '왜 이 종목이
+    들어왔나'를 되짚을 근거가 사라진다."""
+    client = FakeVolumeClient(
+        kospi=[("005930", "삼성전자", 987_654)],
+        kosdaq=[("196170", "알테오젠", 123_456)],
+    )
+
+    universe, metrics = build_volume_universe(client, size=2, kosdaq_ratio=0.5)
+
+    assert metrics == {"005930": 987_654, "196170": 123_456}
+    assert set(metrics) == {t.symbol for t in universe}
