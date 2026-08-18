@@ -11,9 +11,19 @@ on:
     - cron: "0 15 * * 0" # 일요일 15:00 UTC = 월요일 00:00 KST
   workflow_dispatch:
     inputs:
+      kind:
+        description: "market_cap=실거래가 쓰는 목록 / volume=거래대금 상위(실험용, 실거래 대상은 안 바뀜)"
+        type: choice
+        options: ["market_cap", "volume"]
+        default: "market_cap"
       size:
         description: "유니버스 종목 수"
         default: "30"
+      basis:
+        description: "volume일 때 줄 세우는 기준"
+        type: choice
+        options: ["amount", "volume", "surge"]
+        default: "amount"
       apply:
         description: "실제로 저장할지 (false면 미리보기만)"
         type: choice
@@ -56,6 +66,8 @@ jobs:
       - name: 종목 목록 갱신
         run: |
           python scripts/update_universe.py \
+            --kind "${{ github.event.inputs.kind || 'market_cap' }}" \
+            --basis "${{ github.event.inputs.basis || 'amount' }}" \
             --size "${{ github.event.inputs.size || '30' }}" \
             ${{ (github.event_name == 'schedule' || github.event.inputs.apply == 'true') && '--apply --notify' || '' }}
 
