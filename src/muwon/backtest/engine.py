@@ -242,7 +242,17 @@ class BacktestEngine:
                 for s in positions
                 if s in closes_today
             )
-            equity_curve_rows.append({"trade_date": current_date, "equity": equity})
+            # 보유 종목 수와 현금도 남긴다 — 노출도(자금을 얼마나 굴렸나)와
+            # 회전율을 나중에 계산하려면 이 두 값이 있어야 한다. 수익률만
+            # 남기면 "적게 굴려서 적게 벌었는지"를 구분할 수 없다.
+            equity_curve_rows.append(
+                {
+                    "trade_date": current_date,
+                    "equity": equity,
+                    "cash": cash,
+                    "positions": len(positions),
+                }
+            )
             day_start_equity = equity
 
         equity_curve = pd.DataFrame(equity_curve_rows)

@@ -1,0 +1,68 @@
+name: 전략 실험
+
+# Factor 기여도·가중치 스윕·전략 비교를 실제 매매 종목(운영 DB의 유니버스
+# 스냅샷)으로 돌린다. 개발 환경에서 돌리면 기본 18종목이 쓰이는데, 상대강도는
+# '유니버스 내 순위'이고 시장 국면은 '유니버스의 Breadth'라 종목 수가 결과를
+# 직접 바꾼다.
+#
+# 결과는 로그로만 남긴다 — 실험은 가설을 확인하는 용도라 운영 DB에 쌓을
+# 이유가 없고, 쌓으면 실거래 기록과 섞여 나중에 리포트를 읽을 때 헷갈린다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "무엇을 볼지"
+        type: choice
+        options: ["contribution", "sweep", "strategies"]
+        default: "contribution"
+      from_year:
+        description: "시작 연도"
+        default: "2021"
+      to_year:
+        description: "종료 연도"
+        default: "2025"
+      factor:
+        description: "sweep 대상 Factor"
+        default: "relative_strength"
+      weights:
+        description: "sweep에 쓸 가중치 (쉼표 구분)"
+        default: "0,10,20,30,40"
+      keys:
+        description: "strategies 모드에서 비교할 전략 키 (쉼표 구분)"
+        default: "volume_surge_5d,factor_score_v1,macd_cross"
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db
+
+      - name: .env 구성
+        run: |
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 실험 실행
+        run: |
+          python scripts/run_experiment.py "${{ github.event.inputs.mode || 'contribution' }}" \
+            --from-year "${{ github.event.inputs.from_year || '2021' }}" \
+            --to-year "${{ github.event.inputs.to_year || '2025' }}" \
+            --factor "${{ github.event.inputs.factor || 'relative_strength' }}" \
+            --weights "${{ github.event.inputs.weights || '0,10,20,30,40' }}" \
+            --keys "${{ github.event.inputs.keys }}"
