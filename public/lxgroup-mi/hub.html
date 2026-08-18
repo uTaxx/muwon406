@@ -203,11 +203,6 @@
       <div class="indent" id="changeNoteBlock" style="display:none; margin-bottom:0;">
         <div class="word-hint" style="margin-top:0;">상단 식별코드(<b id="changeCodeLabel"></b>) 기준으로 불러옵니다.</div>
         <button type="button" class="small-btn" id="loadCodeBtn" style="width:100%;">🔄 이 설정 불러오기</button>
-        <div class="instant-actions">
-          <button type="button" class="small-btn instant-btn" id="instantCheckBtn">⚡ 지금 조회하기</button>
-          <div class="instant-hint">최근 수집 이후 새로 올라온 기사를 지금 바로 찾아서 텔레그램/이메일로 보내드리고, 아래에도 함께 보여드립니다. (최대 1~2분 소요)</div>
-        </div>
-        <div class="instant-result" id="instantResult" style="display:none;"></div>
       </div>
     </section>
 
@@ -304,6 +299,16 @@
 
   <!-- 탭 3: 실시간 키워드 검색 -->
   <div id="tab-adhoc" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">⚡</span><span class="step-title">등록 키워드 지금 조회</span></div>
+      <div class="step-desc">상단 식별코드에 등록된 키워드 그룹 기준으로, 최근 수집 이후 새로 올라온 기사가 있는지 지금 바로 확인합니다.</div>
+      <div class="instant-actions">
+        <button type="button" class="small-btn instant-btn" id="instantCheckBtn">⚡ 지금 조회하기</button>
+        <div class="instant-hint">최근 수집 이후 새로 올라온 기사를 지금 바로 찾아서 텔레그램/이메일로 보내드리고, 아래에도 함께 보여드립니다. (최대 1~2분 소요)</div>
+      </div>
+      <div class="instant-result" id="instantResult" style="display:none;"></div>
+    </section>
+
     <section class="card">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">실시간 키워드 검색</span></div>
       <div class="step-desc">등록된 키워드와 별개로, 특정 키워드 하나를 지금 바로 조사합니다. 결과는 상단 식별코드의 텔레그램/이메일로 즉시 발송됩니다.</div>
