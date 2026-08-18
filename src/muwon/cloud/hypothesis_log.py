@@ -126,6 +126,15 @@ def _ensure_header(creds, sheet_id: str) -> None:
         _append_values(creds, sheet_id, [header_row()])
 
 
+def updated_row_count(result: dict, values: list) -> int:
+    """구글 응답에서 실제로 들어간 줄 수를 꺼낸다.
+
+    updatedRows는 정수다. 여기에 len()을 씌워서 터뜨린 적이 있다 — 응답
+    모양을 확인하지 않고 '없으면 values를 쓰자'는 기본값을 넣은 게 원인이다.
+    타입이 섞이는 기본값은 넣지 않는다."""
+    return int(result.get("updates", {}).get("updatedRows", len(values)))
+
+
 def _append_values(creds, sheet_id: str, values: list[list[str]]) -> int:
     sheets = build("sheets", "v4", credentials=creds)
     result = (
@@ -140,7 +149,7 @@ def _append_values(creds, sheet_id: str, values: list[list[str]]) -> int:
         )
         .execute()
     )
-    return len(result.get("updates", {}).get("updatedRows", values) or values)
+    return updated_row_count(result, values)
 
 
 def append(folder_id: str, rows: list[HypothesisRow], title: str = DEFAULT_TITLE) -> str:

@@ -62,3 +62,12 @@ def test_header_is_written_whenever_the_sheet_is_empty():
     assert needs_header({}), "빈 시트면 머리글을 넣어야 한다"
     assert needs_header({"values": []})
     assert not needs_header({"values": [["날짜", "무엇을 알고 싶었나"]]})
+
+
+def test_updated_row_count_reads_an_int_not_a_list():
+    """구글은 updatedRows를 정수로 준다. len()을 씌워 터뜨린 적이 있다 —
+    없을 때의 기본값에 타입이 다른 값을 넣은 게 원인이었다."""
+    from muwon.cloud.hypothesis_log import updated_row_count
+
+    assert updated_row_count({"updates": {"updatedRows": 10}}, [["a"], ["b"]]) == 10
+    assert updated_row_count({}, [["a"], ["b"]]) == 2, "응답이 비면 보낸 줄 수로 센다"
