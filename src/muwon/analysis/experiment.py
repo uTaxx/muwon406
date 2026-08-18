@@ -18,8 +18,9 @@
 from __future__ import annotations
 
 import math
+import subprocess
 from dataclasses import dataclass, field, replace
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pandas as pd
 
@@ -403,6 +404,50 @@ def format_correlation(matrix: pd.DataFrame, exposure: dict[str, float] | None =
             verdict = "나눌 가치 큼" if value < 0.4 else ("보통" if value < 0.7 else "거의 같이 움직임")
             lines.append(f"  {a:<20} × {b:<20} {value:>6.2f}   {verdict}")
     return "\n".join(lines)
+
+
+def run_header(
+    mode: str,
+    universe_kind: str,
+    symbols: list[str],
+    years: list[int],
+    extra: dict | None = None,
+) -> str:
+    """결과 위에 붙일 실행 조건.
+
+    오늘 낸 표가 내일 다시 필요할 때, 어떤 조건에서 나온 숫자인지 표 안에
+    없으면 재현할 수가 없다 — 실제로 58종목 기준선을 네 번 다시 만들었다.
+    유니버스 종류·종목 수·기간·커밋을 숫자와 같은 파일에 남긴다.
+
+    종목 목록 전체를 적는 이유는, 유니버스 스냅샷이 나중에 갱신되면 '그때
+    그 58종목'을 되살릴 방법이 이것뿐이기 때문이다."""
+    lines = [
+        f"# 실험 결과 — {mode}",
+        "",
+        f"- 실행: {datetime.now(UTC).isoformat(timespec='seconds')}",
+        f"- 커밋: {_git_sha()}",
+        f"- 유니버스: {universe_kind} · {len(symbols)}종목",
+        f"- 기간: {min(years)}~{max(years)} (구간당 예열 {WARMUP_DAYS}일)",
+    ]
+    for key, value in (extra or {}).items():
+        lines.append(f"- {key}: {value}")
+    lines += ["", f"<details><summary>종목 {len(symbols)}개</summary>", "", ", ".join(symbols), "", "</details>", ""]
+    return "\n".join(lines)
+
+
+def _git_sha() -> str:
+    """어느 코드로 낸 숫자인지. git이 없으면 조용히 넘어간다 — 결과를 못
+    남기는 것보다 낫다."""
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "(불명)"
 
 
 def format_comparison(results: list[ExperimentResult], years: list[int]) -> str:

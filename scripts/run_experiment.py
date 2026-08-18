@@ -33,6 +33,7 @@ from muwon.analysis.experiment import (
     format_correlation,
     param_sweep,
     run_experiment,
+    run_header,
     sleeve_curves,
     weight_sweep,
 )
@@ -68,6 +69,11 @@ def main() -> None:
         default="market_cap",
         help="어느 유니버스로 돌릴지. volume은 거래대금 상위(update_universe.py --kind volume)",
     )
+    parser.add_argument(
+        "--out",
+        default="",
+        help="결과를 남길 파일 경로. 로그는 만료되므로 나중에 비교하려면 필요하다.",
+    )
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
     parser.add_argument("--factor", default="relative_strength", help="sweep/param 대상 Factor")
@@ -84,20 +90,36 @@ def main() -> None:
     histories = load_universe_histories(years, args.universe)
     config = StrategyConfig()
 
+    written: list[str] = []
+
+    def emit(text: str) -> None:
+        """화면과 파일에 같은 내용을 남긴다."""
+        print(text)
+        written.append(text)
+
+    def save(extra: dict | None = None) -> None:
+        if not args.out:
+            return
+        header = run_header(args.mode, args.universe, sorted(histories), years, extra)
+        # 표는 자리를 맞춘 고정폭 텍스트라 코드 블록으로 감싸야 안 깨진다
+        body = "```\n" + "\n".join(written) + "\n```\n"
+        Path(args.out).write_text(header + body, encoding="utf-8")
+        print(f"\n결과를 {args.out}에 남겼습니다.", file=sys.stderr)
+
     if args.mode == "contribution":
-        print("■ Factor 기여도 — 하나씩 껐을 때 성과가 어떻게 변하는가")
-        print("  껐는데 성과가 그대로면 그 Factor는 가중치만 차지하고 있는 것이고,")
-        print("  껐더니 좋아지면 해를 끼치고 있는 것이다.\n")
+        emit("■ Factor 기여도 — 하나씩 껐을 때 성과가 어떻게 변하는가")
+        emit("  껐는데 성과가 그대로면 그 Factor는 가중치만 차지하고 있는 것이고,")
+        emit("  껐더니 좋아지면 해를 끼치고 있는 것이다.\n")
         results = factor_contribution(config, histories, years)
 
     elif args.mode == "sweep":
         weights = [float(w) for w in args.weights.split(",")]
-        print(f"■ 가중치 스윕 — {args.factor}의 비중만 바꾼다\n")
+        emit(f"■ 가중치 스윕 — {args.factor}의 비중만 바꾼다\n")
         results = weight_sweep(config, args.factor, weights, histories, years)
 
     elif args.mode == "param":
         values = [int(v) for v in args.values.split(",")]
-        print(f"■ 파라미터 스윕 — {args.factor}.{args.param}만 바꾼다\n")
+        emit(f"■ 파라미터 스윕 — {args.factor}.{args.param}만 바꾼다\n")
         base = json.loads(args.base_params) if args.base_params else {}
         results = param_sweep(
             config, args.factor, args.param, values, histories, years, base_params=base
@@ -108,9 +130,9 @@ def main() -> None:
         shares = [float(w) for w in args.weights.split(",")]
         if len(pairs) != len(shares):
             raise SystemExit("--keys와 --weights의 개수가 같아야 합니다")
-        print("■ 갈래 배분 — 나눠서 굴렸을 때 합친 계좌가 어떻게 되는가")
-        print("  비중은 연 단위로만 맞춘다. 연중에 갈래끼리 자금을 옮기지 않는다 —")
-        print("  매일 맞추면 깨진 쪽에 계속 돈을 부어 주는 셈이라 결과가 부풀려진다.\n")
+        emit("■ 갈래 배분 — 나눠서 굴렸을 때 합친 계좌가 어떻게 되는가")
+        emit("  비중은 연 단위로만 맞춘다. 연중에 갈래끼리 자금을 옮기지 않는다 —")
+        emit("  매일 맞추면 깨진 쪽에 계속 돈을 부어 주는 셈이라 결과가 부풀려진다.\n")
         curves, trades = sleeve_curves(
             {key: (lambda k=key: build_strategy(k)) for key in pairs}, histories, years
         )
@@ -118,31 +140,34 @@ def main() -> None:
         results.append(
             blend_sleeves(curves, dict(zip(pairs, shares, strict=True)), years, trades)
         )
-        print(format_comparison(results, years))
+        emit(format_comparison(results, years))
+        save()
         return
 
     elif args.mode == "correlation":
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 비교할 전략을 지정하세요")
-        print("■ 전략 간 상관 — 자금을 갈래로 나눌 가치가 있는가")
-        print("  같은 날 같이 움직이면 나눠도 분산 효과가 없다. 낮을수록 좋다.\n")
+        emit("■ 전략 간 상관 — 자금을 갈래로 나눌 가치가 있는가")
+        emit("  같은 날 같이 움직이면 나눠도 분산 효과가 없다. 낮을수록 좋다.\n")
         series, exposure = daily_returns_by_strategy(
             {key: (lambda k=key: build_strategy(k)) for key in keys}, histories, years
         )
-        print(format_correlation(correlation_matrix(series), exposure))
+        emit(format_correlation(correlation_matrix(series), exposure))
+        save()
         return
 
     else:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 비교할 전략을 지정하세요")
-        print("■ 전략 비교 — 같은 데이터·같은 예열 조건\n")
+        emit("■ 전략 비교 — 같은 데이터·같은 예열 조건\n")
         results = [
             run_experiment(key, lambda k=key: build_strategy(k), histories, years) for key in keys
         ]
 
-    print(format_comparison(results, years))
+    emit(format_comparison(results, years))
+    save()
 
 
 if __name__ == "__main__":

@@ -5,8 +5,9 @@ name: 전략 실험
 # '유니버스 내 순위'이고 시장 국면은 '유니버스의 Breadth'라 종목 수가 결과를
 # 직접 바꾼다.
 #
-# 결과는 로그로만 남긴다 — 실험은 가설을 확인하는 용도라 운영 DB에 쌓을
-# 이유가 없고, 쌓으면 실거래 기록과 섞여 나중에 리포트를 읽을 때 헷갈린다.
+# 결과는 운영 DB에 쓰지 않는다 — 실거래 기록과 섞이면 나중에 리포트를 읽을 때
+# 헷갈린다. 대신 아티팩트로 올린다. 로그로만 남기던 시절엔 같은 표를 네 번
+# 다시 만들었고, Actions 로그는 만료되므로 결국 아무것도 안 남는다.
 
 on:
   workflow_dispatch:
@@ -79,7 +80,8 @@ jobs:
             --strategy "${{ github.event.inputs.keys }}" \
             --year "${{ github.event.inputs.from_year }}" \
             --universe "${{ github.event.inputs.universe || 'market_cap' }}" \
-            --regime-params '${{ github.event.inputs.regime_params }}' 
+            --regime-params '${{ github.event.inputs.regime_params }}' \
+            | tee experiment-result.md
 
       - name: 실험 실행
         if: github.event.inputs.mode != 'diagnose'
@@ -93,4 +95,14 @@ jobs:
             --param "${{ github.event.inputs.param || 'uptrend_ma' }}" \
             --values "${{ github.event.inputs.values || '0,120,200' }}" \
             --base-params '${{ github.event.inputs.regime_params }}' \
-            --keys "${{ github.event.inputs.keys }}"
+            --keys "${{ github.event.inputs.keys }}" \
+            --out experiment-result.md
+
+      - name: 결과 아티팩트로 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment-${{ github.event.inputs.mode || 'contribution' }}-${{ github.run_number }}
+          path: experiment-result.md
+          if-no-files-found: warn
+          retention-days: 90
