@@ -18,14 +18,23 @@ from datetime import date
 import pandas as pd
 import requests
 
+from muwon.data.price_cache import PriceCache
 
-def load_histories(source, tickers, start: date, end: date) -> dict[str, pd.DataFrame]:
-    """유니버스 시세를 모은다. 조회에 실패하거나 데이터가 없는 종목은 뺀다."""
+
+def load_histories(
+    source, tickers, start: date, end: date, cache: PriceCache | None = None
+) -> dict[str, pd.DataFrame]:
+    """유니버스 시세를 모은다. 조회에 실패하거나 데이터가 없는 종목은 뺀다.
+
+    cache를 주면 이미 받아 둔 구간은 다시 받지 않는다."""
     histories: dict[str, pd.DataFrame] = {}
     skipped: list[str] = []
     for ticker in tickers:
         try:
-            df = source.get_daily_ohlcv(ticker.yahoo_symbol, start, end)
+            if cache is not None:
+                df = cache.fetch(source, ticker.symbol, ticker.yahoo_symbol, start, end)
+            else:
+                df = source.get_daily_ohlcv(ticker.yahoo_symbol, start, end)
         except requests.RequestException:
             # 해당 구간에 상장 전이면 400이 온다. 전체를 멈출 이유가 아니다.
             skipped.append(ticker.symbol)
@@ -36,6 +45,8 @@ def load_histories(source, tickers, start: date, end: date) -> dict[str, pd.Data
             skipped.append(ticker.symbol)
 
     print(f"시세 {len(histories)}종목 · {start} ~ {end}", file=sys.stderr)
+    if cache is not None:
+        print(f"  {cache.summary()}", file=sys.stderr)
     if skipped:
         print(
             f"  건너뜀 {len(skipped)}종목 (해당 구간 데이터 없음): "

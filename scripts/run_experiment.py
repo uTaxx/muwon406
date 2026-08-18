@@ -39,6 +39,7 @@ from muwon.analysis.experiment import (
 )
 from muwon.analysis.market_data import load_histories
 from muwon.config import bootstrap_settings
+from muwon.data.price_cache import PriceCache
 from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import KIND_MARKET_CAP, active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
@@ -47,7 +48,9 @@ from muwon.scoring.config import StrategyConfig
 from muwon.strategy.registry import build_strategy
 
 
-def load_universe_histories(years: list[int], kind: str = KIND_MARKET_CAP):
+def load_universe_histories(
+    years: list[int], kind: str = KIND_MARKET_CAP, use_cache: bool = True
+):
     session_factory = make_session_factory(bootstrap_settings.database_url)
     universe = active_universe(session_factory, list(UNIVERSE), kind=kind)
     return load_histories(
@@ -55,6 +58,7 @@ def load_universe_histories(years: list[int], kind: str = KIND_MARKET_CAP):
         universe,
         date(min(years), 1, 1) - timedelta(days=WARMUP_DAYS),
         date(max(years), 12, 31),
+        cache=PriceCache() if use_cache else None,
     )
 
 
@@ -74,6 +78,11 @@ def main() -> None:
         default="",
         help="결과를 남길 파일 경로. 로그는 만료되므로 나중에 비교하려면 필요하다.",
     )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="시세 캐시를 쓰지 않고 매번 새로 받는다",
+    )
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
     parser.add_argument("--factor", default="relative_strength", help="sweep/param 대상 Factor")
@@ -87,7 +96,7 @@ def main() -> None:
     args = parser.parse_args()
 
     years = list(range(args.from_year, args.to_year + 1))
-    histories = load_universe_histories(years, args.universe)
+    histories = load_universe_histories(years, args.universe, use_cache=not args.no_cache)
     config = StrategyConfig()
 
     written: list[str] = []

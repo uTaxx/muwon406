@@ -10,3 +10,6 @@ venv/
 dist/
 build/
 .DS_Store
+
+# 시세 캐시 — 없어도 그만인 파일이라 저장소에 넣지 않는다
+.cache/

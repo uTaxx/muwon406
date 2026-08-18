@@ -27,6 +27,7 @@ from muwon.analysis.experiment import WARMUP_DAYS
 from muwon.analysis.market_data import load_histories
 from muwon.backtest.engine import BacktestEngine
 from muwon.config import bootstrap_settings
+from muwon.data.price_cache import PriceCache
 from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
@@ -112,7 +113,11 @@ def main() -> None:
     source = YahooFinanceDataSource()
 
     histories = load_histories(
-        source, universe, trade_from - timedelta(days=WARMUP_DAYS), trade_to
+        source,
+        universe,
+        trade_from - timedelta(days=WARMUP_DAYS),
+        trade_to,
+        cache=PriceCache(),
     )
     names = {t.symbol: t.name for t in universe}
     print(f"{args.strategy} · {args.year}년 · {len(histories)}종목\n")

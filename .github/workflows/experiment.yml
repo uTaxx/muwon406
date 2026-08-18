@@ -61,6 +61,18 @@ jobs:
       - name: 의존성 설치
         run: pip install -e ".[dev,cloud]"
 
+      # 시세를 매 실행마다 다시 받으면 실험 하나에 30~60초가 그냥 나간다.
+      # 종목 구성이 바뀌면 캐시가 안 맞을 수 있으므로 키에 유니버스 종류를
+      # 넣고, restore-keys로 오래된 캐시도 일단 받아 쓴다 — 안 맞는 종목만
+      # 다시 받으면 되고, 맞는지는 캐시가 구간 기록으로 판단한다.
+      - name: 시세 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: prices-${{ github.event.inputs.universe || 'market_cap' }}-${{ github.run_id }}
+          restore-keys: |
+            prices-${{ github.event.inputs.universe || 'market_cap' }}-
+
       - name: 구글드라이브에서 상태 DB 내려받기
         env:
           GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
