@@ -1,0 +1,77 @@
+name: 가설 기록
+
+# 가설과 검증 결과를 구글 시트에 한 줄씩 쌓는다. 숫자는 아티팩트에, 판단은
+# 커밋 메시지에 흩어져 있어서 "그때 그 가설이 왜 기각됐더라"를 찾으려면
+# 여러 곳을 뒤져야 했고, 코드를 안 보는 사람은 아예 못 찾았다.
+#
+# 덮어쓰지 않고 덧붙인다 — 기각된 가설이 남아 있어야 같은 걸 두 번 시험하지
+# 않는다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_json:
+        description: "여러 줄을 한꺼번에 넣을 JSON 경로 (비우면 아래 칸을 씀)"
+        default: ""
+      질문:
+        description: "무엇을 알고 싶었나"
+        default: ""
+      가설:
+        description: "이럴 것이다"
+        default: ""
+      근거:
+        description: "왜 그렇게 생각했나"
+        default: ""
+      방법:
+        description: "어떻게 확인했나"
+        default: ""
+      결과:
+        description: "나온 숫자"
+        default: ""
+      판정:
+        description: "채택 / 기각 / 보류"
+        type: choice
+        options: ["채택", "기각", "보류"]
+        default: "보류"
+      조치:
+        description: "그래서 뭘 바꿨나 (안 바꿨으면 그렇게 적는다)"
+        default: ""
+      대상:
+        description: "유니버스·기간"
+        default: ""
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[cloud]"
+
+      - name: 시트에 기록
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          if [ -n "${{ github.event.inputs.from_json }}" ]; then
+            python scripts/log_hypothesis.py \
+              --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
+              --from-json "${{ github.event.inputs.from_json }}"
+          else
+            python scripts/log_hypothesis.py \
+              --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
+              --질문 "${{ github.event.inputs.질문 }}" \
+              --가설 "${{ github.event.inputs.가설 }}" \
+              --근거 "${{ github.event.inputs.근거 }}" \
+              --방법 "${{ github.event.inputs.방법 }}" \
+              --결과 "${{ github.event.inputs.결과 }}" \
+              --판정 "${{ github.event.inputs.판정 }}" \
+              --조치 "${{ github.event.inputs.조치 }}" \
+              --대상 "${{ github.event.inputs.대상 }}" \
+              --링크 "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
