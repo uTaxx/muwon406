@@ -134,9 +134,217 @@ def render_drive_sync_fragment() -> None:
     )
 
 
+CARD_CSS = """
+<style>
+.muwon-cards { display: flex; gap: 12px; overflow-x: auto; padding: 2px 2px 10px; }
+.muwon-card {
+  flex: 1 0 190px; background: #fff; border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(16,24,40,.08); border: 1px solid #EEF0F4;
+}
+.muwon-chip {
+  width: 40px; height: 40px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px;
+}
+.muwon-label { font-size: 12px; color: #667085; }
+.muwon-value { font-size: 20px; font-weight: 700; color: #101828; margin: 2px 0 6px; }
+.muwon-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  .muwon-card { background: #1B1E24; border-color: #2A2E36; }
+  .muwon-value { color: #ECEDEE; }
+  .muwon-label { color: #98A2B3; }
+}
+</style>
+"""
+
+#: 목업의 파스텔 칩 색. 보라=전략, 초록=연결, 파랑=데이터, 주황=시간.
+CHIP_COLORS = {
+    "purple": ("#F4EBFF", "#7F56D9"),
+    "green": ("#E7F6EC", "#12805C"),
+    "blue": ("#E8F1FF", "#175CD3"),
+    "orange": ("#FFF3E6", "#B54708"),
+}
+
+
+def _card(icon: str, color: str, label: str, value: str, badge: str, badge_color: str) -> str:
+    chip_bg, chip_fg = CHIP_COLORS[color]
+    badge_bg, badge_fg = CHIP_COLORS[badge_color]
+    return (
+        f'<div class="muwon-card">'
+        f'<div class="muwon-chip" style="background:{chip_bg};color:{chip_fg}">{icon}</div>'
+        f'<div class="muwon-label">{label}</div>'
+        f'<div class="muwon-value">{value}</div>'
+        f'<div class="muwon-badge" style="background:{badge_bg};color:{badge_fg}">{badge}</div>'
+        f"</div>"
+    )
+
+
+def realized_pnl(session_factory) -> tuple[float, float, int]:
+    """(오늘 실현손익, 누적 실현손익, 오늘 청산 건수).
+
+    '오늘 손익'을 평가금액으로 내려면 지금 시세가 필요한데 대시보드는 시세를
+    받지 않는다. 그래서 **청산이 끝난 거래**만으로 낸다 — 추정이 아니라
+    실제로 계좌에 반영된 금액이다. 화면 문구도 '실현손익'이라고 못 박는다."""
+    today = datetime.now().date()  # noqa: DTZ005 — 화면 표시용
+    with session_factory() as session:
+        trades = session.query(TradeRow).all()
+    todays = [t for t in trades if t.exited_at and t.exited_at.date() == today]
+    return (
+        sum(t.pnl_amount for t in todays),
+        sum(t.pnl_amount for t in trades),
+        len(todays),
+    )
+
+
+def last_activity(session_factory) -> datetime | None:
+    """마지막으로 무언가 일어난 시각 — 주문·청산 중 가장 최근."""
+    with session_factory() as session:
+        order = session.query(OrderRow).order_by(OrderRow.created_at.desc()).first()
+        trade = session.query(TradeRow).order_by(TradeRow.exited_at.desc()).first()
+    stamps = [x for x in (order.created_at if order else None, trade.exited_at if trade else None) if x]
+    return max(stamps) if stamps else None
+
+
+def _ago(moment: datetime | None) -> str:
+    if moment is None:
+        return "기록 없음"
+    delta = datetime.now() - moment  # noqa: DTZ005 — 화면 표시용
+    minutes = int(delta.total_seconds() // 60)
+    if minutes < 1:
+        return "방금 전"
+    if minutes < 60:
+        return f"{minutes}분 전"
+    if minutes < 60 * 24:
+        return f"{minutes // 60}시간 전"
+    return f"{minutes // (60 * 24)}일 전"
+
+
+def render_summary_cards(service: SettingsService) -> None:
+    """목업의 상단 요약 카드 4개.
+
+    목업은 '전략 3개 활성'으로 그려져 있지만 이 엔진은 활성 전략이 하나다.
+    숫자를 3으로 맞추면 화면이 거짓말을 한다 — 실제 값을 쓰고, 여러 전략을
+    동시에 굴리는 건 엔진 쪽 결정이 끝난 뒤의 일이다(설계안 §11에서 지금은
+    만들지 않기로 결론).
+    """
+    session_factory = get_session_factory()
+    policy = service.get_risk_policy()
+    selection = service.get_strategy_selection()
+
+    try:
+        creds = service.get_kis_credentials()
+        connected = bool(creds.app_key and creds.app_secret)
+        env_label = "실거래" if creds.kis_env == "real" else "모의투자"
+    except RuntimeError:
+        connected, env_label = False, "확인 불가"
+
+    today_pnl, total_pnl, today_count = realized_pnl(session_factory)
+    activity = last_activity(session_factory)
+
+    st.markdown(CARD_CSS, unsafe_allow_html=True)
+    cards = [
+        _card(
+            "📈", "purple", "활성 전략",
+            _display_name_for(selection.active_key),
+            "LIVE" if policy.trading_enabled else "중지됨",
+            "purple" if policy.trading_enabled else "orange",
+        ),
+        _card(
+            "🔌", "green", "KIS 연결", env_label,
+            "연결됨" if connected else "인증정보 없음",
+            "green" if connected else "orange",
+        ),
+        _card(
+            "💰", "blue", "오늘 실현손익",
+            f"{today_pnl:+,.0f}원",
+            f"누적 {total_pnl:+,.0f}원 · 오늘 {today_count}건",
+            "blue",
+        ),
+        _card(
+            "🕒", "orange", "마지막 매매 기록",
+            activity.strftime("%H:%M") if activity else "—",
+            _ago(activity), "orange",
+        ),
+    ]
+    st.markdown(f'<div class="muwon-cards">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+
+def render_notifications_tab() -> None:
+    """주문·청산을 시간순으로 모아 보여준다.
+
+    목업에는 '미확인 뱃지'가 있지만 읽음 상태를 저장할 곳이 없다. 표시만
+    해 두고 값을 채우면 늘 미확인으로 보이거나 늘 읽음으로 보인다 — 둘 다
+    거짓이라 아예 넣지 않았다. 읽음 처리가 필요해지면 테이블을 하나 만들고
+    그때 붙인다."""
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        orders = session.query(OrderRow).order_by(OrderRow.created_at.desc()).limit(60).all()
+        trades = session.query(TradeRow).order_by(TradeRow.exited_at.desc()).limit(60).all()
+
+    events = [
+        {
+            "시각": o.created_at,
+            "종류": "매수 주문" if o.side == "buy" else "매도 주문",
+            "내용": f"{_symbol_name(o.symbol)} {o.quantity}주 @ {o.price:,.0f}원",
+            "사유": o.reason,
+        }
+        for o in orders
+    ] + [
+        {
+            "시각": t.exited_at,
+            "종류": "청산 완료",
+            "내용": f"{_symbol_name(t.symbol)} {t.pnl_pct:+.2f}% ({t.pnl_amount:+,.0f}원)",
+            "사유": t.exit_reason,
+        }
+        for t in trades
+    ]
+    events = [e for e in events if e["시각"]]
+    if not events:
+        st.info(
+            "아직 알림으로 보여 줄 기록이 없습니다. 자동매매가 주문을 내거나 "
+            "포지션을 청산하면 여기에 시간순으로 쌓입니다."
+        )
+        return
+
+    events.sort(key=lambda e: e["시각"], reverse=True)
+    st.caption("주문과 청산을 시간순으로 모았습니다. 읽음 처리는 아직 없습니다.")
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {**e, "시각": e["시각"].strftime("%m-%d %H:%M:%S")}
+                for e in events[:80]
+            ]
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def render_admin_tab(service: SettingsService) -> None:
+    """설정·운영 관리 — 목업의 '관리' 탭.
+
+    매매를 보는 화면과 설정을 바꾸는 화면을 갈라 놓는 게 이 탭의 목적이다.
+    지금까지는 한 페이지에 섞여 있어서, 상태를 확인하러 들어와도 인증정보
+    입력란이 먼저 보였다."""
+    with st.expander("KIS 인증정보 · API 키 및 계좌 연결", expanded=False):
+        render_kis_tab(service)
+    with st.expander("텔레그램 알림 · 체결·오류·리포트", expanded=False):
+        render_telegram_tab(service)
+    # 리스크 정책은 대시보드 탭에만 둔다. 양쪽에 넣었더니 Streamlit이
+    # 같은 키의 폼이 두 개라며 화면 전체를 죽였다 — 목업에서도 리스크
+    # 정책은 대시보드 목록에 있고 관리 탭에는 없다.
+    with st.expander(f"변경 이력 · {HISTORY_REFRESH_SECONDS}초마다 자동 갱신", expanded=False):
+        render_history_fragment(service)
+    with st.expander(f"개발 로그(git 커밋) · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신", expanded=False):
+        render_devlog_fragment()
+
+
 def main() -> None:
     _initial_drive_sync()
     st.title("muwon406 대시보드")
+    st.caption("자주 쓰는 항목 중심")
     if _drive_sync_configured():
         render_drive_sync_fragment()
 
@@ -155,40 +363,43 @@ def main() -> None:
             "다음 값들이 **지금 MUWON_MASTER_KEY로는 열리지 않습니다** — "
             "마스터키를 새로 발급했는데 DB에는 이전 키로 암호화된 값이 남아 있는 "
             "상태입니다: `" + "`, `".join(broken_keys) + "`\n\n"
-            "해당 항목(아래 KIS 인증정보 / 텔레그램 알림)에 값을 다시 입력해 "
+            "해당 항목(관리 탭의 KIS 인증정보 / 텔레그램 알림)에 값을 다시 입력해 "
             "저장하면 새 키로 다시 암호화되어 정상으로 돌아옵니다. GitHub "
             "Actions가 매 실행마다 KIS·텔레그램 값을 다시 써 주므로, 다음 "
             "자동매매 실행 뒤에 저절로 해결되기도 합니다.",
             icon="🔑",
         )
 
-    render_status_bar(service)
-    st.divider()
+    # 목업은 하단 탭 바지만 Streamlit에는 그 위젯이 없다. CSS로 흉내내면
+    # 버전이 오를 때마다 깨지므로 상단 탭을 쓴다 — 순서와 이름은 목업 그대로다.
+    tab_home, tab_strategy, tab_records, tab_alerts, tab_admin = st.tabs(
+        ["🏠 대시보드", "📈 전략", "📋 기록", "🔔 알림", "👤 관리"]
+    )
 
-    col_left, col_right = st.columns(2)
-    with col_left:
-        with st.expander("활성 전략 (실거래에 쓰는 가설)", expanded=True):
-            render_strategy_tab(service)
-        with st.expander("리스크 정책", expanded=True):
+    with tab_home:
+        render_summary_cards(service)
+        render_status_bar(service)
+        st.divider()
+        with st.expander(f"보유 종목 & 최근 주문 · {TRADING_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
+            render_trading_fragment()
+        with st.expander("리스크 정책 · 손절 · 비중 · 노출 한도", expanded=False):
             render_risk_tab(service)
-        with st.expander("KIS 인증정보", expanded=False):
-            render_kis_tab(service)
-        with st.expander("텔레그램 알림", expanded=False):
-            render_telegram_tab(service)
-    with col_right:
-        with st.expander(f"변경 이력 · {HISTORY_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
-            render_history_fragment(service)
-        with st.expander(f"개발 로그(git 커밋) · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
-            render_devlog_fragment()
 
-    with st.expander(f"보유 종목 & 최근 주문 · {TRADING_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
-        render_trading_fragment()
+    with tab_strategy:
+        render_strategy_tab(service)
+        st.divider()
+        st.caption("전략 리뷰 — 다른 전략이었다면?")
+        render_strategy_review_tab(service)
 
-    with st.expander("매매 기록 (전략별, 청산 완료된 건만)", expanded=True):
+    with tab_records:
         render_trades_tab()
 
-    with st.expander("전략 리뷰 결과 (다른 전략이었다면?)", expanded=True):
-        render_strategy_review_tab(service)
+    with tab_alerts:
+        render_notifications_tab()
+
+    with tab_admin:
+        st.caption("설정 및 운영 관리")
+        render_admin_tab(service)
 
 
 def render_status_bar(service: SettingsService) -> None:
