@@ -3,12 +3,21 @@
 이 둘은 예전 인터페이스에서는 **만들 수가 없었다.** generate_signals(symbol, df)
 에는 다른 종목도 지수도 들어오지 않기 때문이다. Phase 1에서 판단 단위를
 '종목'에서 '하루'로 올린 이유가 정확히 이것이다.
+
+계산은 두 단계로 나뉜다. warmup()은 종목별 시계열을 한 번만 만들고,
+prepare()는 날짜마다 그 표에서 그날 값을 꺼내 횡단면(순위·비율)을 구한다.
 """
 
 from __future__ import annotations
 
-from muwon.factors.base import Factor, history_up_to, pct_return, percentile_scores
+import pandas as pd
+
+from muwon.factors.base import Factor, percentile_scores
 from muwon.strategy.portfolio import FactorResult, MarketContext
+
+
+def _closes(df: pd.DataFrame) -> pd.Series:
+    return df.set_index("trade_date")["close"]
 
 
 class RelativeStrengthFactor(Factor):
@@ -23,26 +32,37 @@ class RelativeStrengthFactor(Factor):
 
     key = "relative_strength"
 
-    def prepare(self, ctx: MarketContext) -> None:
-        period = int(self.params.get("period", 60))
-        index_return = None
-        if ctx.index_history is not None and len(ctx.index_history):
-            idx = ctx.index_history[ctx.index_history["trade_date"] <= ctx.as_of]
-            if len(idx):
-                index_return = pct_return(idx["close"], period)
+    def warmup(self, histories: dict[str, pd.DataFrame]) -> None:
+        self._period = int(self.params.get("period", 60))
+        self._returns: dict[str, pd.Series] = {}
+        for symbol, df in histories.items():
+            if len(df) == 0:
+                continue
+            closes = _closes(df)
+            self._returns[symbol] = (closes / closes.shift(self._period) - 1) * 100
+        self._index_returns: pd.Series | None = None
 
-        self._raw: dict[str, float] = {}
-        for symbol in ctx.histories:
-            df = history_up_to(ctx, symbol)
-            if df is None:
+    def prepare(self, ctx: MarketContext) -> None:
+        if self._index_returns is None and ctx.index_history is not None and len(ctx.index_history):
+            closes = _closes(ctx.index_history)
+            self._index_returns = (closes / closes.shift(self._period) - 1) * 100
+
+        index_return = None
+        if self._index_returns is not None and ctx.as_of in self._index_returns.index:
+            value = self._index_returns.loc[ctx.as_of]
+            if pd.notna(value):
+                index_return = float(value)
+
+        self._raw = {}
+        for symbol, series in self._returns.items():
+            if ctx.as_of not in series.index:
                 continue
-            r = pct_return(df["close"], period)
-            if r is None:
+            value = series.loc[ctx.as_of]
+            if pd.isna(value):
                 continue
-            self._raw[symbol] = r - index_return if index_return is not None else r
+            self._raw[symbol] = float(value) - index_return if index_return is not None else float(value)
 
         self._ranked = percentile_scores(self._raw)
-        self._period = period
         self._vs_index = index_return is not None
 
     def score(self, symbol: str, ctx: MarketContext) -> FactorResult:
@@ -72,32 +92,45 @@ class MarketRegimeFactor(Factor):
 
     key = "market_regime"
 
-    def prepare(self, ctx: MarketContext) -> None:
+    def warmup(self, histories: dict[str, pd.DataFrame]) -> None:
         short_ma = int(self.params.get("short_ma", 20))
         long_ma = int(self.params.get("long_ma", 60))
-
-        above_short = above_long = counted = 0
-        for symbol in ctx.histories:
-            df = history_up_to(ctx, symbol)
-            if df is None or len(df) < long_ma + 1:
+        self._above: dict[str, pd.DataFrame] = {}
+        for symbol, df in histories.items():
+            if len(df) == 0:
                 continue
-            closes = df["close"]
-            price = float(closes.iloc[-1])
+            closes = _closes(df)
+            short = closes.rolling(short_ma).mean()
+            long = closes.rolling(long_ma).mean()
+            # 이동평균이 아직 안 만들어진 구간은 NaN으로 남겨 '집계 대상 아님'이
+            # 되게 한다. 0으로 채우면 상장 초기 종목이 전부 '선 아래'로 잡혀
+            # Breadth가 실제보다 낮게 나온다.
+            self._above[symbol] = pd.DataFrame(
+                {"short": (closes > short).where(long.notna()), "long": (closes > long).where(long.notna())}
+            )
+        self.regime: str | None = None
+        self.breadth_short = self.breadth_long = 0.0
+
+    def prepare(self, ctx: MarketContext) -> None:
+        short_hits = long_hits = counted = 0
+        for table in self._above.values():
+            if ctx.as_of not in table.index:
+                continue
+            row = table.loc[ctx.as_of]
+            if pd.isna(row["long"]):
+                continue
             counted += 1
-            if price > float(closes.rolling(short_ma).mean().iloc[-1]):
-                above_short += 1
-            if price > float(closes.rolling(long_ma).mean().iloc[-1]):
-                above_long += 1
+            short_hits += int(bool(row["short"]))
+            long_hits += int(bool(row["long"]))
 
         if counted == 0:
-            self.regime: str | None = None
+            self.regime = None
             self.breadth_short = self.breadth_long = 0.0
             return
 
-        self.breadth_short = above_short / counted * 100
-        self.breadth_long = above_long / counted * 100
+        self.breadth_short = short_hits / counted * 100
+        self.breadth_long = long_hits / counted * 100
         self.regime = self._classify(self.breadth_short, self.breadth_long)
-        self._counted = counted
 
     def _classify(self, short_pct: float, long_pct: float) -> str:
         strong = float(self.params.get("strong_bull_breadth", 65))

@@ -27,10 +27,20 @@ class Factor(ABC):
 
     def __init__(self, params: dict[str, Any] | None = None):
         self.params = params or {}
+        # 빈 데이터로 한 번 예열해 내부 표를 만들어 둔다. warmup을 안 부르고
+        # score부터 호출해도 알 수 없는 AttributeError 대신 "데이터 부족"으로
+        # 떨어지게 하려는 것 — 잘못 쓴 쪽이 원인을 바로 알 수 있어야 한다.
+        self.warmup({})
+
+    def warmup(self, histories: dict[str, pd.DataFrame]) -> None:
+        """실행당 한 번. 종목별 지표 시계열을 통째로 계산해 둔다.
+
+        백테스트는 날짜 수만큼 평가를 반복하므로, 여기서 미리 만들지 않으면
+        같은 이동평균을 수백 번 다시 계산하게 된다(실측 25배 차이)."""
 
     def prepare(self, ctx: MarketContext) -> None:
-        """그날 하루치 사전 계산. 횡단면 순위처럼 '전 종목을 한 번에 봐야'
-        구할 수 있는 값을 여기서 만든다. 종목별 계산만 하는 Factor는 비워 둔다."""
+        """그날 하루치 계산. 횡단면 순위·비율처럼 '그날 전 종목을 한꺼번에
+        봐야' 나오는 값을 여기서 만든다. 종목별 계산만 하는 Factor는 비워 둔다."""
 
     @abstractmethod
     def score(self, symbol: str, ctx: MarketContext) -> FactorResult:

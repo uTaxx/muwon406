@@ -39,6 +39,19 @@ def ctx_of(histories, index_history=None):
     return MarketContext(as_of=as_of, histories=histories, index_history=index_history)
 
 
+def run_factor(factor, ctx):
+    """실제 호출 순서 그대로 — warmup(실행당 1회) → prepare(날짜별) → score.
+
+    이 순서를 지키지 않으면 지표 표가 비어 있어 전부 '데이터 부족'이 된다."""
+    factor.warmup(ctx.histories)
+    factor.prepare(ctx)
+    return factor
+
+
+def score_of(factor_cls, ctx, symbol="A", params=None):
+    return run_factor(factor_cls(params), ctx).score(symbol, ctx)
+
+
 # ── 상대강도: 옛 구조에서 불가능했던 것 ──────────────────────────
 
 
@@ -51,9 +64,8 @@ def test_relative_strength_ranks_within_universe():
         "MID": frame([100 + i * 0.5 for i in range(120)]),
         "SLOW": frame([100 + i * 0.1 for i in range(120)]),
     }
-    factor = RelativeStrengthFactor({"period": 60})
     ctx = ctx_of(histories)
-    factor.prepare(ctx)
+    factor = run_factor(RelativeStrengthFactor({"period": 60}), ctx)
 
     scores = {s: factor.score(s, ctx).score for s in histories}
 
@@ -66,15 +78,11 @@ def test_relative_strength_uses_index_when_given():
     histories = {"A": frame([100 + i for i in range(120)])}
     index = frame([100 + i * 2 for i in range(120)])
 
-    with_index = RelativeStrengthFactor({"period": 60})
     ctx = ctx_of(histories, index_history=index)
-    with_index.prepare(ctx)
-    assert "지수 대비" in with_index.score("A", ctx).reason
+    assert "지수 대비" in score_of(RelativeStrengthFactor, ctx, params={"period": 60}).reason
 
-    without = RelativeStrengthFactor({"period": 60})
     ctx2 = ctx_of(histories)
-    without.prepare(ctx2)
-    assert "유니버스 내" in without.score("A", ctx2).reason
+    assert "유니버스 내" in score_of(RelativeStrengthFactor, ctx2, params={"period": 60}).reason
 
 
 def test_relative_strength_is_not_absolute_return():
@@ -84,9 +92,8 @@ def test_relative_strength_is_not_absolute_return():
         "LESS_BAD": frame([200 - i * 0.2 for i in range(120)]),
         "WORSE": frame([200 - i * 1.0 for i in range(120)]),
     }
-    factor = RelativeStrengthFactor({"period": 60})
     ctx = ctx_of(histories)
-    factor.prepare(ctx)
+    factor = run_factor(RelativeStrengthFactor({"period": 60}), ctx)
 
     assert factor.score("LESS_BAD", ctx).score > factor.score("WORSE", ctx).score
 
@@ -97,18 +104,16 @@ def test_relative_strength_is_not_absolute_return():
 def test_regime_gives_every_symbol_the_same_score():
     """국면은 종목을 고르는 값이 아니라 시장 전체를 누르거나 띄우는 값이다."""
     histories = {f"S{i}": frame([100 + i * 0.1 + j for j in range(80)]) for i in range(4)}
-    factor = MarketRegimeFactor()
     ctx = ctx_of(histories)
-    factor.prepare(ctx)
+    factor = run_factor(MarketRegimeFactor(), ctx)
 
     scores = {s: factor.score(s, ctx).score for s in histories}
     assert len(set(scores.values())) == 1
 
 
 def test_regime_reports_unavailable_when_history_too_short():
-    factor = MarketRegimeFactor()
     ctx = ctx_of({"A": frame([100.0] * 10)})
-    factor.prepare(ctx)
+    factor = run_factor(MarketRegimeFactor(), ctx)
 
     assert factor.regime is None
     assert factor.score("A", ctx).score is None
@@ -120,10 +125,8 @@ def test_regime_reports_unavailable_when_history_too_short():
 def test_trend_scores_full_alignment_higher_than_broken():
     rising = frame([100 + i for i in range(200)])
     falling = frame([300 - i for i in range(200)])
-    factor = TrendFactor()
-
-    up = factor.score("A", ctx_of({"A": rising})).score
-    down = factor.score("A", ctx_of({"A": falling})).score
+    up = score_of(TrendFactor, ctx_of({"A": rising})).score
+    down = score_of(TrendFactor, ctx_of({"A": falling})).score
 
     assert up == 100.0
     assert down == 0.0
@@ -131,7 +134,7 @@ def test_trend_scores_full_alignment_higher_than_broken():
 
 def test_trend_reports_reason_in_words():
     """점수만 남기면 나중에 왜 그랬는지 알 수 없다."""
-    result = TrendFactor().score("A", ctx_of({"A": frame([100 + i for i in range(200)])}))
+    result = score_of(TrendFactor, ctx_of({"A": frame([100 + i for i in range(200)])}))
     assert "정배열" in result.reason and "종가>20일선" in result.reason
 
 
@@ -144,9 +147,8 @@ def test_pullback_prefers_moderate_dip_over_deep_crash():
     moderate = frame(base + [base[-1] * 0.94])  # 고점 대비 -6%
     crash = frame(base + [base[-1] * 0.80])  # -20%
 
-    factor = PullbackFactor()
-    moderate_score = factor.score("A", ctx_of({"A": moderate})).score
-    crash_score = factor.score("A", ctx_of({"A": crash})).score
+    moderate_score = score_of(PullbackFactor, ctx_of({"A": moderate})).score
+    crash_score = score_of(PullbackFactor, ctx_of({"A": crash})).score
 
     assert moderate_score > crash_score
 
@@ -154,7 +156,7 @@ def test_pullback_prefers_moderate_dip_over_deep_crash():
 def test_pullback_is_zero_below_long_term_average():
     """장기선 아래로 내려간 건 눌림이 아니라 하락이다."""
     falling = frame([300 - i * 1.5 for i in range(120)])
-    result = PullbackFactor().score("A", ctx_of({"A": falling}))
+    result = score_of(PullbackFactor, ctx_of({"A": falling}))
 
     assert result.score == 0.0
     assert "하락" in result.reason
@@ -166,17 +168,18 @@ def test_pullback_is_zero_below_long_term_average():
 def test_volume_scales_with_surge_ratio():
     quiet = frame([100.0] * 40, [100_000] * 40)
     surge = frame([100.0] * 40, [100_000] * 39 + [300_000])
-    factor = VolumeFactor()
-
-    assert factor.score("A", ctx_of({"A": surge})).score > factor.score(
-        "A", ctx_of({"A": quiet})
-    ).score
+    assert (
+        score_of(VolumeFactor, ctx_of({"A": surge})).score
+        > score_of(VolumeFactor, ctx_of({"A": quiet})).score
+    )
 
 
 def test_volume_rejects_illiquid_stock():
     """거래대금이 너무 작으면 신호가 맞아도 원하는 가격에 못 산다."""
     thin = frame([100.0] * 40, [100] * 39 + [1_000])
-    result = VolumeFactor({"min_turnover_krw": 2_000_000_000}).score("A", ctx_of({"A": thin}))
+    result = score_of(
+        VolumeFactor, ctx_of({"A": thin}), params={"min_turnover_krw": 2_000_000_000}
+    )
 
     assert result.score == 0.0
     assert "유동성" in result.reason
@@ -195,12 +198,9 @@ def test_factors_ignore_data_after_as_of():
     trimmed_ctx = MarketContext(as_of=as_of, histories={"A": frame(closes)})
     full_ctx = MarketContext(as_of=as_of, histories={"A": full})
 
-    for factor_cls in (TrendFactor, PullbackFactor, VolumeFactor):
-        factor_a, factor_b = factor_cls(), factor_cls()
-        factor_a.prepare(trimmed_ctx)
-        factor_b.prepare(full_ctx)
-        assert factor_a.score("A", trimmed_ctx).score == pytest.approx(
-            factor_b.score("A", full_ctx).score
+    for factor_cls in (TrendFactor, PullbackFactor, VolumeFactor, MomentumFactor):
+        assert score_of(factor_cls, trimmed_ctx).score == pytest.approx(
+            score_of(factor_cls, full_ctx).score
         ), f"{factor_cls.__name__}이 as_of 이후 데이터를 보고 있다"
 
 
@@ -213,12 +213,38 @@ def test_momentum_weights_long_horizons_over_a_single_spike():
     steady = frame([100 + i * 0.8 for i in range(150)])
     faded = frame([200 - i * 0.6 for i in range(149)] + [140.0])  # 하락 뒤 하루 급등
 
-    factor = MomentumFactor()
     ctx = ctx_of({"STEADY": steady, "FADED": faded})
-    factor.prepare(ctx)
+    factor = run_factor(MomentumFactor(), ctx)
 
     steady_result = factor.score("STEADY", ctx)
     faded_result = factor.score("FADED", ctx)
 
     assert "5일 +2" in faded_result.reason  # 단기만 보면 급등처럼 보이지만
     assert steady_result.score > faded_result.score  # 장기가 반영돼 뒤집힌다
+
+
+def test_cross_sectional_factors_ignore_data_after_as_of():
+    """상대강도·국면은 '그날 전 종목'을 보므로 미래를 볼 위험이 가장 크다.
+
+    warmup에서 전 기간 시계열을 미리 만들어 두기 때문에 더더욱 확인이 필요하다 —
+    rolling 값 자체는 과거만 쓰지만, 꺼내 쓰는 날짜를 잘못 잡으면 새어 든다."""
+    base = {
+        "A": [100 + i for i in range(150)],
+        "B": [100 + i * 0.3 for i in range(150)],
+        "C": [150 - i * 0.2 for i in range(150)],
+    }
+    trimmed = {k: frame(v) for k, v in base.items()}
+    # as_of 이후에 순위를 뒤집을 만한 폭등을 붙인다
+    full = {k: frame(v + [v[-1] * 3] * 10) for k, v in base.items()}
+    as_of = trimmed["A"]["trade_date"].iloc[-1]
+
+    trimmed_ctx = MarketContext(as_of=as_of, histories=trimmed)
+    full_ctx = MarketContext(as_of=as_of, histories=full)
+
+    for factor_cls in (RelativeStrengthFactor, MarketRegimeFactor):
+        a = run_factor(factor_cls(), trimmed_ctx)
+        b = run_factor(factor_cls(), full_ctx)
+        for symbol in base:
+            assert a.score(symbol, trimmed_ctx).score == pytest.approx(
+                b.score(symbol, full_ctx).score
+            ), f"{factor_cls.__name__}이 as_of 이후 데이터를 보고 있다"

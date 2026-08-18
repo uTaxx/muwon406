@@ -64,8 +64,18 @@ class ScoreEngine:
     def __init__(self, config: StrategyConfig, factors: list[Factor] | None = None):
         self.config = config
         self.factors = factors if factors is not None else build_factors(config)
+        self._warmed = False
+
+    def warmup(self, histories) -> None:
+        for factor in self.factors:
+            factor.warmup(histories)
+        self._warmed = True
 
     def evaluate(self, ctx: MarketContext) -> list[ScoredSymbol]:
+        # 엔진이 prepare()를 안 불러 준 경우에도 동작해야 한다 — 테스트나
+        # 단발 조회에서 warmup 없이 곧장 평가하는 경우가 있다.
+        if not self._warmed:
+            self.warmup(ctx.histories)
         for factor in self.factors:
             factor.prepare(ctx)
 
@@ -131,6 +141,9 @@ class FactorScoreStrategy(PortfolioStrategy):
         self._engine = ScoreEngine(self.config)
         #: 마지막 평가 결과 — 판단 근거를 밖에서 꺼내 보기 위한 것
         self.last_results: list[ScoredSymbol] = []
+
+    def prepare(self, histories) -> None:
+        self._engine.warmup(histories)
 
     def evaluate(self, ctx: MarketContext) -> list[Signal]:
         self.last_results = self._engine.evaluate(ctx)

@@ -180,8 +180,9 @@ def test_regime_classification_from_breadth():
     bear_ctx = MarketContext(as_of=as_of, histories={f"S{i}": frame(falling) for i in range(5)})
 
     bull, bear = MarketRegimeFactor(), MarketRegimeFactor()
-    bull.prepare(bull_ctx)
-    bear.prepare(bear_ctx)
+    for factor, ctx in ((bull, bull_ctx), (bear, bear_ctx)):
+        factor.warmup(ctx.histories)
+        factor.prepare(ctx)
 
     assert bull.regime == "STRONG_BULL"
     assert bear.regime == "BEAR"
