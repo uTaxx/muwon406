@@ -50,6 +50,7 @@ from sqlalchemy import select
 from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
+from muwon.dashboard.glossary import TERMS, terms_for
 from muwon.data.universe import find_by_symbol
 from muwon.db.models import (
     BacktestRunRow,
@@ -229,6 +230,66 @@ def _ago(moment: datetime | None) -> str:
     return f"{minutes // (60 * 24)}일 전"
 
 
+def section(icon: str, title: str, subtitle: str, badges=(), *, expanded: bool = False):
+    """목업의 카드 한 줄 — 아이콘 · 굵은 제목 · 회색 부제 · 오른쪽 뱃지.
+
+    목업은 카드마다 펼침 화살표가 달려 있다. Streamlit에서 그 동작을 그대로
+    주는 건 expander뿐인데, expander는 라벨 하나만 받는다. 그래서 아이콘·부제·
+    뱃지를 라벨 안에 마크다운으로 넣었다 — CSS로 카드를 흉내내면 Streamlit이
+    올라갈 때마다 깨지고, 그 화면은 '고쳐야 할 줄 모르는 채로' 망가진다."""
+    chips = "".join(f"  `{b}`" for b in badges)
+    return st.expander(f"{icon}  **{title}** — {subtitle}{chips}", expanded=expanded)
+
+
+def _terms_markdown(terms) -> str:
+    """용어를 마크다운 글로 그린다.
+
+    처음엔 표(st.dataframe)로 그렸는데 두 가지가 걸렸다. 설명이 한 줄을
+    넘으면 잘려서 정작 중요한 뒷말이 안 보이고, Streamlit 표는 캔버스로
+    그려져서 브라우저 Ctrl+F가 안 먹는다 — 사전인데 검색이 안 되면 곤란하다."""
+    blocks = []
+    for t in terms:
+        영문 = f" &nbsp;`{t.영문}`" if t.영문 else ""
+        blocks.append(f"**{t.이름}**{영문}  \n{t.뜻}  \n<small>→ {t.읽는법}</small>")
+    return "\n\n".join(blocks)
+
+
+def render_terms(keys) -> None:
+    """이 화면에 나오는 말만 골라 풀어 준다.
+
+    사전을 통째로 보여 주면 아무도 안 읽는다. 지금 보고 있는 표에 나오는
+    단어만 그 자리에서 풀어 줘야 읽힌다."""
+    with st.expander("❓ 이 화면에 나오는 말", expanded=False):
+        st.markdown(_terms_markdown(terms_for(keys)), unsafe_allow_html=True)
+
+
+def render_glossary_panel(key_prefix: str = "") -> None:
+    """전체 용어 사전 — 목업 머리글의 '?' 자리.
+
+    key_prefix는 같은 화면에 사전을 두 번 놓을 때 검색칸 키가 부딪히지
+    않게 하려는 것이다. Streamlit은 같은 키의 위젯이 둘이면 화면을 죽인다."""
+    with st.expander(f"❓ 용어 해설 — 모르는 말이 나오면 여기 ({len(TERMS)}개)", expanded=False):
+        st.caption(
+            "화면과 알림에 나오는 주식·매매 용어를 전부 모았습니다. "
+            "굵은 글씨가 용어, 그 아래가 뜻, 화살표(→)가 '그래서 그 숫자를 보면 무엇을 판단하나'입니다."
+        )
+        query = st.text_input(
+            "찾기", placeholder="예: 손절, MDD, 슬리피지", key=f"{key_prefix}glossary_query"
+        ).strip()
+        picked = [
+            t
+            for t in TERMS.values()
+            if not query
+            or query.lower() in (t.이름 + t.뜻 + t.읽는법 + t.영문).lower()
+        ]
+        if not picked:
+            st.info(f"'{query}'에 해당하는 용어가 없습니다. 저에게 물어보시면 설명하고 사전에 넣겠습니다.")
+            return
+        if query:
+            st.caption(f"{len(picked)}개 찾음")
+        st.markdown(_terms_markdown(picked), unsafe_allow_html=True)
+
+
 def render_summary_cards(service: SettingsService) -> None:
     """목업의 상단 요약 카드 4개.
 
@@ -250,6 +311,10 @@ def render_summary_cards(service: SettingsService) -> None:
 
     today_pnl, total_pnl, today_count = realized_pnl(session_factory)
     activity = last_activity(session_factory)
+    with session_factory() as db:
+        last_run = db.scalars(
+            select(RunLogRow).order_by(RunLogRow.created_at.desc()).limit(1)
+        ).first()
 
     st.markdown(CARD_CSS, unsafe_allow_html=True)
     cards = [
@@ -270,10 +335,18 @@ def render_summary_cards(service: SettingsService) -> None:
             f"누적 {total_pnl:+,.0f}원 · 오늘 {today_count}건",
             "blue",
         ),
+        # 목업 4번째 칸은 '최근 동기화'지만, 늘 '방금 전'이라 아무것도 안 알려
+        # 준다. 정작 궁금한 건 "엔진이 돌긴 돌았나"라서 그 자리를 실행 기록으로
+        # 바꿨다 — 매매가 0건인 날에도 뭔가 말해 주는 유일한 칸이다.
         _card(
-            "🕒", "orange", "마지막 매매 기록",
-            activity.strftime("%H:%M") if activity else "—",
-            _ago(activity), "orange",
+            "🕒", "orange", "마지막 실행",
+            last_run.created_at.strftime("%m-%d %H:%M") if last_run else "—",
+            (
+                f"신호 {last_run.buy_signals + last_run.sell_signals} · 주문 {last_run.orders}"
+                if last_run
+                else _ago(activity)
+            ),
+            "orange",
         ),
     ]
     st.markdown(f'<div class="muwon-cards">{"".join(cards)}</div>', unsafe_allow_html=True)
@@ -372,19 +445,69 @@ def render_admin_tab(service: SettingsService) -> None:
     매매를 보는 화면과 설정을 바꾸는 화면을 갈라 놓는 게 이 탭의 목적이다.
     지금까지는 한 페이지에 섞여 있어서, 상태를 확인하러 들어와도 인증정보
     입력란이 먼저 보였다."""
-    with st.expander("최근 실행 · 돌긴 돌았나", expanded=False):
-        render_run_log()
-    with st.expander("KIS 인증정보 · API 키 및 계좌 연결", expanded=False):
+    try:
+        creds = service.get_kis_credentials()
+        kis_badge = "연결됨" if (creds.app_key and creds.app_secret) else "인증정보 없음"
+        kis_env = "실거래" if creds.kis_env == "real" else "모의투자"
+    except RuntimeError:
+        kis_badge, kis_env = "확인 불가", "확인 불가"
+    try:
+        telegram_badge = "정상" if service.get_telegram_config().bot_token else "미설정"
+    except RuntimeError:
+        telegram_badge = "확인 불가"
+
+    with section("🔑", "KIS 인증정보", "API 키 및 계좌 연결 상태", [kis_badge, kis_env]):
+        st.caption(
+            "**KIS**는 한국투자증권입니다. 여기 넣은 키로 프로그램이 증권사에 주문을 냅니다. "
+            "지금은 **모의투자**(가짜 돈) 계좌라 잃어도 실제 돈은 나가지 않습니다."
+        )
+        render_terms(["모의투자", "체결"])
         render_kis_tab(service)
-    with st.expander("텔레그램 알림 · 체결·오류·리포트", expanded=False):
+
+    with section("✈️", "텔레그램 알림", "체결 · 오류 · 리포트 알림", [telegram_badge]):
+        st.caption("매수·매도가 체결되거나 오류가 나면 텔레그램으로 바로 알려 줍니다.")
         render_telegram_tab(service)
-    # 리스크 정책은 대시보드 탭에만 둔다. 양쪽에 넣었더니 Streamlit이
-    # 같은 키의 폼이 두 개라며 화면 전체를 죽였다 — 목업에서도 리스크
-    # 정책은 대시보드 목록에 있고 관리 탭에는 없다.
-    with st.expander(f"변경 이력 · {HISTORY_REFRESH_SECONDS}초마다 자동 갱신", expanded=False):
+
+    with section("🧾", "최근 실행", "돌긴 돌았나 · 무엇을 보고 무엇을 했나"):
+        st.caption(
+            "**화면이 비어 있을 때 가장 먼저 볼 표입니다.** 체결이 없어도 한 줄은 남습니다."
+        )
+        render_terms(["신호", "유니버스", "킬스위치"])
+        render_run_log()
+
+    with section("🕘", "변경 이력", f"설정 변경 기록 · {HISTORY_REFRESH_SECONDS}초마다 자동 갱신"):
+        st.caption("누가 언제 어떤 설정을 바꿨는지 남습니다. 성과가 달라지면 여기부터 보세요.")
         render_history_fragment(service)
-    with st.expander(f"개발 로그(git 커밋) · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신", expanded=False):
+
+    with section("💻", "개발 로그", f"git 커밋 · {DEVLOG_REFRESH_SECONDS}초마다 자동 갱신"):
+        st.caption("프로그램 자체가 언제 어떻게 바뀌었는지의 기록입니다.")
         render_devlog_fragment()
+
+    with section("⚙️", "실행 환경", "DB 위치 · 암호화 키 · 동기화 상태"):
+        st.caption(
+            "목업의 '앱 설정' 자리입니다. 언어·테마 같은 건 아직 없어서, 대신 "
+            "**지금 이 화면이 어느 데이터를 보고 있는지**를 둡니다 — 값이 이상할 때 "
+            "가장 먼저 의심할 자리입니다."
+        )
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {"항목": "데이터베이스", "값": bootstrap_settings.database_url},
+                    {
+                        "항목": "암호화 마스터키",
+                        "값": "설정됨" if bootstrap_settings.master_key else "없음 (KIS·텔레그램 저장 불가)",
+                    },
+                    {
+                        "항목": "구글드라이브 동기화",
+                        "값": "켜짐" if _drive_sync_configured() else "꺼짐 (이 화면에서만 저장됨)",
+                    },
+                ]
+            ),
+            hide_index=True,
+            width="stretch",
+        )
+
+    render_glossary_panel("admin_")
 
 
 def main() -> None:
@@ -425,27 +548,118 @@ def main() -> None:
     with tab_home:
         render_summary_cards(service)
         render_status_bar(service)
+        render_glossary_panel("home_")
         st.divider()
-        with st.expander(f"보유 종목 & 최근 주문 · {TRADING_REFRESH_SECONDS}초마다 자동 갱신", expanded=True):
-            render_trading_fragment()
-        with st.expander("리스크 정책 · 손절 · 비중 · 노출 한도", expanded=False):
-            render_risk_tab(service)
+        render_home_rows(service)
 
     with tab_strategy:
-        render_strategy_tab(service)
-        st.divider()
-        st.caption("전략 리뷰 — 다른 전략이었다면?")
-        render_strategy_review_tab(service)
+        st.caption("전략 — 무엇을 기준으로 사고팔지 고릅니다")
+        with section("🎯", "활성 전략", "실거래에 적용되는 전략 하나", expanded=True):
+            st.caption(
+                "여러 전략 중 **하나만** 실제로 돕니다. 여기서 고른 전략이 매일 아침 "
+                "종목을 판단합니다."
+            )
+            render_terms(["신호", "진입", "청산", "역추세", "추세추종", "팩터"])
+            render_strategy_tab(service)
+        with section("⚖️", "전략 리뷰 결과", "다른 전략이었다면 어땠을지 비교"):
+            st.caption(
+                "매일 자동으로 '지금 이 전략 말고 다른 걸 썼다면 얼마였을까'를 계산해 쌓습니다. "
+                "짧은 기간의 1등은 운일 수 있으니, 며칠 이상 계속 위에 있는지를 보세요."
+            )
+            render_terms(["수익률", "MDD", "승률", "손익비", "백테스트", "과최적화"])
+            render_strategy_review_tab(service)
 
     with tab_records:
-        render_trades_tab()
+        st.caption("기록 — 실제로 무엇을 사고팔았는지")
+        with section("📊", "매매 기록", "청산까지 끝난 거래", expanded=True):
+            st.caption(
+                "**청산(팔아서 정리)까지 끝난 거래만** 여기 들어옵니다. 아직 들고 있는 종목은 "
+                "대시보드 탭의 '보유 종목'에 있습니다 — 팔기 전 손익은 아직 확정된 돈이 아니기 때문입니다."
+            )
+            render_terms(["진입", "청산", "실현손익", "손절", "익절", "체결"])
+            render_trades_tab()
+        with section("🧾", "실행 기록", "엔진이 회차마다 무엇을 보고 무엇을 했나"):
+            st.caption(
+                "**화면이 비어 있을 때 이걸 보세요.** '오늘 살 게 없었다'와 '오늘 아예 안 돌았다'는 "
+                "둘 다 빈 화면으로 보이지만 원인이 정반대입니다. "
+                "신호가 0이면 전략이 못 찾은 것, 신호는 있는데 주문이 0이면 리스크 정책이 막은 것입니다."
+            )
+            render_terms(["신호", "유니버스", "킬스위치", "일일손실한도"])
+            render_run_log()
 
     with tab_alerts:
+        st.caption("알림 — 체결·청산이 일어난 순서대로")
         render_notifications_tab()
 
     with tab_admin:
         st.caption("설정 및 운영 관리")
         render_admin_tab(service)
+
+
+def render_home_rows(service: SettingsService) -> None:
+    """목업 대시보드 탭의 카드 목록 5줄.
+
+    목업은 '전략'·'기록'이 아래 탭에도 있는데 대시보드에도 같은 줄이 있다 —
+    대시보드를 바로가기 허브로 쓰는 구조다. 다만 같은 입력 폼을 두 탭에
+    그대로 두면 Streamlit이 '같은 키의 폼이 둘'이라며 화면 전체를 죽인다
+    (실제로 그렇게 한 번 죽였다). 그래서 다른 탭에 본체가 있는 줄은 여기서
+    **요약과 길안내만** 보여 주고, 본체가 여기뿐인 줄만 통째로 편다."""
+    session_factory = get_session_factory()
+    selection = service.get_strategy_selection()
+    policy = service.get_risk_policy()
+
+    with session_factory() as session:
+        held = session.query(PositionRow).count()
+        trade_count = session.query(TradeRow).count()
+    latest_review, _ = _latest_daily_review(session_factory)
+
+    with section(
+        "🎯", "활성 전략", "실거래에 적용 중인 전략",
+        ["LIVE" if policy.trading_enabled else "중지됨", _display_name_for(selection.active_key)],
+    ):
+        st.caption(
+            f"지금은 **{_display_name_for(selection.active_key)}** 하나가 돌고 있습니다. "
+            "바꾸려면 위의 **전략** 탭으로 가세요 — 같은 입력칸을 두 곳에 두면 화면이 죽어서 "
+            "설정은 한 곳에만 둡니다."
+        )
+
+    with section(
+        "🥧", "보유 종목 & 최근 주문", "지금 들고 있는 것과 최신 체결",
+        [f"{held}건", f"{TRADING_REFRESH_SECONDS}초 갱신"], expanded=True,
+    ):
+        st.caption(
+            "**보유 종목**은 샀는데 아직 안 판 것, **최근 주문**은 사거나 팔라고 낸 지시입니다. "
+            "주문을 냈다고 다 체결되는 건 아닙니다 — 장이 닫혀 있거나 가격이 안 맞으면 안 됩니다."
+        )
+        render_terms(["체결", "진입", "평가금액", "비중", "거래대금"])
+        render_trading_fragment()
+
+    with section("📊", "매매 기록", "청산까지 끝난 거래", [f"{trade_count}건"]):
+        st.caption("전체 목록과 손익은 **기록** 탭에 있습니다. 여기서는 건수만 확인하세요.")
+
+    with section(
+        "⚖️", "전략 리뷰 결과", "다른 전략과의 비교",
+        ["최신" if latest_review else "없음"],
+    ):
+        if latest_review:
+            st.caption(
+                f"가장 최근 리뷰 기준일은 **{latest_review.period_end}** 입니다. "
+                "전체 순위표는 **전략** 탭에 있습니다."
+            )
+        else:
+            st.caption("아직 리뷰 결과가 없습니다. 평일 자동 실행이 한 번은 돌아야 채워집니다.")
+
+    with section(
+        "🛡️", "리스크 정책", "손절 · 비중 · 노출 한도",
+        ["정상" if policy.trading_enabled else "중지됨"],
+    ):
+        st.caption(
+            "**돈을 버는 규칙이 아니라, 크게 잃지 않기 위한 규칙입니다.** "
+            "손절은 '이만큼 빠지면 미련 없이 판다', 비중은 '한 종목에 최대 몇 %까지', "
+            "일일 손실 한도는 '오늘 이만큼 잃으면 오늘은 그만'입니다."
+        )
+        render_terms(["손절", "비중", "노출", "일일손실한도", "킬스위치", "ATR"])
+        render_risk_tab(service)
 
 
 def render_status_bar(service: SettingsService) -> None:
@@ -456,7 +670,10 @@ def render_status_bar(service: SettingsService) -> None:
         enabled = st.toggle(
             "자동매매 활성화",
             value=policy.trading_enabled,
-            help="꺼두면 RiskManager가 신규 진입 신호를 전부 거부합니다 (킬스위치).",
+            help=(
+                "끄면 새로 사지 않습니다(킬스위치). 이미 들고 있는 종목의 손절은 "
+                "그대로 작동합니다 — '더 안 산다'이지 '방치한다'가 아닙니다."
+            ),
         )
         if enabled != policy.trading_enabled:
             service.set_risk_policy(dataclasses.replace(policy, trading_enabled=enabled))
@@ -468,10 +685,14 @@ def render_status_bar(service: SettingsService) -> None:
             kis_env = service.get_kis_credentials().kis_env
         except RuntimeError:
             kis_env = "(미확인)"
+        # 'paper'라고만 띄우면 그게 좋은 건지 나쁜 건지 알 수가 없다.
+        # 이 한 줄이 "지금 진짜 돈이 나가는가"를 답해야 한다.
         if kis_env == "real":
-            st.error("KIS 환경: **실거래(real)**", icon="⚠️")
+            st.error("**실거래** — 지금 나가는 주문은 진짜 돈입니다", icon="⚠️")
+        elif kis_env == "paper":
+            st.info("**모의투자** — 증권사가 준 가짜 돈이라 잃어도 실제 돈은 안 나갑니다", icon="🧪")
         else:
-            st.info(f"KIS 환경: {kis_env}")
+            st.warning(f"KIS 환경 확인 불가 ({kis_env})", icon="❓")
 
     with col_time:
         st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
