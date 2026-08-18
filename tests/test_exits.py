@@ -159,3 +159,58 @@ def test_highest_close_since_ignores_outside_window():
 
     assert highest_close_since(df, dates[2], dates[3]) == pytest.approx(120.0)
     assert highest_close_since(df, dates[0], dates[1]) == pytest.approx(200.0)
+
+
+def test_take_profit_sells_when_the_target_is_reached():
+    """익절이 이 시스템에 아예 없었다. 넣되 기본값은 끔이다 —
+    유리한지 아직 재지 않았기 때문이다."""
+    from datetime import date
+
+    from muwon.risk.exits import evaluate_exit
+    from muwon.settings.schema import RiskPolicy
+
+    policy = RiskPolicy(take_profit_pct=0.10)
+    decision = evaluate_exit(
+        entry_price=10_000,
+        entry_date=date(2024, 1, 2),
+        current_price=11_000,
+        as_of=date(2024, 1, 5),
+        policy=policy,
+    )
+    assert decision.should_exit
+    assert "익절" in decision.reason
+
+
+def test_take_profit_is_off_by_default():
+    """기본값이 켜져 있으면 지금까지의 모든 결과와 비교가 안 된다."""
+    from datetime import date
+
+    from muwon.risk.exits import evaluate_exit
+    from muwon.settings.schema import RiskPolicy
+
+    decision = evaluate_exit(
+        entry_price=10_000,
+        entry_date=date(2024, 1, 2),
+        current_price=20_000,  # +100%인데도
+        as_of=date(2024, 1, 5),
+        policy=RiskPolicy(),
+    )
+    assert not decision.should_exit
+
+
+def test_the_stop_loss_still_wins_over_take_profit():
+    """손실을 막는 쪽이 언제나 먼저여야 한다."""
+    from datetime import date
+
+    from muwon.risk.exits import evaluate_exit
+    from muwon.settings.schema import RiskPolicy
+
+    decision = evaluate_exit(
+        entry_price=10_000,
+        entry_date=date(2024, 1, 2),
+        current_price=9_000,
+        as_of=date(2024, 1, 5),
+        policy=RiskPolicy(stop_loss_pct=-0.05, take_profit_pct=0.10),
+    )
+    assert decision.should_exit
+    assert decision.reason == "손절"

@@ -81,6 +81,14 @@ def evaluate_exit(
     elif (current_price / entry_price - 1) <= policy.stop_loss_pct:
         return ExitDecision(True, "손절")
 
+    # 익절은 손절 다음, 트레일링 앞에서 본다. 손절보다 뒤인 이유는 손실을
+    # 막는 쪽이 언제나 먼저여야 하기 때문이고, 트레일링보다 앞인 이유는
+    # 익절선에 닿았으면 트레일링이 더 기다릴 이유가 없기 때문이다.
+    take_profit = getattr(policy, "take_profit_pct", 0.0) or 0.0
+    if take_profit > 0 and (current_price / entry_price - 1) >= take_profit:
+        gain_pct = (current_price / entry_price - 1) * 100
+        return ExitDecision(True, f"익절 ({gain_pct:+.1f}%)")
+
     if getattr(policy, "trailing_stop_enabled", False) and history is not None:
         peak = highest_close_since(history, entry_date, as_of)
         atr_now = _value_at(atr, as_of)

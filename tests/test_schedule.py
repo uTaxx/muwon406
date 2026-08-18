@@ -70,10 +70,13 @@ def test_it_reads_the_real_workflow_files():
     실제 파일을 안 읽고 상수를 쓰기 시작하면, 일정을 바꿨을 때 화면만
     옛 시각으로 남는다."""
     jobs = upcoming(datetime(2026, 8, 19, 8, 0, tzinfo=KST))
-    assert jobs, "워크플로에서 cron을 하나도 못 읽었다"
-    assert any(j.이름 == "자동매매" for j in jobs)
+    # 어느 워크플로가 켜져 있는지는 때에 따라 다르다(지금은 자동매매가
+    # 꺼져 있다). 여기서 못 박을 것은 "파일을 실제로 읽어 온다"까지다 —
+    # 특정 일정이 있어야 한다고 쓰면, 일정을 끌 때마다 테스트가 깨진다.
+    assert jobs, "워크플로에서 살아 있는 cron을 하나도 못 읽었다"
     for job in jobs:
         assert job.설명문, f"{job.이름}: 사람이 읽을 문장이 비었다"
+        assert job.다음실행 is not None, f"{job.이름}: 다음 실행 시각을 못 구했다"
 
 
 def test_missing_workflow_directory_is_not_an_error(tmp_path: Path):

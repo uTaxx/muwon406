@@ -36,6 +36,7 @@ from muwon.analysis.experiment import (
     run_header,
     sleeve_curves,
     slippage_sweep,
+    take_profit_sweep,
     weight_sweep,
 )
 from muwon.analysis.market_data import load_histories
@@ -66,7 +67,17 @@ def load_universe_histories(
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
     parser.add_argument(
-        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation", "blend", "slippage"]
+        "mode",
+        choices=[
+            "contribution",
+            "sweep",
+            "param",
+            "strategies",
+            "correlation",
+            "blend",
+            "slippage",
+            "takeprofit",
+        ],
     )
     parser.add_argument(
         "--universe",
@@ -152,6 +163,27 @@ def main() -> None:
             )
         emit(format_comparison(results, years))
         save({"슬리피지(%)": args.values})
+        return
+
+    elif args.mode == "takeprofit":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        levels = [float(v) / 100 for v in args.values.split(",")]
+        emit("■ 익절선 민감도 — 목표 수익률에서 파는 것이 나은가")
+        emit("  지금은 익절이 아예 없다. 오르는 중이면 손절이나 보유 기간에")
+        emit("  걸릴 때까지 그대로 들고 간다.")
+        emit("  익절은 공짜가 아니다 — 크게 먹을 꼬리를 자른다. 어디까지")
+        emit("  좋아지고 어디부터 나빠지는지를 본다.\n")
+        results = []
+        for key in keys:
+            results.extend(
+                take_profit_sweep(
+                    key, (lambda k=key: build_strategy(k)), levels, histories, years
+                )
+            )
+        emit(format_comparison(results, years))
+        save({"익절선(%)": args.values})
         return
 
     elif args.mode == "blend":

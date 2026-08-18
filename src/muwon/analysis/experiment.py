@@ -234,6 +234,38 @@ def slippage_sweep(
     ]
 
 
+def take_profit_sweep(
+    name: str,
+    strategy_factory,
+    levels: list[float],
+    histories: dict[str, pd.DataFrame],
+    years: list[int],
+    policy: RiskPolicy | None = None,
+) -> list[ExperimentResult]:
+    """익절선만 바꿔 가며 돌린다.
+
+    이 시스템에는 익절이 아예 없었다. 오르는 중이면 손절이나 보유 기간에
+    걸릴 때까지 그대로 들고 갔다. volume_surge_5d는 파는 조건이 시간이라
+    특히 크게 작용한다 — 3일째 +15%가 나 있어도 5일째까지 기다린다.
+
+    다만 익절은 공짜가 아니다. 추세추종 계열은 **몇 번 크게 먹는 것**으로
+    먹고 사는데 익절이 그 꼬리를 자른다. 그래서 "넣을까 말까"가 아니라
+    "얼마에 넣으면 어디까지 좋아지고 어디부터 나빠지나"를 본다.
+
+    levels는 비율이다(0.10 = +10%). 0은 끔 = 지금 상태."""
+    base = policy or RiskPolicy()
+    return [
+        run_experiment(
+            f"{name} 익절 {'없음' if level <= 0 else f'+{level * 100:.0f}%'}",
+            strategy_factory,
+            histories,
+            years,
+            replace(base, take_profit_pct=level),
+        )
+        for level in levels
+    ]
+
+
 def param_sweep(
     config: StrategyConfig,
     factor_key: str,
