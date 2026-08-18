@@ -34,6 +34,9 @@ on:
       values:
         description: "param 모드에서 쓸 값 (쉼표 구분)"
         default: "0,120,200"
+      regime_params:
+        description: "diagnose 모드에서 국면 Factor 설정 덮어쓰기 (JSON)"
+        default: ""
       keys:
         description: "strategies 모드는 비교할 전략 키(쉼표 구분), diagnose 모드는 전략 하나"
         default: "volume_surge_5d,factor_score_v1,macd_cross"
@@ -69,7 +72,8 @@ jobs:
         run: |
           python scripts/diagnose_period.py \
             --strategy "${{ github.event.inputs.keys }}" \
-            --year "${{ github.event.inputs.from_year }}"
+            --year "${{ github.event.inputs.from_year }}" \
+            --regime-params '${{ github.event.inputs.regime_params }}' 
 
       - name: 실험 실행
         if: github.event.inputs.mode != 'diagnose'
