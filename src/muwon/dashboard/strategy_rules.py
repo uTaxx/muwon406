@@ -26,6 +26,9 @@ class Rules:
     찾으려고 매번 다시 읽어야 한다."""
 
     산다: list[str]
+    #: **전략 자신의** 매도 신호만. 보유 기간 경과와 손절은 엔진이 따로
+    #: 검사하므로 여기 넣지 않는다 — 넣었더니 화면에 같은 줄이 두 번 나왔다.
+    #: 파는 조건 전부를 한자리에서 보려면 exit_rules()를 쓴다.
     판다: list[str]
     참고: list[str]
     설명있음: bool = True
@@ -74,9 +77,9 @@ def _volume_surge_rules(p, strategy) -> Rules:
             (f"{_volume_surge(p.volume_surge_ratio, p.volume_ma_window)} "
             f"그날 종가가 전날보다 **{_pct(p.min_price_change_pct)} 이상** 오른 종목"),
         ],
-        판다=[
-            f"산 지 **{p.holding_days}거래일**이 지나면 오르든 내리든 무조건",
-        ],
+        # 이 전략은 지표로 파는 조건이 없다 — 보유 기간(max_holding_days)은
+        # 엔진이 검사하므로 exit_rules가 낸다.
+        판다=[],
         참고=[
             ("파는 조건이 지표가 아니라 **시간**입니다. "
             "'재료가 터진 날 들어가서 며칠 안에 나온다'는 단타 방식입니다."),
@@ -261,3 +264,63 @@ def common_rules(policy, universe_size: int, universe_kind: str) -> list[str]:
             else "**자동매매**: 꺼짐(킬스위치) — 새로 사지 않습니다. 보유분 손절은 그대로 작동합니다."
         ),
     ]
+
+
+def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
+    """**엔진이 실제로 검사하는 순서대로** 청산 조건 전부.
+
+    왜 따로 두는가 — 전략의 매도 신호만 보여 줬더니 "매도 전략은 기간밖에
+    없냐"는 질문을 받았다. 실제로는 손절이 항상 먼저 걸리는데, 그게 리스크
+    정책 쪽에 있다는 이유로 다른 칸에 적혀 있었다. **파는 조건은 어디에
+    설정돼 있든 한자리에 모여 있어야 한다.**
+
+    (청산 조건들, 덧붙일 주의사항)을 돌려준다."""
+    조건: list[str] = []
+    주의: list[str] = []
+
+    # 1순위 — 손절. 엔진은 이걸 가장 먼저 본다(risk/exits.py evaluate_exit).
+    if getattr(policy, "atr_stop_enabled", False):
+        조건.append(
+            f"**손절(변동성 기준)** — 산 값에서 그 종목 하루 평균 변동폭"
+            f"(ATR {policy.atr_window}일)의 **{policy.atr_stop_multiple:g}배**만큼 빠지면"
+        )
+    else:
+        조건.append(
+            f"**손절** — 산 값보다 **{abs(policy.stop_loss_pct) * 100:.0f}%** 빠지면"
+        )
+    if getattr(policy, "trailing_stop_enabled", False):
+        조건.append(
+            f"**트레일링 스톱** — 산 뒤 최고가에서 ATR의 "
+            f"**{policy.trailing_stop_multiple:g}배**만큼 밀리면"
+        )
+
+    # 2순위 — 보유 기간
+    holding = getattr(strategy, "max_holding_days", None)
+    if holding:
+        조건.append(f"**보유 기간** — 산 지 **{holding}거래일**이 지나면 오르든 내리든 무조건")
+
+    # 3순위 — 전략 자신의 매도 신호
+    전략 = describe(strategy).판다
+    if 전략:
+        조건 += [f"**전략 매도 신호** — {line}" for line in 전략]
+    elif not holding:
+        주의.append(
+            "이 전략에는 자체 매도 신호가 없습니다 — 위 손절 외에는 파는 조건이 없다는 뜻입니다."
+        )
+    else:
+        주의.append(
+            "이 전략은 **자체 매도 신호가 없습니다**. 지표가 아니라 시간과 손절로만 나옵니다."
+        )
+
+    # 익절은 이 시스템에 아예 없다. 없는 걸 안 적으면 '있는데 안 보이는 것'과
+    # 구분이 안 된다 — 실제로 그 질문을 받았다.
+    주의.append(
+        "**익절(목표 수익률에 닿으면 파는 것)은 없습니다.** 오르는 중이라면 "
+        "위 조건 중 하나에 걸릴 때까지 그대로 들고 갑니다."
+    )
+    if not getattr(policy, "atr_stop_enabled", False):
+        주의.append(
+            "변동성 기준 손절(ATR)과 트레일링 스톱은 코드에는 있지만 **꺼져 있습니다** — "
+            "2022년 구간에서 켜 봤더니 손실이 오히려 커져서 기본값을 끔으로 뒀습니다."
+        )
+    return 조건, 주의

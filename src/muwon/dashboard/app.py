@@ -52,7 +52,7 @@ from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
 from muwon.dashboard.glossary import TERMS, terms_for
 from muwon.dashboard.schedule import KST, WEEKDAYS, upcoming
-from muwon.dashboard.strategy_rules import common_rules, describe
+from muwon.dashboard.strategy_rules import common_rules, describe, exit_rules
 from muwon.data.universe import UNIVERSE, find_by_symbol
 from muwon.data.universe_builder import active_universe
 from muwon.db.models import (
@@ -682,9 +682,13 @@ def render_active_rules(service: SettingsService) -> None:
     if rules.산다:
         st.markdown("**🟢 이럴 때 삽니다**")
         st.markdown("\n".join(f"- {line}" for line in rules.산다))
-    if rules.판다:
-        st.markdown("**🔴 이럴 때 팝니다**")
-        st.markdown("\n".join(f"- {line}" for line in rules.판다))
+    # 파는 조건은 전략·리스크 정책 양쪽에 흩어져 있다. 화면에서까지
+    # 흩어 두면 "매도는 기간밖에 없냐"는 오해가 생긴다 — 실제로 생겼다.
+    조건, 주의 = exit_rules(build_strategy(key), policy)
+    st.markdown("**🔴 이럴 때 팝니다** — 먼저 걸리는 것 하나로 팔립니다")
+    st.markdown("\n".join(f"- {line}" for line in 조건))
+    for line in 주의:
+        st.caption(f"※ {line}")
     if rules.참고:
         st.markdown("**💡 알아 둘 점**")
         st.markdown("\n".join(f"- {line}" for line in rules.참고))
