@@ -6,7 +6,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from muwon.dashboard.schedule import KST, describe_cron, next_fire, upcoming
+from muwon.dashboard.schedule import KST, _crons_in, describe_cron, next_fire, upcoming
 
 
 def test_weekday_cron_fires_on_the_right_korean_morning():
@@ -84,3 +84,37 @@ def test_remaining_time_is_worded_by_size():
     now = datetime(2026, 8, 19, 8, 0, tzinfo=KST)
     jobs = upcoming(now)
     assert all(job.남은시간(now) for job in jobs)
+
+
+def test_a_commented_out_cron_is_not_a_schedule():
+    """자동 실행을 꺼 둔 뒤에도 화면이 "내일 09:05에 돕니다"라고 하면
+    안내가 아니라 거짓말이다 — 실제로 오늘 멈추면서 이걸 잡았다."""
+    text = """
+on:
+  # schedule:
+  #   - cron: "5 0 * * 1-5"
+  workflow_dispatch:
+"""
+    assert _crons_in(text) == []
+
+
+def test_a_live_cron_next_to_a_commented_one_still_counts():
+    text = """
+  schedule:
+    # - cron: "30 6 * * 1-5"   # 옛 시각
+    - cron: "5 0 * * 1-5"
+"""
+    assert _crons_in(text) == ["5 0 * * 1-5"]
+
+
+def test_paper_trading_is_currently_stopped():
+    """지금 자동매매를 멈춰 둔 상태라는 것을 못 박는다.
+
+    다시 켤 때 이 테스트가 실패하면서 '의도한 변경인가'를 한 번 묻게 된다."""
+    from pathlib import Path
+
+    workflow = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "paper-trading.yml"
+    assert _crons_in(workflow.read_text(encoding="utf-8")) == [], (
+        "자동매매를 다시 켰다면 이 테스트도 함께 고치세요 — "
+        "켜 두고 잊는 일이 없도록 일부러 걸어 둔 장치입니다."
+    )

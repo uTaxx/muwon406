@@ -138,6 +138,21 @@ def describe_cron(cron: str) -> str:
     return f"매주 {이름} {시각}"
 
 
+def _crons_in(text: str) -> list[str]:
+    """워크플로 글에서 **살아 있는** cron만 뽑는다.
+
+    주석 처리된 cron까지 세면, 자동 실행을 꺼 둔 뒤에도 화면은 "내일 09:05에
+    돕니다"라고 말한다. 안내가 아니라 거짓말이 된다 — 실제로 오늘 자동
+    실행을 멈추면서 이걸 잡았다."""
+    found = []
+    for line in text.splitlines():
+        code = line.split("#", 1)[0]
+        match = re.search(r'cron:\s*["\']([^"\']+)["\']', code)
+        if match:
+            found.append(match.group(1))
+    return found
+
+
 def upcoming(now: datetime | None = None, workflow_dir: Path | None = None) -> list[Job]:
     """워크플로 파일에서 cron을 읽어 다음 실행 예정을 만든다."""
     now = now or datetime.now(KST)
@@ -148,7 +163,7 @@ def upcoming(now: datetime | None = None, workflow_dir: Path | None = None) -> l
         path = directory / filename
         if not path.exists():
             continue
-        for cron in re.findall(r'cron:\s*["\']([^"\']+)["\']', path.read_text(encoding="utf-8")):
+        for cron in _crons_in(path.read_text(encoding="utf-8")):
             jobs.append(
                 Job(
                     이름=이름,
