@@ -238,6 +238,83 @@ def param_sweep(
     return results
 
 
+def daily_returns_by_strategy(
+    named_factories: dict,
+    histories: dict[str, pd.DataFrame],
+    years: list[int],
+    policy: RiskPolicy | None = None,
+) -> tuple[dict[str, pd.Series], dict[str, float]]:
+    """전략별 일간 수익률과 노출도를 낸다.
+
+    구간 경계에서는 자금이 초기값으로 되돌아가므로 그날의 수익률은 버린다 —
+    안 버리면 '리셋'이 급등락으로 잡혀 상관계수가 오염된다.
+
+    노출도를 함께 내는 이유가 있다. 상관이 낮은 게 **정말 다른 때에 벌어서**
+    인지 **그냥 거의 안 사서**인지를 갈라야 하기 때문이다. 후자라면 그건
+    분산이 아니라 그냥 놀고 있는 자금이고, 갈래로 떼어 줄 이유가 없다."""
+    policy = policy or RiskPolicy()
+    series: dict[str, pd.Series] = {}
+    exposure: dict[str, float] = {}
+    for name, factory in named_factories.items():
+        pieces, held, total = [], 0, 0
+        for year in years:
+            sliced = slice_for_year(histories, year)
+            if not sliced:
+                continue
+            result = BacktestEngine(
+                strategy=factory(),
+                risk_manager=RiskManager(policy_provider=lambda p=policy: p),
+            ).run(sliced, trade_from=date(year, 1, 1))
+            curve = result.equity_curve
+            if len(curve) < 2:
+                continue
+            pieces.append(curve.set_index("trade_date")["equity"].pct_change().dropna())
+            held += int((curve["positions"] > 0).sum())
+            total += len(curve)
+        if pieces:
+            series[name] = pd.concat(pieces)
+            exposure[name] = held / total * 100 if total else 0.0
+    return series, exposure
+
+
+def correlation_matrix(series: dict[str, pd.Series]) -> pd.DataFrame:
+    """전략끼리 같은 날 같이 움직였는가.
+
+    자금을 갈래로 나누는 게 뜻을 가지려면 갈래들이 **서로 다른 때에** 잃어야
+    한다. 상관이 높으면 나눠 놓기만 하고 분산 효과는 없는데 관리할 규칙만
+    두 배가 된다. 그래서 갈래 구조를 만들기 전에 이걸 먼저 잰다."""
+    if not series:
+        return pd.DataFrame()
+    return pd.DataFrame(series).corr()
+
+
+def format_correlation(matrix: pd.DataFrame, exposure: dict[str, float] | None = None) -> str:
+    if matrix.empty:
+        return "상관 계산 불가"
+    width = max(len(str(c)) for c in matrix.columns) + 2
+    lines = [" " * width + "".join(f"{c[:8]:>10}" for c in matrix.columns)]
+    for name, row in matrix.iterrows():
+        lines.append(f"{name:<{width}}" + "".join(f"{v:>10.2f}" for v in row))
+    pairs = [
+        (matrix.iloc[i, j], matrix.index[i], matrix.columns[j])
+        for i in range(len(matrix))
+        for j in range(i + 1, len(matrix))
+    ]
+    if exposure:
+        lines.append("")
+        lines.append("노출도 — 전체 기간 중 종목을 들고 있던 날의 비율")
+        lines.append("  낮으면 '다른 때에 벌어서'가 아니라 '그냥 안 사서' 상관이 낮은 것이다")
+        for name, value in sorted(exposure.items(), key=lambda kv: -kv[1]):
+            lines.append(f"  {name:<24}{value:>6.1f}%")
+    if pairs:
+        lines.append("")
+        lines.append("낮은 순 — 분산 효과가 큰 조합부터")
+        for value, a, b in sorted(pairs)[:8]:
+            verdict = "나눌 가치 큼" if value < 0.4 else ("보통" if value < 0.7 else "거의 같이 움직임")
+            lines.append(f"  {a:<20} × {b:<20} {value:>6.2f}   {verdict}")
+    return "\n".join(lines)
+
+
 def format_comparison(results: list[ExperimentResult], years: list[int]) -> str:
     """실험 결과를 한 표로. 정렬은 최악 구간 기준이 아니라 입력 순서를 지킨다 —
     Factor 기여도는 기준선과의 차이를 봐야 하므로 순서가 뜻을 가진다."""

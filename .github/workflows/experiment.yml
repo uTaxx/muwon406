@@ -14,7 +14,7 @@ on:
       mode:
         description: "무엇을 볼지"
         type: choice
-        options: ["contribution", "sweep", "param", "strategies", "diagnose"]
+        options: ["contribution", "sweep", "param", "strategies", "correlation", "diagnose"]
         default: "contribution"
       from_year:
         description: "시작 연도"

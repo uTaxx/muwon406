@@ -25,8 +25,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from muwon.analysis.experiment import (
     WARMUP_DAYS,
+    correlation_matrix,
+    daily_returns_by_strategy,
     factor_contribution,
     format_comparison,
+    format_correlation,
     param_sweep,
     run_experiment,
     weight_sweep,
@@ -54,7 +57,9 @@ def load_universe_histories(years: list[int]):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
-    parser.add_argument("mode", choices=["contribution", "sweep", "param", "strategies"])
+    parser.add_argument(
+        "mode", choices=["contribution", "sweep", "param", "strategies", "correlation"]
+    )
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
     parser.add_argument("--factor", default="relative_strength", help="sweep/param 대상 Factor")
@@ -89,6 +94,18 @@ def main() -> None:
         results = param_sweep(
             config, args.factor, args.param, values, histories, years, base_params=base
         )
+
+    elif args.mode == "correlation":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 비교할 전략을 지정하세요")
+        print("■ 전략 간 상관 — 자금을 갈래로 나눌 가치가 있는가")
+        print("  같은 날 같이 움직이면 나눠도 분산 효과가 없다. 낮을수록 좋다.\n")
+        series, exposure = daily_returns_by_strategy(
+            {key: (lambda k=key: build_strategy(k)) for key in keys}, histories, years
+        )
+        print(format_correlation(correlation_matrix(series), exposure))
+        return
 
     else:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
