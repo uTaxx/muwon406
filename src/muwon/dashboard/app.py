@@ -51,7 +51,10 @@ from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
 from muwon.dashboard.glossary import TERMS, terms_for
-from muwon.data.universe import find_by_symbol
+from muwon.dashboard.schedule import KST, WEEKDAYS, upcoming
+from muwon.dashboard.strategy_rules import common_rules, describe
+from muwon.data.universe import UNIVERSE, find_by_symbol
+from muwon.data.universe_builder import active_universe
 from muwon.db.models import (
     BacktestRunRow,
     OrderRow,
@@ -67,7 +70,12 @@ from muwon.settings.schema import (
     TelegramConfig,
 )
 from muwon.settings.service import SettingsService, build_settings_service
-from muwon.strategy.registry import CATEGORIES, get_definition, list_definitions
+from muwon.strategy.registry import (
+    CATEGORIES,
+    build_strategy,
+    get_definition,
+    list_definitions,
+)
 
 HISTORY_REFRESH_SECONDS = 5
 DEVLOG_REFRESH_SECONDS = 20
@@ -548,6 +556,7 @@ def main() -> None:
     with tab_home:
         render_summary_cards(service)
         render_status_bar(service)
+        render_next_run_banner()
         render_glossary_panel("home_")
         st.divider()
         render_home_rows(service)
@@ -596,6 +605,108 @@ def main() -> None:
         render_admin_tab(service)
 
 
+def render_next_run_banner() -> None:
+    """다음 자동 실행까지 남은 시간을 한 줄로.
+
+    펼치지 않아도 보여야 한다. 아무 일도 안 일어난 화면을 보고 "고장인가"와
+    "아직 시간이 안 됐나"를 가르는 게 이 한 줄이다."""
+    now = datetime.now(KST)
+    jobs = upcoming(now)
+    if not jobs:
+        st.warning("자동 실행 일정을 읽지 못했습니다 (.github/workflows 확인).", icon="⏰")
+        return
+    nxt = jobs[0]
+    # st.info는 HTML을 그리지 않는다 — <small>을 넣었더니 태그가 글자로
+    # 그대로 나왔다. 그리고 %a는 'Wed'를 준다. 한국시간 안내에 영어 요일이
+    # 섞이면 읽는 리듬이 끊긴다.
+    st.info(
+        f"**다음 {nxt.이름}** — {_korean_datetime(nxt.다음실행)} · "
+        f"**{nxt.남은시간(now)}** ({nxt.설명문}, 한국시간)",
+        icon="⏰",
+    )
+
+
+def _korean_datetime(moment: datetime | None) -> str:
+    if moment is None:
+        return "예정 없음"
+    return f"{moment:%m월 %d일}({WEEKDAYS[moment.weekday()]}) {moment:%H:%M}"
+
+
+def render_schedule_table() -> None:
+    """자동으로 도는 것들의 전체 일정."""
+    now = datetime.now(KST)
+    jobs = upcoming(now)
+    if not jobs:
+        st.warning("워크플로 파일에서 일정을 읽지 못했습니다.")
+        return
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "무엇을": j.이름,
+                    "언제": j.설명문,
+                    "다음 실행": _korean_datetime(j.다음실행),
+                    "남은 시간": j.남은시간(now),
+                    "하는 일": j.설명,
+                }
+                for j in jobs
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+    )
+    st.caption(
+        "이 표는 `.github/workflows`의 실제 설정을 읽어 만듭니다 — 화면에 시각을 따로 "
+        "적어 두지 않으므로, 일정을 바꾸면 여기도 같이 바뀝니다. "
+        "GitHub 무료 스케줄러는 몇십 분씩 늦게 도는 일이 있어, 정각에 안 돌아도 정상입니다."
+    )
+
+
+def render_active_rules(service: SettingsService) -> None:
+    """지금 돌고 있는 전략이 무엇을 보고 사고파는지.
+
+    화면에는 전략 '이름'만 있었다. 이름은 그 전략이 무엇을 사는지 아무것도
+    말해 주지 않는다. 무엇을 기준으로 샀는지 모르면 결과를 봐도 무엇을
+    고쳐야 할지 판단할 수 없다."""
+    key = service.get_strategy_selection().active_key
+    policy = service.get_risk_policy()
+    try:
+        rules = describe(build_strategy(key))
+    except (KeyError, ValueError, RuntimeError) as e:
+        st.error(f"전략 '{key}'의 기준을 읽지 못했습니다: {e}")
+        return
+
+    st.markdown(f"#### {_display_name_for(key)}")
+    st.caption(f"전략 키 `{key}` · 계열 {_category_for(key)}")
+
+    if rules.산다:
+        st.markdown("**🟢 이럴 때 삽니다**")
+        st.markdown("\n".join(f"- {line}" for line in rules.산다))
+    if rules.판다:
+        st.markdown("**🔴 이럴 때 팝니다**")
+        st.markdown("\n".join(f"- {line}" for line in rules.판다))
+    if rules.참고:
+        st.markdown("**💡 알아 둘 점**")
+        st.markdown("\n".join(f"- {line}" for line in rules.참고))
+    if not rules.설명있음:
+        st.warning(
+            "이 전략은 아직 사람 말 설명이 붙지 않았습니다 — 위는 설정값 그대로입니다.",
+            icon="📝",
+        )
+
+    st.markdown("**⚙️ 전략과 상관없이 항상 적용되는 규칙**")
+    st.markdown(
+        "\n".join(
+            f"- {line}"
+            for line in common_rules(policy, len(active_universe(get_session_factory(), list(UNIVERSE))), "market_cap")
+        )
+    )
+    st.caption(
+        "전략만 봐서는 '왜 신호가 났는데 안 샀지'를 설명할 수 없습니다. "
+        "실제로는 이 규칙들이 먼저 걸러 냅니다."
+    )
+
+
 def render_home_rows(service: SettingsService) -> None:
     """목업 대시보드 탭의 카드 목록 5줄.
 
@@ -614,14 +725,19 @@ def render_home_rows(service: SettingsService) -> None:
     latest_review, _ = _latest_daily_review(session_factory)
 
     with section(
-        "🎯", "활성 전략", "실거래에 적용 중인 전략",
+        "🎯", "매매 기준", "지금 무엇을 보고 사고파는가",
         ["LIVE" if policy.trading_enabled else "중지됨", _display_name_for(selection.active_key)],
+        expanded=True,
     ):
-        st.caption(
-            f"지금은 **{_display_name_for(selection.active_key)}** 하나가 돌고 있습니다. "
-            "바꾸려면 위의 **전략** 탭으로 가세요 — 같은 입력칸을 두 곳에 두면 화면이 죽어서 "
-            "설정은 한 곳에만 둡니다."
-        )
+        render_active_rules(service)
+        render_terms(["신호", "진입", "청산", "일봉", "유니버스"])
+        st.caption("전략을 바꾸려면 **전략** 탭으로 가세요 — 설정은 한 곳에만 둡니다.")
+
+    with section(
+        "⏰", "실행 예정", "다음에 무엇이 언제 자동으로 도는가",
+        [upcoming()[0].남은시간(datetime.now(KST)) if upcoming() else "확인 불가"],
+    ):
+        render_schedule_table()
 
     with section(
         "🥧", "보유 종목 & 최근 주문", "지금 들고 있는 것과 최신 체결",
