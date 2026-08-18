@@ -26,6 +26,7 @@ from muwon.analysis.experiment import (
     WARMUP_DAYS,
     factor_contribution,
     format_comparison,
+    param_sweep,
     run_experiment,
     weight_sweep,
 )
@@ -52,12 +53,14 @@ def load_universe_histories(years: list[int]):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
-    parser.add_argument("mode", choices=["contribution", "sweep", "strategies"])
+    parser.add_argument("mode", choices=["contribution", "sweep", "param", "strategies"])
     parser.add_argument("--from-year", type=int, default=2021)
     parser.add_argument("--to-year", type=int, default=2025)
-    parser.add_argument("--factor", default="relative_strength", help="sweep 대상 Factor")
+    parser.add_argument("--factor", default="relative_strength", help="sweep/param 대상 Factor")
     parser.add_argument("--weights", default="0,10,20,30,40", help="sweep에 쓸 가중치들")
     parser.add_argument("--keys", default="", help="strategies 모드에서 비교할 전략 키")
+    parser.add_argument("--param", default="uptrend_ma", help="param 모드에서 바꿀 파라미터")
+    parser.add_argument("--values", default="0,120,200", help="param 모드에서 쓸 값들")
     args = parser.parse_args()
 
     years = list(range(args.from_year, args.to_year + 1))
@@ -74,6 +77,11 @@ def main() -> None:
         weights = [float(w) for w in args.weights.split(",")]
         print(f"■ 가중치 스윕 — {args.factor}의 비중만 바꾼다\n")
         results = weight_sweep(config, args.factor, weights, histories, years)
+
+    elif args.mode == "param":
+        values = [int(v) for v in args.values.split(",")]
+        print(f"■ 파라미터 스윕 — {args.factor}.{args.param}만 바꾼다\n")
+        results = param_sweep(config, args.factor, args.param, values, histories, years)
 
     else:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]

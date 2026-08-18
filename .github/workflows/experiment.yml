@@ -14,7 +14,7 @@ on:
       mode:
         description: "무엇을 볼지"
         type: choice
-        options: ["contribution", "sweep", "strategies", "diagnose"]
+        options: ["contribution", "sweep", "param", "strategies", "diagnose"]
         default: "contribution"
       from_year:
         description: "시작 연도"
@@ -28,6 +28,12 @@ on:
       weights:
         description: "sweep에 쓸 가중치 (쉼표 구분)"
         default: "0,10,20,30,40"
+      param:
+        description: "param 모드에서 바꿀 파라미터"
+        default: "uptrend_ma"
+      values:
+        description: "param 모드에서 쓸 값 (쉼표 구분)"
+        default: "0,120,200"
       keys:
         description: "strategies 모드는 비교할 전략 키(쉼표 구분), diagnose 모드는 전략 하나"
         default: "volume_surge_5d,factor_score_v1,macd_cross"
@@ -73,4 +79,6 @@ jobs:
             --to-year "${{ github.event.inputs.to_year || '2025' }}" \
             --factor "${{ github.event.inputs.factor || 'relative_strength' }}" \
             --weights "${{ github.event.inputs.weights || '0,10,20,30,40' }}" \
+            --param "${{ github.event.inputs.param || 'uptrend_ma' }}" \
+            --values "${{ github.event.inputs.values || '0,120,200' }}" \
             --keys "${{ github.event.inputs.keys }}"

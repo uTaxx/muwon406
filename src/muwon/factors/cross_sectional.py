@@ -107,8 +107,9 @@ class MarketRegimeFactor(Factor):
         long_ma = int(self.params.get("long_ma", 60))
         smoothing = int(self.params.get("breadth_smoothing", 10))
         confirm_days = int(self.params.get("confirm_days", 5))
+        uptrend_ma = int(self.params.get("uptrend_ma", 0))
 
-        above_short, above_long = [], []
+        above_short, above_long, daily_returns = [], [], []
         for df in histories.values():
             if len(df) == 0:
                 continue
@@ -120,6 +121,7 @@ class MarketRegimeFactor(Factor):
             valid = long_line.notna()
             above_short.append((closes > closes.rolling(short_ma).mean()).where(valid))
             above_long.append((closes > long_line).where(valid))
+            daily_returns.append(closes.pct_change())
 
         self.regime: str | None = None
         self.breadth_short = self.breadth_long = 0.0
@@ -133,9 +135,11 @@ class MarketRegimeFactor(Factor):
         short_pct = short_pct.rolling(smoothing, min_periods=1).mean()
         long_pct = long_pct.rolling(smoothing, min_periods=1).mean()
 
+        uptrend = self._market_uptrend(daily_returns, uptrend_ma, short_pct.index)
+
         raw = [
-            self._classify(s, long) if pd.notna(s) and pd.notna(long) else None
-            for s, long in zip(short_pct, long_pct, strict=True)
+            self._classify(s, long, up) if pd.notna(s) and pd.notna(long) else None
+            for s, long, up in zip(short_pct, long_pct, uptrend, strict=True)
         ]
         confirmed = self._confirm(raw, confirm_days)
 
@@ -172,13 +176,37 @@ class MarketRegimeFactor(Factor):
             return
         self.regime, self.breadth_short, self.breadth_long = found
 
-    def _classify(self, short_pct: float, long_pct: float) -> str:
+    @staticmethod
+    def _market_uptrend(daily_returns: list, window: int, index) -> pd.Series:
+        """유니버스 동일가중 지수가 자기 장기 이동평균 위에 있는가.
+
+        Breadth만으로는 '하락 추세 안의 반등'과 '추세 전환'이 구분되지 않는다.
+        Breadth는 수준 지표라 가격이 이미 오른 뒤에야 올라가고, 그래서 반등
+        꼭지에서 최고값을 낸다 — 2022년에 04-04·05-04·08-22를 BULL로,
+        11-25를 STRONG_BULL로 선언한 게 전부 그 자리였다. 수준 외에 방향이
+        필요하다.
+
+        지수는 종목별 일간 수익률의 평균을 누적해서 만든다. 종가를 그냥
+        평균하면 주가가 비싼 종목이 지수를 지배하고, 첫날 종가로 나눠 맞추면
+        중간에 상장한 종목이 지수를 튀게 한다. 수익률 평균은 둘 다 피한다.
+
+        window가 0이면 이 조건을 쓰지 않는다(전부 True) — 검증 전에는 켜지
+        않는다."""
+        if window <= 0 or not daily_returns:
+            return pd.Series(True, index=index)
+        market = pd.concat(daily_returns, axis=1).mean(axis=1).fillna(0.0)
+        proxy = (1 + market).cumprod()
+        # min_periods를 채우기 전에는 판단을 보류하고 False로 둔다. 지수가
+        # 자기 평균 위인지 모르는 상태에서 강세를 선언할 이유가 없다.
+        return proxy > proxy.rolling(window, min_periods=window).mean()
+
+    def _classify(self, short_pct: float, long_pct: float, uptrend: bool = True) -> str:
         strong = float(self.params.get("strong_bull_breadth", 65))
         bull = float(self.params.get("bull_breadth", 50))
         bear = float(self.params.get("bear_breadth", 40))
-        if short_pct >= strong and long_pct >= strong:
+        if short_pct >= strong and long_pct >= strong and uptrend:
             return "STRONG_BULL"
-        if short_pct >= bull and long_pct >= bull:
+        if short_pct >= bull and long_pct >= bull and uptrend:
             return "BULL"
         if long_pct < bear:
             return "BEAR"

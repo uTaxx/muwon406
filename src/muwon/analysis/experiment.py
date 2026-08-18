@@ -29,7 +29,10 @@ from muwon.scoring.config import StrategyConfig
 from muwon.scoring.engine import FactorScoreStrategy
 from muwon.settings.schema import RiskPolicy
 
-WARMUP_DAYS = 250  # 120일선 + 여유. 지표가 다 채워진 뒤부터 매매해야 공정하다
+# 420 달력일 ≈ 290 거래일. 120일선에는 250이면 충분했지만, 시장 필터가
+# 쓰는 200거래일 이동평균까지 채우려면 그걸로 모자란다. 안 채워진 채로
+# 비교하면 "필터가 나빴다"인지 "필터가 켜지지도 않았다"인지 구분이 안 된다.
+WARMUP_DAYS = 420
 
 
 @dataclass(frozen=True)
@@ -182,6 +185,44 @@ def weight_sweep(
         results.append(
             run_experiment(
                 f"{factor_key}={weight:g}",
+                lambda c=varied: FactorScoreStrategy(c),
+                histories,
+                years,
+                policy,
+            )
+        )
+    return results
+
+
+def param_sweep(
+    config: StrategyConfig,
+    factor_key: str,
+    param: str,
+    values: list,
+    histories: dict[str, pd.DataFrame],
+    years: list[int],
+    policy: RiskPolicy | None = None,
+) -> list[ExperimentResult]:
+    """한 Factor의 파라미터 하나만 바꿔 가며 돌린다.
+
+    가중치 스윕(weight_sweep)이 '이 변수를 얼마나 믿을 것인가'를 묻는다면,
+    이건 '이 변수를 어떻게 계산할 것인가'를 묻는다. 국면 판정 기준을 바꾸는
+    실험처럼 가중치로는 표현할 수 없는 가설이 여기에 들어간다."""
+    results = []
+    for value in values:
+        factor_config = config.factors[factor_key]
+        varied = replace(
+            config,
+            factors={
+                **config.factors,
+                factor_key: replace(
+                    factor_config, params={**factor_config.params, param: value}
+                ),
+            },
+        )
+        results.append(
+            run_experiment(
+                f"{param}={value}",
                 lambda c=varied: FactorScoreStrategy(c),
                 histories,
                 years,
