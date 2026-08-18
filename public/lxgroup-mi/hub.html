@@ -138,7 +138,7 @@
 <div class="cover">
   <span class="badge">LX Group MI · 사내 전용</span>
   <h1>LX Group MI</h1>
-  <p>기사 검색, 키워드 신청/변경, 긴급 키워드 조사를 한 화면에서 이용하세요.</p>
+  <p>전체 기사 조회, 키워드 신청/변경, 실시간 키워드 검색을 한 화면에서 이용하세요.</p>
   <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
 </div>
 
@@ -155,12 +155,12 @@
   </section>
 
   <div class="tab-nav">
-    <button type="button" class="tab-btn active" data-tab="search">수집된 기사<br>검색 조회</button>
+    <button type="button" class="tab-btn active" data-tab="search">전체 기사<br>조회</button>
     <button type="button" class="tab-btn" data-tab="apply">키워드<br>신청/변경</button>
-    <button type="button" class="tab-btn" data-tab="adhoc">긴급 키워드<br>조사</button>
+    <button type="button" class="tab-btn" data-tab="adhoc">실시간 키워드<br>검색</button>
   </div>
 
-  <!-- 탭 1: 수집된 기사 / 검색 조회 -->
+  <!-- 탭 1: 전체 기사 조회 -->
   <div id="tab-search" class="tab-panel active">
     <section class="card" id="resultsSection">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">검색 · 필터</span></div>
@@ -191,12 +191,12 @@
       <div class="step-desc">신규 계열사/팀 등록인지, 기존 설정 변경인지 선택해주세요.</div>
 
       <label class="check-option" id="optTypeNew">
-        <input type="radio" name="requestType" id="typeNew" value="new" checked>
+        <input type="radio" name="requestType" id="typeNew" value="new">
         <div><div class="opt-text">신규 등록</div><div class="opt-sub">처음 등록하는 계열사/팀</div></div>
       </label>
 
       <label class="check-option" id="optTypeChange">
-        <input type="radio" name="requestType" id="typeChange" value="change">
+        <input type="radio" name="requestType" id="typeChange" value="change" checked>
         <div><div class="opt-text">설정 변경</div><div class="opt-sub">이미 등록되어 있으며 키워드·시간대 등을 바꾸고 싶은 경우</div></div>
       </label>
 
@@ -302,10 +302,10 @@
     <div class="status" id="statusBox"></div>
   </div>
 
-  <!-- 탭 3: 긴급 키워드 조사 -->
+  <!-- 탭 3: 실시간 키워드 검색 -->
   <div id="tab-adhoc" class="tab-panel">
     <section class="card">
-      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">특정 키워드 검색 (긴급 조사)</span></div>
+      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">실시간 키워드 검색</span></div>
       <div class="step-desc">등록된 키워드와 별개로, 특정 키워드 하나를 지금 바로 조사합니다. 결과는 상단 식별코드의 텔레그램/이메일로 즉시 발송됩니다.</div>
 
       <label>키워드</label>
@@ -402,12 +402,23 @@
   }
 
   /* ---------- 탭 전환 ---------- */
+  let applyAutoLoaded = false;
+
   function showTab(tabName){
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     history.replaceState(null, '', url);
+    if (tabName === 'apply') maybeAutoLoadApply();
+  }
+
+  function maybeAutoLoadApply(){
+    if (applyAutoLoaded) return;
+    applyAutoLoaded = true;
+    document.getElementById('typeChange').checked = true;
+    updateChannelBlocks();
+    loadByCode();
   }
 
   /* ---------- 탭1: 기사 검색 ---------- */
@@ -863,7 +874,7 @@
       });
   }
 
-  /* ---------- 탭3: 긴급 키워드 조사 ---------- */
+  /* ---------- 탭3: 실시간 키워드 검색 ---------- */
   function renderAdhocArticles(articles){
     return articles.map(a => {
       const stars = getStars(a.importance);
@@ -1001,12 +1012,6 @@
     showTab(initialTab);
 
     loadArticles();
-
-    if (tabFromUrl === 'apply' && codeFromUrl) {
-      document.getElementById('typeChange').checked = true;
-      updateChannelBlocks();
-      loadByCode();
-    }
   });
 </script>
 
