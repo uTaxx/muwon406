@@ -35,18 +35,23 @@ from muwon.analysis.experiment import (
     run_experiment,
     run_header,
     sleeve_curves,
+    slice_for_year,
     slippage_sweep,
     take_profit_sweep,
     weight_sweep,
 )
+from muwon.analysis.holding_path import format_paths, trace
 from muwon.analysis.market_data import load_histories
+from muwon.backtest.engine import BacktestEngine
 from muwon.config import bootstrap_settings
 from muwon.data.price_cache import PriceCache
 from muwon.data.universe import UNIVERSE
 from muwon.data.universe_builder import KIND_MARKET_CAP, active_universe
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.db.session import make_session_factory
+from muwon.risk.manager import RiskManager
 from muwon.scoring.config import StrategyConfig
+from muwon.settings.schema import RiskPolicy
 from muwon.strategy.registry import build_strategy
 
 
@@ -77,6 +82,7 @@ def main() -> None:
             "blend",
             "slippage",
             "takeprofit",
+            "holding",
         ],
     )
     parser.add_argument(
@@ -184,6 +190,27 @@ def main() -> None:
             )
         emit(format_comparison(results, years))
         save({"익절선(%)": args.values})
+        return
+
+    elif args.mode == "holding":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        emit("■ 보유 구간 되짚기 — 익절선을 논하기 전에 볼 숫자\n")
+        for key in keys:
+            paths = []
+            for year in years:
+                sliced = slice_for_year(histories, year)
+                if not sliced:
+                    continue
+                result = BacktestEngine(
+                    strategy=build_strategy(key),
+                    risk_manager=RiskManager(policy_provider=RiskPolicy),
+                ).run(sliced, trade_from=date(year, 1, 1))
+                paths.extend(trace(result.closed_trades, sliced))
+            emit(format_paths(paths, key))
+            emit("")
+        save()
         return
 
     elif args.mode == "blend":
