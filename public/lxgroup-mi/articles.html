@@ -29,13 +29,14 @@
   .step-title{font-size:16px; font-weight:700; color:var(--text);}
   .step-desc{color:var(--muted); font-size:13px; margin:4px 0 16px 36px;}
   label{display:block; font-size:13px; color:#555; margin-bottom:7px; font-weight:600;}
-  input[type=text], select{
+  input[type=text], input[type=date], select, textarea{
     width:100%; background:#FAFAFA; border:1.5px solid var(--line); color:var(--text);
     border-radius:10px; padding:12px 14px; font-size:14.5px; font-family:inherit;
     margin-bottom:0; transition:border-color .15s, background .15s;
   }
-  input::placeholder{color:#B4B7BE;}
-  input:focus, select:focus{outline:none; border-color:var(--green); background:#fff;}
+  textarea{resize:vertical; min-height:64px;}
+  input::placeholder, textarea::placeholder{color:#B4B7BE;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--green); background:#fff;}
   .code-row{display:flex; gap:8px; align-items:flex-start;}
   .code-row input{flex:1;}
   .small-btn{background:var(--green); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:13.5px; font-weight:700; cursor:pointer; flex-shrink:0;}
@@ -64,6 +65,21 @@
   .add-btn:hover{background:#e9dfd6;}
   .excel-link{display:none; align-items:center; gap:6px; margin-top:14px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none; width:fit-content; position:relative;}
   .excel-link:hover{background:rgba(255,255,255,0.26);}
+  .word-hint{font-size:12px; color:var(--muted); line-height:1.6;}
+  .source-check-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .source-check{display:flex; align-items:center; gap:6px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; flex:1; justify-content:center; transition:border-color .15s, background .15s;}
+  .source-check input{accent-color:var(--green); width:16px; height:16px;}
+  .source-check.checked{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .check-option{display:flex; align-items:flex-start; gap:10px; padding:14px; border:1.5px solid var(--line); border-radius:10px; cursor:pointer; transition:border-color .15s, background .15s;}
+  .check-option.checked{border-color:var(--green); background:var(--green-tint);}
+  .check-option input{width:18px; height:18px; margin-top:1px; accent-color:var(--green); flex-shrink:0;}
+  .check-option .opt-text{font-size:14px; font-weight:600;}
+  .check-option .opt-sub{font-size:12px; color:var(--muted); font-weight:400; margin-top:2px;}
+  .submit-btn{width:100%; background:var(--green); color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;}
+  .submit-btn:hover{background:var(--green-dark);}
+  .submit-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .instant-result{margin-top:14px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .instant-summary{font-size:13.5px; font-weight:700; color:var(--green-dark); margin-bottom:8px; padding-bottom:10px; border-bottom:1px solid var(--line);}
   footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
   footer a{color:var(--green); text-decoration:none; font-weight:600;}
 </style>
@@ -108,12 +124,53 @@
     <button type="button" class="add-btn" id="moreBtn" style="display:none;">더 보기</button>
   </section>
 
+  <section class="card">
+    <div class="step-head"><span class="step-num">🔍</span><span class="step-title">특정 키워드 검색 (긴급 조사)</span></div>
+    <div class="step-desc">등록된 키워드와 별개로, 특정 키워드 하나를 지금 바로 조사합니다. 결과는 위에서 조회한 식별코드의 텔레그램/이메일로 즉시 발송됩니다.</div>
+
+    <label>키워드</label>
+    <input type="text" id="adhocKeyword" placeholder="예: OO전자 인수합병">
+
+    <div class="filter-row">
+      <div>
+        <label>조회 시작일</label>
+        <input type="date" id="adhocDateFrom">
+      </div>
+      <div>
+        <label>조회 종료일</label>
+        <input type="date" id="adhocDateTo">
+      </div>
+    </div>
+    <div class="word-hint" style="margin:6px 0 14px;">비워두면 기간 제한 없이 검색합니다. (네이버는 API 특성상 기간 지정이 완전히 정확하지 않을 수 있습니다.)</div>
+
+    <label>조회 대상</label>
+    <div class="source-check-row">
+      <label class="source-check"><input type="checkbox" id="srcGoogle" checked> 구글 뉴스</label>
+      <label class="source-check"><input type="checkbox" id="srcNaver"> 네이버 뉴스</label>
+      <label class="source-check"><input type="checkbox" id="srcGoogleEn"> 구글 뉴스(영문)</label>
+    </div>
+
+    <label class="check-option" id="optAdhocAI" style="margin-top:14px;">
+      <input type="checkbox" id="adhocUseAI">
+      <div><div class="opt-text">AI 분석 포함</div><div class="opt-sub">관련성 분석 및 요약을 함께 진행합니다 (시간이 더 걸립니다)</div></div>
+    </label>
+
+    <div id="adhocAIPurposeBlock" style="display:none; margin-top:10px;">
+      <label>AI 분석 지침 (선택)</label>
+      <textarea id="adhocAIPurpose" placeholder="비워두면 'LX그룹 관점 시사점 도출'로 자동 적용됩니다." style="margin-bottom:0;"></textarea>
+    </div>
+
+    <button type="button" class="submit-btn" id="adhocSearchBtn" style="margin-top:16px;">🔍 지금 조사하기</button>
+    <div class="instant-result" id="adhocResult" style="display:none;"></div>
+  </section>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다. · <a href="./index.html">키워드 설정 변경</a> · <a href="./manual.html">사용 매뉴얼</a></footer>
 
 <script>
   const ARTICLES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-articles';
+  const ADHOC_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-adhoc-search';
   const PAGE_SIZE = 50;
 
   let allArticles = [];
@@ -254,6 +311,83 @@
       });
   }
 
+  function renderAdhocArticles(articles){
+    return articles.map(a => {
+      const stars = getStars(a.importance);
+      const dir = getDirectionIcon(a.direction);
+      return `
+        <div class="article-item">
+          <div class="article-top">
+            <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
+          </div>
+          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+          ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function runAdhocSearch(){
+    const code = document.getElementById('codeInput').value.trim().toUpperCase();
+    const keyword = document.getElementById('adhocKeyword').value.trim();
+    if (!code){ alert('먼저 식별코드를 입력해주세요.'); return; }
+    if (!keyword){ alert('검색할 키워드를 입력해주세요.'); return; }
+
+    const sources = [];
+    if (document.getElementById('srcGoogle').checked) sources.push('google');
+    if (document.getElementById('srcNaver').checked) sources.push('naver');
+    if (document.getElementById('srcGoogleEn').checked) sources.push('google_en');
+    if (sources.length === 0){ alert('조회 대상을 1개 이상 선택해주세요.'); return; }
+
+    const payload = {
+      code,
+      keyword,
+      dateFrom: document.getElementById('adhocDateFrom').value,
+      dateTo: document.getElementById('adhocDateTo').value,
+      sources,
+      useAI: document.getElementById('adhocUseAI').checked,
+      aiPurpose: document.getElementById('adhocAIPurpose').value.trim(),
+    };
+
+    const btn = document.getElementById('adhocSearchBtn');
+    const resultBox = document.getElementById('adhocResult');
+    btn.disabled = true;
+    btn.textContent = '조사 중... (최대 1~2분)';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div class="empty-note">\'' + escapeHtml(keyword) + '\' 관련 기사를 찾고 있습니다. 잠시만 기다려주세요...</div>';
+
+    fetch(ADHOC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.textContent = '🔍 지금 조사하기';
+
+        if (data.error){
+          resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(data.error) + '</div>';
+          return;
+        }
+
+        const count = data.count || 0;
+        if (count === 0){
+          resultBox.innerHTML = '<div class="instant-summary">✓ 조사 완료 — \'' + escapeHtml(keyword) + '\' 관련 기사를 찾지 못했습니다.</div>';
+          return;
+        }
+
+        resultBox.innerHTML =
+          '<div class="instant-summary">✓ \'' + escapeHtml(keyword) + '\' 관련 기사 ' + count + '건을 찾아 텔레그램/이메일로 발송했습니다.</div>' +
+          renderAdhocArticles(data.articles);
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = '🔍 지금 조사하기';
+        resultBox.innerHTML = '<div class="empty-note">✕ 조사 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+      });
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('loadBtn').addEventListener('click', loadArticles);
     document.getElementById('codeInput').addEventListener('keydown', function(e){
@@ -262,6 +396,18 @@
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
+
+    document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
+    document.getElementById('adhocUseAI').addEventListener('change', function(){
+      document.getElementById('adhocAIPurposeBlock').style.display = this.checked ? 'block' : 'none';
+      document.getElementById('optAdhocAI').classList.toggle('checked', this.checked);
+    });
+    ['srcGoogle','srcNaver','srcGoogleEn'].forEach(function(id){
+      const cb = document.getElementById(id);
+      const wrap = cb.closest('.source-check');
+      wrap.classList.toggle('checked', cb.checked);
+      cb.addEventListener('change', function(){ wrap.classList.toggle('checked', cb.checked); });
+    });
 
     const DEFAULT_CODE = 'LXHOLDINGS';
     const urlParams = new URLSearchParams(window.location.search);
