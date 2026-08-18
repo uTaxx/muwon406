@@ -25,6 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from muwon.domain.interfaces import Strategy
+from muwon.scoring.engine import FactorScoreStrategy
 from muwon.strategy.breakout import (
     BollingerBreakoutParams,
     BollingerBreakoutStrategy,
@@ -58,7 +59,14 @@ CATEGORY_REVERSION = "평균회귀"
 CATEGORY_BREAKOUT = "돌파·모멘텀"
 CATEGORY_HYBRID = "복합"
 
-CATEGORIES = [CATEGORY_TREND, CATEGORY_REVERSION, CATEGORY_BREAKOUT, CATEGORY_HYBRID]
+CATEGORY_SCORE = "점수합산"
+CATEGORIES = [
+    CATEGORY_TREND,
+    CATEGORY_REVERSION,
+    CATEGORY_BREAKOUT,
+    CATEGORY_HYBRID,
+    CATEGORY_SCORE,
+]
 
 
 @dataclass(frozen=True)
@@ -66,6 +74,7 @@ class StrategyDefinition:
     key: str  # 고유 식별자 — trades/backtest_runs 테이블에 그대로 저장됨
     display_name: str
     description: str
+    #: PortfolioStrategy를 돌려줘도 된다 — 엔진이 알아서 통일한다
     factory: Callable[[], Strategy]
     category: str = CATEGORY_HYBRID
     status: str = "hypothesis"  # "hypothesis" | "backtested" | "live" | "retired"
@@ -262,6 +271,19 @@ REGISTRY: list[StrategyDefinition] = [
             name="price_channel_60_strict",
         ),
         category=CATEGORY_BREAKOUT,
+    ),
+    # ── 점수 합산: 조건 하나의 참/거짓이 아니라 여러 관점을 점수로 더한다 ──
+    StrategyDefinition(
+        key="factor_score_v1",
+        display_name="Factor 점수 합산 V1 (추세+모멘텀+상대강도+눌림+거래량+국면)",
+        description=(
+            "6개 관점을 각각 0~100점으로 매기고 가중 합산해 75점 이상이면 매수. "
+            "가중치와 ON/OFF를 설정에서 바꿀 수 있어, 코드 수정 없이 전략을 실험한다. "
+            "상대강도(유니버스 내 순위)와 시장국면(Breadth)은 종목 하나만 보던 "
+            "기존 구조에서는 만들 수 없던 변수다."
+        ),
+        factory=lambda: FactorScoreStrategy(),
+        category=CATEGORY_SCORE,
     ),
 ]
 

@@ -323,12 +323,29 @@ def test_get_definition_unknown_key_raises_with_known_keys_listed():
         get_definition("does-not-exist")
 
 
+def _all_signals(definition_key, df):
+    """등록된 전략이 종목 단위든 유니버스 단위든 같은 방법으로 돌린다.
+
+    두 종류가 공존하므로 테스트도 공통 경로(PortfolioStrategy)로 돌려야
+    '등록된 전략은 전부 돈다'는 보장이 유지된다."""
+    from muwon.strategy.portfolio import MarketContext, as_portfolio_strategy
+
+    strategy = as_portfolio_strategy(build_strategy(definition_key))
+    histories = {"TEST": df}
+    strategy.prepare(histories)
+    signals = []
+    for trade_date in df["trade_date"]:
+        signals.extend(
+            strategy.evaluate(MarketContext(as_of=trade_date, histories=histories))
+        )
+    return signals
+
+
 def test_every_strategy_runs_on_realistic_series_without_error():
-    """20개 전략 전부가 같은 입력에서 예외 없이 돌고, 신호 형식이 일관되는지."""
+    """등록된 전략 전부가 같은 입력에서 예외 없이 돌고, 신호 형식이 일관되는지."""
     df = rising_then_falling()
     for definition in REGISTRY:
-        signals = build_strategy(definition.key).generate_signals("TEST", df)
-        for s in signals:
+        for s in _all_signals(definition.key, df):
             assert s.symbol == "TEST"
             assert s.strategy_name == definition.key
             assert s.reason  # 사유가 비면 매매 기록에서 원인 추적이 안 된다
@@ -344,7 +361,7 @@ def test_strategies_do_not_mutate_input_dataframe():
     original_len = len(df)
 
     for definition in REGISTRY:
-        build_strategy(definition.key).generate_signals("TEST", df)
+        _all_signals(definition.key, df)
 
     assert list(df.columns) == original_columns
     assert len(df) == original_len
