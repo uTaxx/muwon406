@@ -274,6 +274,49 @@ def _describe_score(strategy) -> Rules:
     )
 
 
+def _volatility_breakout_rules(p, strategy) -> Rules:
+    return Rules(
+        산다=[
+            (f"**어제 움직인 폭**(고가−저가)의 **{p.k:g}배**를 오늘 시가에 더한 값을 "
+             "그날 가격이 넘어선 종목"),
+            "예: 어제 1,000원 폭으로 움직였고 오늘 50,000원에 시작했다면 → 50,500원을 넘을 때",
+        ],
+        판다=[],
+        참고=[
+            ("한국에서 가장 널리 알려진 단타 공식(래리 윌리엄스)입니다. "
+             "그런데 **동료심사 논문을 하나도 찾지 못했습니다** — 유명한 것과 "
+             "검증된 것은 다릅니다. 싸게 재서 판단하려고 등록해 둔 것입니다."),
+            ("⚠ **일봉 근사입니다.** 원래는 그 값을 뚫는 **순간** 사는 규칙인데, "
+             "우리는 분봉이 없어서 '그날 넘었다'는 사실만 알 수 있습니다. "
+             "그래서 돌파선 가격이 아니라 **종가로 따라 삽니다** — 원 규칙의 "
+             "성적이 아니고, 어느 쪽으로 치우치는지도 모릅니다."),
+            f"**{p.holding_days}거래일** 뒤에 팝니다. 원 규칙은 당일 청산입니다.",
+        ],
+    )
+
+
+def _gap_rules(p, strategy) -> Rules:
+    위 = p.direction == "up"
+    return Rules(
+        산다=[
+            (f"어제 종가보다 **{_pct(p.min_gap_pct)} 이상 {'높게' if 위 else '낮게'}** "
+             "시작한(시가) 종목"),
+        ],
+        판다=[],
+        참고=[
+            ("**갭**은 어제 종가와 오늘 시가의 차이입니다 — 밤사이 뉴스로 벌어집니다."),
+            ("'갭 방향으로 계속 간다'에 거는 쪽입니다."
+             if 위
+             else "'벌어진 갭은 도로 메워진다'에 거는 쪽입니다."),
+            ("⚠ 문헌 결론이 **반반**입니다 — 이어질 확률과 되돌아올 확률이 비슷하다는 "
+             "연구가 있습니다. 반반이면 그건 신호가 아닙니다. 그래서 **정반대 가설도 "
+             "같이 등록해** 나란히 재고 있습니다. 한쪽만 재면 결과를 미리 정해 놓고 "
+             "재는 셈이 됩니다."),
+            f"**{p.holding_days}거래일** 뒤에 팝니다.",
+        ],
+    )
+
+
 _BUILDERS = {
     "VolumeSurgeParams": _volume_surge_rules,
     "BollingerBreakoutParams": _bollinger_breakout_rules,
@@ -286,6 +329,8 @@ _BUILDERS = {
     "BollingerReversionParams": _bollinger_reversion_rules,
     "StochasticParams": _stochastic_rules,
     "MovingAverageRsiParams": _ma_rsi_rules,
+    "VolatilityBreakoutParams": _volatility_breakout_rules,
+    "GapParams": _gap_rules,
 }
 
 

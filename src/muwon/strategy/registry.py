@@ -34,6 +34,12 @@ from muwon.strategy.breakout import (
     VolumeSurgeParams,
     VolumeSurgeStrategy,
 )
+from muwon.strategy.gap import (
+    GapParams,
+    GapStrategy,
+    VolatilityBreakoutParams,
+    VolatilityBreakoutStrategy,
+)
 from muwon.strategy.reversion import (
     BollingerReversionParams,
     BollingerReversionStrategy,
@@ -271,6 +277,47 @@ REGISTRY: list[StrategyDefinition] = [
             name="price_channel_60_strict",
         ),
         category=CATEGORY_BREAKOUT,
+    ),
+    # ── 싸게 재서 기각하려고 만든 것들 (docs/단타전략조사.md) ──
+    #
+    # 셋 다 유명한데 근거가 얇다. 변동성 돌파는 동료심사 논문을 하나도
+    # 못 찾았고, 갭은 문헌 결론이 반반이다. 그래도 등록하는 이유는 이
+    # 저장소가 기각된 가설을 자산으로 취급하기 때문이다 — 싸게 재서
+    # 기각해 두면 같은 걸 두 번 시험하지 않는다.
+    StrategyDefinition(
+        key="volatility_breakout_k05",
+        display_name="변동성 돌파 (K=0.5, 1일 보유)",
+        description=(
+            "오늘 시가 + (어제 고가−저가)×0.5 를 넘으면 매수, 다음 날 청산. "
+            "래리 윌리엄스 규칙으로 한국에서 가장 널리 알려진 단타 공식인데 "
+            "동료심사 논문이 없다. **일봉 근사다** — 돌파선 가격이 아니라 "
+            "돌파가 일어난 날 종가로 따라 사므로 원 규칙의 성적이 아니다."
+        ),
+        factory=lambda: VolatilityBreakoutStrategy(
+            VolatilityBreakoutParams(), name="volatility_breakout_k05"
+        ),
+        category=CATEGORY_BREAKOUT,
+    ),
+    StrategyDefinition(
+        key="gap_up_go",
+        display_name="갭 상승 따라가기 (2% 이상, 1일 보유)",
+        description=(
+            "어제 종가보다 2% 이상 높게 시작한 날 매수 — '갭 방향으로 계속 간다'는 쪽. "
+            "문헌은 갭이 이어질 확률과 되돌아올 확률이 비슷하다고 본다."
+        ),
+        factory=lambda: GapStrategy(GapParams(direction="up"), name="gap_up_go"),
+        category=CATEGORY_BREAKOUT,
+    ),
+    StrategyDefinition(
+        key="gap_down_fill",
+        display_name="갭 하락 메우기 (2% 이상, 1일 보유)",
+        description=(
+            "어제 종가보다 2% 이상 낮게 시작한 날 매수 — '갭은 메워진다'는 쪽. "
+            "위와 정반대 가설이라 둘 다 등록한다. 한쪽만 재면 결과를 미리 "
+            "정해 놓고 재는 셈이 된다."
+        ),
+        factory=lambda: GapStrategy(GapParams(direction="down"), name="gap_down_fill"),
+        category=CATEGORY_REVERSION,
     ),
     # ── 점수 합산: 조건 하나의 참/거짓이 아니라 여러 관점을 점수로 더한다 ──
     StrategyDefinition(
