@@ -201,3 +201,15 @@ def test_calibration_needs_enough_per_bucket():
 
     글 = calibration([_줄(하위10=-20.0, 실제수익=5.0)], min_per_bucket=20)
     assert "비교할 수 없습니다" in 글
+
+
+def test_the_aggregate_tail_number_points_to_the_breakdown():
+    """전체로는 14.9%라 괜찮아 보였는데 구간을 나눠 보니 6%에서 33%까지
+    벌어져 있었다. 평균이 문제를 가린 것이다 — 실제로 그렇게 속았다."""
+    줄들 = [
+        _줄(기준일=f"2026-01-{i:02d}", 하위10=-8.0, 실제수익=-20.0 if i % 10 == 0 else 2.0)
+        for i in range(1, MIN_SCORED + 5)
+    ]
+    글 = format_scorecard(score(줄들))
+    assert "평균이라 문제를 가릴 수 있습니다" in 글
+    assert "위험 크기를 구별했나" in 글
