@@ -32,6 +32,7 @@ import pandas as pd
 import requests
 from loguru import logger
 
+from muwon.data.intraday import MinuteBar
 from muwon.domain.interfaces import MarketDataSource
 from muwon.domain.types import (
     AccountBalance,
@@ -107,6 +108,40 @@ def _kis_payload(response: requests.Response) -> dict | None:
     except ValueError:
         return None
     return payload if isinstance(payload, dict) and "rt_cd" in payload else None
+
+
+def parse_minute_bars(payload: dict) -> list[MinuteBar]:
+    """KIS 분봉 응답을 MinuteBar로. 네트워크 없이 테스트할 수 있게 따로 뒀다.
+
+    값이 0인 봉은 버린다 — 체결이 없던 시간대에 0이 담겨 오는 경우가 있는데,
+    그대로 쓰면 시가·저가가 0으로 잡혀 30분 칸 전체가 망가진다."""
+    bars: list[MinuteBar] = []
+    for row in payload.get("output2") or []:
+        시각 = str(row.get("stck_cntg_hour", ""))[:4]
+        if len(시각) != 4:
+            continue
+        try:
+            시가, 고가, 저가, 종가 = (
+                float(row["stck_oprc"]),
+                float(row["stck_hgpr"]),
+                float(row["stck_lwpr"]),
+                float(row["stck_prpr"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+        if min(시가, 고가, 저가, 종가) <= 0:
+            continue
+        bars.append(
+            MinuteBar(
+                hhmm=시각,
+                open=시가,
+                high=고가,
+                low=저가,
+                close=종가,
+                volume=int(float(row.get("cntg_vol") or 0)),
+            )
+        )
+    return bars
 
 
 class KISClient(MarketDataSource):
@@ -258,6 +293,30 @@ class KISClient(MarketDataSource):
             }
         )
         return df.sort_values("trade_date").reset_index(drop=True)
+
+    def get_minute_bars(self, symbol: str, until: str) -> list[MinuteBar]:
+        """**당일** 분봉을 until(HHMMSS) 시각부터 거꾸로 최대 30개 받는다.
+
+        과거 날짜는 못 받는다 — 이 API는 당일치만 준다. 그래서 30분 칸
+        하나가 정확히 한 번의 호출과 맞아떨어진다(칸 하나 = 30분 = 30개).
+        예: until="093000"이면 09:01~09:30이 온다.
+
+        빈 응답은 오류가 아니다. 그 시간대에 체결이 없었을 수도 있고,
+        15:20~15:30처럼 단일가 구간이라 분봉 자체가 없을 수도 있다."""
+        response = self._get_with_retry(
+            f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice",
+            headers=self._auth_headers("FHKST03010200"),
+            params={
+                "FID_ETC_CLS_CODE": "",
+                "FID_COND_MRKT_DIV_CODE": "J",
+                "FID_INPUT_ISCD": symbol,
+                "FID_INPUT_HOUR_1": until,
+                "FID_PW_DATA_INCU_YN": "N",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        return parse_minute_bars(response.json())
 
     def place_cash_order(
         self, symbol: str, side: OrderSide, quantity: int, reference_price: float

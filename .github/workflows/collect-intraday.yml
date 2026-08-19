@@ -1,0 +1,77 @@
+name: 30분봉 수집
+
+# **오늘 안 돌면 오늘치는 영영 없다.**
+#
+# 한국투자증권 API는 국내주식 분봉을 당일치만 준다. 과거 날짜는 아예 받을 수
+# 없고, 국내 증권사들이 대체로 장기 과거 분봉을 API로 주지 않는다. 그래서
+# 30분봉은 "필요해지면 받는 것"이 아니라 매 거래일 한 번씩 쌓아 두는 것이다.
+#
+# 왜 30분봉인가 — 장중 모멘텀(첫 30분이 마지막 30분을 예측한다)이 우리가
+# 조사한 단타 후보 중 한국 시장 증거가 있는 유일한 것인데(JRFM 15:523),
+# 검증하려면 30분봉이 있어야 한다. 자세한 것은 docs/단타전략조사.md.
+#
+# 15:40 KST = 06:40 UTC. 장 마감(15:30) 뒤에 돌려야 그날 마지막 칸까지 찬다.
+# GitHub 스케줄러는 몇십 분씩 늦기도 하는데, 당일 안에만 돌면 되므로
+# 자동매매(개장 직후여야 함)와 달리 지연에 강하다.
+#
+# **주문은 내지 않는다.** 시세 조회만 한다.
+#
+# 저장은 intraday.db에 하고 muwon.db와 분리한다 — 대시보드가 muwon.db를
+# 30초마다 통째로 내려받기 때문에, 여기에 섞으면 화면 볼 때마다 수십 MB를
+# 받게 된다.
+
+on:
+  schedule:
+    - cron: "40 6 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "기록할 날짜 (비우면 오늘 KST). 조회는 언제나 당일치입니다"
+        default: ""
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB·수집분 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db
+          # 지금까지 쌓은 것. 첫 실행이면 없는 게 정상이라 실패해도 넘어간다.
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename intraday.db --out ./intraday.db || true
+
+      - name: .env 구성
+        run: |
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: KIS 설정 갱신
+        run: |
+          python scripts/configure.py kis --env paper \
+            --app-key "${{ secrets.KIS_APP_KEY }}" --app-secret "${{ secrets.KIS_APP_SECRET }}" \
+            --account-no "${{ secrets.KIS_ACCOUNT_NO }}" --account-product-cd "01"
+
+      - name: 30분봉 수집
+        run: python scripts/collect_intraday.py --date "${{ github.event.inputs.date }}"
+
+      - name: 수집분 구글드라이브에 업로드
+        # 도중에 실패해도 받은 만큼은 올린다 — 오늘치는 다시 받을 수 없다.
+        if: always()
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py upload \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename intraday.db --path ./intraday.db
