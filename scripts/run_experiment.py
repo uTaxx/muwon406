@@ -56,7 +56,7 @@ from muwon.db.session import make_session_factory
 from muwon.risk.manager import RiskManager
 from muwon.scoring.config import StrategyConfig
 from muwon.settings.schema import RiskPolicy
-from muwon.strategy.registry import build_strategies, build_strategy
+from muwon.strategy.registry import build_strategies, build_strategy, list_definitions
 
 
 def load_universe_histories(
@@ -126,7 +126,15 @@ def main() -> None:
     parser.add_argument("--to-year", type=int, default=2025)
     parser.add_argument("--factor", default="relative_strength", help="sweep/param 대상 Factor")
     parser.add_argument("--weights", default="0,10,20,30,40", help="sweep에 쓸 가중치들")
-    parser.add_argument("--keys", default="", help="strategies 모드에서 비교할 전략 키")
+    parser.add_argument("--keys", default="", help="strategies 모드에서 비교할 전략 키 (all이면 등록된 전부)")
+    parser.add_argument(
+        "--entry-at-open", action="store_true",
+        help="매수를 다음 날 시가에 체결한다 (실거래 엔진이 실제로 하는 방식)",
+    )
+    parser.add_argument(
+        "--exit-at-open", action="store_true",
+        help="청산을 다음 날 시가에 체결한다 (실거래 엔진이 실제로 하는 방식)",
+    )
     parser.add_argument("--param", default="uptrend_ma", help="param 모드에서 바꿀 파라미터")
     parser.add_argument("--values", default="0,120,200", help="param 모드에서 쓸 값들")
     parser.add_argument(
@@ -433,12 +441,28 @@ def main() -> None:
         return
 
     else:
-        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        # `all`이면 등록된 전략 전부. 성적표를 통째로 다시 잴 때 쓴다 —
+        # 키를 손으로 나열하면 하나 빠뜨려도 표에는 아무 표시가 안 남는다.
+        if args.keys.strip().lower() == "all":
+            keys = [d.key for d in list_definitions()]
+        else:
+            keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
-            raise SystemExit("--keys에 비교할 전략을 지정하세요")
-        emit("■ 전략 비교 — 같은 데이터·같은 예열 조건\n")
+            raise SystemExit("--keys에 비교할 전략을 지정하세요 (또는 all)")
+        어떤방식 = (
+            "실거래와 같은 규칙 — 어제 판단 → 오늘 시가 매수·매도"
+            if args.entry_at_open and args.exit_at_open
+            else f"매수 {'시가' if args.entry_at_open else '종가'} · "
+                 f"매도 {'시가' if args.exit_at_open else '종가'}"
+        )
+        emit(f"■ 전략 비교 — 같은 데이터·같은 예열 조건 ({len(keys)}개)")
+        emit(f"  체결 방식: {어떤방식}\n")
         results = [
-            run_experiment(key, lambda k=key: build_strategy(k), histories, years) for key in keys
+            run_experiment(
+                key, lambda k=key: build_strategy(k), histories, years,
+                entry_at_open=args.entry_at_open, exit_at_open=args.exit_at_open,
+            )
+            for key in keys
         ]
 
     emit(format_comparison(results, years))
