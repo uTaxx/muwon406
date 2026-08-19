@@ -12,6 +12,27 @@ def make_session_factory(database_url: str) -> sessionmaker:
     return sessionmaker(bind=engine, class_=Session)
 
 
+def ensure_schema(database_url: str) -> None:
+    """**지금 그 자리에 있는** DB 파일에 빠진 테이블·컬럼을 채운다.
+
+    왜 세션 팩토리와 따로 필요한가 — 대시보드는 30초마다 구글드라이브에서
+    muwon.db를 다시 받아 **통째로 갈아 끼운다**. 그러면 시작할 때 한 번
+    맞춰 둔 스키마가 매번 옛 파일로 되돌아간다. 팩토리는 캐시돼 있어서
+    다시 만들지 않으므로 스키마를 맞출 기회가 영영 없다.
+
+    실제로 이렇게 죽었다 — orders에 나중에 추가한 컬럼(reference_price,
+    fill_confirmed)이 없는 파일이 올라오자 첫 화면의 조회가 통째로
+    OperationalError로 터졌고, Streamlit은 원인을 가린 채 빈 화면만 보였다.
+
+    내려받은 **직후마다** 부르면 된다. 이미 맞는 파일이면 아무것도 안 한다."""
+    engine = create_engine(database_url, **_engine_options(database_url))
+    try:
+        Base.metadata.create_all(engine)
+        _add_missing_columns(engine)
+    finally:
+        engine.dispose()
+
+
 def _engine_options(database_url: str) -> dict:
     """SQLite 파일 DB는 연결을 재사용하지 않는다.
 

@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -65,7 +66,7 @@ from muwon.db.models import (
     RunLogRow,
     TradeRow,
 )
-from muwon.db.session import make_session_factory
+from muwon.db.session import ensure_schema, make_session_factory
 from muwon.settings.schema import (
     KISCredentials,
     RiskPolicy,
@@ -85,6 +86,28 @@ HISTORY_REFRESH_SECONDS = 5
 DEVLOG_REFRESH_SECONDS = 20
 TRADING_REFRESH_SECONDS = 5
 DRIVE_SYNC_REFRESH_SECONDS = 30
+
+
+@contextmanager
+def db_guard(무엇: str):
+    """DB 조회가 터져도 화면 전체가 죽지 않게, 그리고 **진짜 원인이 보이게**.
+
+    잡지 않으면 Streamlit이 "error message is redacted"라고만 하고 원인을
+    감춘다. 화면은 통째로 빨간 상자가 되고, 남은 탭도 못 본다. 실제로 그
+    상태로 한참 헤맸다 — 원인은 구글드라이브에서 받아 온 DB에 컬럼 하나가
+    없던 것이었는데, 화면만 봐서는 알 길이 없었다.
+
+    여기서 잡으면 ① 어느 부분이 실패했는지 ② 무슨 오류인지가 화면에 남고,
+    ③ 나머지 화면은 계속 쓸 수 있다."""
+    try:
+        yield
+    except SQLAlchemyError as e:
+        st.error(
+            f"**{무엇}**을(를) 불러오지 못했습니다. 화면의 나머지는 그대로 쓸 수 있습니다.\n\n"
+            f"원인: `{type(e).__name__}: {e}`\n\n"
+            "잠시 뒤 새로고침해 보시고, 계속 같은 오류가 나면 이 문구를 그대로 알려 주세요.",
+            icon="🚫",
+        )
 
 
 @st.cache_resource
@@ -122,6 +145,9 @@ def sync_db_from_drive() -> None:
     if path is None:
         return
     gdrive_download(os.environ["GDRIVE_FOLDER_ID"], Path(path).name, path)
+    # 받아 온 파일이 옛 스키마일 수 있다. 갈아 끼운 **직후에** 맞춘다 —
+    # 세션 팩토리는 캐시돼 있어서 여기서 안 하면 맞출 기회가 없다.
+    ensure_schema(bootstrap_settings.database_url)
 
 
 def sync_db_to_drive() -> None:
@@ -652,7 +678,7 @@ def main() -> None:
         ["🏠 대시보드", "📈 전략", "📋 기록", "🔔 알림", "👤 관리"]
     )
 
-    with tab_home:
+    with tab_home, db_guard("대시보드 요약"):
         render_summary_cards(service)
         render_status_bar(service)
         render_next_run_banner(service)
@@ -666,12 +692,12 @@ def main() -> None:
         # 방법도 다르다. 한 화면에 섞으면 "이 숫자가 어느 쪽 것인지"를
         # 매번 헷갈린다. 그래서 갈라 둔다.
         일단위, 실시간 = st.tabs(["📅 일단위 매매", "⚡ 실시간 매매"])
-        with 일단위:
+        with 일단위, db_guard("일단위 매매 화면"):
             render_daily_strategy(service)
-        with 실시간:
+        with 실시간, db_guard("실시간 매매 화면"):
             render_realtime_tab()
 
-    with tab_records:
+    with tab_records, db_guard("기록"):
         st.caption("기록 — 실제로 무엇을 사고팔았는지")
         with section("📊", "매매 기록", "청산까지 끝난 거래", expanded=True):
             st.caption(
@@ -689,11 +715,11 @@ def main() -> None:
             render_terms(["신호", "유니버스", "킬스위치", "일일손실한도"])
             render_run_log()
 
-    with tab_alerts:
+    with tab_alerts, db_guard("알림"):
         st.caption("알림 — 체결·청산이 일어난 순서대로")
         render_notifications_tab()
 
-    with tab_admin:
+    with tab_admin, db_guard("관리"):
         st.caption("설정 및 운영 관리")
         render_admin_tab(service)
 
