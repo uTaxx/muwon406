@@ -103,6 +103,7 @@ def main() -> None:
             "intraday_stop",
             "overnight",
             "exit_timing",
+            "fill_timing",
         ],
     )
     parser.add_argument(
@@ -273,6 +274,44 @@ def main() -> None:
                 비교.extend(compare_stops(result.closed_trades, sliced, 정책.stop_loss_pct))
             emit(format_stop_comparison(비교, key))
             emit("")
+        save()
+        return
+
+    elif args.mode == "fill_timing":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        emit("■ 백테스트가 실거래와 같은 일을 하고 있나\n")
+        emit("  실거래 엔진은 **어제까지의 완성된 일봉으로 판단하고 오늘 시가에 주문**한다.")
+        emit("  그런데 백테스트는 그날 종가를 보고 그 종가에 체결한다고 계산해 왔다.")
+        emit("  즉 지금까지의 5년 성적은 실거래와 다른 규칙의 성적이다.\n")
+        emit("  아래 세 줄 중 **맨 아래가 실거래와 같은 규칙**이다. 맨 위(지금 백테스트)와의")
+        emit("  차이가 곧 '지금 숫자가 얼마나 부풀어 있나'다.\n")
+        # (매수, 매도) — 실거래에 가까워지는 순서로 세운다
+        방식들 = (
+            (False, False, "①종가매수·종가매도(지금)"),
+            (False, True, "②종가매수·시가매도"),
+            (True, True, "③시가매수·시가매도(실거래)"),
+        )
+        results = []
+        for key in keys:
+            for 시가진입, 시가청산, 이름 in 방식들:
+                results.append(
+                    run_experiment(
+                        f"{_짧은이름(key)} {이름}",
+                        lambda k=key: build_strategy(k),
+                        histories,
+                        years,
+                        entry_at_open=시가진입,
+                        exit_at_open=시가청산,
+                    )
+                )
+        emit(format_comparison(results, years))
+        emit("")
+        emit("읽는 법: ①→③으로 갈수록 실거래에 가깝다. ③이 ①보다 나쁘면 그만큼")
+        emit("지금까지의 숫자가 부풀어 있었다는 뜻이고, **그 차이만큼 기대를 낮춰야 한다.**")
+        emit("②는 청산만 옮긴 것이라 ③으로 가는 중간 단계다 — ②와 ③의 차이가")
+        emit("곧 '매수를 하루 늦추면 잃는 밤'의 크기다.")
         save()
         return
 

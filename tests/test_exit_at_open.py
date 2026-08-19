@@ -139,3 +139,72 @@ def test_the_cash_is_booked_on_the_day_it_actually_filled():
     # 6일: 시가 130에 팔렸다 → 전액 현금
     assert 곡선.loc[date(2024, 1, 6), "positions"] == 0
     assert 곡선.loc[date(2024, 1, 6), "cash"] == 곡선.loc[date(2024, 1, 6), "equity"]
+
+
+def _돌리기2(bars, 살날, 팔날, *, 시가청산: bool, 시가진입: bool):
+    정책 = RiskPolicy(
+        stop_loss_pct=-0.99,
+        take_profit_pct=0.0,
+        atr_stop_enabled=False,
+        trailing_stop_enabled=False,
+        max_position_weight=1.0,
+        max_concurrent_positions=1,
+        daily_loss_limit_pct=-0.99,
+    )
+    return BacktestEngine(
+        strategy=정해진날에사고판다(살날, 팔날),
+        risk_manager=RiskManager(policy_provider=lambda: 정책),
+        costs=무비용,
+        exit_at_open=시가청산,
+        entry_at_open=시가진입,
+    ).run({"A": bars})
+
+
+# 3일에 사기로 정한다. 3일 종가 100, 4일 시가 120 — 그 밤에 20% 올랐다.
+# 종가에 사면 그 밤을 받고, 다음 날 시가에 사면 그 밤을 잃는다.
+진입BARS = _bars(
+    [(1, 90, 90), (2, 90, 90), (3, 100, 100), (4, 120, 120), (5, 120, 120), (6, 120, 120)]
+)
+
+
+def test_buying_at_the_next_open_gives_up_that_night():
+    """수익의 70~92%가 밤사이에 났으므로(§26), 매수를 하루 늦추면 밤 하나를
+    잃는다 — 청산 쪽과 부호가 반대다. 이게 이 실험의 요점이다."""
+    종가 = _돌리기2(진입BARS, date(2024, 1, 3), date(2024, 1, 5), 시가청산=False, 시가진입=False)
+    시가 = _돌리기2(진입BARS, date(2024, 1, 3), date(2024, 1, 5), 시가청산=False, 시가진입=True)
+
+    (종가매매,) = 종가.closed_trades
+    (시가매매,) = 시가.closed_trades
+    assert 종가매매.entry_date == date(2024, 1, 3)
+    assert 종가매매.entry_price == 100.0
+    assert 시가매매.entry_date == date(2024, 1, 4), "체결일은 판단한 다음 날이어야 한다"
+    assert 시가매매.entry_price == 120.0, "그 밤의 상승을 못 받는다"
+    assert 시가매매.pnl_pct < 종가매매.pnl_pct
+
+
+def test_the_size_is_decided_at_the_moment_it_fills_not_the_day_before():
+    """어제 수량을 정해 두면 밤사이 값이 변한 뒤에 옛 금액으로 사게 된다.
+    실거래에서도 아침에 계좌를 보고 수량을 정한다."""
+    결과 = _돌리기2(진입BARS, date(2024, 1, 3), date(2024, 1, 5), 시가청산=False, 시가진입=True)
+    (매매,) = 결과.closed_trades
+    # 1,000만원을 120원짜리로 → 83,333주. 100원 기준(10만주)이 아니어야 한다.
+    assert 매매.quantity == int(10_000_000 / 120)
+
+
+def test_a_signal_that_could_not_fill_is_dropped_not_carried_over():
+    """어제 신호는 어제 것이다. 못 산 것을 계속 들고 있으면 며칠 묵은
+    신호로 사게 된다 — 실거래에서도 당일 주문이다."""
+    # 3일에 사기로 정했는데 그 뒤 봉이 없다.
+    bars = _bars([(1, 90, 90), (2, 90, 90), (3, 100, 100)])
+    결과 = _돌리기2(bars, date(2024, 1, 3), date(2024, 1, 9), 시가청산=False, 시가진입=True)
+    assert 결과.final_positions == {}
+    assert 결과.closed_trades == []
+
+
+def test_both_sides_at_open_is_what_the_live_engine_actually_does():
+    """실거래 엔진은 어제 일봉으로 판단해 오늘 시가에 사고 판다.
+    이 조합이 실거래와 같은 규칙이다."""
+    결과 = _돌리기2(진입BARS, date(2024, 1, 3), date(2024, 1, 5), 시가청산=True, 시가진입=True)
+    (매매,) = 결과.closed_trades
+    assert 매매.entry_date == date(2024, 1, 4)
+    assert 매매.exit_date == date(2024, 1, 6)

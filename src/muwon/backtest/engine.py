@@ -99,6 +99,7 @@ class BacktestEngine:
         costs: TransactionCosts | None = None,
         initial_cash: float = 10_000_000.0,
         exit_at_open: bool = False,
+        entry_at_open: bool = False,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
@@ -114,6 +115,16 @@ class BacktestEngine:
         # (설계안 §26). 종가에 파는 지금 방식은 **마지막 밤을 버리고 있다.**
         # 이 옵션은 그 둘을 한 번에 확인하기 위한 것이다.
         self._exit_at_open = exit_at_open
+        # 매수를 **다음 날 시가**에 체결할 것인가.
+        #
+        # 실거래 엔진은 어제까지의 완성된 일봉으로 판단하고 개장 직후에
+        # 시장가 주문을 낸다. 즉 **실거래는 이미 이렇게 하고 있다.** 기본값
+        # (False)은 신호 난 그날 종가에 사는데, 그건 실거래가 하는 일이
+        # 아니다 — 지금까지의 5년 성적이 실거래와 다른 규칙의 성적이었다.
+        #
+        # 그리고 수익의 70~92%가 밤사이에 났으므로(설계안 §26), 매수를 하루
+        # 늦추면 **밤 하나를 잃는다.** 청산 쪽과 부호가 반대다.
+        self._entry_at_open = entry_at_open
 
     def run(
         self, price_histories: dict[str, pd.DataFrame], trade_from: date | None = None
@@ -148,8 +159,9 @@ class BacktestEngine:
         equity_curve_rows: list[dict] = []
         day_start_equity = self._initial_cash
 
-        # 어제 정했지만 아직 못 판 청산. exit_at_open일 때만 채워진다.
+        # 어제 정했지만 아직 체결 안 된 주문. *_at_open일 때만 채워진다.
         pending_exits: dict[str, str] = {}
+        pending_entries: dict[str, str] = {}
 
         for current_date in all_dates:
             if trade_from is not None and current_date < trade_from:
@@ -176,7 +188,8 @@ class BacktestEngine:
             ):
                 signals_today.setdefault(signal.symbol, []).append(signal)
 
-            # 0) 어제 정한 청산을 오늘 **시가**에 체결한다.
+            # 0) 어제 정한 주문을 오늘 **시가**에 체결한다. 청산이 먼저다 —
+            # 판 돈으로 사야 하기 때문이다(실거래에서도 같은 순서).
             # 판단(어제 종가)과 체결(오늘 시가)을 하루 벌려 두는 것이 이
             # 옵션의 전부다. 오늘 거래가 없는 종목은 그대로 두고 다음 날 다시
             # 시도한다 — 임의로 종가에 팔아 버리면 옵션의 뜻이 사라진다.
@@ -191,6 +204,40 @@ class BacktestEngine:
                 )
                 del positions[symbol]
                 del pending_exits[symbol]
+
+            # 0-b) 어제 정한 매수를 오늘 시가에 체결한다.
+            #
+            # 수량은 **체결 시점의** 평가금액으로 정한다. 어제 정해 두면
+            # 밤사이 값이 변한 뒤에 옛 금액으로 사게 된다. 실거래에서도
+            # 아침에 계좌를 보고 수량을 정한다.
+            if pending_entries:
+                시가평가금액 = cash + sum(
+                    positions[s].quantity * float(opens_today[s])
+                    for s in positions
+                    if s in opens_today
+                )
+                # 개장 시점에 알 수 있는 손익은 밤사이 움직임뿐이다.
+                밤사이손익 = (
+                    (시가평가금액 - day_start_equity) / day_start_equity
+                    if day_start_equity > 0
+                    else 0.0
+                )
+                for symbol, reason in list(pending_entries.items()):
+                    if symbol in opens_today and symbol not in positions:
+                        cash -= self._open_position(
+                            symbol,
+                            float(opens_today[symbol]),
+                            current_date,
+                            reason,
+                            시가평가금액,
+                            밤사이손익,
+                            len(positions),
+                            cash,
+                            positions,
+                        )
+                # 어제 신호는 어제 것이다. 오늘 못 산 것을 계속 들고 있으면
+                # 며칠 묵은 신호로 사게 된다 — 실거래에서도 당일 주문이다.
+                pending_entries.clear()
 
             # 1) 청산: 손절 → 보유기간 초과 → 전략 매도 신호
             for symbol in list(positions.keys()):
@@ -245,7 +292,7 @@ class BacktestEngine:
 
             # 3) 진입: 리스크 매니저 승인을 받은 매수 신호만 실행
             for symbol, price in closes_today.items():
-                if symbol in positions:
+                if symbol in positions or symbol in pending_entries:
                     continue
                 buy_signals = [
                     s for s in signals_today.get(symbol, []) if s.signal_type == SignalType.BUY
@@ -253,31 +300,21 @@ class BacktestEngine:
                 if not buy_signals:
                     continue
 
-                policy = self._risk_manager.get_policy()
-                decision = self._risk_manager.check_new_position(
-                    proposed_weight=policy.max_position_weight,
-                    current_open_positions=len(positions),
-                    daily_pnl_pct=daily_pnl_pct,
-                )
-                if not decision.approved:
+                if self._entry_at_open:
+                    # 오늘은 정하기만 한다. 체결도 수량 결정도 내일 아침이다.
+                    pending_entries[symbol] = buy_signals[0].reason
                     continue
 
-                # 체결가는 종가가 아니다 — 호가가 벌어져 있고 시장가로 치면
-                # 반대 호가를 먹고 들어간다. 사는 쪽은 종가보다 비싸게 잡힌다.
-                fill = self._costs.buy_price(float(price))
-                target_value = equity_after_exits * policy.max_position_weight
-                quantity = int(target_value / (fill * (1 + self._costs.buy_fee_pct)))
-                cost = quantity * fill * (1 + self._costs.buy_fee_pct)
-                if quantity <= 0 or cost > cash:
-                    continue
-
-                cash -= cost
-                positions[symbol] = OpenPosition(
-                    symbol=symbol,
-                    quantity=quantity,
-                    entry_price=fill,
-                    entry_date=current_date,
-                    entry_reason=buy_signals[0].reason,
+                cash -= self._open_position(
+                    symbol,
+                    float(price),
+                    current_date,
+                    buy_signals[0].reason,
+                    equity_after_exits,
+                    daily_pnl_pct,
+                    len(positions),
+                    cash,
+                    positions,
                 )
 
             equity = cash + sum(
@@ -302,6 +339,50 @@ class BacktestEngine:
         return BacktestResult(
             equity_curve=equity_curve, closed_trades=closed_trades, final_positions=positions
         )
+
+    def _open_position(
+        self,
+        symbol: str,
+        market_price: float,
+        entry_date: date,
+        reason: str,
+        equity: float,
+        daily_pnl_pct: float,
+        open_positions: int,
+        cash: float,
+        positions: dict[str, OpenPosition],
+    ) -> float:
+        """리스크 승인 → 수량 결정 → 매수. 쓴 현금을 돌려준다(못 사면 0).
+
+        종가에 사든 시가에 사든 여기서 하는 일은 같다. 한 군데로 모으는
+        이유는, 두 벌로 두면 리스크 규칙이 한쪽에만 반영되는 일이 생기기
+        때문이다 — 그런 어긋남은 화면에 아무 표시도 남기지 않는다."""
+        policy = self._risk_manager.get_policy()
+        decision = self._risk_manager.check_new_position(
+            proposed_weight=policy.max_position_weight,
+            current_open_positions=open_positions,
+            daily_pnl_pct=daily_pnl_pct,
+        )
+        if not decision.approved:
+            return 0.0
+
+        # 체결가는 기준가가 아니다 — 호가가 벌어져 있고 시장가로 치면
+        # 반대 호가를 먹고 들어간다. 사는 쪽은 기준가보다 비싸게 잡힌다.
+        fill = self._costs.buy_price(market_price)
+        target_value = equity * policy.max_position_weight
+        quantity = int(target_value / (fill * (1 + self._costs.buy_fee_pct)))
+        cost = quantity * fill * (1 + self._costs.buy_fee_pct)
+        if quantity <= 0 or cost > cash:
+            return 0.0
+
+        positions[symbol] = OpenPosition(
+            symbol=symbol,
+            quantity=quantity,
+            entry_price=fill,
+            entry_date=entry_date,
+            entry_reason=reason,
+        )
+        return cost
 
     def _close_position(
         self,
