@@ -71,7 +71,9 @@
   .score-badge{font-size:10.5px; color:var(--muted); margin-left:auto; white-space:nowrap;}
   .article-title{font-size:14.5px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.5;}
   .article-title:hover{color:var(--green-dark);}
-  .direction-icon{margin-right:2px;}
+  .direction-icon{margin-right:2px; font-size:12px; font-weight:700;}
+  .direction-icon.dir-up{color:#D32F2F;}
+  .direction-icon.dir-down{color:#1565C0;}
   .stars{color:var(--green); font-size:12px; margin-left:2px;}
   .article-reason{font-size:12.5px; color:var(--muted); margin-top:4px;}
   .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
@@ -441,8 +443,8 @@
   }
 
   function getDirectionIcon(direction){
-    if (direction === '긍정') return '📈';
-    if (direction === '부정') return '📉';
+    if (direction === '긍정') return '<span class="direction-icon dir-up">▲</span>';
+    if (direction === '부정') return '<span class="direction-icon dir-down">▼</span>';
     return '';
   }
 
@@ -559,7 +561,7 @@
           <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
           ${scoreBadge ? `<span class="score-badge">${escapeHtml(scoreBadge)}</span>` : ''}
         </div>
-        <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+        <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
         ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
       `;
       list.appendChild(div);
@@ -760,7 +762,7 @@
             <span class="group-chip">${getGroupEmoji(a.group)} ${escapeHtml(a.group || '기타')}</span>
             <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
           </div>
-          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
           ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
         </div>
       `;
@@ -987,7 +989,7 @@
           <div class="article-top">
             <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
           </div>
-          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
+          <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
           ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
         </div>
       `;
