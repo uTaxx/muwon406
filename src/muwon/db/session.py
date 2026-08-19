@@ -1,14 +1,36 @@
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from muwon.db.models import Base
 
 
 def make_session_factory(database_url: str) -> sessionmaker:
-    engine = create_engine(database_url)
+    engine = create_engine(database_url, **_engine_options(database_url))
     Base.metadata.create_all(engine)
     _add_missing_columns(engine)
     return sessionmaker(bind=engine, class_=Session)
+
+
+def _engine_options(database_url: str) -> dict:
+    """SQLite 파일 DB는 연결을 재사용하지 않는다.
+
+    대시보드는 30초마다 구글드라이브에서 muwon.db를 다시 받아 **원자적
+    교체**(os.replace)로 갈아 끼운다. 그러면 파일 이름은 같지만 실체가
+    바뀌는데, 연결을 풀에 담아 두면 그 연결은 **사라진 옛 파일**을 계속
+    붙들고 있다. 읽기는 옛 내용을 조용히 돌려주고, 쓰기는 커밋 순간
+    OperationalError로 터진다 — 실제로 대시보드에서 자동매매 스위치를 끄자
+    그렇게 죽었다.
+
+    NullPool은 세션마다 경로로 새로 연다. 그래서 항상 '지금 그 자리에 있는
+    파일'을 본다. 이 앱의 쓰기 빈도(사람이 스위치를 누르는 정도)에서 연결을
+    다시 여는 비용은 문제가 되지 않는다."""
+    if not database_url.startswith("sqlite"):
+        return {}
+    if ":memory:" in database_url:
+        # 메모리 DB는 연결이 끊기면 내용도 사라진다 — 풀을 없애면 안 된다.
+        return {}
+    return {"poolclass": NullPool}
 
 
 def _add_missing_columns(engine) -> None:

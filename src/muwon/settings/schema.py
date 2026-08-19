@@ -52,4 +52,24 @@ class StrategySelection:
     바꾸는 건 곧 "가설을 실거래로 승격"하는 행위라서, 코드 배포 없이
     설정값 하나로 되고 변경 이력에도 자동으로 남는다."""
 
-    active_key: str = "ma_rsi_v1"
+    #: 실거래에 걸 전략 키들. 개수 제한은 없다.
+    active_keys: tuple[str, ...] = ("ma_rsi_v1",)
+    #: 여러 개일 때 묶는 방식 — "OR"(하나라도 사라고 하면) / "AND"(전부 사라고 해야).
+    #: 파는 쪽은 이 값과 무관하게 언제나 OR다(strategy/combined.py 참고).
+    combine: str = "OR"
+
+    @property
+    def active_key(self) -> str:
+        """예전 코드가 쓰던 '전략 하나'. 첫 번째 것을 돌려준다.
+
+        전략을 여러 개 걸 수 있게 바꾸면서도 이 이름을 남겨 둔 것은, 리포트나
+        스크립트가 '대표 전략 하나'만 필요로 하는 자리가 아직 있기 때문이다.
+        매매 자체는 active_keys 전부를 쓴다."""
+        return self.active_keys[0] if self.active_keys else ""
+
+    def describe(self) -> str:
+        """사람이 읽을 한 줄. 로그·화면이 같은 말을 쓰게 한 군데에 둔다."""
+        if len(self.active_keys) <= 1:
+            return self.active_key or "(없음)"
+        묶음 = "모두 동의해야" if self.combine == "AND" else "하나라도 신호나면"
+        return f"{len(self.active_keys)}개 · {묶음} · {', '.join(self.active_keys)}"

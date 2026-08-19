@@ -139,3 +139,40 @@ def test_turning_on_the_atr_stop_changes_what_is_shown():
 def test_the_off_switches_are_disclosed_while_off():
     _, 주의 = exit_rules(build_strategy("volume_surge_5d"), RiskPolicy())
     assert any("꺼져 있습니다" in line for line in 주의)
+
+
+def test_a_combined_strategy_shows_each_members_conditions():
+    """묶음 이름만 보여 주면 무엇을 보고 사는지 알 수 없다.
+
+    특히 묶음 안의 전략은 어댑터로 감싸여 들어와서, 껍데기만 보면
+    '설명 없음'이 뜬다 — 실제로 그렇게 나왔다."""
+    from muwon.strategy.registry import build_strategies
+
+    묶음 = build_strategies(["volume_surge_5d", "golden_cross_20_60"], "AND")
+    규칙 = describe(묶음)
+    합친글 = _text(규칙)
+
+    assert 규칙.설명있음
+    assert "모두" in 규칙.산다[0], "AND라는 것이 첫 줄에 있어야 한다"
+    assert "거래량" in 합친글, "묶인 전략 각각의 조건이 보여야 한다"
+    assert "골든크로스" in 합친글
+    assert "2배" in 합친글, "숫자까지 그대로 나와야 한다"
+
+
+def test_a_combined_strategy_says_selling_is_always_or():
+    from muwon.strategy.registry import build_strategies
+
+    규칙 = describe(build_strategies(["volume_surge_5d", "golden_cross_20_60"], "AND"))
+    assert any("하나라도" in line for line in 규칙.참고)
+
+
+def test_combined_exit_rules_gather_every_members_sell_signal():
+    from muwon.strategy.registry import build_strategies
+
+    조건, _ = exit_rules(
+        build_strategies(["volume_surge_5d", "golden_cross_20_60"], "OR"), RiskPolicy()
+    )
+    합친글 = " ".join(조건)
+    assert "손절" in 합친글
+    assert "보유 기간" in 합친글
+    assert "데드크로스" in 합친글

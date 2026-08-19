@@ -300,6 +300,21 @@ def build_strategy(key: str) -> Strategy:
     return get_definition(key).factory()
 
 
+def build_strategies(keys, combine: str = "OR"):
+    """전략 키 여러 개를 하나로 묶어 돌려준다.
+
+    하나뿐이면 그대로 돌려준다 — 굳이 감싸면 기록에 남는 전략 이름이
+    바뀌어서, 지금까지 쌓인 매매 기록과 이어지지 않는다."""
+    from muwon.strategy.combined import CombinedStrategy
+
+    keys = [k for k in keys if k]
+    if not keys:
+        raise ValueError("전략을 하나 이상 지정하세요")
+    if len(keys) == 1:
+        return build_strategy(keys[0])
+    return CombinedStrategy([build_strategy(k) for k in keys], mode=combine)
+
+
 def list_definitions(category: str | None = None) -> list[StrategyDefinition]:
     if category is None:
         return list(REGISTRY)

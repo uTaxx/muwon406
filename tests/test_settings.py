@@ -128,13 +128,37 @@ def test_strategy_selection_defaults_to_live_key():
 
 def test_strategy_selection_roundtrip_and_is_logged_in_history():
     service = make_service()
-    service.set_strategy_selection(StrategySelection(active_key="ma_rsi_v1"))
-    service.set_strategy_selection(StrategySelection(active_key="ma_rsi_fast5_20"))
+    service.set_strategy_selection(StrategySelection(active_keys=("ma_rsi_v1",)))
+    service.set_strategy_selection(StrategySelection(active_keys=("ma_rsi_fast5_20",)))
     assert service.get_strategy_selection().active_key == "ma_rsi_fast5_20"
 
-    entry = next(h for h in service.get_settings_history() if h.key == "strategy.active_key")
+    entry = next(h for h in service.get_settings_history() if h.key == "strategy.active_keys")
     assert entry.old_value == "ma_rsi_v1"
     assert entry.new_value == "ma_rsi_fast5_20"
+
+
+def test_several_strategies_and_the_combine_mode_survive_a_roundtrip():
+    """전략을 여러 개 거는 것이 이 설정의 요점이다 — 개수 제한은 없다."""
+    service = make_service()
+    선택 = StrategySelection(
+        active_keys=("ma_rsi_v1", "golden_cross_20_60", "macd_cross"), combine="AND"
+    )
+    service.set_strategy_selection(선택)
+
+    돌아온것 = service.get_strategy_selection()
+    assert 돌아온것.active_keys == ("ma_rsi_v1", "golden_cross_20_60", "macd_cross")
+    assert 돌아온것.combine == "AND"
+
+
+def test_an_old_single_key_setting_still_loads():
+    """운영 DB에는 이미 strategy.active_key 하나만 들어 있다. 컬럼을
+    바꾸느라 지금 돌고 있는 설정이 초기화되면 안 된다."""
+    service = make_service()
+    service._store.set("strategy.active_key", "macd_cross")
+
+    선택 = service.get_strategy_selection()
+    assert 선택.active_keys == ("macd_cross",)
+    assert 선택.combine == "OR"
 
 
 def test_telegram_config_roundtrip():

@@ -44,6 +44,11 @@ def _volume_surge(ratio: float, window: int) -> str:
 
 def describe(strategy) -> Rules:
     """전략 객체 하나를 받아 매매 기준을 문장으로 만든다."""
+    if hasattr(strategy, "members") and hasattr(strategy, "mode"):
+        return _describe_combined(strategy)
+    # 묶음 안의 전략은 SingleSymbolAdapter로 감싸여 들어온다. 껍데기에는
+    # params가 없어서 그대로 보면 "설명 없음"이 뜬다 — 실제로 그렇게 나왔다.
+    strategy = getattr(strategy, "inner", strategy)
     params = getattr(strategy, "params", None)
     if params is None:
         return _describe_score(strategy)
@@ -203,6 +208,45 @@ def _ma_rsi_rules(p, strategy) -> Rules:
         ],
         참고=["사는 이유가 둘(돌파·반등)이라, 둘 중 하나만 맞아도 삽니다."],
     )
+
+
+def _describe_combined(strategy) -> Rules:
+    """여러 전략을 묶은 것 — 각각의 조건을 그대로 늘어놓고, 어떻게 묶였는지를 앞에 둔다.
+
+    묶음 이름만 보여 주면 무엇을 보고 사는지 알 수 없다. 화면에서 전략을
+    여러 개 고를 수 있게 만든 이상, 그 각각이 무엇을 하는지도 같이 보여야
+    고른 조합이 말이 되는지 판단할 수 있다."""
+    모두 = strategy.mode == "AND"
+    산다 = [
+        (
+            f"아래 **{len(strategy.members)}개가 같은 날 같은 종목에 모두** 매수 신호를 낼 때"
+            if 모두
+            else f"아래 **{len(strategy.members)}개 중 하나라도** 매수 신호를 낼 때"
+        )
+    ]
+    판다 = []
+    for member in strategy.members:
+        규칙 = describe(member)
+        for line in 규칙.산다:
+            산다.append(f"&nbsp;&nbsp;↳ **{member.name}** — {line}")
+        for line in 규칙.판다:
+            판다.append(f"**{member.name}** — {line}")
+
+    참고 = [
+        (
+            "**AND**는 조건이 까다로워 기회가 크게 줍니다. 신호가 며칠씩 안 뜨는 것이 정상입니다."
+            if 모두
+            else "**OR**는 기회가 늘지만 신호도 잦아집니다 — 회전율이 올라가면 수수료와 슬리피지가 그만큼 붙습니다."
+        ),
+        ("**파는 쪽은 묶는 방식과 무관하게 '하나라도'입니다.** 모두 동의해야 팔게 하면 "
+        "한 전략이 침묵하는 동안 손실 종목을 계속 들고 있게 됩니다."),
+    ]
+    if 모두:
+        참고.append(
+            "자리가 모자랄 때 줄 세우는 점수는 **가장 약한 근거**를 씁니다 — "
+            "간신히 통과한 종목이 앞줄에 서지 않도록."
+        )
+    return Rules(산다=산다, 판다=판다, 참고=참고)
 
 
 def _describe_score(strategy) -> Rules:

@@ -23,6 +23,7 @@ import dataclasses
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -46,6 +47,7 @@ except Exception:  # noqa: BLE001, S110 — secrets.toml 자체가 없는 로컬
     pass
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
@@ -70,9 +72,10 @@ from muwon.settings.schema import (
     TelegramConfig,
 )
 from muwon.settings.service import SettingsService, build_settings_service
+from muwon.strategy.combined import COMBINE_AND, COMBINE_OR
 from muwon.strategy.registry import (
     CATEGORIES,
-    build_strategy,
+    build_strategies,
     get_definition,
     list_definitions,
 )
@@ -142,8 +145,59 @@ def _initial_drive_sync() -> bool:
     return True
 
 
+#: 방금 내가 저장한 값을 주기 동기화가 덮어쓰지 않도록 잠깐 쉬는 시간(초).
+#: 저장 → 업로드 사이에 내려받기가 끼어들면 방금 바꾼 값이 없던 일이 된다.
+SAVE_QUIET_SECONDS = 15
+
+
+def save_and_sync(action, 성공문구: str) -> bool:
+    """설정을 저장하고 구글드라이브에 올린다. 실패하면 이유를 화면에 띄운다.
+
+    잡지 않고 두면 Streamlit이 "error message is redacted"라고만 하고 진짜
+    원인을 감춘다 — 실제로 자동매매 스위치가 그렇게 죽었고, 무엇이 문제인지
+    알아내는 데 화면만으로는 방법이 없었다."""
+    st.session_state["_last_save_at"] = time.time()
+    try:
+        action()
+    except SQLAlchemyError as e:
+        st.error(
+            "설정을 저장하지 못했습니다. 화면의 값은 바뀌지 않았습니다.\n\n"
+            f"원인: `{type(e).__name__}: {e}`\n\n"
+            "잠시 뒤 다시 눌러 보시고, 계속 같은 오류가 나면 이 문구를 그대로 알려 주세요.",
+            icon="🚫",
+        )
+        return False
+    try:
+        sync_db_to_drive()
+    except Exception as e:  # noqa: BLE001 — 구글 API가 던지는 예외가 여러 갈래다
+        st.warning(
+            "저장은 됐지만 구글드라이브에 올리지 못했습니다. 이 화면이 다시 뜨면 "
+            f"바뀐 값이 사라질 수 있습니다.\n\n원인: `{type(e).__name__}: {e}`",
+            icon="☁️",
+        )
+        return True
+    # st.rerun() 뒤에는 이 자리의 st.success가 지워져서 확인 문구가 한순간
+    # 스쳤다가 사라진다. 다음 그림에서 띄우도록 넘겨 둔다 — 저장이 됐는지
+    # 안 됐는지 모르는 채로 남는 게 제일 나쁘다.
+    st.session_state["_save_notice"] = 성공문구
+    return True
+
+
+def render_save_notice() -> None:
+    """직전 저장 결과를 한 번만 띄운다."""
+    문구 = st.session_state.pop("_save_notice", None)
+    if 문구:
+        st.success(문구, icon="✅")
+
+
 @st.fragment(run_every=DRIVE_SYNC_REFRESH_SECONDS)
 def render_drive_sync_fragment() -> None:
+    # 방금 저장했으면 잠깐 쉰다 — 내가 올린 것보다 먼저 남의 것을 받아 오면
+    # 방금 바꾼 값이 되돌아간다.
+    since_save = time.time() - st.session_state.get("_last_save_at", 0.0)
+    if since_save < SAVE_QUIET_SECONDS:
+        st.caption(f"☁️ 방금 저장한 값을 지키는 중 ({SAVE_QUIET_SECONDS - int(since_save)}초)")
+        return
     sync_db_from_drive()
     st.caption(
         f"☁️ 구글드라이브 동기화: {datetime.now():%H:%M:%S}"  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
@@ -306,6 +360,17 @@ def render_glossary_panel(key_prefix: str = "") -> None:
         st.markdown(_terms_markdown(picked), unsafe_allow_html=True)
 
 
+def _active_strategy_label(selection) -> str:
+    """카드에 쓸 짧은 이름.
+
+    전략을 여러 개 걸 수 있게 된 뒤로 첫 번째 것만 보여 주면 화면이
+    거짓말을 한다 — 4개를 걸었는데 카드는 1개라고 말했다."""
+    if len(selection.active_keys) <= 1:
+        return _display_name_for(selection.active_key)
+    묶음 = "모두 동의" if selection.combine == "AND" else "하나라도"
+    return f"{len(selection.active_keys)}개 · {묶음}"
+
+
 def render_summary_cards(service: SettingsService) -> None:
     """목업의 상단 요약 카드 4개.
 
@@ -338,7 +403,7 @@ def render_summary_cards(service: SettingsService) -> None:
     cards = [
         # 킬스위치만 보고 'LIVE'를 띄우면 화면이 거짓말을 한다 — 실행
         # 일정 자체가 꺼져 있으면 킬스위치가 켜져 있어도 아무 일도 없다.
-        _card("📈", "purple", "활성 전략", _display_name_for(selection.active_key), 뱃지, 뱃지색),
+        _card("📈", "purple", "활성 전략", _active_strategy_label(selection), 뱃지, 뱃지색),
         _card(
             "🔌", "green", "KIS 연결", env_label,
             "연결됨" if connected else "인증정보 없음",
@@ -531,6 +596,7 @@ def main() -> None:
     # 목업의 제목 크기에 맞춰 한 단계 낮춘다.
     st.markdown("### 자동매매 운영 대시보드")
     st.caption("자주 쓰는 항목 중심")
+    render_save_notice()
     if _drive_sync_configured():
         render_drive_sync_fragment()
 
@@ -683,23 +749,30 @@ def render_active_rules(service: SettingsService) -> None:
     화면에는 전략 '이름'만 있었다. 이름은 그 전략이 무엇을 사는지 아무것도
     말해 주지 않는다. 무엇을 기준으로 샀는지 모르면 결과를 봐도 무엇을
     고쳐야 할지 판단할 수 없다."""
-    key = service.get_strategy_selection().active_key
+    선택 = service.get_strategy_selection()
     policy = service.get_risk_policy()
     try:
-        rules = describe(build_strategy(key))
+        strategy = build_strategies(선택.active_keys, 선택.combine)
+        rules = describe(strategy)
     except (KeyError, ValueError, RuntimeError) as e:
-        st.error(f"전략 '{key}'의 기준을 읽지 못했습니다: {e}")
+        st.error(f"전략 기준을 읽지 못했습니다: {e}")
         return
 
-    st.markdown(f"#### {_display_name_for(key)}")
-    st.caption(f"전략 키 `{key}` · 계열 {_category_for(key)}")
+    if len(선택.active_keys) > 1:
+        묶음 = "모두 동의해야 삽니다 (AND)" if 선택.combine == "AND" else "하나라도 신호나면 삽니다 (OR)"
+        st.markdown(f"#### 전략 {len(선택.active_keys)}개 · {묶음}")
+        st.caption(" · ".join(f"`{k}`" for k in 선택.active_keys))
+    else:
+        key = 선택.active_key
+        st.markdown(f"#### {_display_name_for(key)}")
+        st.caption(f"전략 키 `{key}` · 계열 {_category_for(key)}")
 
     if rules.산다:
         st.markdown("**🟢 이럴 때 삽니다**")
         st.markdown("\n".join(f"- {line}" for line in rules.산다))
     # 파는 조건은 전략·리스크 정책 양쪽에 흩어져 있다. 화면에서까지
     # 흩어 두면 "매도는 기간밖에 없냐"는 오해가 생긴다 — 실제로 생겼다.
-    조건, 주의 = exit_rules(build_strategy(key), policy)
+    조건, 주의 = exit_rules(strategy, policy)
     st.markdown("**🔴 이럴 때 팝니다** — 먼저 걸리는 것 하나로 팔립니다")
     st.markdown("\n".join(f"- {line}" for line in 조건))
     for line in 주의:
@@ -745,7 +818,7 @@ def render_home_rows(service: SettingsService) -> None:
 
     with section(
         "🎯", "매매 기준", "지금 무엇을 보고 사고파는가",
-        [automation_state(policy)[0], _display_name_for(selection.active_key)],
+        [automation_state(policy)[0], _active_strategy_label(selection)],
         expanded=True,
     ):
         render_active_rules(service)
@@ -811,9 +884,14 @@ def render_status_bar(service: SettingsService) -> None:
             ),
         )
         if enabled != policy.trading_enabled:
-            service.set_risk_policy(dataclasses.replace(policy, trading_enabled=enabled))
-            sync_db_to_drive()
-            st.rerun()
+            켬 = "신규 매수를 허용했습니다" if enabled else "신규 매수를 막았습니다 (보유분 손절은 계속 작동)"
+            if save_and_sync(
+                lambda: service.set_risk_policy(
+                    dataclasses.replace(policy, trading_enabled=enabled)
+                ),
+                켬,
+            ):
+                st.rerun()
 
     with col_env:
         try:
@@ -924,20 +1002,56 @@ def render_strategy_tab(service: SettingsService) -> None:
         for d in definitions:
             st.markdown(f"**{d.display_name}** `{d.key}` · {d.category}  \n{d.description}")
 
-    options = [d.key for d in definitions]
+    render_strategy_picker(service)
+
+
+def render_strategy_picker(service: SettingsService) -> None:
+    """실거래에 걸 전략을 **여러 개** 고른다.
+
+    고르는 칸에는 등록된 전략을 전부 넣는다. 화면 위 표는 계열 필터가
+    걸려 있는데, 그 필터 때문에 이미 고른 전략이 목록에서 사라지면 저장하는
+    순간 조용히 빠진다 — 필터는 보기 위한 것이지 고르는 범위가 아니다."""
+    현재 = service.get_strategy_selection()
+    전체 = [d.key for d in list_definitions()]
+    기본 = [k for k in 현재.active_keys if k in 전체]
+
     with st.form("strategy_form"):
-        selected = st.selectbox(
-            "실거래에 쓸 전략",
-            options=options,
-            index=options.index(current_key) if current_key in options else 0,
+        고른것 = st.multiselect(
+            "실거래에 쓸 전략 (여러 개 고를 수 있습니다)",
+            options=전체,
+            default=기본,
             format_func=lambda k: f"{get_definition(k).display_name}  ({k})",
         )
-        submitted = st.form_submit_button("이 전략으로 전환")
+        방식 = st.radio(
+            "여러 개를 고른 경우, 언제 삽니까",
+            options=[COMBINE_OR, COMBINE_AND],
+            index=0 if 현재.combine == COMBINE_OR else 1,
+            format_func=lambda m: (
+                "하나라도 신호가 나면 산다 (OR)"
+                if m == COMBINE_OR
+                else "고른 전략이 모두 신호를 내야 산다 (AND)"
+            ),
+            horizontal=False,
+        )
+        st.caption(
+            "**OR**는 기회가 늘고 신호가 잦아집니다. **AND**는 조건이 까다로워져 "
+            "기회가 크게 줄지만 잡음이 걸러집니다.  \n"
+            "**파는 쪽은 어느 쪽을 골라도 '하나라도'입니다** — 모두 동의해야 팔게 하면, "
+            "한 전략이 침묵하는 동안 손실이 나는 종목을 계속 들고 있게 됩니다."
+        )
+        저장 = st.form_submit_button("이 전략들로 전환")
 
-    if submitted:
-        service.set_strategy_selection(StrategySelection(active_key=selected))
-        sync_db_to_drive()
-        st.success(f"실거래 활성 전략을 '{selected}'로 변경했습니다 — 다음 매매 실행부터 반영됩니다.")
+    if not 저장:
+        return
+    if not 고른것:
+        st.error("전략을 하나 이상 골라 주세요. 하나도 없으면 아무것도 사지 않습니다.")
+        return
+
+    선택 = StrategySelection(active_keys=tuple(고른것), combine=방식)
+    if save_and_sync(
+        lambda: service.set_strategy_selection(선택),
+        f"활성 전략을 바꿨습니다 — {선택.describe()} · 다음 매매 실행부터 반영됩니다.",
+    ):
         st.rerun()
 
 
@@ -979,18 +1093,20 @@ def render_risk_tab(service: SettingsService) -> None:
         submitted = st.form_submit_button("저장")
 
     if submitted:
-        service.set_risk_policy(
-            RiskPolicy(
-                max_position_weight=max_position_weight,
-                stop_loss_pct=stop_loss_pct,
-                daily_loss_limit_pct=daily_loss_limit_pct,
-                max_concurrent_positions=int(max_concurrent_positions),
-                trading_enabled=current.trading_enabled,  # 상단 토글이 이 값의 유일한 창구
-            )
+        저장 = save_and_sync(
+            lambda: service.set_risk_policy(
+                RiskPolicy(
+                    max_position_weight=max_position_weight,
+                    stop_loss_pct=stop_loss_pct,
+                    daily_loss_limit_pct=daily_loss_limit_pct,
+                    max_concurrent_positions=int(max_concurrent_positions),
+                    trading_enabled=current.trading_enabled,  # 상단 토글이 이 값의 유일한 창구
+                )
+            ),
+            "리스크 정책 저장 완료 — 봇은 최대 5초 안에 반영합니다.",
         )
-        sync_db_to_drive()
-        st.success("리스크 정책 저장 완료 — 봇 프로세스는 최대 5초(캐시 TTL) 내 반영됩니다.")
-        st.rerun()
+        if 저장:
+            st.rerun()
 
 
 def render_kis_tab(service: SettingsService) -> None:
@@ -1032,9 +1148,8 @@ def render_kis_tab(service: SettingsService) -> None:
                     account_product_cd=account_product_cd or current.account_product_cd,
                 )
             )
-            sync_db_to_drive()
-            st.success("KIS 인증정보 저장 완료")
-            st.rerun()
+            if save_and_sync(lambda: None, "KIS 인증정보 저장 완료"):
+                st.rerun()
         except RuntimeError as e:
             st.error(str(e))
 
@@ -1060,9 +1175,8 @@ def render_telegram_tab(service: SettingsService) -> None:
             service.set_telegram_config(
                 TelegramConfig(bot_token=bot_token or current.bot_token, chat_id=chat_id)
             )
-            sync_db_to_drive()
-            st.success("텔레그램 설정 저장 완료")
-            st.rerun()
+            if save_and_sync(lambda: None, "텔레그램 설정 저장 완료"):
+                st.rerun()
         except RuntimeError as e:
             st.error(str(e))
 

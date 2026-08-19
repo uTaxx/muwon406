@@ -111,10 +111,26 @@ class SettingsService:
         self._store.set("telegram.chat_id", cfg.chat_id)
 
     def get_strategy_selection(self) -> StrategySelection:
+        """전략 여러 개를 걸 수 있게 바뀌었지만 옛 키(strategy.active_key)도
+        읽는다 — 운영 DB에는 그게 이미 들어 있고, 컬럼 하나 바꾸느라 지금
+        돌고 있는 설정이 초기화되면 안 된다."""
         d = StrategySelection()
-        return StrategySelection(active_key=self._store.get("strategy.active_key", d.active_key))
+        saved = self._store.get("strategy.active_keys", "")
+        if saved:
+            keys = tuple(k.strip() for k in saved.split(",") if k.strip())
+        else:
+            keys = (self._store.get("strategy.active_key", d.active_key),)
+        combine = self._store.get("strategy.combine", d.combine).upper()
+        return StrategySelection(
+            active_keys=keys or d.active_keys,
+            combine=combine if combine in ("OR", "AND") else d.combine,
+        )
 
     def set_strategy_selection(self, selection: StrategySelection) -> None:
+        self._store.set("strategy.active_keys", ",".join(selection.active_keys))
+        self._store.set("strategy.combine", selection.combine)
+        # 옛 키도 같이 갱신한다. 아직 이 값을 읽는 자리(리포트의 '대표 전략')가
+        # 남아 있어서, 안 맞춰 두면 화면과 리포트가 서로 다른 말을 한다.
         self._store.set("strategy.active_key", selection.active_key)
 
     def get_strategy_config(self) -> StrategyConfig:
