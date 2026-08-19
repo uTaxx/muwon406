@@ -54,9 +54,23 @@ jobs:
             prices-market-
             prices-market_cap-
 
+      - name: 구글드라이브에서 상태 DB 내려받기 (텔레그램 설정을 읽는다)
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
       - name: 리포트 작성
         run: |
-          python scripts/market_report.py \
+          python scripts/market_report.py --telegram \
             --lens "${{ github.event.inputs.lens || '확장' }}" \
             --horizon "${{ github.event.inputs.horizon || '20' }}" \
             --as-of "${{ github.event.inputs.as_of }}" \

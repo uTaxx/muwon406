@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import pandas as pd
 import requests
 
+from muwon.config import bootstrap_settings
 from muwon.data.price_cache import PriceCache
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.market import forecast_log
@@ -69,6 +70,7 @@ def main() -> int:
     parser.add_argument("--as-of", default="", help="이 날짜 기준으로 본다 (비우면 최신)")
     parser.add_argument("--out", default="", help="결과를 남길 파일")
     parser.add_argument("--no-log", action="store_true", help="전망 기록을 쌓지 않는다")
+    parser.add_argument("--telegram", action="store_true", help="요약을 텔레그램으로 보낸다")
     args = parser.parse_args()
 
     쓴것: list[str] = []
@@ -197,6 +199,29 @@ def main() -> int:
 
     emit("※ 이 리포트는 아무것도 사지 않습니다. 보는 것만 합니다.")
     emit("※ '아주 나빴을 때' 칸이 비중을 정하는 자리입니다 — 감이 아니라 과거가 정합니다.")
+
+    # ── 텔레그램 요약 ────────────────────────────────────────────
+    #
+    # 전문은 200줄이 넘는다. 그대로 보내면 아무도 안 읽고, 안 읽는 알림은
+    # 진짜 중요한 알림을 묻는다. 그래서 한 통짜리로 줄여 보낸다.
+    if args.telegram:
+        from muwon.db.session import make_session_factory
+        from muwon.market.digest import summarize
+        from muwon.notify.telegram import TelegramNotifier
+        from muwon.settings.service import SettingsService
+
+        요약 = summarize(
+            상태 if 기준일 is None else 상태.loc[:기준일],
+            낸전망,
+            기준일 or (상태.index[-1] if len(상태) else 오늘),
+            렌즈=args.lens,
+        )
+        try:
+            서비스 = SettingsService(make_session_factory(bootstrap_settings.database_url))
+            TelegramNotifier(서비스).send(요약)
+            print("\n텔레그램으로 요약을 보냈습니다.", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001 — 알림 실패가 리포트를 죽이면 안 된다
+            print(f"\n텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
 
     if args.out:
         Path(args.out).write_text("\n".join(쓴것) + "\n", encoding="utf-8")
