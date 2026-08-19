@@ -52,7 +52,7 @@ from muwon.db.session import make_session_factory
 from muwon.risk.manager import RiskManager
 from muwon.scoring.config import StrategyConfig
 from muwon.settings.schema import RiskPolicy
-from muwon.strategy.registry import build_strategy
+from muwon.strategy.registry import build_strategies, build_strategy
 
 
 def load_universe_histories(
@@ -83,6 +83,7 @@ def main() -> None:
             "slippage",
             "takeprofit",
             "holding",
+            "combo",
         ],
     )
     parser.add_argument(
@@ -211,6 +212,33 @@ def main() -> None:
             emit(format_paths(paths, key))
             emit("")
         save()
+        return
+
+    elif args.mode == "combo":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if len(keys) < 2:
+            raise SystemExit("--keys에 전략을 둘 이상 지정하세요")
+        emit("■ 전략 묶기 — 여럿을 같이 걸면 나아지는가")
+        emit("  OR = 하나라도 신호나면 산다 / AND = 모두 신호를 내야 산다.")
+        emit("  파는 쪽은 어느 쪽이든 '하나라도'다 — 모두 동의해야 팔게 하면")
+        emit("  한 전략이 침묵하는 동안 손실 종목을 계속 들고 있게 된다.")
+        emit("")
+        emit("  각각 혼자 돌린 결과를 함께 두는 것이 요점이다. 묶음이 좋아 보여도")
+        emit("  가장 좋은 하나보다 못하면 묶을 이유가 없다.\n")
+        results = [
+            run_experiment(key, lambda k=key: build_strategy(k), histories, years) for key in keys
+        ]
+        for mode in ("OR", "AND"):
+            results.append(
+                run_experiment(
+                    f"[{mode}] {'+'.join(keys)}",
+                    lambda k=tuple(keys), m=mode: build_strategies(k, m),
+                    histories,
+                    years,
+                )
+            )
+        emit(format_comparison(results, years))
+        save({"묶은 전략": ",".join(keys)})
         return
 
     elif args.mode == "blend":
