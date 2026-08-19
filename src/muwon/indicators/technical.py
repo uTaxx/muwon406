@@ -123,12 +123,18 @@ def add_adx(price_history: pd.DataFrame, window: int = 14) -> pd.DataFrame:
     나타낸다. 25 이상이면 추세장, 그 아래면 횡보장으로 보는 게 관례이며,
     추세추종 전략의 진입 필터로 쓴다."""
     df = _sorted(price_history)
-    # 봉이 window보다 적으면 ta 라이브러리가 IndexError로 터진다
-    # (adx_series[window]에 그냥 대입한다). 상장한 지 얼마 안 된 종목이
-    # 유니버스에 들어오면 실제로 걸린다 — 60종목 5년 비교에서 봉 11개짜리
-    # 종목 하나에 실험 전체가 죽었다. 지표를 못 구하는 건 정상 상황이므로
-    # 빈 값으로 돌려주고, 판단은 쓰는 쪽에 맡긴다.
-    if len(df) <= window:
+    # ta 라이브러리는 봉이 모자라면 IndexError로 터진다. 상장한 지 얼마
+    # 안 된 종목이 유니버스에 들어오면 실제로 걸린다 — 60종목 5년 비교에서
+    # 종목 하나 때문에 실험 전체가 죽었다.
+    #
+    # 필요한 최소 봉 수는 window가 아니라 **2*window**다. ta가 먼저 window로
+    # 한 번 줄이고(rolling+dropna) 그 결과에 다시 window 번째 칸을 쓰기
+    # 때문이다. 처음에 window로 막았다가 같은 자리에서 또 터졌다 — window
+    # 5·10·14·20에 대해 실제로 재 보고 얻은 값이다(tests/test_indicators.py).
+    #
+    # 지표를 못 구하는 건 정상 상황이므로 빈 값으로 돌려주고, 판단은 쓰는
+    # 쪽에 맡긴다(전략들은 이미 NaN을 걸러낸다).
+    if len(df) < window * 2:
         df["adx"] = float("nan")
         return df
     df["adx"] = ADXIndicator(
