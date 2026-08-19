@@ -1,0 +1,81 @@
+name: 매수 후보 제안
+
+# 오늘 살 만한 종목을 골라 시트 `승인대기` 탭에 올리고 텔레그램으로 알린다.
+#
+# **아무것도 사지 않는다.** 후보를 적어 두기만 한다. 실제 매수는 사람이
+# 시트에서 승인 칸에 Y를 적은 뒤에야 일어난다(아직 그 단계는 없다).
+#
+# ## 자동 실행을 일부러 안 걸어 뒀다
+#
+# schedule이 없다. 손으로 돌려야 한다. 승인 흐름을 켤지는 사람이 정할
+# 일이고, 정하기 전에 자동으로 도는 것부터 만들면 순서가 거꾸로다.
+#
+# 며칠 손으로 돌려 보고 "이 전략이 하루에 몇 종목을 어떤 이유로 고르는지"를
+# 눈으로 확인한 뒤에 schedule을 켜는 것이 맞다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "시트·텔레그램에 안 보내고 화면에만 본다"
+        type: boolean
+        default: true
+      max:
+        description: "후보를 몇 개까지 (0이면 설정의 동시보유 수)"
+        default: "0"
+
+concurrency:
+  group: propose-buys
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 시세 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: prices-propose-${{ github.run_id }}
+          restore-keys: |
+            prices-propose-
+            prices-market-
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
+      - name: 후보 고르기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/propose_buys.py \
+            --max "${{ github.event.inputs.max || '0' }}" \
+            ${{ github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
+            | tee propose.txt
+
+      - name: 결과 아티팩트로 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: propose-buys-${{ github.run_number }}
+          path: propose.txt
