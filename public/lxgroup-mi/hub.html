@@ -176,17 +176,37 @@
         </div>
       </div>
 
-      <div class="range-group" style="margin-top:14px;">
-        <label>중요도 <span id="filterMinImportanceVal" class="range-val">1</span> 이상</label>
-        <input type="range" id="filterMinImportance" min="1" max="5" step="1" value="1">
-      </div>
-      <div class="range-group">
-        <label>관련성 <span id="filterMinRelevanceVal" class="range-val">1</span> 이상</label>
-        <input type="range" id="filterMinRelevance" min="1" max="5" step="1" value="1">
-      </div>
-      <div class="range-group">
-        <label>긴급성 <span id="filterMinUrgencyVal" class="range-val">1</span> 이상</label>
-        <input type="range" id="filterMinUrgency" min="1" max="5" step="1" value="1">
+      <div class="filter-row" style="margin-top:10px; flex-wrap:wrap;">
+        <div>
+          <label>중요도</label>
+          <select id="filterMinImportance">
+            <option value="1">전체</option>
+            <option value="2">2 이상</option>
+            <option value="3">3 이상</option>
+            <option value="4">4 이상</option>
+            <option value="5">5 이상</option>
+          </select>
+        </div>
+        <div>
+          <label>관련성</label>
+          <select id="filterMinRelevance">
+            <option value="1">전체</option>
+            <option value="2">2 이상</option>
+            <option value="3">3 이상</option>
+            <option value="4">4 이상</option>
+            <option value="5">5 이상</option>
+          </select>
+        </div>
+        <div>
+          <label>긴급성</label>
+          <select id="filterMinUrgency">
+            <option value="1">전체</option>
+            <option value="2">2 이상</option>
+            <option value="3">3 이상</option>
+            <option value="4">4 이상</option>
+            <option value="5">5 이상</option>
+          </select>
+        </div>
       </div>
 
       <div class="summary-line" id="summaryLine"></div>
@@ -1011,10 +1031,7 @@
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
     ['filterMinImportance','filterMinRelevance','filterMinUrgency'].forEach(function(id){
-      document.getElementById(id).addEventListener('input', function(){
-        document.getElementById(id + 'Val').textContent = this.value;
-        applyFilters();
-      });
+      document.getElementById(id).addEventListener('change', applyFilters);
     });
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
 
