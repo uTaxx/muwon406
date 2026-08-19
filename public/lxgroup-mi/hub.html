@@ -124,6 +124,18 @@
   .range-val{color:var(--green); font-weight:700; font-size:14px;}
   input[type=range]{width:100%; accent-color:var(--green); cursor:pointer; margin:0;}
 
+  .score-filter-group{margin-bottom:14px;}
+  .score-filter-group:last-child{margin-bottom:0;}
+  .score-filter-group label{display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; font-size:13px; color:var(--muted); font-weight:600;}
+  .dual-range{position:relative; height:28px;}
+  .dual-range-track{position:absolute; top:50%; left:0; right:0; height:4px; margin-top:-2px; background:var(--line); border-radius:2px;}
+  .dual-range-fill{position:absolute; top:50%; height:4px; margin-top:-2px; background:var(--green); border-radius:2px;}
+  .dual-range input[type=range]{position:absolute; top:0; left:0; width:100%; height:28px; margin:0; background:transparent; pointer-events:none; -webkit-appearance:none; appearance:none;}
+  .dual-range input[type=range]::-webkit-slider-runnable-track{background:transparent; height:28px;}
+  .dual-range input[type=range]::-moz-range-track{background:transparent; height:28px;}
+  .dual-range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; pointer-events:auto; width:18px; height:18px; margin-top:5px; border-radius:50%; background:var(--green); border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer;}
+  .dual-range input[type=range]::-moz-range-thumb{pointer-events:auto; width:18px; height:18px; border-radius:50%; background:var(--green); border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer;}
+
   .instant-actions{margin-top:10px;}
   .small-btn.instant-btn{width:100%; background:#fff; border:1.5px solid var(--green); color:var(--green-dark);}
   .small-btn.instant-btn:hover{background:var(--green-tint);}
@@ -176,36 +188,33 @@
         </div>
       </div>
 
-      <div class="filter-row" style="margin-top:10px; flex-wrap:wrap;">
-        <div>
-          <label>중요도</label>
-          <select id="filterMinImportance">
-            <option value="1">전체</option>
-            <option value="2">2 이상</option>
-            <option value="3">3 이상</option>
-            <option value="4">4 이상</option>
-            <option value="5">5 이상</option>
-          </select>
+      <div style="margin-top:14px;">
+        <div class="score-filter-group">
+          <label>중요도 <span class="range-val" id="filterImportanceLabel">전체</span></label>
+          <div class="dual-range">
+            <div class="dual-range-track"></div>
+            <div class="dual-range-fill" id="filterImportanceFill"></div>
+            <input type="range" id="filterMinImportance" min="1" max="5" step="1" value="1">
+            <input type="range" id="filterMaxImportance" min="1" max="5" step="1" value="5">
+          </div>
         </div>
-        <div>
-          <label>관련성</label>
-          <select id="filterMinRelevance">
-            <option value="1">전체</option>
-            <option value="2">2 이상</option>
-            <option value="3">3 이상</option>
-            <option value="4">4 이상</option>
-            <option value="5">5 이상</option>
-          </select>
+        <div class="score-filter-group">
+          <label>관련성 <span class="range-val" id="filterRelevanceLabel">전체</span></label>
+          <div class="dual-range">
+            <div class="dual-range-track"></div>
+            <div class="dual-range-fill" id="filterRelevanceFill"></div>
+            <input type="range" id="filterMinRelevance" min="1" max="5" step="1" value="1">
+            <input type="range" id="filterMaxRelevance" min="1" max="5" step="1" value="5">
+          </div>
         </div>
-        <div>
-          <label>긴급성</label>
-          <select id="filterMinUrgency">
-            <option value="1">전체</option>
-            <option value="2">2 이상</option>
-            <option value="3">3 이상</option>
-            <option value="4">4 이상</option>
-            <option value="5">5 이상</option>
-          </select>
+        <div class="score-filter-group">
+          <label>긴급성 <span class="range-val" id="filterUrgencyLabel">전체</span></label>
+          <div class="dual-range">
+            <div class="dual-range-track"></div>
+            <div class="dual-range-fill" id="filterUrgencyFill"></div>
+            <input type="range" id="filterMinUrgency" min="1" max="5" step="1" value="1">
+            <input type="range" id="filterMaxUrgency" min="1" max="5" step="1" value="5">
+          </div>
         </div>
       </div>
 
@@ -484,19 +493,53 @@
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const g = document.getElementById('groupSelect').value;
     const minImp = parseInt(document.getElementById('filterMinImportance').value, 10);
+    const maxImp = parseInt(document.getElementById('filterMaxImportance').value, 10);
     const minRel = parseInt(document.getElementById('filterMinRelevance').value, 10);
+    const maxRel = parseInt(document.getElementById('filterMaxRelevance').value, 10);
     const minUrg = parseInt(document.getElementById('filterMinUrgency').value, 10);
+    const maxUrg = parseInt(document.getElementById('filterMaxUrgency').value, 10);
+    const impActive = !(minImp === 1 && maxImp === 5);
+    const relActive = !(minRel === 1 && maxRel === 5);
+    const urgActive = !(minUrg === 1 && maxUrg === 5);
     filtered = allArticles.filter(a => {
       if (g && a.group !== g) return false;
-      if (minImp > 1 && getScoreNum(a.importance) < minImp) return false;
-      if (minRel > 1 && getScoreNum(a.relevance) < minRel) return false;
-      if (minUrg > 1 && getScoreNum(a.urgency) < minUrg) return false;
+      if (impActive){ const v = getScoreNum(a.importance); if (v < minImp || v > maxImp) return false; }
+      if (relActive){ const v = getScoreNum(a.relevance); if (v < minRel || v > maxRel) return false; }
+      if (urgActive){ const v = getScoreNum(a.urgency); if (v < minUrg || v > maxUrg) return false; }
       if (!q) return true;
       const hay = (a.title + ' ' + a.matched + ' ' + a.group).toLowerCase();
       return hay.includes(q);
     });
     shown = 0;
     renderList(true);
+  }
+
+  function setupDualRangeFilter(minId, maxId, fillId, labelId, unit){
+    const minInput = document.getElementById(minId);
+    const maxInput = document.getElementById(maxId);
+    const fill = document.getElementById(fillId);
+    const label = document.getElementById(labelId);
+    function pct(v){ return ((v - 1) / 4) * 100; }
+    function render(){
+      let minV = parseInt(minInput.value, 10);
+      let maxV = parseInt(maxInput.value, 10);
+      fill.style.left = pct(minV) + '%';
+      fill.style.width = Math.max(0, pct(maxV) - pct(minV)) + '%';
+      minInput.style.zIndex = minV > 3 ? 3 : 1;
+      maxInput.style.zIndex = minV > 3 ? 1 : 3;
+      label.textContent = (minV === 1 && maxV === 5) ? '전체' : (minV === maxV ? (minV + unit) : (minV + '~' + maxV + unit));
+    }
+    minInput.addEventListener('input', function(){
+      if (parseInt(minInput.value, 10) > parseInt(maxInput.value, 10)) maxInput.value = minInput.value;
+      render();
+      applyFilters();
+    });
+    maxInput.addEventListener('input', function(){
+      if (parseInt(maxInput.value, 10) < parseInt(minInput.value, 10)) minInput.value = maxInput.value;
+      render();
+      applyFilters();
+    });
+    render();
   }
 
   function renderList(reset){
@@ -1030,9 +1073,9 @@
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
-    ['filterMinImportance','filterMinRelevance','filterMinUrgency'].forEach(function(id){
-      document.getElementById(id).addEventListener('change', applyFilters);
-    });
+    setupDualRangeFilter('filterMinImportance', 'filterMaxImportance', 'filterImportanceFill', 'filterImportanceLabel', '점');
+    setupDualRangeFilter('filterMinRelevance', 'filterMaxRelevance', 'filterRelevanceFill', 'filterRelevanceLabel', '점');
+    setupDualRangeFilter('filterMinUrgency', 'filterMaxUrgency', 'filterUrgencyFill', 'filterUrgencyLabel', '점');
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
 
     document.getElementById('addGroupBtn').addEventListener('click', addGroup);
