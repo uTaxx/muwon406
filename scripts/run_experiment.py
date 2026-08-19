@@ -69,6 +69,17 @@ def load_universe_histories(
     )
 
 
+def _짧은이름(key: str) -> str:
+    """표 한 줄에 묶음 세 개가 들어가면 이름이 화면을 넘긴다.
+
+    앞부분만 남기되 서로 구분은 되게 — volume_surge_5d와 volume_surge_3d를
+    같은 이름으로 줄이면 표를 읽을 수가 없다."""
+    조각 = key.split("_")
+    if len(조각) <= 2:
+        return key
+    return f"{조각[0][:4]}_{조각[-1]}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="전략 실험 실행기")
     parser.add_argument(
@@ -215,9 +226,16 @@ def main() -> None:
         return
 
     elif args.mode == "combo":
-        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
-        if len(keys) < 2:
-            raise SystemExit("--keys에 전략을 둘 이상 지정하세요")
+        # 조합을 하나씩 따로 돌리면 결과가 실행마다 흩어져 비교가 안 된다.
+        # '|'로 여러 묶음을 한 번에 받아 같은 표에 세운다.
+        묶음들 = [
+            [k.strip() for k in group.split(",") if k.strip()]
+            for group in args.keys.split("|")
+            if group.strip()
+        ]
+        if not 묶음들 or any(len(g) < 2 for g in 묶음들):
+            raise SystemExit("--keys의 각 묶음에 전략을 둘 이상 지정하세요 (묶음 구분은 '|')")
+        keys = sorted({k for group in 묶음들 for k in group})
         emit("■ 전략 묶기 — 여럿을 같이 걸면 나아지는가")
         emit("  OR = 하나라도 신호나면 산다 / AND = 모두 신호를 내야 산다.")
         emit("  파는 쪽은 어느 쪽이든 '하나라도'다 — 모두 동의해야 팔게 하면")
@@ -228,17 +246,18 @@ def main() -> None:
         results = [
             run_experiment(key, lambda k=key: build_strategy(k), histories, years) for key in keys
         ]
-        for mode in ("OR", "AND"):
-            results.append(
-                run_experiment(
-                    f"[{mode}] {'+'.join(keys)}",
-                    lambda k=tuple(keys), m=mode: build_strategies(k, m),
-                    histories,
-                    years,
+        for group in 묶음들:
+            for mode in ("OR", "AND"):
+                results.append(
+                    run_experiment(
+                        f"[{mode}] {'+'.join(_짧은이름(k) for k in group)}",
+                        lambda k=tuple(group), m=mode: build_strategies(k, m),
+                        histories,
+                        years,
+                    )
                 )
-            )
         emit(format_comparison(results, years))
-        save({"묶은 전략": ",".join(keys)})
+        save({"묶음": args.keys})
         return
 
     elif args.mode == "blend":
