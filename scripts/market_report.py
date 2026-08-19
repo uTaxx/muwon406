@@ -28,6 +28,7 @@ import requests
 
 from muwon.data.price_cache import PriceCache
 from muwon.data.yahoo_client import YahooFinanceDataSource
+from muwon.market import forecast_log
 from muwon.market import series as 시계열
 from muwon.market.analog import forecast, format_forecast
 from muwon.market.sector_index import build_index, coverage_report, relative_strength
@@ -67,9 +68,11 @@ def main() -> int:
     parser.add_argument("--top-pct", type=float, default=5.0, help="가장 가까운 상위 몇 %%를 볼 것인가")
     parser.add_argument("--as-of", default="", help="이 날짜 기준으로 본다 (비우면 최신)")
     parser.add_argument("--out", default="", help="결과를 남길 파일")
+    parser.add_argument("--no-log", action="store_true", help="전망 기록을 쌓지 않는다")
     args = parser.parse_args()
 
     쓴것: list[str] = []
+    낸전망: list = []
 
     def emit(글: str = "") -> None:
         print(글)
@@ -99,6 +102,7 @@ def main() -> int:
     시장전망 = forecast(
         상태, 코스피, "코스피 전체", 기준일=기준일, top_pct=args.top_pct, horizon=args.horizon
     )
+    낸전망.append(시장전망)
     emit(format_forecast(시장전망))
     emit()
 
@@ -126,6 +130,7 @@ def main() -> int:
                 가격 = df.set_index("trade_date")["close"].astype(float)
                 f = forecast(상태, 가격, f"{sector.이름} — {이름}", 기준일=기준일,
                              top_pct=args.top_pct, horizon=args.horizon)
+                낸전망.append(f)
                 emit(format_forecast(f))
                 emit()
                 낸것 += 1 if f.낼수있나 else 0
@@ -139,6 +144,7 @@ def main() -> int:
             continue
         f = forecast(상태, 지수["close"], sector.이름, 기준일=기준일,
                      top_pct=args.top_pct, horizon=args.horizon)
+        낸전망.append(f)
         emit(format_forecast(f))
         # 시장 대비 강도는 생존편향에 덜 민감하다 — 같이 보여 준다.
         강도 = relative_strength(지수["close"], 코스피).dropna()
@@ -156,6 +162,39 @@ def main() -> int:
         for 줄 in 못낸것:
             emit(f"    · {줄}")
     emit()
+
+    # ── 전망을 쌓고, 지평이 지난 것에는 실제 결과를 채운다 ────────────
+    #
+    # **전망을 내놓고 결과를 안 남기면 전망이 쓸모없다는 것도 영영 모른다.**
+    if not args.no_log:
+        가격표 = {"코스피 전체": 코스피}
+        for sector in CATALOG:
+            지수 = 지수들.get(sector.코드)
+            if 지수 is not None and len(지수):
+                가격표[sector.이름] = 지수["close"]
+
+        줄들 = [forecast_log.row_from_forecast(f, 렌즈=args.lens) for f in 낸전망]
+        forecast_log.save(줄들)
+
+        def 실제결과(대상: str, 낸날: date, 지평: int):
+            """지평이 지났으면 그때 실제로 어떻게 됐는지. 아직이면 None."""
+            가격 = 가격표.get(대상)
+            if 가격 is None or 낸날 not in 가격.index:
+                return None
+            i = 가격.index.get_loc(낸날)
+            j = i + 지평
+            if j >= len(가격):
+                return None
+            앞 = float(가격.iloc[i])
+            return (float(가격.iloc[j]) / 앞 - 1) * 100 if 앞 > 0 else None
+
+        채운수 = forecast_log.fill_actuals(실제결과, today=오늘)
+        전체 = forecast_log.load()
+        emit(f"■ 전망 기록 — {len(줄들)}줄 저장, {채운수}줄에 실제 결과를 채움 (누적 {len(전체)}줄)")
+        emit()
+        emit(forecast_log.format_scorecard(forecast_log.score(전체)))
+        emit()
+
     emit("※ 이 리포트는 아무것도 사지 않습니다. 보는 것만 합니다.")
     emit("※ '아주 나빴을 때' 칸이 비중을 정하는 자리입니다 — 감이 아니라 과거가 정합니다.")
 
