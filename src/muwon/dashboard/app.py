@@ -591,12 +591,35 @@ def render_admin_tab(service: SettingsService) -> None:
     render_glossary_panel("admin_")
 
 
+@st.cache_data(ttl=300)
+def 화면버전() -> str:
+    """지금 화면이 어느 커밋으로 돌고 있는지.
+
+    왜 필요한가 — 배포된 대시보드가 **18개 커밋 전 코드**를 그대로 돌리고
+    있던 적이 있다. 화면만 봐서는 알 길이 없어서 "고쳤는데 왜 그대로냐"를
+    한참 헤맸다. 코드는 멀쩡한데 배포가 안 따라온 것이었다.
+
+    한 줄이면 그 상황이 한눈에 보인다."""
+    try:
+        return subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "log", "-1", "--pretty=format:%h (%ad)", "--date=short"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        # 버전을 모르는 것은 화면이 죽을 이유가 아니다. 다만 모른다고 말한다.
+        return ""
+
+
 def main() -> None:
     _initial_drive_sync()
     # st.title은 폰에서 두 줄로 넘쳐 첫 화면의 3분의 1을 먹었다.
     # 목업의 제목 크기에 맞춰 한 단계 낮춘다.
     st.markdown("### 자동매매 운영 대시보드")
-    st.caption("자주 쓰는 항목 중심")
+    버전 = 화면버전()
+    st.caption("자주 쓰는 항목 중심" + (f" · 화면 버전 {버전}" if 버전 else ""))
     render_save_notice()
     if _drive_sync_configured():
         render_drive_sync_fragment()
