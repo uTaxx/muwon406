@@ -37,6 +37,9 @@ COLUMNS = ["trade_date", "open", "high", "low", "close", "volume"]
 #: 환경변수로 옮길 수 있게 둔다 — CI에서는 캐시 디렉터리를 따로 잡는다.
 DEFAULT_CACHE_PATH = Path(os.environ.get("MUWON_PRICE_CACHE", ".cache/prices.sqlite"))
 
+#: 짧게 왔을 때 다시 받아 볼 횟수.
+RETRIES = 3
+
 
 class PriceCache:
     """(종목, 날짜) 단위로 일봉을 보관한다.
@@ -158,14 +161,52 @@ class PriceCache:
             )
             session.commit()
 
-    def fetch(self, source, symbol: str, yahoo_symbol: str, start: date, end: date):
-        """캐시에 있으면 캐시로, 없으면 받아서 채운 뒤 돌려준다."""
+    def fetch(
+        self, source, symbol: str, yahoo_symbol: str, start: date, end: date,
+        최소일수: int = 0,
+    ):
+        """캐시에 있으면 캐시로, 없으면 받아서 채운 뒤 돌려준다.
+
+        ## 최소일수를 주면 '짧게 온 것'을 캐시가 굳히지 못하게 한다
+
+        야후는 같은 요청에 어떤 때는 1년치를, 어떤 때는 **최근 20일치만**
+        준다. 실제로 미 10년물이 그랬고, ACE KRX금현물·KODEX 은선물도
+        그랬다(268일짜리가 20일로 왔다).
+
+        그냥 두면 더 나쁜 일이 생긴다 — **짧게 온 것이 캐시에 들어가고,
+        캐시는 "이 구간은 받아 봤다"고 기록한다.** 그러면 다음 실행부터는
+        야후에 물어보지도 않고 20일치를 돌려준다. 한 번의 통신 오류가
+        영구적인 데이터 결손이 된다.
+
+        그래서 최소일수를 주면 그만큼 못 받았을 때 **캐시를 건너뛰고 다시
+        받는다.** 끝내 짧으면 그대로 쓰되 이유를 남긴다 — 정말로 최근에
+        상장한 종목일 수도 있고, 그건 데이터가 아니라 사실이다."""
         cached = self.get(symbol, start, end)
-        if cached is not None:
+        if cached is not None and len(cached) >= 최소일수:
             self.hits += 1
             return cached
+        if cached is not None:
+            logger.warning(
+                f"{symbol}: 캐시에 {len(cached)}일치뿐이라(최소 {최소일수}일) 다시 받습니다 — "
+                "짧게 온 것이 캐시에 굳으면 다음부터는 물어보지도 않습니다"
+            )
         self.misses += 1
+
         df = source.get_daily_ohlcv(yahoo_symbol, start, end)
+        for 시도 in range(RETRIES - 1):
+            if df is not None and len(df) >= 최소일수:
+                break
+            logger.warning(
+                f"{symbol}: {0 if df is None else len(df)}일치만 왔습니다 "
+                f"(최소 {최소일수}일) — 다시 받습니다 [{시도 + 2}/{RETRIES}]"
+            )
+            df = source.get_daily_ohlcv(yahoo_symbol, start, end)
+
+        if 최소일수 and (df is None or len(df) < 최소일수):
+            logger.warning(
+                f"{symbol}: {RETRIES}번 받아도 {0 if df is None else len(df)}일치입니다 — "
+                "야후가 짧게 주는 중이거나, 정말 최근에 상장한 종목입니다"
+            )
         self.put(symbol, df, start, end)
         return df
 

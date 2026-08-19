@@ -48,7 +48,9 @@ def _섹터시세(source, cache, start: date, end: date) -> dict[str, dict[str, 
         모음, 실패 = {}, []
         for m in sector.활성종목:
             try:
-                df = cache.fetch(source, m.symbol, m.yahoo_symbol, start, end)
+                # 야후가 간헐적으로 최근 20일치만 준다. 그게 캐시에 굳으면
+                # 그 종목은 다음부터 영영 짧게 온다 — 최소일수로 막는다.
+                df = cache.fetch(source, m.symbol, m.yahoo_symbol, start, end, 최소일수=250)
             except (requests.RequestException, ValueError, KeyError):
                 실패.append(m.symbol)
                 continue

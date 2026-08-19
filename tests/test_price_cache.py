@@ -117,3 +117,75 @@ def test_refetch_replaces_rather_than_mixes_old_and_new(cache):
 
 def test_summary_says_when_the_cache_was_not_used(cache):
     assert "사용 안 함" in cache.summary()
+
+
+class 들쭉날쭉소스:
+    """처음엔 짧게, 나중엔 제대로 주는 야후 흉내."""
+
+    def __init__(self, 짧은것, 긴것, 짧게줄횟수=1):
+        self.짧은것, self.긴것 = 짧은것, 긴것
+        self.남은짧음 = 짧게줄횟수
+        self.호출 = 0
+
+    def get_daily_ohlcv(self, symbol, start, end):
+        self.호출 += 1
+        if self.남은짧음 > 0:
+            self.남은짧음 -= 1
+            return self.짧은것
+        return self.긴것
+
+
+def _바(일수, 시작="2026-01-01"):
+    from datetime import date, timedelta
+
+    첫날 = date.fromisoformat(시작)
+    return pd.DataFrame(
+        [
+            {
+                "trade_date": 첫날 + timedelta(days=i),
+                "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1000,
+            }
+            for i in range(일수)
+        ]
+    )
+
+
+def test_짧게_오면_다시_받는다(tmp_path):
+    """야후가 268일짜리를 20일로 주는 일이 실제로 있었다."""
+    cache = PriceCache(tmp_path / "c.sqlite")
+    소스 = 들쭉날쭉소스(_바(20), _바(268))
+    df = cache.fetch(소스, "411060", "411060.KS", date(2026, 1, 1), date(2026, 8, 19), 최소일수=60)
+    assert len(df) == 268
+    assert 소스.호출 == 2
+
+
+def test_짧게_온것이_캐시에_굳지_않는다(tmp_path):
+    """한 번의 통신 오류가 영구적인 데이터 결손이 되면 안 된다."""
+    cache = PriceCache(tmp_path / "c.sqlite")
+    시작, 끝 = date(2026, 1, 1), date(2026, 8, 19)
+
+    # 처음 실행: 최소일수 없이 받아 20일치가 캐시에 들어간다
+    cache.fetch(들쭉날쭉소스(_바(20), _바(268), 짧게줄횟수=99), "411060", "411060.KS", 시작, 끝)
+    assert len(cache.get("411060", 시작, 끝)) == 20
+
+    # 다음 실행: 최소일수를 주면 캐시를 믿지 않고 다시 받는다
+    소스 = 들쭉날쭉소스(_바(20), _바(268), 짧게줄횟수=0)
+    df = cache.fetch(소스, "411060", "411060.KS", 시작, 끝, 최소일수=60)
+    assert len(df) == 268
+    assert 소스.호출 == 1
+
+
+def test_끝내_짧으면_그대로_쓴다(tmp_path):
+    """정말 최근에 상장한 종목일 수 있다 — 그건 데이터 오류가 아니라 사실이다."""
+    cache = PriceCache(tmp_path / "c.sqlite")
+    소스 = 들쭉날쭉소스(_바(20), _바(20), 짧게줄횟수=99)
+    df = cache.fetch(소스, "999999", "999999.KQ", date(2026, 1, 1), date(2026, 8, 19), 최소일수=60)
+    assert len(df) == 20
+    assert 소스.호출 == 3  # RETRIES
+
+
+def test_최소일수를_안_주면_예전처럼_한번만_받는다(tmp_path):
+    cache = PriceCache(tmp_path / "c.sqlite")
+    소스 = 들쭉날쭉소스(_바(20), _바(268), 짧게줄횟수=99)
+    cache.fetch(소스, "005930", "005930.KS", date(2026, 1, 1), date(2026, 8, 19))
+    assert 소스.호출 == 1

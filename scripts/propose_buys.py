@@ -50,6 +50,9 @@ from muwon.strategy.registry import build_strategies
 KST = ZoneInfo("Asia/Seoul")
 #: 지표 예열에 필요한 기간. 짧으면 이동평균이 안 나와 신호가 통째로 빈다.
 WARMUP_DAYS = 400
+#: 이만큼은 와야 판단한다. 야후가 간헐적으로 최근 20일치만 주는데,
+#: 그걸 모르고 쓰면 지표가 안 나와 그 종목이 조용히 후보에서 빠진다.
+MIN_DAYS = 60
 
 
 def main() -> int:
@@ -101,11 +104,11 @@ def main() -> int:
     for symbol, name, 섹터명 in 대상:
         야후 = f"{symbol}.KS" if _코스피인가(내용, symbol) else f"{symbol}.KQ"
         try:
-            df = cache.fetch(source, symbol, 야후, 시작, 오늘)
+            df = cache.fetch(source, symbol, 야후, 시작, 오늘, 최소일수=MIN_DAYS)
         except (requests.RequestException, ValueError, KeyError) as e:
             못본것.append(f"{name}({symbol}): {type(e).__name__}")
             continue
-        if df is None or len(df) < 60:
+        if df is None or len(df) < MIN_DAYS:
             못본것.append(f"{name}({symbol}): 시세 {0 if df is None else len(df)}일")
             continue
 
