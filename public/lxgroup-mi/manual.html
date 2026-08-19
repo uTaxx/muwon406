@@ -73,7 +73,7 @@
   <div class="cover-links">
     <a href="./hub.html?tab=search">📰 전체 기사 조회</a>
     <a href="./hub.html?tab=apply">✏️ 키워드 신청/변경</a>
-    <a href="./hub.html?tab=adhoc">🔍 실시간 키워드 검색</a>
+    <a href="./hub.html?tab=adhoc">🔍 특정 키워드 검색</a>
   </div>
 </div>
 
@@ -198,8 +198,8 @@ KCC: 분기보고서 제출
   </section>
 
   <section class="card">
-    <div class="step-head"><span class="step-num">4</span><span class="step-title">실시간 키워드 검색</span></div>
-    <div class="step-desc"><a href="./hub.html?tab=adhoc">실시간 키워드 검색 탭</a>에서 등록된 그룹과 별개로, 원하는 키워드 하나를 그때그때 즉시 조사합니다.</div>
+    <div class="step-head"><span class="step-num">4</span><span class="step-title">특정 키워드 검색</span></div>
+    <div class="step-desc"><a href="./hub.html?tab=adhoc">특정 키워드 검색 탭</a>에서 등록된 그룹과 별개로, 원하는 키워드 하나를 그때그때 즉시 조사합니다.</div>
 
     <div class="field-block">
       <div class="field-name">⚡ 등록 키워드 지금 조회</div>
@@ -207,15 +207,11 @@ KCC: 분기보고서 제출
     </div>
     <div class="field-block">
       <div class="field-name">키워드 / 조회 기간</div>
-      <div class="field-desc">조사할 키워드 하나를 입력합니다. 조회 시작일·종료일을 비워두면 기간 제한 없이 검색합니다(네이버는 API 특성상 기간 지정이 완전히 정확하지 않을 수 있습니다).</div>
+      <div class="field-desc">조사할 키워드 하나를 입력합니다. 신청/변경 탭의 모니터링 키워드와 동일하게 <code>삼성전자+반도체</code>처럼 <b>+</b>를 쓰면 두 단어 모두 포함된 기사만, <code>LG전자-가전</code>처럼 <b>-</b>를 쓰면 해당 단어가 들어간 기사는 제외하고 조사합니다. 조회 시작일·종료일을 비워두면 기간 제한 없이 검색합니다(네이버는 API 특성상 기간 지정이 완전히 정확하지 않을 수 있습니다).</div>
     </div>
     <div class="field-block">
       <div class="field-name">조회 대상</div>
       <div class="field-desc">구글 뉴스 · 네이버 뉴스 · <b>구글 뉴스(영문)</b> 중 검색할 소스를 선택합니다. 해외 이슈처럼 영어로만 보도되는 사안은 구글 뉴스(영문)을 함께 체크하세요.</div>
-    </div>
-    <div class="field-block">
-      <div class="field-name">AI 분석 포함</div>
-      <div class="field-desc">켜두면 검색된 기사에 대해 관련성 분석과 요약을 함께 진행합니다(시간이 더 걸립니다). AI 분석 지침을 비워두면 "LX그룹 관점 시사점 도출"이 기본 적용됩니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">결과 발송</div>
@@ -238,8 +234,8 @@ KCC: 분기보고서 제출
       <div class="faq-a">아니요. 긴급 알림으로 이미 보낸 기사는 누계 시트에 기록되어, 다음 정기 발송에서 자동으로 제외됩니다.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">"🚨 긴급 그룹"과 "🔍 실시간 키워드 검색"은 뭐가 다른가요?</div>
-      <div class="faq-a"><b>🚨 긴급 그룹</b>은 신청/변경 탭에서 미리 등록해두는 자동 기능으로, 등록된 키워드를 매시간 자동으로 확인해서 감지되면 즉시 알려줍니다. <b>🔍 실시간 키워드 검색</b>은 등록 여부와 무관하게, 지금 이 순간 궁금한 키워드 하나를 사람이 직접 눌러서 즉시 조사하는 수동 기능입니다.</div>
+      <div class="faq-q">"🚨 긴급 그룹"과 "🔍 특정 키워드 검색"은 뭐가 다른가요?</div>
+      <div class="faq-a"><b>🚨 긴급 그룹</b>은 신청/변경 탭에서 미리 등록해두는 자동 기능으로, 등록된 키워드를 매시간 자동으로 확인해서 감지되면 즉시 알려줍니다. <b>🔍 특정 키워드 검색</b>은 등록 여부와 무관하게, 지금 이 순간 궁금한 키워드 하나를 사람이 직접 눌러서 즉시 조사하는 수동 기능입니다.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">다른 회사/팀도 이 시스템을 쓸 수 있나요?</div>
@@ -249,7 +245,7 @@ KCC: 분기보고서 제출
 
 </main>
 
-<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">실시간 키워드 검색</a></footer>
+<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">특정 키워드 검색</a></footer>
 
 </body>
 </html>
