@@ -45,6 +45,7 @@ from muwon.analysis.holding_path import format_paths, trace
 from muwon.analysis.intraday_stop import compare as compare_stops
 from muwon.analysis.intraday_stop import format_comparison as format_stop_comparison
 from muwon.analysis.market_data import load_histories
+from muwon.analysis.overnight_split import format_split, split_overnight
 from muwon.backtest.engine import BacktestEngine
 from muwon.config import bootstrap_settings
 from muwon.data.price_cache import PriceCache
@@ -100,6 +101,7 @@ def main() -> None:
             "combo",
             "entry",
             "intraday_stop",
+            "overnight",
         ],
     )
     parser.add_argument(
@@ -269,6 +271,27 @@ def main() -> None:
                 ).run(sliced, trade_from=date(year, 1, 1))
                 비교.extend(compare_stops(result.closed_trades, sliced, 정책.stop_loss_pct))
             emit(format_stop_comparison(비교, key))
+            emit("")
+        save()
+        return
+
+    elif args.mode == "overnight":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        emit("■ 번 돈은 밤사이(오버나이트)에 났나, 낮(장중)에 났나\n")
+        for key in keys:
+            쪼갠것 = []
+            for year in years:
+                sliced = slice_for_year(histories, year)
+                if not sliced:
+                    continue
+                result = BacktestEngine(
+                    strategy=build_strategy(key),
+                    risk_manager=RiskManager(policy_provider=RiskPolicy),
+                ).run(sliced, trade_from=date(year, 1, 1))
+                쪼갠것.extend(split_overnight(result.closed_trades, sliced))
+            emit(format_split(쪼갠것, key))
             emit("")
         save()
         return

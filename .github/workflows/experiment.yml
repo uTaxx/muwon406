@@ -15,7 +15,7 @@ on:
       mode:
         description: "무엇을 볼지"
         type: choice
-        options: ["contribution", "sweep", "param", "strategies", "correlation", "blend", "slippage", "takeprofit", "holding", "combo", "entry", "intraday_stop", "diagnose"]
+        options: ["contribution", "sweep", "param", "strategies", "correlation", "blend", "slippage", "takeprofit", "holding", "combo", "entry", "intraday_stop", "overnight", "diagnose"]
         default: "contribution"
       universe:
         description: "market_cap=시총 상위(실거래 목록) / volume=거래대금 상위"
