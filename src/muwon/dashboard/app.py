@@ -716,7 +716,7 @@ def render_realtime_tab() -> None:
     st.caption(계획.한줄)
 
     with section(
-        "🧱", "무엇이 막고 있나", "성적이 아직 없는 이유", [f"{len(계획.막는것)}가지"],
+        "🧱", "무엇이 막고 있나", "성적이 아직 없는 이유", [f"{len(계획.막는것)}개"],
         expanded=True,
     ):
         st.caption(
@@ -730,7 +730,7 @@ def render_realtime_tab() -> None:
 
     with section(
         "🧪", "재 볼 후보", "무엇을 검증할 것이며 근거가 얼마나 단단한가",
-        [f"{len(계획.후보)}개", f"지금 가능 {len(계획.지금가능한후보)}개"],
+        [f"후보 {len(계획.후보)}", f"즉시 {len(계획.지금가능한후보)}"],
         expanded=True,
     ):
         st.caption(

@@ -87,3 +87,13 @@ def test_every_finding_says_what_was_measured_and_what_was_decided():
         assert len(f.결과) > 30, f"{f.제목}: 결과가 없다"
         assert len(f.판단) > 15, f"{f.제목}: 그래서 어떻게 할 것인지가 없다"
         assert f.측정일
+
+
+def test_the_finding_table_stays_narrow_enough_for_a_phone():
+    """폰 폭(390px)에서 표가 잘리는 것을 화면으로 두 번 잡았다. 칸이 많으면
+    오른쪽이 통째로 안 보이는데, 잘린 쪽이 하필 결론인 '낮' 칸이었다."""
+    for f in load().검증:
+        for 줄 in f.결과.splitlines():
+            if 줄.startswith("|"):
+                칸 = [c for c in 줄.split("|") if c.strip()]
+                assert len(칸) <= 3, f"{f.제목}: 표가 {len(칸)}칸이라 폰에서 잘린다"
