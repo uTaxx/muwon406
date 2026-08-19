@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from muwon.analysis.entry_quality import format_entries, trace_entries
 from muwon.analysis.experiment import (
     WARMUP_DAYS,
     blend_sleeves,
@@ -95,6 +96,7 @@ def main() -> None:
             "takeprofit",
             "holding",
             "combo",
+            "entry",
         ],
     )
     parser.add_argument(
@@ -221,6 +223,27 @@ def main() -> None:
                 ).run(sliced, trade_from=date(year, 1, 1))
                 paths.extend(trace(result.closed_trades, sliced))
             emit(format_paths(paths, key))
+            emit("")
+        save()
+        return
+
+    elif args.mode == "entry":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        emit("■ 진입 시점 되짚기 — 산 날이 어떤 날이었나\n")
+        for key in keys:
+            samples = []
+            for year in years:
+                sliced = slice_for_year(histories, year)
+                if not sliced:
+                    continue
+                result = BacktestEngine(
+                    strategy=build_strategy(key),
+                    risk_manager=RiskManager(policy_provider=RiskPolicy),
+                ).run(sliced, trade_from=date(year, 1, 1))
+                samples.extend(trace_entries(result.closed_trades, sliced))
+            emit(format_entries(samples, key))
             emit("")
         save()
         return

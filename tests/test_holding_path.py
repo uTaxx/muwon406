@@ -88,3 +88,40 @@ def test_the_report_separates_winners_from_losers():
     report = format_paths(paths)
     assert "이익 매매" in report
     assert "손실 매매" in report
+
+
+def test_entry_trace_measures_the_day_we_bought():
+    """진입일 상승률은 '그날 종가 ÷ 전날 종가'다.
+
+    이걸 잘못 잡으면(예: 시가 대비) 전략의 발화 조건과 다른 값을 재게 되어,
+    표는 그럴듯한데 아무 뜻도 없는 숫자가 된다."""
+    from muwon.analysis.entry_quality import trace_entries
+
+    df = frame("A", date(2024, 1, 1), [100, 100, 100, 100, 110, 105])
+    df["volume"] = [1000, 1000, 1000, 1000, 5000, 1000]
+    # 5번째 봉(+10%, 거래량 5배)에 진입
+    samples = trace_entries(
+        [FakeTrade("A", date(2024, 1, 5), date(2024, 1, 6), 110.0, -4.5)],
+        {"A": df},
+        거래량창=4,
+    )
+    assert len(samples) == 1
+    assert samples[0].상승률 == pytest.approx(10.0)
+    assert samples[0].거래량배수 == pytest.approx(5.0)
+    assert samples[0].손익 == pytest.approx(-4.5)
+
+
+def test_a_trade_entered_on_the_first_bar_is_skipped():
+    """전날이 없으면 상승률을 구할 수 없다. 0으로 채우면 '안 오른 날에
+    샀다'는 없던 사실이 표에 들어간다."""
+    from muwon.analysis.entry_quality import trace_entries
+
+    df = frame("A", date(2024, 1, 1), [100, 110])
+    df["volume"] = [1000, 2000]
+    assert trace_entries([FakeTrade("A", date(2024, 1, 1), date(2024, 1, 2), 100.0, 5.0)], {"A": df}) == []
+
+
+def test_entry_report_says_when_there_is_nothing_to_show():
+    from muwon.analysis.entry_quality import format_entries
+
+    assert "완결된 매매가 없습니다" in format_entries([])
