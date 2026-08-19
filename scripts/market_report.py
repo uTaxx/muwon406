@@ -1,0 +1,169 @@
+"""오늘 장이 어떤 상태이고, 비슷했던 과거에는 그 뒤 무슨 일이 있었나.
+
+**이 스크립트는 아무것도 사지 않는다.** 보는 것만 한다.
+
+설계안(`docs/설계_섹터기반.md`)의 1~4단계를 한 번에 돌린다.
+
+1. 지수·원자재·환율 30년치를 받는다
+2. 날짜별 장 상태를 z점수로 적는다
+3. 섹터별 지수를 만든다(그 시점에 있던 종목만으로)
+4. 지금과 비슷했던 과거를 찾아 그 뒤 20거래일 분포를 낸다
+
+사용 예:
+    python scripts/market_report.py
+    python scripts/market_report.py --lens 기본 --horizon 60
+    python scripts/market_report.py --as-of 2022-06-15   # 그날 무엇을 봤을지
+"""
+
+import argparse
+import sys
+from datetime import date, datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+import pandas as pd
+import requests
+
+from muwon.data.price_cache import PriceCache
+from muwon.data.yahoo_client import YahooFinanceDataSource
+from muwon.market import series as 시계열
+from muwon.market.analog import forecast, format_forecast
+from muwon.market.sector_index import build_index, coverage_report, relative_strength
+from muwon.market.state import build_state, describe_today
+from muwon.sector.catalog import CATALOG, 국제시세
+
+KST = ZoneInfo("Asia/Seoul")
+
+
+def _섹터시세(source, cache, start: date, end: date) -> dict[str, dict[str, pd.DataFrame]]:
+    """섹터별 종목 일봉. 못 받은 종목은 건너뛰되 몇 개를 건너뛰었는지 찍는다."""
+    결과 = {}
+    for sector in CATALOG:
+        if not sector.활성 or sector.전망출처 != "섹터지수":
+            continue
+        모음, 실패 = {}, []
+        for m in sector.활성종목:
+            try:
+                df = cache.fetch(source, m.symbol, m.yahoo_symbol, start, end)
+            except (requests.RequestException, ValueError, KeyError):
+                실패.append(m.symbol)
+                continue
+            if df is not None and len(df):
+                모음[m.symbol] = df
+            else:
+                실패.append(m.symbol)
+        if 실패:
+            print(f"  {sector.코드}: {len(실패)}종목 못 받음 ({', '.join(실패)})", file=sys.stderr)
+        결과[sector.코드] = 모음
+    return 결과
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lens", default=시계열.DEFAULT_LENS, choices=list(시계열.LENSES))
+    parser.add_argument("--horizon", type=int, default=20, help="앞으로 며칠을 볼 것인가")
+    parser.add_argument("--top-pct", type=float, default=5.0, help="가장 가까운 상위 몇 %%를 볼 것인가")
+    parser.add_argument("--as-of", default="", help="이 날짜 기준으로 본다 (비우면 최신)")
+    parser.add_argument("--out", default="", help="결과를 남길 파일")
+    args = parser.parse_args()
+
+    쓴것: list[str] = []
+
+    def emit(글: str = "") -> None:
+        print(글)
+        쓴것.append(글)
+
+    source = YahooFinanceDataSource()
+    cache = PriceCache()
+    오늘 = datetime.now(KST).date()
+    기준일 = date.fromisoformat(args.as_of) if args.as_of else None
+
+    쓰는것 = 시계열.lens_series(args.lens)
+    시작 = date(1990, 1, 1)
+    print(f"■ 렌즈 '{args.lens}' — {', '.join(s.이름 for s in 쓰는것)}", file=sys.stderr)
+    바깥 = 시계열.load([s.키 for s in 쓰는것], 시작, 오늘, source=source, cache=cache)
+    for 키, df in 바깥.items():
+        print(f"  {시계열.SERIES[키].이름}: {len(df)}일 ({df['trade_date'].min()} ~)", file=sys.stderr)
+
+    상태 = build_state(바깥)
+    emit(f"■ 장 상태를 잰 날 {len(상태)}일 ({상태.index[0]} ~ {상태.index[-1]})")
+    emit(f"  렌즈: {args.lens} — {시계열.LENSES[args.lens][2]}")
+    emit()
+    emit(describe_today(상태 if 기준일 is None else 상태.loc[:기준일]))
+    emit()
+
+    # ── 시장 전체 전망 ────────────────────────────────────────────
+    코스피 = 바깥["kospi"].set_index("trade_date")["close"].astype(float)
+    시장전망 = forecast(
+        상태, 코스피, "코스피 전체", 기준일=기준일, top_pct=args.top_pct, horizon=args.horizon
+    )
+    emit(format_forecast(시장전망))
+    emit()
+
+    # ── 섹터 지수 ────────────────────────────────────────────────
+    print("■ 섹터 종목 시세 받는 중…", file=sys.stderr)
+    섹터시세 = _섹터시세(source, cache, 시작, 오늘)
+    지수들 = {코드: build_index(모음) for 코드, 모음 in 섹터시세.items()}
+    emit(coverage_report(지수들))
+    emit()
+
+    # ── 섹터별 전망 ──────────────────────────────────────────────
+    emit("■ 섹터별 전망")
+    emit()
+    낸것, 못낸것 = 0, []
+    for sector in CATALOG:
+        if not sector.활성:
+            continue
+        if sector.전망출처 == "국제시세":
+            for 심볼, 이름 in 국제시세.get(sector.코드, []):
+                try:
+                    df = cache.fetch(source, 심볼, 심볼, 시작, 오늘)
+                except (requests.RequestException, ValueError, KeyError):
+                    못낸것.append(f"{sector.이름}/{이름}: 시세를 못 받음")
+                    continue
+                가격 = df.set_index("trade_date")["close"].astype(float)
+                f = forecast(상태, 가격, f"{sector.이름} — {이름}", 기준일=기준일,
+                             top_pct=args.top_pct, horizon=args.horizon)
+                emit(format_forecast(f))
+                emit()
+                낸것 += 1 if f.낼수있나 else 0
+                if not f.낼수있나:
+                    못낸것.append(f"{sector.이름}/{이름}: {f.사유}")
+            continue
+
+        지수 = 지수들.get(sector.코드)
+        if 지수 is None or len(지수) == 0:
+            못낸것.append(f"{sector.이름}: 지수를 못 만듦(종목 {len(섹터시세.get(sector.코드, {}))}개)")
+            continue
+        f = forecast(상태, 지수["close"], sector.이름, 기준일=기준일,
+                     top_pct=args.top_pct, horizon=args.horizon)
+        emit(format_forecast(f))
+        # 시장 대비 강도는 생존편향에 덜 민감하다 — 같이 보여 준다.
+        강도 = relative_strength(지수["close"], 코스피).dropna()
+        if len(강도):
+            끝 = 강도.index[-1] if 기준일 is None else max(d for d in 강도.index if d <= 기준일)
+            emit(f"    (참고) 최근 20일 시장 대비 강도 {강도[끝] * 100:>+.1f}%p")
+        emit()
+        낸것 += 1 if f.낼수있나 else 0
+        if not f.낼수있나:
+            못낸것.append(f"{sector.이름}: {f.사유}")
+
+    emit(f"■ 전망을 낸 섹터 {낸것}개")
+    if 못낸것:
+        emit(f"  못 낸 것 {len(못낸것)}개 — **이유가 있어야 다음에 무엇을 고칠지 안다**")
+        for 줄 in 못낸것:
+            emit(f"    · {줄}")
+    emit()
+    emit("※ 이 리포트는 아무것도 사지 않습니다. 보는 것만 합니다.")
+    emit("※ '아주 나빴을 때' 칸이 비중을 정하는 자리입니다 — 감이 아니라 과거가 정합니다.")
+
+    if args.out:
+        Path(args.out).write_text("\n".join(쓴것) + "\n", encoding="utf-8")
+        print(f"\n결과를 {args.out}에 남겼습니다.", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
