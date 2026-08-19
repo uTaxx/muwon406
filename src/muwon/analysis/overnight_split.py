@@ -99,14 +99,6 @@ def split_overnight(trades, histories: dict[str, pd.DataFrame]) -> list[Split]:
     return 결과
 
 
-def _누적(값들: list[float]) -> float:
-    """매매를 차례로 이어 붙였을 때의 누적 수익률(%)."""
-    누적 = 1.0
-    for v in 값들:
-        누적 *= 1 + v / 100
-    return (누적 - 1) * 100
-
-
 def _양수비율(값들: list[float]) -> float:
     return sum(1 for v in 값들 if v > 0) / len(값들) * 100
 
@@ -135,6 +127,11 @@ def format_split(결과: list[Split], label: str = "") -> str:
         "",
         f"쪼갠 매매 {len(결과)}건 · 평균 보유 {statistics.fmean([s.보유일 for s in 결과]):.1f}거래일",
         "",
+        "  '모두 더하기'는 매매별 수익률을 그냥 **더한** 것입니다. 계좌 수익률이",
+        "  아닙니다 — 포트폴리오는 여러 종목을 동시에 들고 있어서 매매들이 겹치므로,",
+        "  이걸 곱해서 이어 붙이면 실제와 무관한 숫자가 나옵니다. 밤과 낮의 몫을",
+        "  같은 잣대로 비교하려고 두는 값입니다.",
+        "",
         _줄("", "오버나이트(밤)", "장중(낮)", "전체"),
         _줄(
             "매매당 평균",
@@ -155,10 +152,10 @@ def format_split(결과: list[Split], label: str = "") -> str:
             f"{_양수비율(전체들):.1f}%",
         ),
         _줄(
-            "모두 이어붙임",
-            f"{_누적(밤들):+.1f}%",
-            f"{_누적(낮들):+.1f}%",
-            f"{_누적(전체들):+.1f}%",
+            "모두 더하기",
+            f"{sum(밤들):+.0f}%p",
+            f"{sum(낮들):+.0f}%p",
+            f"{sum(전체들):+.0f}%p",
         ),
     ]
 

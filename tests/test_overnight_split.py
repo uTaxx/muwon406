@@ -127,3 +127,14 @@ def test_the_report_warns_that_this_is_a_diagnosis_not_a_strategy():
 
 def test_an_empty_result_says_so_instead_of_dividing_by_zero():
     assert "쪼갤 수 있는 매매가 없습니다" in format_split([])
+
+
+def test_the_report_never_compounds_overlapping_trades():
+    """매매를 곱해서 이어 붙이면 +550만% 같은 숫자가 나온다. 포트폴리오는
+    여러 종목을 동시에 들고 있어서 매매들이 겹치기 때문이다. 실제로 한 번
+    그렇게 찍었고, 그대로 뒀다면 표 전체를 못 믿게 됐다."""
+    글 = format_split([_만든것(6.0, 2.0), _만든것(6.0, 2.0)])
+    assert "이어붙임" not in 글
+    assert "계좌 수익률이" in 글
+    # 더하기라면 두 건의 밤 몫은 정확히 12%p다.
+    assert "+12%p" in 글

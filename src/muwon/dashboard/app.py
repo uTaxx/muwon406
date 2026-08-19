@@ -49,7 +49,7 @@ except Exception:  # noqa: BLE001, S110 — secrets.toml 자체가 없는 로컬
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from muwon.analysis import report_card
+from muwon.analysis import realtime_plan, report_card
 from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
@@ -639,25 +639,14 @@ def main() -> None:
 
     with tab_strategy:
         st.caption("전략 — 무엇을 기준으로 사고팔지 고릅니다")
-        with section("🎯", "활성 전략", "실거래에 적용되는 전략 하나", expanded=True):
-            st.caption(
-                "여러 전략 중 **하나만** 실제로 돕니다. 여기서 고른 전략이 매일 아침 "
-                "종목을 판단합니다."
-            )
-            render_terms(["신호", "진입", "청산", "역추세", "추세추종", "팩터"])
-            render_strategy_tab(service)
-        with section(
-            "🎓", "전략 성적표", "지금까지 잰 것을 한 장에", ["22개 전략", "10개 조합"],
-            expanded=True,
-        ):
-            render_report_card()
-        with section("⚖️", "전략 리뷰 결과", "다른 전략이었다면 어땠을지 비교"):
-            st.caption(
-                "매일 자동으로 '지금 이 전략 말고 다른 걸 썼다면 얼마였을까'를 계산해 쌓습니다. "
-                "짧은 기간의 1등은 운일 수 있으니, 며칠 이상 계속 위에 있는지를 보세요."
-            )
-            render_terms(["수익률", "MDD", "승률", "손익비", "백테스트", "과최적화"])
-            render_strategy_review_tab(service)
+        # 매매 주기가 다르면 필요한 데이터도, 실패하는 방식도, 성적을 재는
+        # 방법도 다르다. 한 화면에 섞으면 "이 숫자가 어느 쪽 것인지"를
+        # 매번 헷갈린다. 그래서 갈라 둔다.
+        일단위, 실시간 = st.tabs(["📅 일단위 매매", "⚡ 실시간 매매"])
+        with 일단위:
+            render_daily_strategy(service)
+        with 실시간:
+            render_realtime_tab()
 
     with tab_records:
         st.caption("기록 — 실제로 무엇을 사고팔았는지")
@@ -684,6 +673,118 @@ def main() -> None:
     with tab_admin:
         st.caption("설정 및 운영 관리")
         render_admin_tab(service)
+
+
+def render_daily_strategy(service: SettingsService) -> None:
+    """장 시작·마감에 하루 한 번 판단하는, 지금까지 만들어 온 매매."""
+    with section("🎯", "활성 전략", "실거래에 적용되는 전략 하나", expanded=True):
+        st.caption(
+            "여러 전략 중 **하나만** 실제로 돕니다. 여기서 고른 전략이 매일 아침 "
+            "종목을 판단합니다."
+        )
+        render_terms(["신호", "진입", "청산", "역추세", "추세추종", "팩터"])
+        render_strategy_tab(service)
+    with section(
+        "🎓", "전략 성적표", "지금까지 잰 것을 한 장에", ["22개 전략", "10개 조합"],
+        expanded=True,
+    ):
+        render_report_card()
+    with section("⚖️", "전략 리뷰 결과", "다른 전략이었다면 어땠을지 비교"):
+        st.caption(
+            "매일 자동으로 '지금 이 전략 말고 다른 걸 썼다면 얼마였을까'를 계산해 쌓습니다. "
+            "짧은 기간의 1등은 운일 수 있으니, 며칠 이상 계속 위에 있는지를 보세요."
+        )
+        render_terms(["수익률", "MDD", "승률", "손익비", "백테스트", "과최적화"])
+        render_strategy_review_tab(service)
+
+
+def render_realtime_tab() -> None:
+    """실시간(장중) 매매 — 아직 매매하지 않는다. 무엇을 검증 중인지를 보인다.
+
+    일단위 매매 화면과 달리 여기엔 성적표가 없다. 성적이 하나도 없기
+    때문이다. 그런데 빈 표를 띄우면 "고장인가"로 읽힌다. 그래서 대신
+    **왜 아직 성적이 없는지**를 화면 맨 위에 둔다."""
+    try:
+        계획 = realtime_plan.load()
+    except (OSError, ValueError, KeyError) as e:
+        st.error(f"실시간 매매 계획을 읽지 못했습니다: {e}")
+        return
+
+    # 이 한 줄이 이 화면에서 가장 중요하다. 실시간 탭이 있다는 사실만으로
+    # "이미 돌고 있나 보다"로 읽히는 것을 막는다.
+    st.info(f"**{계획.단계} 단계** — {계획.단계뜻}", icon="🔬")
+    st.caption(계획.한줄)
+
+    with section(
+        "🧱", "무엇이 막고 있나", "성적이 아직 없는 이유", [f"{len(계획.막는것)}가지"],
+        expanded=True,
+    ):
+        st.caption(
+            "이걸 먼저 두는 이유는, 이게 풀리기 전에는 아래 후보들의 성적을 "
+            "낼 수 없기 때문입니다. 코드를 먼저 짜고 나중에 알게 되는 것이 최악입니다."
+        )
+        for 항목 in 계획.막는것:
+            with st.expander(f"⛔ {항목['제목']}", expanded=False):
+                st.write(항목["설명"])
+                st.markdown(f"**그래서 →** {항목['그래서']}")
+
+    with section(
+        "🧪", "재 볼 후보", "무엇을 검증할 것이며 근거가 얼마나 단단한가",
+        [f"{len(계획.후보)}개", f"지금 가능 {len(계획.지금가능한후보)}개"],
+        expanded=True,
+    ):
+        st.caption(
+            "**근거 등급이 이 표의 핵심입니다.** '다들 그렇게 한다'와 '학술지에 실렸다'를 "
+            "같은 칸에 두면 표 전체가 쓸모없어집니다."
+        )
+        with st.expander("근거 등급이 무슨 뜻인가", expanded=False):
+            for 등급, (_, 뜻) in realtime_plan.GRADES.items():
+                st.markdown(f"- **{등급}** — {뜻}")
+        render_terms(["단타", "분봉", "장중모멘텀", "오버나이트", "갭", "슬리피지"])
+        _render_candidates(계획.후보)
+
+    with section(
+        "📐", "끝난 검증", "실제로 재고 나서 내린 판단",
+        [f"{len(계획.검증)}건"], expanded=True,
+    ):
+        if not 계획.검증:
+            st.info(
+                "아직 없습니다. 위 후보 중 '지금 가능'인 것부터 잽니다 — "
+                "새 데이터를 모으지 않고도 잴 수 있는 것들입니다."
+            )
+        for 항목 in 계획.검증:
+            with st.expander(f"✅ {항목.제목}  ·  {항목.측정일}", expanded=True):
+                st.caption(f"**잰 것** — {항목.잰것}")
+                st.markdown(항목.결과)
+                st.success(f"**판단 →** {항목.판단}", icon="⚖️")
+
+    st.caption(
+        "자세한 조사 내용은 저장소의 `docs/단타전략조사.md`에 있습니다 — "
+        "후보마다 원 출처와 한국 시장 적용 가능성을 적어 뒀습니다."
+    )
+
+
+def _render_candidates(후보) -> None:
+    """후보를 한 줄씩. 표(dataframe)로 하면 긴 한줄평이 잘려서 정작
+    읽어야 할 말이 안 보인다 — 용어 사전에서 같은 실수를 한 번 했다."""
+    for c in 후보:
+        색 = realtime_plan.GRADES[c.등급][0]
+        가능 = "🟢 지금 가능" if c.지금가능 else "🔒 데이터 필요"
+        st.markdown(
+            f"**{c.이름}** &nbsp; :{색}-badge[근거 {c.등급}] &nbsp; "
+            f":gray-badge[{가능}] &nbsp; :gray-badge[비용민감도 {c.비용민감도}]"
+        )
+        st.caption(f"{c.한줄}")
+        with st.expander("자세히", expanded=False):
+            st.markdown(
+                f"- **근거 등급 {c.등급}** — {c.등급뜻}\n"
+                f"- **한국 시장 증거** — {c.한국증거}\n"
+                f"- **필요한 데이터** — {c.데이터}\n"
+                f"- **비용 민감도** — {c.비용민감도}"
+            )
+            st.write(c.한줄평)
+            st.caption(f"출처: {c.출처}")
+        st.divider()
 
 
 def render_next_run_banner(service: SettingsService) -> None:
