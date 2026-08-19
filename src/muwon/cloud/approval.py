@@ -39,7 +39,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
-승인머리 = ["열쇠", "날짜", "종목코드", "종목명", "전략", "수량", "예상가",
+승인머리 = ["열쇠", "날짜", "종목코드", "종목명", "섹터", "전략", "수량", "예상가",
             "승인", "이유"]
 
 #: 명시적으로 이 중 하나여야 승인이다. 빈 칸·오타는 전부 거부다.
@@ -54,6 +54,9 @@ class 후보:
     quantity: int
     price: float
     reason: str = ""
+    #: 어느 섹터에서 나왔나. 한 섹터에 몰리는 것을 막는 데 쓴다.
+    sector: str = ""
+    sector_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,7 @@ def pending_rows(후보들: Iterable[후보], 날짜: date) -> list[list[str]]:
             날짜.isoformat(),
             c.symbol,
             c.name,
+            c.sector_name or c.sector,
             c.strategy,
             str(c.quantity),
             f"{c.price:.0f}",
@@ -117,7 +121,7 @@ def parse_approvals(
             continue
         적힌날 = str(칸[1]).strip()
         symbol = str(칸[2]).strip()
-        체크됨 = str(칸[7]).strip().upper() in 승인표시
+        체크됨 = str(칸[8]).strip().upper() in 승인표시
 
         if not 체크됨:
             거부.append(symbol)
@@ -144,7 +148,9 @@ def 알림글(후보들: Sequence[후보], 날짜: date, 주소: str) -> str:
         return f"📋 {날짜.isoformat()} 매수 후보 없음 — 오늘은 승인할 것이 없습니다."
     줄 = [f"📋 {날짜.isoformat()} 매수 후보 {len(후보들)}종목 — **승인 칸에 Y를 적은 것만 삽니다**", ""]
     for c in 후보들:
-        줄.append(f"  {c.name}({c.symbol}) {c.quantity}주 @ {c.price:,.0f}원")
+        섹터 = f"[{c.sector_name or c.sector}] " if (c.sector_name or c.sector) else ""
+        수량 = f"{c.quantity}주 " if c.quantity else ""
+        줄.append(f"  {섹터}{c.name}({c.symbol}) {수량}@ {c.price:,.0f}원")
         if c.reason:
             줄.append(f"     {c.reason}")
     줄 += [

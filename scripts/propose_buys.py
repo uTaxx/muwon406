@@ -1,27 +1,32 @@
-"""오늘 살 만한 종목을 골라 **시트에 올리고 승인을 기다린다.**
+"""**두 단계로 고른다 — 1차 섹터, 2차 종목.** 그리고 아무것도 사지 않는다.
 
-**이 스크립트는 아무것도 사지 않는다.** 후보를 적어 두고 알릴 뿐이다.
-실제 매수는 사람이 시트에서 체크한 뒤 다음 단계가 한다.
+후보를 시트 `승인대기` 탭에 적고 텔레그램으로 알릴 뿐이다. 실제 매수는
+사람이 승인 칸에 Y를 적은 뒤에야 일어난다.
 
-## 왜 이걸 먼저 만드나
+## 1차 — 섹터
 
-모의투자를 꺼 둔 이유가 "완전 자동이 무섭다"였다. 그런데 안 켜면
-**슬리피지(사겠다고 판단한 값과 실제로 사진 값의 차이) 실측 표본이 영영
-안 생기고**, 지금 모든 백테스트 숫자가 "종가에 딱 체결됐다"는 가정 위에
-있다.
+섹터 지수를 만들고 **최근 N일 시장 대비 강도**로 줄을 세운다.
 
-승인 스텝이 그 사이를 잇는다. 그리고 이 스크립트만 며칠 돌려 보면
-**아무 위험 없이** "이 전략이 하루에 몇 종목을, 어떤 이유로 고르는지"를
-눈으로 볼 수 있다. 매수를 켜는 판단은 그다음이다.
+**기본값은 "보여 주기만" 한다.** 강도 상위 섹터만 사는 것은 기본으로
+꺼져 있다 — 그게 성적을 올린다는 근거가 없기 때문이다
+(`docs/섹터선정_검증.md`: 여섯 조합 전부 우연 폭 안, 여덟 해 중 다섯 해
+마이너스). 켜려면 `--sector-filter`를 붙인다.
 
-## 무엇을 유니버스로 쓰나
+대신 **한 섹터에서 두 종목까지**만 산다. 이건 예측이 아니라 제약이라
+검증 결과와 무관하게 유효하다. 45종목을 한 줄로 세워 놓고 신호 난 것을
+사면 어떤 날은 반도체 다섯 종목이 한꺼번에 잡히는데, 그건 분산이 아니라
+반도체 하나에 다섯 배로 건 것이다.
 
-**구글 시트의 섹터·종목 탭**이다. 지금까지 쓰던 시가총액 스냅샷이 아니라,
-사람이 정한 섹터별 목록이다.
+## 2차 — 종목
+
+**새 규칙을 만들지 않는다.** 1차를 통과한 섹터의 종목만 기존 매수 신호에
+태운다. 바뀐 것은 대상이지 판단 기준이 아니다 — 그래야 성적이 달라졌을 때
+무엇 때문인지 안다.
 
 사용 예:
-    python scripts/propose_buys.py --dry-run     # 화면에만
-    python scripts/propose_buys.py               # 시트 + 텔레그램
+    python scripts/propose_buys.py --dry-run
+    python scripts/propose_buys.py --sector-filter --dry-run   # 1차로 거르기까지
+    python scripts/propose_buys.py                             # 시트 + 텔레그램
 """
 
 import argparse
@@ -34,6 +39,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import requests
+from sqlalchemy import select
 
 from muwon.cloud.approval import pending_rows, 승인머리, 알림글, 후보
 from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create, read
@@ -41,8 +47,19 @@ from muwon.cloud.sheet_log import append
 from muwon.config import bootstrap_settings
 from muwon.data.price_cache import PriceCache
 from muwon.data.yahoo_client import YahooFinanceDataSource
+from muwon.db.models import PositionRow
 from muwon.db.session import ensure_schema, make_session_factory
 from muwon.domain.types import SignalType
+from muwon.market.sector_index import build_index
+from muwon.sector.selection import (
+    LOOKBACK,
+    MAX_PER_SECTOR,
+    TOP_N,
+    cap_per_sector,
+    format_ranking,
+    pick,
+    rank,
+)
 from muwon.settings.from_sheet import parse_settings
 from muwon.settings.service import build_settings_service
 from muwon.strategy.registry import build_strategies
@@ -61,6 +78,12 @@ def main() -> int:
     parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     parser.add_argument("--dry-run", action="store_true", help="시트·텔레그램에 안 보내고 화면에만")
     parser.add_argument("--max", type=int, default=0, help="후보를 몇 개까지 (0이면 설정의 동시보유 수)")
+    parser.add_argument("--lookback", type=int, default=LOOKBACK, help="섹터 강도를 며칠로 잴 것인가")
+    parser.add_argument("--top-sectors", type=int, default=TOP_N, help="1차에서 몇 섹터를 고를 것인가")
+    parser.add_argument("--max-per-sector", type=int, default=MAX_PER_SECTOR,
+                        help="한 섹터에서 몇 종목까지 (0이면 제한 없음)")
+    parser.add_argument("--sector-filter", action="store_true",
+                        help="강도 상위 섹터만 매수 대상으로 (근거 없음 — docs/섹터선정_검증.md)")
     args = parser.parse_args()
 
     sheet_id = args.sheet_id
@@ -78,68 +101,118 @@ def main() -> int:
     strategy = build_strategies(selection.active_keys, selection.combine)
     print(f"■ 전략: {selection.describe()}", file=sys.stderr)
 
-    # 지금 들고 있는 종목은 다시 사지 않는다.
-    from sqlalchemy import select
-
-    from muwon.db.models import PositionRow
-
     with make_session_factory(bootstrap_settings.database_url)() as session:
         보유중 = {p.symbol for p in session.scalars(select(PositionRow))}
 
-    대상 = [
-        (m.symbol, m.name, s.이름)
-        for s in 내용.섹터
-        if s.활성
-        for m in s.활성종목
-        if m.symbol not in 보유중
-    ]
-    print(f"■ 살펴볼 종목 {len(대상)}개 (보유 중 {len(보유중)}개 제외)", file=sys.stderr)
-
-    source = YahooFinanceDataSource()
-    cache = PriceCache()
+    source, cache = YahooFinanceDataSource(), PriceCache()
     오늘 = datetime.now(KST).date()
     시작 = 오늘 - timedelta(days=WARMUP_DAYS)
 
-    후보들, 못본것 = [], []
-    for symbol, name, 섹터명 in 대상:
-        야후 = f"{symbol}.KS" if _코스피인가(내용, symbol) else f"{symbol}.KQ"
-        try:
-            df = cache.fetch(source, symbol, 야후, 시작, 오늘, 최소일수=MIN_DAYS)
-        except (requests.RequestException, ValueError, KeyError) as e:
-            못본것.append(f"{name}({symbol}): {type(e).__name__}")
+    # ── 시세 받기 (섹터별로 묶어 둔다 — 지수를 만들어야 하므로) ──────
+    print("■ 시세 받는 중…", file=sys.stderr)
+    섹터시세: dict[str, dict[str, object]] = {}
+    이름표: dict[str, str] = {}
+    못본것: list[str] = []
+    for s in 내용.섹터:
+        if not s.활성:
             continue
-        if df is None or len(df) < MIN_DAYS:
-            못본것.append(f"{name}({symbol}): 시세 {0 if df is None else len(df)}일")
+        이름표[s.코드] = s.이름
+        모음 = {}
+        for m in s.활성종목:
+            야후 = f"{m.symbol}.KS" if m.market == "KOSPI" else f"{m.symbol}.KQ"
+            try:
+                df = cache.fetch(source, m.symbol, 야후, 시작, 오늘, 최소일수=MIN_DAYS)
+            except (requests.RequestException, ValueError, KeyError) as e:
+                못본것.append(f"{m.name}({m.symbol}): {type(e).__name__}")
+                continue
+            if df is None or len(df) < MIN_DAYS:
+                못본것.append(f"{m.name}({m.symbol}): 시세 {0 if df is None else len(df)}일")
+                continue
+            모음[m.symbol] = (m, df)
+        섹터시세[s.코드] = 모음
+
+    # ── 1차: 섹터 줄 세우기 ──────────────────────────────────────
+    코스피 = cache.fetch(source, "^KS11", "^KS11", 시작, 오늘, 최소일수=200)
+    시장 = 코스피.set_index("trade_date")["close"].astype(float)
+    지수들 = {
+        코드: build_index({심볼: df for 심볼, (_, df) in 모음.items()})["close"]
+        for 코드, 모음 in 섹터시세.items()
+        if len(모음) >= 3
+    }
+    순위 = pick(rank(지수들, 이름표, 시장, lookback=args.lookback), top_n=args.top_sectors)
+    print()
+    print(format_ranking(순위, lookback=args.lookback))
+    print()
+
+    if args.sector_filter:
+        살섹터 = {p.코드 for p in 순위 if p.뽑힘}
+        print("  ⚠️ `--sector-filter`로 **1차에서 거르는 중**입니다. 이 기준이 성적을 "
+              "올린다는 근거는 없습니다 (docs/섹터선정_검증.md).")
+    else:
+        살섹터 = set(섹터시세)
+        print("  ※ 지금은 **줄만 세우고 거르지 않습니다.** 강도 상위만 사는 것이 "
+              "성적을 올린다는 근거가 없어서입니다 (docs/섹터선정_검증.md).")
+        print("     대신 한 섹터에서 최대 "
+              f"{args.max_per_sector or '제한 없이'}종목까지만 삽니다 — 이건 예측이 아니라 제약입니다.")
+    print()
+
+    # ── 2차: 종목 신호 ───────────────────────────────────────────
+    신호들 = []
+    for 코드, 모음 in 섹터시세.items():
+        if 코드 not in 살섹터:
             continue
+        for 심볼, (m, df) in 모음.items():
+            if 심볼 in 보유중:
+                continue
+            # **마지막 봉의 신호만** 본다. generate_signals는 히스토리 전체의
+            # 신호를 돌려주므로, 거르지 않으면 3년 전 신호로 오늘 산다.
+            마지막날 = df["trade_date"].iloc[-1]
+            살것 = [
+                sig for sig in strategy.generate_signals(심볼, df)
+                if sig.trade_date == 마지막날 and sig.signal_type == SignalType.BUY
+            ]
+            if not 살것:
+                continue
+            sig = max(살것, key=lambda s: s.score)
+            신호들.append((sig.score, 후보(
+                symbol=심볼, name=m.name, strategy=sig.strategy_name,
+                quantity=0,  # 수량은 매수 단계에서 그때 현금으로 정한다
+                price=float(df["close"].iloc[-1]),
+                reason=sig.reason, sector=코드, sector_name=이름표.get(코드, 코드),
+            )))
 
-        # **마지막 봉의 신호만** 본다. generate_signals는 히스토리 전체의
-        # 신호를 돌려주므로, 거르지 않으면 3년 전 신호로 오늘 산다.
-        마지막날 = df["trade_date"].iloc[-1]
-        살것 = [
-            s for s in strategy.generate_signals(symbol, df)
-            if s.trade_date == 마지막날 and s.signal_type == SignalType.BUY
-        ]
-        if not 살것:
-            continue
-        signal = max(살것, key=lambda s: s.score)
+    신호들.sort(key=lambda 것: 것[0], reverse=True)
+    줄선것 = [c for _, c in 신호들]
 
-        가격 = float(df["close"].iloc[-1])
-        후보들.append((signal.score, 후보(
-            symbol=symbol, name=name, strategy=signal.strategy_name,
-            quantity=0,  # 수량은 매수 단계에서 그때 현금으로 정한다
-            price=가격, reason=f"[{섹터명}] {signal.reason}",
-        )))
+    # 한 섹터에 몰리는 것을 막는다.
+    if args.max_per_sector:
+        줄선것, 밀린것 = cap_per_sector(줄선것, 상한=args.max_per_sector)
+    else:
+        밀린것 = []
 
-    # 점수가 높은 순으로 자른다. 동시에 들 수 있는 수보다 많이 제안하면
-    # 사람이 다 체크했을 때 리스크 매니저가 뒤에서 거부한다 — 그러면
-    # "승인했는데 왜 안 샀지"가 된다.
+    # 동시에 들 수 있는 수보다 많이 제안하면, 사람이 다 체크했을 때 리스크
+    # 매니저가 뒤에서 거부한다 — 그러면 "승인했는데 왜 안 샀지"가 된다.
     상한 = args.max or _동시보유(설정, service)
-    후보들.sort(key=lambda 것: 것[0], reverse=True)
-    고른것 = [c for _, c in 후보들[:상한]]
+    넘친것 = 줄선것[상한:]
+    고른것 = 줄선것[:상한]
 
-    print(f"\n■ 매수 후보 {len(고른것)}종목 (신호 {len(후보들)}개 중 상위 {상한})")
+    print(f"■ 2차 — 종목 고르기 · 매수 후보 {len(고른것)}종목 (신호 {len(신호들)}개)")
+    print()
     for c in 고른것:
-        print(f"  {c.name}({c.symbol})  {c.price:>9,.0f}원   {c.reason}")
+        print(f"  {c.name}({c.symbol})  {c.price:>9,.0f}원   [{c.sector_name}] {c.reason}")
+    if not 고른것:
+        print("  오늘은 매수 신호가 없습니다.")
+    print()
+
+    # **왜 안 샀는지가 왜 샀는지만큼 중요하다.**
+    if 밀린것:
+        print(f"  섹터 상한({args.max_per_sector}종목)에 걸려 뺀 것 {len(밀린것)}개")
+        for c in 밀린것:
+            print(f"    · {c.name}({c.symbol}) [{c.sector_name}]")
+    if 넘친것:
+        print(f"  동시보유 상한({상한}종목)에 걸려 뺀 것 {len(넘친것)}개")
+        for c in 넘친것:
+            print(f"    · {c.name}({c.symbol}) [{c.sector_name}]")
     if 못본것:
         print(f"\n  시세를 못 본 종목 {len(못본것)}개 — **이유가 있어야 다음에 무엇을 고칠지 안다**")
         for 줄 in 못본것:
@@ -164,14 +237,6 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001 — 알림 실패가 후보 목록을 지우면 안 된다
         print(f"텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
-
-
-def _코스피인가(내용, symbol: str) -> bool:
-    for s in 내용.섹터:
-        for m in s.종목:
-            if m.symbol == symbol:
-                return m.market == "KOSPI"
-    return True
 
 
 def _동시보유(설정, service) -> int:

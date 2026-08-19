@@ -23,6 +23,13 @@ on:
       max:
         description: "후보를 몇 개까지 (0이면 설정의 동시보유 수)"
         default: "0"
+      max_per_sector:
+        description: "한 섹터에서 몇 종목까지 (0이면 제한 없음)"
+        default: "2"
+      sector_filter:
+        description: "강도 상위 섹터만 매수 대상으로 — 근거 없음(docs/섹터선정_검증.md)"
+        type: boolean
+        default: false
 
 concurrency:
   group: propose-buys
@@ -71,6 +78,8 @@ jobs:
         run: |
           python scripts/propose_buys.py \
             --max "${{ github.event.inputs.max || '0' }}" \
+            --max-per-sector "${{ github.event.inputs.max_per_sector || '2' }}" \
+            ${{ github.event.inputs.sector_filter == 'true' && '--sector-filter' || '' }} \
             ${{ github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
             | tee propose.txt
 
