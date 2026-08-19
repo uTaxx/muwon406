@@ -190,32 +190,57 @@
         </div>
       </div>
 
-      <div style="margin-top:14px;">
-        <div class="score-filter-group">
-          <label>중요도 <span class="range-val" id="filterImportanceLabel">전체</span></label>
-          <div class="dual-range">
-            <div class="dual-range-track"></div>
-            <div class="dual-range-fill" id="filterImportanceFill"></div>
-            <input type="range" id="filterMinImportance" min="1" max="5" step="1" value="1">
-            <input type="range" id="filterMaxImportance" min="1" max="5" step="1" value="5">
+      <button type="button" class="add-btn detail-toggle-btn" id="detailToggleBtn" style="margin-top:14px;">🔧 상세 조건 설정 (수집·보도일자, 등급) <span id="detailToggleIcon">▾</span></button>
+
+      <div id="detailFilterPanel" style="display:none;">
+        <div class="filter-row" style="margin-top:14px;">
+          <div>
+            <label>수집일자 시작</label>
+            <input type="date" id="filterCollectedFrom">
+          </div>
+          <div>
+            <label>수집일자 종료</label>
+            <input type="date" id="filterCollectedTo">
           </div>
         </div>
-        <div class="score-filter-group">
-          <label>관련성 <span class="range-val" id="filterRelevanceLabel">전체</span></label>
-          <div class="dual-range">
-            <div class="dual-range-track"></div>
-            <div class="dual-range-fill" id="filterRelevanceFill"></div>
-            <input type="range" id="filterMinRelevance" min="1" max="5" step="1" value="1">
-            <input type="range" id="filterMaxRelevance" min="1" max="5" step="1" value="5">
+        <div class="filter-row" style="margin-top:10px;">
+          <div>
+            <label>보도일자 시작</label>
+            <input type="date" id="filterPubFrom">
+          </div>
+          <div>
+            <label>보도일자 종료</label>
+            <input type="date" id="filterPubTo">
           </div>
         </div>
-        <div class="score-filter-group">
-          <label>긴급성 <span class="range-val" id="filterUrgencyLabel">전체</span></label>
-          <div class="dual-range">
-            <div class="dual-range-track"></div>
-            <div class="dual-range-fill" id="filterUrgencyFill"></div>
-            <input type="range" id="filterMinUrgency" min="1" max="5" step="1" value="1">
-            <input type="range" id="filterMaxUrgency" min="1" max="5" step="1" value="5">
+
+        <div style="margin-top:14px;">
+          <div class="score-filter-group">
+            <label>중요도 <span class="range-val" id="filterImportanceLabel">전체</span></label>
+            <div class="dual-range">
+              <div class="dual-range-track"></div>
+              <div class="dual-range-fill" id="filterImportanceFill"></div>
+              <input type="range" id="filterMinImportance" min="1" max="5" step="1" value="1">
+              <input type="range" id="filterMaxImportance" min="1" max="5" step="1" value="5">
+            </div>
+          </div>
+          <div class="score-filter-group">
+            <label>관련성 <span class="range-val" id="filterRelevanceLabel">전체</span></label>
+            <div class="dual-range">
+              <div class="dual-range-track"></div>
+              <div class="dual-range-fill" id="filterRelevanceFill"></div>
+              <input type="range" id="filterMinRelevance" min="1" max="5" step="1" value="1">
+              <input type="range" id="filterMaxRelevance" min="1" max="5" step="1" value="5">
+            </div>
+          </div>
+          <div class="score-filter-group">
+            <label>긴급성 <span class="range-val" id="filterUrgencyLabel">전체</span></label>
+            <div class="dual-range">
+              <div class="dual-range-track"></div>
+              <div class="dual-range-fill" id="filterUrgencyFill"></div>
+              <input type="range" id="filterMinUrgency" min="1" max="5" step="1" value="1">
+              <input type="range" id="filterMaxUrgency" min="1" max="5" step="1" value="5">
+            </div>
           </div>
         </div>
       </div>
@@ -491,9 +516,28 @@
     return Number.isFinite(n) ? n : 0;
   }
 
+  function extractDateOnly(v){
+    if (!v) return '';
+    const m = String(v).match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
+  }
+
+  function passDateFilter(value, fromV, toV){
+    if (!fromV && !toV) return true;
+    const d = extractDateOnly(value);
+    if (!d) return false;
+    if (fromV && d < fromV) return false;
+    if (toV && d > toV) return false;
+    return true;
+  }
+
   function applyFilters(){
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const g = document.getElementById('groupSelect').value;
+    const collectedFrom = document.getElementById('filterCollectedFrom').value;
+    const collectedTo = document.getElementById('filterCollectedTo').value;
+    const pubFrom = document.getElementById('filterPubFrom').value;
+    const pubTo = document.getElementById('filterPubTo').value;
     const minImp = parseInt(document.getElementById('filterMinImportance').value, 10);
     const maxImp = parseInt(document.getElementById('filterMaxImportance').value, 10);
     const minRel = parseInt(document.getElementById('filterMinRelevance').value, 10);
@@ -505,6 +549,8 @@
     const urgActive = !(minUrg === 1 && maxUrg === 5);
     filtered = allArticles.filter(a => {
       if (g && a.group !== g) return false;
+      if (!passDateFilter(a.collectedAt, collectedFrom, collectedTo)) return false;
+      if (!passDateFilter(a.pubDate, pubFrom, pubTo)) return false;
       if (impActive){ const v = getScoreNum(a.importance); if (v < minImp || v > maxImp) return false; }
       if (relActive){ const v = getScoreNum(a.relevance); if (v < minRel || v > maxRel) return false; }
       if (urgActive){ const v = getScoreNum(a.urgency); if (v < minUrg || v > maxUrg) return false; }
@@ -1075,6 +1121,16 @@
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
+    ['filterCollectedFrom','filterCollectedTo','filterPubFrom','filterPubTo'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', applyFilters);
+    });
+    document.getElementById('detailToggleBtn').addEventListener('click', function(){
+      const panel = document.getElementById('detailFilterPanel');
+      const icon = document.getElementById('detailToggleIcon');
+      const expanded = panel.style.display !== 'none';
+      panel.style.display = expanded ? 'none' : 'block';
+      icon.textContent = expanded ? '▾' : '▴';
+    });
     setupDualRangeFilter('filterMinImportance', 'filterMaxImportance', 'filterImportanceFill', 'filterImportanceLabel', '점');
     setupDualRangeFilter('filterMinRelevance', 'filterMaxRelevance', 'filterRelevanceFill', 'filterRelevanceLabel', '점');
     setupDualRangeFilter('filterMinUrgency', 'filterMaxUrgency', 'filterUrgencyFill', 'filterUrgencyLabel', '점');
