@@ -51,7 +51,7 @@ from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
 from muwon.dashboard.glossary import TERMS, terms_for
-from muwon.dashboard.schedule import KST, WEEKDAYS, upcoming
+from muwon.dashboard.schedule import KST, WEEKDAYS, automation_state, upcoming
 from muwon.dashboard.strategy_rules import common_rules, describe, exit_rules
 from muwon.data.universe import UNIVERSE, find_by_symbol
 from muwon.data.universe_builder import active_universe
@@ -167,6 +167,14 @@ CARD_CSS = """
 .muwon-badge {
   display: inline-block; padding: 2px 10px; border-radius: 999px;
   font-size: 11px; font-weight: 600;
+}
+/* 폰에서는 카드 4개가 가로로 안 들어가 3~4번째가 화면 밖으로 잘렸다.
+   가로 스크롤이 가능하다는 표시도 없어서 카드가 넷이라는 걸 알 수 없었다.
+   좁은 화면에서는 2×2로 접는다. */
+@media (max-width: 640px) {
+  .muwon-cards { flex-wrap: wrap; overflow-x: visible; }
+  .muwon-card { flex: 1 1 calc(50% - 12px); min-width: 0; }
+  .muwon-value { font-size: 17px; }
 }
 @media (prefers-color-scheme: dark) {
   .muwon-card { background: #1B1E24; border-color: #2A2E36; }
@@ -324,14 +332,13 @@ def render_summary_cards(service: SettingsService) -> None:
             select(RunLogRow).order_by(RunLogRow.created_at.desc()).limit(1)
         ).first()
 
+    뱃지, 뱃지색, _ = automation_state(policy)
+
     st.markdown(CARD_CSS, unsafe_allow_html=True)
     cards = [
-        _card(
-            "📈", "purple", "활성 전략",
-            _display_name_for(selection.active_key),
-            "LIVE" if policy.trading_enabled else "중지됨",
-            "purple" if policy.trading_enabled else "orange",
-        ),
+        # 킬스위치만 보고 'LIVE'를 띄우면 화면이 거짓말을 한다 — 실행
+        # 일정 자체가 꺼져 있으면 킬스위치가 켜져 있어도 아무 일도 없다.
+        _card("📈", "purple", "활성 전략", _display_name_for(selection.active_key), 뱃지, 뱃지색),
         _card(
             "🔌", "green", "KIS 연결", env_label,
             "연결됨" if connected else "인증정보 없음",
@@ -520,7 +527,9 @@ def render_admin_tab(service: SettingsService) -> None:
 
 def main() -> None:
     _initial_drive_sync()
-    st.title("muwon406 대시보드")
+    # st.title은 폰에서 두 줄로 넘쳐 첫 화면의 3분의 1을 먹었다.
+    # 목업의 제목 크기에 맞춰 한 단계 낮춘다.
+    st.markdown("### 자동매매 운영 대시보드")
     st.caption("자주 쓰는 항목 중심")
     if _drive_sync_configured():
         render_drive_sync_fragment()
@@ -556,7 +565,7 @@ def main() -> None:
     with tab_home:
         render_summary_cards(service)
         render_status_bar(service)
-        render_next_run_banner()
+        render_next_run_banner(service)
         render_glossary_panel("home_")
         st.divider()
         render_home_rows(service)
@@ -605,12 +614,18 @@ def main() -> None:
         render_admin_tab(service)
 
 
-def render_next_run_banner() -> None:
+def render_next_run_banner(service: SettingsService) -> None:
     """다음 자동 실행까지 남은 시간을 한 줄로.
 
     펼치지 않아도 보여야 한다. 아무 일도 안 일어난 화면을 보고 "고장인가"와
     "아직 시간이 안 됐나"를 가르는 게 이 한 줄이다."""
     now = datetime.now(KST)
+    뱃지, _, 설명 = automation_state(service.get_risk_policy(), now)
+    if 뱃지 != "LIVE":
+        # 이 줄이 화면 전체에서 가장 중요한 한 줄이다. 여기가 틀리면
+        # "왜 아무 일도 안 일어나지"를 엉뚱한 데서 찾게 된다.
+        st.warning(f"**자동매매 {뱃지}** — {설명}", icon="⏸️")
+
     jobs = upcoming(now)
     if not jobs:
         st.warning("자동 실행 일정을 읽지 못했습니다 (.github/workflows 확인).", icon="⏰")
@@ -730,7 +745,7 @@ def render_home_rows(service: SettingsService) -> None:
 
     with section(
         "🎯", "매매 기준", "지금 무엇을 보고 사고파는가",
-        ["LIVE" if policy.trading_enabled else "중지됨", _display_name_for(selection.active_key)],
+        [automation_state(policy)[0], _display_name_for(selection.active_key)],
         expanded=True,
     ):
         render_active_rules(service)
@@ -771,7 +786,7 @@ def render_home_rows(service: SettingsService) -> None:
 
     with section(
         "🛡️", "리스크 정책", "손절 · 비중 · 노출 한도",
-        ["정상" if policy.trading_enabled else "중지됨"],
+        ["적용 중" if policy.trading_enabled else "매수 중지"],
     ):
         st.caption(
             "**돈을 버는 규칙이 아니라, 크게 잃지 않기 위한 규칙입니다.** "
@@ -788,7 +803,7 @@ def render_status_bar(service: SettingsService) -> None:
     col_toggle, col_env, col_time = st.columns([2, 2, 1])
     with col_toggle:
         enabled = st.toggle(
-            "자동매매 활성화",
+            "신규 매수 허용",
             value=policy.trading_enabled,
             help=(
                 "끄면 새로 사지 않습니다(킬스위치). 이미 들고 있는 종목의 손절은 "
@@ -815,7 +830,10 @@ def render_status_bar(service: SettingsService) -> None:
             st.warning(f"KIS 환경 확인 불가 ({kis_env})", icon="❓")
 
     with col_time:
-        st.caption(f"상태 조회: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
+        # 원래 '상태 조회: 00:15:58'이었다. 화면을 새로 그린 시각일 뿐인데
+        # 폰에서 한 줄을 통째로 먹으면서 아무것도 안 알려 줬다. 대신 이
+        # 토글이 무엇을 여닫는지를 적는다.
+        st.caption("이 스위치는 **신규 매수**만 여닫습니다. 보유분 손절은 늘 작동합니다.")
 
 
 def _best_backtest_by_key(session_factory) -> dict[str, BacktestRunRow]:

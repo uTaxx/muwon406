@@ -121,3 +121,36 @@ def test_paper_trading_is_currently_stopped():
         "자동매매를 다시 켰다면 이 테스트도 함께 고치세요 — "
         "켜 두고 잊는 일이 없도록 일부러 걸어 둔 장치입니다."
     )
+
+
+def test_a_stopped_schedule_is_not_live_even_with_the_switch_on():
+    """스케줄을 꺼 놨는데 킬스위치만 보고 'LIVE'라고 띄우면 화면이
+    거짓말을 한다 — 실제로 폰에서 그렇게 떠 있는 걸 보고 잡았다."""
+    from muwon.dashboard.schedule import automation_state
+    from muwon.settings.schema import RiskPolicy
+
+    뱃지, _, 설명 = automation_state(RiskPolicy(trading_enabled=True))
+    assert 뱃지 == "자동 실행 꺼짐", "지금 자동매매 일정은 꺼져 있다"
+    assert "손으로" in 설명
+
+
+def test_the_switch_and_the_schedule_are_reported_separately(tmp_path):
+    """둘은 다른 것이다. 꺼진 이유가 무엇인지 알아야 어디를 켜는지 안다."""
+    from muwon.dashboard.schedule import automation_state, upcoming
+    from muwon.settings.schema import RiskPolicy
+
+    workflow = tmp_path / "paper-trading.yml"
+    workflow.write_text('  schedule:\n    - cron: "5 0 * * 1-5"\n', encoding="utf-8")
+
+    # 일정이 살아 있다는 것을 먼저 확인한다 — 이 검사의 전제다.
+    assert upcoming(datetime(2026, 8, 19, 8, 0, tzinfo=KST), workflow_dir=tmp_path)
+
+    import muwon.dashboard.schedule as mod
+
+    원래 = mod.upcoming
+    mod.upcoming = lambda now=None, workflow_dir=tmp_path: 원래(now, workflow_dir)
+    try:
+        assert automation_state(RiskPolicy(trading_enabled=True))[0] == "LIVE"
+        assert automation_state(RiskPolicy(trading_enabled=False))[0] == "중지됨"
+    finally:
+        mod.upcoming = 원래

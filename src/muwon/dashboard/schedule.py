@@ -176,3 +176,32 @@ def upcoming(now: datetime | None = None, workflow_dir: Path | None = None) -> l
     # 가까운 것부터. 예정을 못 구한 건 뒤로 — 화면 맨 위는 '다음에 일어날 일'이어야 한다.
     jobs.sort(key=lambda j: (j.다음실행 is None, j.다음실행 or now))
     return jobs
+
+
+def automation_state(policy, now: datetime | None = None) -> tuple[str, str, str]:
+    """자동매매가 **실제로** 도는 상태인가. (뱃지, 색, 설명)
+
+    두 개가 따로 논다.
+
+    - **스케줄**(워크플로 cron): 아예 실행이 예약돼 있는가
+    - **킬스위치**(trading_enabled): 실행되면 매수를 하는가
+
+    스케줄을 꺼 놨는데 킬스위치만 보고 'LIVE'라고 띄우면 화면이 거짓말을
+    한다 — 실제로 오늘 그렇게 떴다. 둘 중 하나라도 꺼져 있으면 자동매매는
+    일어나지 않는다."""
+    now = now or datetime.now(KST)
+    예약됨 = any(j.이름 == "자동매매" and j.다음실행 for j in upcoming(now))
+
+    if not 예약됨:
+        return (
+            "자동 실행 꺼짐",
+            "orange",
+            "자동 실행 일정이 꺼져 있습니다. 손으로 돌리지 않는 한 아무 일도 일어나지 않습니다.",
+        )
+    if not policy.trading_enabled:
+        return (
+            "중지됨",
+            "orange",
+            "일정은 살아 있지만 킬스위치가 꺼져 있어 새로 사지 않습니다 (보유분 손절은 작동).",
+        )
+    return ("LIVE", "purple", "예정 시각에 자동으로 돌고, 조건이 맞으면 실제로 주문이 나갑니다.")
