@@ -102,6 +102,7 @@ def main() -> None:
             "entry",
             "intraday_stop",
             "overnight",
+            "exit_timing",
         ],
     )
     parser.add_argument(
@@ -272,6 +273,35 @@ def main() -> None:
                 비교.extend(compare_stops(result.closed_trades, sliced, 정책.stop_loss_pct))
             emit(format_stop_comparison(비교, key))
             emit("")
+        save()
+        return
+
+    elif args.mode == "exit_timing":
+        keys = [k.strip() for k in args.keys.split(",") if k.strip()]
+        if not keys:
+            raise SystemExit("--keys에 전략을 지정하세요")
+        emit("■ 언제 파는가 — 판단한 그날 종가 vs 다음 날 시가\n")
+        emit("  지금은 그날 종가를 보고 판단해서 그 종가에 판다고 계산한다. 그런데")
+        emit("  실거래는 장 마감 뒤에 정하고 다음 날 아침에 주문을 낸다.")
+        emit("  게다가 수익의 70~92%가 밤사이에 났다(설계안 §26) — 종가에 파는")
+        emit("  지금 방식은 마지막 밤을 버리고 있다.\n")
+        results = []
+        for key in keys:
+            for 시가청산, 이름 in ((False, "종가(지금)"), (True, "시가(다음날)")):
+                results.append(
+                    run_experiment(
+                        f"{_짧은이름(key)} · {이름}",
+                        lambda k=key: build_strategy(k),
+                        histories,
+                        years,
+                        exit_at_open=시가청산,
+                    )
+                )
+        emit(format_comparison(results, years))
+        emit("")
+        emit("읽는 법: **1순위는 평균이 아니라 최악의 해다.** 평균이 올라가도 최악의")
+        emit("해가 더 나빠졌으면 채택하지 않는다. 거래 수가 크게 달라졌다면 그것도")
+        emit("봐야 한다 — 청산이 하루 밀리면 다음 진입도 하루씩 밀린다.")
         save()
         return
 

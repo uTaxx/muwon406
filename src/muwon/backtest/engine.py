@@ -98,11 +98,22 @@ class BacktestEngine:
         risk_manager: RiskManager,
         costs: TransactionCosts | None = None,
         initial_cash: float = 10_000_000.0,
+        exit_at_open: bool = False,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
         self._costs = costs or TransactionCosts()
         self._initial_cash = initial_cash
+        # 청산을 **다음 날 시가**에 체결할 것인가.
+        #
+        # 기본값(False)은 판단한 그날 종가에 판다. 그런데 판단에 그날 종가가
+        # 필요하므로, 종가를 보고 그 종가에 판다는 것은 실제로는 하기 어려운
+        # 일이다. 실거래는 장 마감 뒤에 정하고 다음 날 아침에 주문을 낸다.
+        #
+        # 게다가 수익의 70~92%가 밤사이(종가→시가)에 났다는 것을 쟀다
+        # (설계안 §26). 종가에 파는 지금 방식은 **마지막 밤을 버리고 있다.**
+        # 이 옵션은 그 둘을 한 번에 확인하기 위한 것이다.
+        self._exit_at_open = exit_at_open
 
     def run(
         self, price_histories: dict[str, pd.DataFrame], trade_from: date | None = None
@@ -137,10 +148,18 @@ class BacktestEngine:
         equity_curve_rows: list[dict] = []
         day_start_equity = self._initial_cash
 
+        # 어제 정했지만 아직 못 판 청산. exit_at_open일 때만 채워진다.
+        pending_exits: dict[str, str] = {}
+
         for current_date in all_dates:
             if trade_from is not None and current_date < trade_from:
                 continue  # 지표 예열 구간 — 매매도 평가금액 기록도 하지 않는다
 
+            opens_today = {
+                symbol: df.loc[current_date, "open"]
+                for symbol, df in enriched.items()
+                if current_date in df.index
+            }
             closes_today = {
                 symbol: df.loc[current_date, "close"]
                 for symbol, df in enriched.items()
@@ -157,9 +176,25 @@ class BacktestEngine:
             ):
                 signals_today.setdefault(signal.symbol, []).append(signal)
 
+            # 0) 어제 정한 청산을 오늘 **시가**에 체결한다.
+            # 판단(어제 종가)과 체결(오늘 시가)을 하루 벌려 두는 것이 이
+            # 옵션의 전부다. 오늘 거래가 없는 종목은 그대로 두고 다음 날 다시
+            # 시도한다 — 임의로 종가에 팔아 버리면 옵션의 뜻이 사라진다.
+            for symbol, reason in list(pending_exits.items()):
+                if symbol not in positions:
+                    del pending_exits[symbol]
+                    continue
+                if symbol not in opens_today:
+                    continue
+                cash += self._close_position(
+                    positions[symbol], float(opens_today[symbol]), current_date, reason, closed_trades
+                )
+                del positions[symbol]
+                del pending_exits[symbol]
+
             # 1) 청산: 손절 → 보유기간 초과 → 전략 매도 신호
             for symbol in list(positions.keys()):
-                if symbol not in closes_today:
+                if symbol not in closes_today or symbol in pending_exits:
                     continue
                 price = float(closes_today[symbol])
                 position = positions[symbol]
@@ -187,8 +222,14 @@ class BacktestEngine:
                             break
 
                 if exit_reason is not None:
-                    cash += self._close_position(position, price, current_date, exit_reason, closed_trades)
-                    del positions[symbol]
+                    if self._exit_at_open:
+                        # 오늘은 정하기만 한다. 체결은 내일 아침이다.
+                        pending_exits[symbol] = exit_reason
+                    else:
+                        cash += self._close_position(
+                            position, price, current_date, exit_reason, closed_trades
+                        )
+                        del positions[symbol]
 
             # 2) 이 시점 평가금액 → 오늘 손익률 계산
             equity_after_exits = cash + sum(
@@ -265,15 +306,16 @@ class BacktestEngine:
     def _close_position(
         self,
         position: OpenPosition,
-        close_price: float,
+        market_price: float,
         exit_date: date,
         exit_reason: str,
         closed_trades: list[ClosedTrade],
     ) -> float:
-        """close_price는 그날 종가다. 실제 체결가는 그보다 불리하다 —
+        """market_price는 체결 기준가다 — 지금 방식이면 그날 **종가**,
+        exit_at_open이면 그날 **시가**. 실제 체결가는 그보다 불리하다 —
         파는 쪽은 더 싸게 잡힌다. 손익도 체결가 기준으로 계산해야 실제로
         계좌에 남는 돈과 맞는다."""
-        exit_price = self._costs.sell_price(close_price)
+        exit_price = self._costs.sell_price(market_price)
         proceeds = position.quantity * exit_price * (1 - self._costs.total_sell_cost_pct)
         cost_basis = position.quantity * position.entry_price
         pnl_amount = proceeds - cost_basis

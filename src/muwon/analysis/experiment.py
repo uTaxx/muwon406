@@ -114,6 +114,7 @@ def run_experiment(
     years: list[int],
     policy: RiskPolicy | None = None,
     costs: TransactionCosts | None = None,
+    exit_at_open: bool = False,
 ) -> ExperimentResult:
     """같은 설정을 연도별로 각각 돌린다.
 
@@ -130,6 +131,7 @@ def run_experiment(
             strategy=strategy_factory(),
             risk_manager=RiskManager(policy_provider=lambda p=policy: p),
             costs=costs,
+            exit_at_open=exit_at_open,
         ).run(sliced, trade_from=date(year, 1, 1))
         periods.append(PeriodResult(str(year), compute_metrics(result)))
     return ExperimentResult(name, periods)
