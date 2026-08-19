@@ -16,6 +16,7 @@ KIS 서버(openapivts.koreainvestment.com:29443)에 접근 가능한 환경에�
     python scripts/run_paper_trading.py
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from muwon.execution.kis_order_executor import KISOrderExecutor
 from muwon.execution.reconciliation import check_account_consistency
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
+from muwon.settings.from_sheet import build_policy_provider
 from muwon.settings.service import build_settings_service
 from muwon.strategy.registry import build_strategies
 
@@ -53,6 +55,17 @@ def main() -> None:
 
     notifier = TelegramNotifier(settings_service)
 
+    # 리스크 기준은 **구글 시트가 원본**이다(`docs/설계_스트림릿을_걷어낼까.md`
+    # 2단계). 시트를 못 읽거나 값이 검증에 걸리면 매매를 끈다 — 사람은 시트에서
+    # 껐다고 믿는데 코드는 켜진 채 도는 것이 제일 나쁜 고장이다.
+    sheet_id = os.environ.get("MUWON_SHEET_ID", "")
+    if sheet_id:
+        policy_provider, 설정설명, _ = build_policy_provider(settings_service, sheet_id)
+        print(설정설명, file=sys.stderr)
+    else:
+        policy_provider = settings_service.get_risk_policy
+        print("MUWON_SHEET_ID가 없어 DB 설정으로 돕니다 (시트는 안 봅니다).", file=sys.stderr)
+
     # 유니버스는 update_universe.py가 저장한 최신 스냅샷을 쓰고, 아직
     # 갱신된 적이 없으면 손으로 고른 기본 목록으로 돌아간다.
     universe = active_universe(session_factory, list(UNIVERSE))
@@ -67,7 +80,7 @@ def main() -> None:
 
     engine = TradingEngine(
         strategy=build_strategies(selection.active_keys, selection.combine),
-        risk_manager=RiskManager(policy_provider=settings_service.get_risk_policy),
+        risk_manager=RiskManager(policy_provider=policy_provider),
         data_source=client,
         order_executor=KISOrderExecutor(client),
         notifier=notifier,

@@ -1,0 +1,60 @@
+name: 기록을 시트로
+
+# 매매 기록과 하루 요약을 구글 시트에 덧붙인다.
+#
+# **아무것도 사지 않는다.** DB를 읽어 시트에 올리기만 한다.
+#
+# 대시보드를 걷어내는 3단계(docs/설계_스트림릿을_걷어낼까.md)다. 대시보드를
+# 켜지 않고도 폰에서 "어제 뭘 샀고 어떻게 됐나"를 보는 것이 목적이다.
+#
+# 줄마다 열쇠가 있어 **여러 번 돌려도 줄이 늘지 않는다** — 재실행은 실패를
+# 고치는 정상적인 수단이고, 그때마다 줄이 늘면 시트를 세어 만든 숫자가
+# 전부 틀린다.
+
+on:
+  schedule:
+    - cron: "40 8 * * 1-5"    # 평일 08:40 UTC = 17:40 KST (장 끝난 뒤)
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "최근 며칠치를 올릴 것인가"
+        default: "90"
+      dry_run:
+        description: "구글에 붙지 않고 올릴 것만 본다"
+        type: boolean
+        default: false
+
+concurrency:
+  group: push-records
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 시트에 올리기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/push_records_to_sheet.py \
+            --days "${{ github.event.inputs.days || '90' }}" \
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}

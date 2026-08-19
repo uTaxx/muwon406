@@ -69,8 +69,13 @@ jobs:
             --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
 
       - name: 리포트 작성
+        env:
+          # 낸 전망을 시트 `전망기록` 탭에도 덧붙인다. 열쇠가 (낸날·대상·지평)
+          # 이라 재실행해도 줄이 늘지 않는다.
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
-          python scripts/market_report.py --telegram \
+          python scripts/market_report.py --telegram --sheet \
             --lens "${{ github.event.inputs.lens || '확장' }}" \
             --horizon "${{ github.event.inputs.horizon || '20' }}" \
             --as-of "${{ github.event.inputs.as_of }}" \

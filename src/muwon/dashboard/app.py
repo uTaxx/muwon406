@@ -1309,6 +1309,19 @@ def render_strategy_picker(service: SettingsService) -> None:
 def render_risk_tab(service: SettingsService) -> None:
     current = service.get_risk_policy()
 
+    # 3단계(docs/설계_스트림릿을_걷어낼까.md)부터 **리스크 기준의 원본은
+    # 구글 시트**다. 여기 값도 살아 있지만 시트가 이기므로, 그 사실을 안
+    # 적어 두면 사람은 여기서 고치고 "왜 안 먹지"를 겪는다.
+    #
+    # 킬스위치만 규칙이 다르다 — 어느 한쪽에서 꺼도 꺼진다.
+    st.info(
+        "**이 값들의 원본은 이제 구글 시트입니다.** 시트에 적힌 항목은 시트 값이 "
+        "쓰이고, 시트에 없는 항목만 여기 값이 쓰입니다.\n\n"
+        "**킬스위치는 예외입니다 — 시트와 여기가 둘 다 켜져야 켜집니다.** "
+        "끄는 것은 어느 한쪽만으로도 꺼집니다.",
+        icon="📋",
+    )
+
     with st.form("risk_form"):
         max_position_weight = st.number_input(
             "종목당 최대 비중",

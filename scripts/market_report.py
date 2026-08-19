@@ -71,6 +71,7 @@ def main() -> int:
     parser.add_argument("--out", default="", help="결과를 남길 파일")
     parser.add_argument("--no-log", action="store_true", help="전망 기록을 쌓지 않는다")
     parser.add_argument("--telegram", action="store_true", help="요약을 텔레그램으로 보낸다")
+    parser.add_argument("--sheet", action="store_true", help="낸 전망을 구글 시트에 덧붙인다")
     args = parser.parse_args()
 
     쓴것: list[str] = []
@@ -222,6 +223,26 @@ def main() -> int:
             print("\n텔레그램으로 요약을 보냈습니다.", file=sys.stderr)
         except Exception as e:  # noqa: BLE001 — 알림 실패가 리포트를 죽이면 안 된다
             print(f"\n텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
+
+    # ── 전망을 시트에도 남긴다 ────────────────────────────────────
+    #
+    # DB는 폰에서 못 본다. 시트에 같은 것을 덧붙여 두면 대시보드를 켜지
+    # 않고도 "오늘 뭐라고 전망했나"를 볼 수 있다. 열쇠가 (낸날·대상·지평)
+    # 이라 **여러 번 돌려도 줄이 늘지 않는다.**
+    if args.sheet:
+        import os
+
+        from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
+        from muwon.cloud.sheet_log import append, forecast_rows, 전망머리
+
+        try:
+            sheet_id = os.environ.get("MUWON_SHEET_ID", "")
+            if not sheet_id:
+                sheet_id, _ = find_or_create(os.environ["GDRIVE_FOLDER_ID"], DEFAULT_TITLE)
+            올린수 = append(sheet_id, "전망기록", 전망머리, forecast_rows(낸전망))
+            print(f"\n시트에 전망 {올린수}줄을 덧붙였습니다.", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001 — 기록 실패가 리포트를 죽이면 안 된다
+            print(f"\n시트 기록 실패: {type(e).__name__}: {e}", file=sys.stderr)
 
     if args.out:
         Path(args.out).write_text("\n".join(쓴것) + "\n", encoding="utf-8")

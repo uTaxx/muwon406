@@ -37,6 +37,8 @@ from muwon.cloud.sector_sheet import (
     read,
     write_all,
 )
+from muwon.settings.from_sheet import SettingsError, apply, describe, parse_settings
+from muwon.settings.schema import RiskPolicy
 
 
 def main() -> int:
@@ -80,12 +82,26 @@ def main() -> int:
         for 코드, m in 꺼진것:
             print(f"    {코드}/{m.symbol} {m.name}: {m.메모 or '(이유 없음)'}")
 
-    print(f"\n■ 설정 {len(내용.설정)}개")
+    print(f"\n■ 설정 {len(내용.설정)}개 — 시트에 적힌 그대로")
     for 이름, 값 in 내용.설정.items():
         print(f"  {이름:<28}{값}")
 
-    킬 = 내용.설정.get("trading_enabled", "").lower()
-    print(f"\n킬스위치: {'🟢 켜짐 — 신규 매수가 허용됩니다' if 킬 == 'true' else '🔴 꺼짐 — 신규 매수를 전부 거부합니다'}")
+    # 적힌 것과 **실제로 걸리는 것**은 다르다. 단위가 바뀌고(15 → 0.15),
+    # 시트에 없는 항목은 DB 값이 살고, 모르는 이름은 아무 효과가 없다.
+    # 그 차이를 여기서 보여 주지 않으면 사람은 적은 대로 믿는다.
+    try:
+        시트설정값 = parse_settings(내용.설정)
+    except SettingsError as e:
+        print(f"\n❌ 설정 값을 매매에 쓸 수 없습니다\n   {e}", file=sys.stderr)
+        print("\n고치기 전까지는 매매를 켜지 않습니다.", file=sys.stderr)
+        return 1
+
+    정책, 출처 = apply(RiskPolicy(), 시트설정값)
+    print()
+    print(describe(정책, 출처, 시트설정값))
+    print("\n  ※ [DB]로 표시된 항목은 시트에 없어 저장된 값을 씁니다.")
+    if 시트설정값.모르는이름:
+        return 1
     return 0
 
 
