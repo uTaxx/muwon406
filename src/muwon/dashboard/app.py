@@ -49,6 +49,7 @@ except Exception:  # noqa: BLE001, S110 — secrets.toml 자체가 없는 로컬
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from muwon.analysis import report_card
 from muwon.cloud.gdrive_sync import download as gdrive_download
 from muwon.cloud.gdrive_sync import upload as gdrive_upload
 from muwon.config import bootstrap_settings
@@ -645,6 +646,11 @@ def main() -> None:
             )
             render_terms(["신호", "진입", "청산", "역추세", "추세추종", "팩터"])
             render_strategy_tab(service)
+        with section(
+            "🎓", "전략 성적표", "지금까지 잰 것을 한 장에", ["22개 전략", "10개 조합"],
+            expanded=True,
+        ):
+            render_report_card()
         with section("⚖️", "전략 리뷰 결과", "다른 전략이었다면 어땠을지 비교"):
             st.caption(
                 "매일 자동으로 '지금 이 전략 말고 다른 걸 썼다면 얼마였을까'를 계산해 쌓습니다. "
@@ -1003,6 +1009,96 @@ def render_strategy_tab(service: SettingsService) -> None:
             st.markdown(f"**{d.display_name}** `{d.key}` · {d.category}  \n{d.description}")
 
     render_strategy_picker(service)
+
+
+def render_report_card() -> None:
+    """지금까지 잰 전략 성적을 한 장에 — 숫자를 모르는 사람도 읽히게.
+
+    실험 결과가 세 군데에 흩어져 있었다. 숫자는 GitHub Actions 로그(만료된다)와
+    아티팩트에, 판단은 설계안 문서에, 가설의 채택·기각은 구글 시트에. 그래서
+    "이 전략 써도 되나"를 물으면 세 곳을 다 뒤져야 했다."""
+    try:
+        카드 = report_card.load()
+    except (OSError, ValueError, KeyError) as e:
+        st.error(f"성적표를 읽지 못했습니다: {e}")
+        return
+
+    기준 = 카드.기준
+    st.caption(
+        f"**{기준['유니버스']} · {기준['기간']}** 기준으로 잰 결과입니다. "
+        f"측정일 {카드.측정일} · 커밋 `{기준['커밋']}`"
+    )
+    if 카드.오래됐나():
+        # 다시 계산하지 않는 기록이라, 오래된 숫자를 최신인 척 보여 주는 것이
+        # 이 화면의 가장 위험한 실패 방식이다.
+        st.warning(
+            f"마지막으로 잰 지 한 달이 넘었습니다({카드.측정일}). "
+            "그 뒤에 전략이나 종목 목록이 바뀌었다면 아래 숫자는 지금과 다를 수 있습니다.",
+            icon="📅",
+        )
+
+    st.markdown("#### 🎓 무엇을 배웠나")
+    st.caption("숫자보다 이게 먼저입니다. 표는 그 근거입니다.")
+    for 항목 in 카드.배운것:
+        with st.expander(항목["제목"], expanded=False):
+            st.write(항목["내용"])
+
+    st.markdown("#### 📋 전략 하나씩")
+    st.info(기준["판정규칙"], icon="⚖️")
+    render_terms(["수익률", "MDD", "샤프", "손익비", "회전율", "백테스트"])
+    _render_card_rows(카드.전략)
+
+    st.markdown("#### 🔗 여럿을 묶어 봤을 때")
+    st.caption(
+        "전략을 여러 개 걸면 나아지는지 실제로 재 본 것입니다. "
+        "**[하나라도]** = 하나만 신호 나도 산다, **[모두]** = 전부 신호 내야 산다."
+    )
+    _render_card_rows(카드.조합)
+
+    st.markdown("#### ⚠️ 이 숫자를 믿을 때 주의할 것")
+    st.caption(
+        f"**비용 가정**: {기준['비용']}  \n"
+        "**과거일 뿐입니다** — 과거에 잘된 것이 앞으로도 잘된다는 보장은 없습니다. "
+        "이 표의 쓰임은 '최소한 과거에도 안 통했던 건 거르자'입니다."
+    )
+
+
+def _render_card_rows(rows) -> None:
+    if not rows:
+        st.info("아직 기록이 없습니다.")
+        return
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "판정": r.판정,
+                    "이름": r.이름,
+                    "계열": r.계열,
+                    "가장 나빴던 해": f"{r.최악:+.1f}%",
+                    "5년 평균": f"{r.평균:+.1f}%",
+                    "최대 낙폭": f"{r.낙폭:.1f}%",
+                    "손익비": f"{r.손익비:.2f}",
+                    "5년 거래": r.거래,
+                }
+                for r in rows
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+        height=min(36 * (len(rows) + 1) + 3, 520),
+    )
+    with st.expander("한 줄씩 풀어 보기", expanded=False):
+        for r in rows:
+            st.markdown(
+                f"{_판정표시(r.판정)} **{r.이름}**  \n"
+                f"<small>{r.한줄평}</small>",
+                unsafe_allow_html=True,
+            )
+
+
+def _판정표시(판정: str) -> str:
+    아이콘 = {"쓸만함": "🟢", "조건부": "🔵", "보류": "🟡", "안씀": "🔴"}
+    return f"{아이콘.get(판정, '⚪')} `{판정}`"
 
 
 def render_strategy_picker(service: SettingsService) -> None:
