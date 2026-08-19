@@ -68,6 +68,7 @@
   .article-top{display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;}
   .group-chip{font-size:10.5px; font-weight:700; color:var(--green-dark); background:var(--green-tint); padding:3px 9px; border-radius:10px; letter-spacing:0.02em;}
   .article-date{font-size:11.5px; color:var(--muted);}
+  .score-badge{font-size:10.5px; color:var(--muted); margin-left:auto; white-space:nowrap;}
   .article-title{font-size:14.5px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.5;}
   .article-title:hover{color:var(--green-dark);}
   .direction-icon{margin-right:2px;}
@@ -402,6 +403,17 @@
     return '';
   }
 
+  function getScoreBadge(a){
+    const imp = parseInt(a.importance, 10);
+    const rel = parseInt(a.relevance, 10);
+    const urg = parseInt(a.urgency, 10);
+    const parts = [];
+    if (Number.isFinite(imp)) parts.push('중요' + imp);
+    if (Number.isFinite(rel)) parts.push('관련' + rel);
+    if (Number.isFinite(urg)) parts.push('긴급' + urg);
+    return parts.join(' · ');
+  }
+
   /* ---------- 탭 전환 ---------- */
   let applyAutoLoaded = false;
 
@@ -452,10 +464,12 @@
       div.className = 'article-item';
       const stars = getStars(a.importance);
       const dir = getDirectionIcon(a.direction);
+      const scoreBadge = getScoreBadge(a);
       div.innerHTML = `
         <div class="article-top">
           <span class="group-chip">${getGroupEmoji(a.group)} ${escapeHtml(a.group || '기타')}</span>
           <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
+          ${scoreBadge ? `<span class="score-badge">${escapeHtml(scoreBadge)}</span>` : ''}
         </div>
         <a class="article-title" href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${dir ? '<span class="direction-icon">' + dir + '</span>' : ''}${escapeHtml(a.title)}</a>${stars ? ' <span class="stars">' + stars + '</span>' : ''}
         ${a.reason ? `<div class="article-reason">💬 ${escapeHtml(a.reason)}</div>` : ''}
