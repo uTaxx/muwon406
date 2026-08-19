@@ -175,6 +175,20 @@
           <select id="groupSelect"><option value="">전체</option></select>
         </div>
       </div>
+
+      <div class="range-group" style="margin-top:14px;">
+        <label>중요도 <span id="filterMinImportanceVal" class="range-val">1</span> 이상</label>
+        <input type="range" id="filterMinImportance" min="1" max="5" step="1" value="1">
+      </div>
+      <div class="range-group">
+        <label>관련성 <span id="filterMinRelevanceVal" class="range-val">1</span> 이상</label>
+        <input type="range" id="filterMinRelevance" min="1" max="5" step="1" value="1">
+      </div>
+      <div class="range-group">
+        <label>긴급성 <span id="filterMinUrgencyVal" class="range-val">1</span> 이상</label>
+        <input type="range" id="filterMinUrgency" min="1" max="5" step="1" value="1">
+      </div>
+
       <div class="summary-line" id="summaryLine"></div>
 
       <div id="articleList" style="margin-top:8px;"></div>
@@ -441,11 +455,22 @@
     sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
   }
 
+  function getScoreNum(v){
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   function applyFilters(){
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const g = document.getElementById('groupSelect').value;
+    const minImp = parseInt(document.getElementById('filterMinImportance').value, 10);
+    const minRel = parseInt(document.getElementById('filterMinRelevance').value, 10);
+    const minUrg = parseInt(document.getElementById('filterMinUrgency').value, 10);
     filtered = allArticles.filter(a => {
       if (g && a.group !== g) return false;
+      if (minImp > 1 && getScoreNum(a.importance) < minImp) return false;
+      if (minRel > 1 && getScoreNum(a.relevance) < minRel) return false;
+      if (minUrg > 1 && getScoreNum(a.urgency) < minUrg) return false;
       if (!q) return true;
       const hay = (a.title + ' ' + a.matched + ' ' + a.group).toLowerCase();
       return hay.includes(q);
@@ -985,6 +1010,12 @@
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('groupSelect').addEventListener('change', applyFilters);
+    ['filterMinImportance','filterMinRelevance','filterMinUrgency'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', function(){
+        document.getElementById(id + 'Val').textContent = this.value;
+        applyFilters();
+      });
+    });
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
 
     document.getElementById('addGroupBtn').addEventListener('click', addGroup);
