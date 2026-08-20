@@ -67,13 +67,12 @@ def main() -> int:
     # **시트에 안 보이면 고칠 수가 없다.** 있는 값은 건드리지 않고 빠진
     # 줄만 채운다 — --push와 달리 사람이 고쳐 둔 값을 지우지 않는다.
     if args.add_missing_settings:
-        from muwon.cloud.sector_sheet import update_setting
+        from muwon.cloud.sector_sheet import append_settings
         from muwon.settings.from_sheet import 기준들
 
         있는것 = set(read(sheet_id).설정)
         빠진것 = [b for b in 기준들 if b.이름 not in 있는것]
-        for b in 빠진것:
-            update_setting(sheet_id, b.이름, b.기본)
+        append_settings(sheet_id, [[b.이름, b.기본, b.설명] for b in 빠진것])
         print(f"\n빠져 있던 기준 {len(빠진것)}개를 채웠습니다"
               + (f": {', '.join(b.이름 for b in 빠진것)}" if 빠진것 else " (없음)"))
 

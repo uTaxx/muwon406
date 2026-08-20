@@ -218,7 +218,7 @@ def read(sheet_id: str) -> SheetContents:
     sheets = _service().spreadsheets().values()
 
     def 받기(탭: str) -> list[list[str]]:
-        결과 = sheets.get(spreadsheetId=sheet_id, range=f"{탭}!A1:Z2000").execute()
+        결과 = sheets.get(spreadsheetId=sheet_id, range=f"{탭}!A1:Z2000").execute(num_retries=3)
         return 결과.get("values", [])
 
     return parse(받기("섹터"), 받기("종목"), 받기("설정"))
@@ -234,7 +234,7 @@ def find_or_create(folder_id: str, title: str = DEFAULT_TITLE) -> tuple[str, boo
             q=f"'{folder_id}' in parents and name = '{title}' and mimeType = '{SHEET_MIME}' and trashed = false",
             fields="files(id)", supportsAllDrives=True, includeItemsFromAllDrives=True,
         )
-        .execute()
+        .execute(num_retries=3)
         .get("files", [])
     )
     if found:
@@ -243,7 +243,7 @@ def find_or_create(folder_id: str, title: str = DEFAULT_TITLE) -> tuple[str, boo
         drive.files()
         .create(body={"name": title, "mimeType": SHEET_MIME, "parents": [folder_id]},
                 fields="id", supportsAllDrives=True)
-        .execute()
+        .execute(num_retries=3)
     )
     return 만든것["id"], True
 
@@ -259,13 +259,30 @@ def write_all(sheet_id: str, 섹터행, 종목행, 설정행) -> None:
         if 탭 not in 있는탭
     ]
     if 요청:
-        svc.batchUpdate(spreadsheetId=sheet_id, body={"requests": 요청}).execute()
+        svc.batchUpdate(spreadsheetId=sheet_id, body={"requests": 요청}).execute(num_retries=3)
     for 탭, 행 in (("섹터", 섹터행), ("종목", 종목행), ("설정", 설정행)):
-        svc.values().clear(spreadsheetId=sheet_id, range=f"{탭}!A1:Z5000").execute()
+        svc.values().clear(spreadsheetId=sheet_id, range=f"{탭}!A1:Z5000").execute(num_retries=3)
         svc.values().update(
             spreadsheetId=sheet_id, range=f"{탭}!A1",
             valueInputOption="RAW", body={"values": 행},
-        ).execute()
+        ).execute(num_retries=3)
+
+
+def append_settings(sheet_id: str, 줄들, svc=None) -> int:
+    """`설정` 탭 맨 아래에 줄을 한꺼번에 붙인다. 있는 값은 안 건드린다.
+
+    한 줄씩 `update_setting`을 부르면 줄 수만큼 읽고 쓰기를 반복한다 —
+    다섯 개면 열 번이고, 그중 하나만 시간 초과가 나도 통째로 실패한다.
+    붙이는 일은 한 번에 할 수 있으므로 한 번에 한다."""
+    if not 줄들:
+        return 0
+    svc = svc or _service().spreadsheets()
+    svc.values().append(
+        spreadsheetId=sheet_id, range="설정!A1",
+        valueInputOption="RAW", insertDataOption="INSERT_ROWS",
+        body={"values": [list(줄) for 줄 in 줄들]},
+    ).execute(num_retries=3)
+    return len(줄들)
 
 
 def update_setting(sheet_id: str, 이름: str, 글자: str, svc=None) -> str:
@@ -279,7 +296,7 @@ def update_setting(sheet_id: str, 이름: str, 글자: str, svc=None) -> str:
     줄이 없으면 맨 아래에 새로 만든다 — 기준을 새로 추가했는데 시트가
     아직 옛것일 때 그냥 터지면 고칠 방법이 없다."""
     svc = svc or _service().spreadsheets()
-    칸 = svc.values().get(spreadsheetId=sheet_id, range="설정!A1:C1000").execute()
+    칸 = svc.values().get(spreadsheetId=sheet_id, range="설정!A1:C1000").execute(num_retries=3)
     줄들 = 칸.get("values", [])
 
     for i, 줄 in enumerate(줄들):
@@ -288,12 +305,12 @@ def update_setting(sheet_id: str, 이름: str, 글자: str, svc=None) -> str:
             svc.values().update(
                 spreadsheetId=sheet_id, range=f"설정!B{i + 1}",
                 valueInputOption="RAW", body={"values": [[글자]]},
-            ).execute()
+            ).execute(num_retries=3)
             return 옛것
 
     svc.values().append(
         spreadsheetId=sheet_id, range="설정!A1",
         valueInputOption="RAW", insertDataOption="INSERT_ROWS",
         body={"values": [[이름, 글자, "텔레그램에서 추가됨"]]},
-    ).execute()
+    ).execute(num_retries=3)
     return ""

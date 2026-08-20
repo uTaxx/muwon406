@@ -136,7 +136,7 @@ class _즉시:
     def __init__(self, 값):
         self.값 = 값
 
-    def execute(self):
+    def execute(self, num_retries=0):
         return self.값
 
 
