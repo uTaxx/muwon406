@@ -72,6 +72,8 @@ def main() -> int:
     parser.add_argument("--sheet-id", default=os.environ.get("MUWON_SHEET_ID", ""))
     parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     parser.add_argument("--dry-run", action="store_true", help="읽기만 하고 아무것도 안 고친다")
+    parser.add_argument("--touch-when-changed", default="",
+                        help="처리한 것이 있으면 이 파일을 만든다 (워크플로가 DB를 올릴지 판단)")
     args = parser.parse_args()
 
     ensure_schema(bootstrap_settings.database_url)
@@ -125,6 +127,12 @@ def main() -> int:
         # **여기까지 읽었다고 남긴다.** 안 남기면 다음 실행에서 또 실행된다.
         service.set_telegram_offset(마지막)
     print(f"■ 처리 {처리수}건 · 다음 offset {마지막}")
+
+    # 처리한 것이 없으면 DB를 올리지 않는다. 10분마다 무조건 올리면 다른
+    # 워크플로가 같은 파일을 올리는 순간과 겹칠 수 있고, 그러면 한쪽 변경이
+    # 통째로 덮인다. 바뀐 게 있을 때만 올리면 그 창이 거의 사라진다.
+    if args.touch_when_changed and not args.dry_run and 마지막 != offset:
+        Path(args.touch_when_changed).write_text("changed\n", encoding="utf-8")
     return 0
 
 

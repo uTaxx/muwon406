@@ -63,12 +63,14 @@ jobs:
           GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
-          python scripts/telegram_control.py \
+          python scripts/telegram_control.py --touch-when-changed .changed \
             ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
 
       # 읽은 위치(offset)를 안 올려 두면 다음 실행에서 같은 명령이 또 돈다.
+      # 처리한 것이 없으면 안 올린다 — 10분마다 무조건 올리면 다른 워크플로가
+      # 같은 파일을 올리는 순간과 겹쳐 한쪽 변경이 통째로 덮일 수 있다.
       - name: 상태 DB 올리기
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ hashFiles('.changed') != '' }}
         env:
           GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
         run: |
