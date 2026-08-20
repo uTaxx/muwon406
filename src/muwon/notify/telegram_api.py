@@ -48,15 +48,34 @@ def call(token: str, method: str, raise_on_error: bool = True, **몸통: Any) ->
     return 몸.get("result", {})
 
 
+#: 우리가 받겠다고 텔레그램에 알리는 종류.
+받을것 = ["message", "callback_query"]
+
+
 def get_updates(token: str, offset: int) -> list[dict]:
     """새 메시지와 **누른 버튼**을 받아 온다.
 
-    `allowed_updates`에 `callback_query`를 안 넣으면 버튼을 눌러도
-    아무것도 안 온다 — 그러면 버튼이 먹통인데 이유를 알 수 없다."""
-    return call(
-        token, "getUpdates", offset=offset, timeout=0,
-        allowed_updates=["message", "callback_query"],
-    )
+    ## 함정 하나 — `allowed_updates`는 텔레그램이 기억한다
+
+    여기 안 적은 종류는 **도착하는 즉시 버려진다.** 그리고 이 값은 요청
+    하나에만 적용되는 게 아니라 **다음에 바꿀 때까지 서버가 기억한다.**
+
+    처음에 `["message"]`만 적어 뒀다가 버튼을 붙였는데, 그 사이에 누른
+    버튼은 전부 버려졌다. 버튼은 도는 표시만 내다 풀리고, 로그에는 "새
+    메시지 0개"만 남아서 **무엇이 잘못됐는지 알 방법이 없었다.**
+
+    고친 뒤에도 **고치기 전에 누른 것은 돌아오지 않는다** — 이미 버려졌다.
+    다시 눌러야 한다."""
+    return call(token, "getUpdates", offset=offset, timeout=0, allowed_updates=받을것)
+
+
+def webhook_info(token: str) -> dict:
+    """봇에 웹훅이 걸려 있나. **걸려 있으면 `getUpdates`는 아무것도 못 받는다.**
+
+    한 봇을 두 곳에서 받을 수는 없다. n8n 같은 데서 같은 봇에 웹훅을 걸면
+    우리 쪽은 조용히 빈손이 되는데, 그 사실이 어디에도 안 나타난다.
+    그래서 시작할 때 물어보고 찍는다."""
+    return call(token, "getWebhookInfo", raise_on_error=False)
 
 
 def send(token: str, chat_id: str, text: str, reply_markup: dict | None = None) -> dict:

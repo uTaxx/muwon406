@@ -129,3 +129,12 @@ def test_되돌릴_수_있다():
     판 = keyboard([버튼항목("005930", "삼성전자")], 오늘, {"005930": "Y"})
     거절칸 = 판["inline_keyboard"][0][1]
     assert parse_callback(거절칸["callback_data"]).종류 == "거절"
+
+
+def test_받을_종류에_버튼이_들어_있다():
+    """여기 빠지면 버튼을 눌러도 아무것도 안 온다 — 그리고 그 사실이
+    로그에는 '새 메시지 0개'로만 나타나서 원인을 알 수가 없다."""
+    from muwon.notify.telegram_api import 받을것
+
+    assert "callback_query" in 받을것
+    assert "message" in 받을것

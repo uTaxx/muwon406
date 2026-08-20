@@ -42,7 +42,12 @@ from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create, read, update
 from muwon.config import bootstrap_settings
 from muwon.db.session import ensure_schema
 from muwon.notify.telegram import TelegramNotifier
-from muwon.notify.telegram_api import answer_callback, edit_reply_markup, get_updates
+from muwon.notify.telegram_api import (
+    answer_callback,
+    edit_reply_markup,
+    get_updates,
+    webhook_info,
+)
 from muwon.notify.telegram_buttons import keyboard, parse_callback, 누른뒤말
 from muwon.notify.telegram_control import parse_command, 도움말, 바꾼말
 from muwon.settings.from_sheet import apply, describe, parse_settings, 기준표
@@ -82,6 +87,16 @@ def main() -> int:
 
     보내기 = TelegramNotifier(service).send
     offset = service.get_telegram_offset()
+    # 웹훅이 걸려 있으면 getUpdates는 영영 빈손이다. 그 사실이 어디에도
+    # 안 나타나므로 시작할 때 물어보고 찍는다.
+    정보 = webhook_info(cfg.bot_token)
+    if 정보.get("url"):
+        print(f"⚠️ 이 봇에 **웹훅이 걸려 있습니다**: {정보['url']}", file=sys.stderr)
+        print("   한 봇을 두 곳에서 받을 수는 없어, 여기서는 아무것도 못 받습니다.",
+              file=sys.stderr)
+    elif 정보.get("pending_update_count"):
+        print(f"  텔레그램에 밀려 있는 것 {정보['pending_update_count']}개", file=sys.stderr)
+
     업데이트 = get_updates(cfg.bot_token, offset)
     print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
 
