@@ -44,6 +44,8 @@ from muwon.settings.schema import RiskPolicy
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--push", action="store_true", help="코드의 초안을 시트에 덮어쓴다 (첫 채움 전용)")
+    parser.add_argument("--add-missing-settings", action="store_true",
+                        help="설정 탭에 빠진 기준 줄만 채운다 (있는 값은 안 건드림)")
     parser.add_argument("--title", default=DEFAULT_TITLE)
     parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     args = parser.parse_args()
@@ -60,6 +62,20 @@ def main() -> int:
         write_all(sheet_id, 섹터행, 종목행, default_settings_rows())
         print(f"올렸습니다 — 섹터 {len(섹터행) - 1}줄 · 종목 {len(종목행) - 1}줄 · 설정 {len(default_settings_rows()) - 1}줄")
         print("\n**이제부터는 시트에서 고치세요.** --push는 시트를 통째로 덮어씁니다.")
+
+    # 기준을 새로 만들면 시트에는 그 줄이 없다. 없어도 기본값으로 돌지만,
+    # **시트에 안 보이면 고칠 수가 없다.** 있는 값은 건드리지 않고 빠진
+    # 줄만 채운다 — --push와 달리 사람이 고쳐 둔 값을 지우지 않는다.
+    if args.add_missing_settings:
+        from muwon.cloud.sector_sheet import update_setting
+        from muwon.settings.from_sheet import 기준들
+
+        있는것 = set(read(sheet_id).설정)
+        빠진것 = [b for b in 기준들 if b.이름 not in 있는것]
+        for b in 빠진것:
+            update_setting(sheet_id, b.이름, b.기본)
+        print(f"\n빠져 있던 기준 {len(빠진것)}개를 채웠습니다"
+              + (f": {', '.join(b.이름 for b in 빠진것)}" if 빠진것 else " (없음)"))
 
     try:
         내용 = read(sheet_id)

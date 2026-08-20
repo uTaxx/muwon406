@@ -15,9 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "check=읽고 검증만 / push=코드의 초안을 시트에 덮어쓰기(첫 채움 전용)"
+        description: "check=읽고 검증만 / add-missing-settings=빠진 기준 줄만 채우기 / push=통째로 덮어쓰기(첫 채움 전용)"
         type: choice
-        options: ["check", "push"]
+        options: ["check", "add-missing-settings", "push"]
         default: "check"
 
 jobs:
@@ -40,6 +40,8 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.mode }}" = "push" ]; then
             python scripts/sync_sector_sheet.py --push
+          elif [ "${{ github.event.inputs.mode }}" = "add-missing-settings" ]; then
+            python scripts/sync_sector_sheet.py --add-missing-settings
           else
             python scripts/sync_sector_sheet.py
           fi
