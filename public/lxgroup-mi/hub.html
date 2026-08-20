@@ -108,6 +108,38 @@
   .fb-btn.on-up{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
   .fb-btn.on-down{background:#EDF0F4; border-color:#8C97A6; color:#5A6675;}
   .fb-guide{font-size:11.5px; color:var(--muted); line-height:1.6; margin-top:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:10px;}
+
+  .risk-kicker{font-size:11.5px; font-weight:700; color:var(--green); letter-spacing:0.04em; margin-bottom:8px;}
+  .risk-title{font-size:21px; font-weight:700; color:var(--text); line-height:1.35; letter-spacing:-0.01em;}
+  .risk-asof{font-size:12.5px; color:var(--muted); margin-top:6px;}
+  .risk-stat-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .risk-stat{flex:1; min-width:88px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .risk-stat-n{font-size:19px; font-weight:700; color:var(--text); line-height:1.2; font-variant-numeric:tabular-nums;}
+  .risk-stat-n.hot{color:var(--green);}
+  .risk-stat-l{font-size:11px; color:var(--muted); margin-top:3px;}
+  .risk-note{font-size:11.5px; color:var(--muted); line-height:1.65; margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
+
+  .risk-lead{border-left:3px solid var(--green); padding-left:14px;}
+  .risk-lead-title{font-size:16px; font-weight:700; color:var(--text); line-height:1.45; text-decoration:none; display:block;}
+  .risk-lead-title:hover{color:var(--green-dark);}
+  .risk-lead-meta{font-size:11.5px; color:var(--muted); margin-top:6px;}
+  .risk-lead-body{font-size:13.5px; color:#4A453F; line-height:1.7; margin-top:10px;}
+
+  .risk-trend{display:flex; align-items:stretch; gap:6px; height:104px; padding-top:4px;}
+  .risk-bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0;}
+  .risk-bar-wrap{width:100%; flex:1; display:flex; align-items:flex-end;}
+  .risk-bar{width:100%; background:var(--green-tint); border:1px solid var(--green); border-radius:4px 4px 0 0; min-height:2px;}
+  .risk-bar.peak{background:var(--green);}
+  .risk-bar-n{font-size:10.5px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;}
+  .risk-bar-m{font-size:10px; color:var(--muted); white-space:nowrap;}
+
+  .risk-item{padding:13px 0; border-bottom:1px solid var(--line);}
+  .risk-item:last-child{border-bottom:none;}
+  .risk-item-top{display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;}
+  .risk-date{font-size:11.5px; font-weight:700; color:var(--green-dark); font-variant-numeric:tabular-nums;}
+  .risk-item-title{font-size:14px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.5;}
+  .risk-item-title:hover{color:var(--green-dark);}
+  .risk-item-reason{font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.6;}
   .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
   .add-btn{background:var(--green-tint); border:1.5px dashed var(--green); color:var(--green-dark); border-radius:10px; padding:12px; width:100%; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:16px;}
   .add-btn:hover{background:#e9dfd6;}
@@ -213,6 +245,7 @@
     <button type="button" class="tab-btn active" data-tab="search">전체 기사<br>조회</button>
     <button type="button" class="tab-btn" data-tab="apply">키워드<br>신청/변경</button>
     <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
+    <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
@@ -462,6 +495,37 @@
     </section>
   </div>
 
+  <!-- 탭 4: 실리코시스 리스크 -->
+  <div id="tab-risk" class="tab-panel">
+    <section class="card">
+      <div class="risk-kicker" id="riskKicker" style="display:none;">신규 중요 변동</div>
+      <div class="risk-title">미국 엔지니어드스톤 리스크</div>
+      <div class="risk-asof" id="riskAsOf">기준 시각: —</div>
+      <div class="risk-stat-row" id="riskStats"></div>
+      <div class="risk-note">
+        LX하우시스가 미국에서 엔지니어드스톤을 생산하는 만큼, 현지 실리코시스(규폐증) 소송·규제 동향을 별도로 누적 관리합니다.
+        아래 내용은 <b>전체 기사 조회에 수집된 기사 중</b> 실리코시스·엔지니어드스톤 관련 항목만 추린 것입니다.
+      </div>
+    </section>
+
+    <section class="card" id="riskLatestCard" style="display:none;">
+      <div class="step-head"><span class="step-num">🚨</span><span class="step-title">오늘의 주요 변화</span></div>
+      <div id="riskLatest"></div>
+    </section>
+
+    <section class="card" id="riskTrendCard" style="display:none;">
+      <div class="step-head"><span class="step-num">📈</span><span class="step-title">월별 보도 추이</span></div>
+      <div class="risk-trend" id="riskTrend"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🗂</span><span class="step-title">누적 타임라인</span></div>
+      <div id="riskTimeline"></div>
+      <div class="empty-note" id="riskEmpty" style="display:none;">아직 수집된 실리코시스 관련 기사가 없습니다.</div>
+      <button type="button" class="add-btn" id="riskMoreBtn" style="display:none;">더 보기</button>
+    </section>
+  </div>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다. · <a id="excelLink" href="#" target="_blank" rel="noopener" style="display:none;">📊 엑셀 원본보기(관리자용)</a></footer>
@@ -574,6 +638,7 @@
     url.searchParams.set('tab', tabName);
     history.replaceState(null, '', url);
     if (tabName === 'apply') maybeAutoLoadApply();
+    if (tabName === 'risk') renderRiskDashboard();
   }
 
   function maybeAutoLoadApply(){
@@ -589,6 +654,146 @@
     const groups = [...new Set(allArticles.map(a => a.group).filter(Boolean))];
     const sel = document.getElementById('groupSelect');
     sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  }
+
+  /* ---------- 탭4: 실리코시스 리스크 ---------- */
+  const RISK_TERMS = [
+    'silicosis', '실리코시스', '규폐증',
+    'engineered stone', 'engineered-stone', '엔지니어드스톤', '엔지니어드 스톤',
+    'quartz countertop', 'quartz surface', 'artificial stone',
+    '인조대리석', '인공대리석', '석영', 'crystalline silica', 'respirable silica'
+  ];
+  const RISK_PAGE_SIZE = 30;
+  let riskShown = 0;
+  let riskList = [];
+
+  function isRiskArticle(a){
+    const hay = ((a.title || '') + ' ' + (a.matched || '') + ' ' + (a.group || '') + ' ' + (a.reason || '')).toLowerCase();
+    return RISK_TERMS.some(function(t){ return hay.includes(t); });
+  }
+
+  function riskDateKey(a){
+    const raw = String(a.pubDate || a.collectedAt || '');
+    const m = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1] + '-' + m[2] + '-' + m[3];
+    const d = new Date(raw);
+    if (!isNaN(d)) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    return '';
+  }
+
+  function renderRiskDashboard(){
+    riskList = allArticles.filter(isRiskArticle).slice().sort(function(a, b){
+      return riskDateKey(b).localeCompare(riskDateKey(a));
+    });
+
+    const now = new Date();
+    const pad = function(n){ return String(n).padStart(2, '0'); };
+    document.getElementById('riskAsOf').textContent =
+      '기준 시각: ' + now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
+      ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' KST';
+
+    // 최근 30일 / 고중요 건수
+    const cutoff = new Date(now.getTime() - 30 * 86400000);
+    const cutKey = cutoff.getFullYear() + '-' + pad(cutoff.getMonth() + 1) + '-' + pad(cutoff.getDate());
+    const recent = riskList.filter(function(a){ const k = riskDateKey(a); return k && k >= cutKey; });
+    const highImp = riskList.filter(function(a){ return getScoreNum(a.importance) >= 4; });
+
+    document.getElementById('riskStats').innerHTML =
+      '<div class="risk-stat"><div class="risk-stat-n">' + riskList.length + '</div><div class="risk-stat-l">누적 기사</div></div>' +
+      '<div class="risk-stat"><div class="risk-stat-n' + (recent.length ? ' hot' : '') + '">' + recent.length + '</div><div class="risk-stat-l">최근 30일</div></div>' +
+      '<div class="risk-stat"><div class="risk-stat-n' + (highImp.length ? ' hot' : '') + '">' + highImp.length + '</div><div class="risk-stat-l">중요도 4↑</div></div>';
+
+    // 오늘의 주요 변화: 최근 30일 내 가장 중요도 높은 기사
+    const leadPool = recent.length ? recent : riskList;
+    let lead = null;
+    leadPool.forEach(function(a){
+      if (!lead || getScoreNum(a.importance) > getScoreNum(lead.importance)) lead = a;
+    });
+    const leadCard = document.getElementById('riskLatestCard');
+    const kicker = document.getElementById('riskKicker');
+    if (lead && getScoreNum(lead.importance) >= 3){
+      const badge = getScoreBadge(lead);
+      document.getElementById('riskLatest').innerHTML =
+        '<div class="risk-lead">' +
+          '<a class="risk-lead-title" href="' + escapeHtml(lead.link) + '" target="_blank" rel="noopener">' +
+            getDirectionIcon(lead.direction) + escapeHtml(lead.title) + '</a>' +
+          '<div class="risk-lead-meta">' + escapeHtml(riskDateKey(lead) || '') +
+            (badge ? ' · ' + escapeHtml(badge) : '') +
+            (lead.group ? ' · ' + escapeHtml(lead.group) : '') + '</div>' +
+          (lead.reason ? '<div class="risk-lead-body">💬 ' + escapeHtml(lead.reason) + '</div>' : '') +
+        '</div>';
+      leadCard.style.display = 'block';
+      kicker.style.display = getScoreNum(lead.importance) >= 4 ? 'block' : 'none';
+    } else {
+      leadCard.style.display = 'none';
+      kicker.style.display = 'none';
+    }
+
+    renderRiskTrend();
+    riskShown = 0;
+    renderRiskTimeline(true);
+  }
+
+  function renderRiskTrend(){
+    const card = document.getElementById('riskTrendCard');
+    if (riskList.length < 2){ card.style.display = 'none'; return; }
+
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+        label: (d.getMonth() + 1) + '월',
+        count: 0
+      });
+    }
+    riskList.forEach(function(a){
+      const k = riskDateKey(a).slice(0, 7);
+      const hit = months.find(function(m){ return m.key === k; });
+      if (hit) hit.count++;
+    });
+
+    const max = Math.max.apply(null, months.map(function(m){ return m.count; }));
+    if (!max){ card.style.display = 'none'; return; }
+
+    document.getElementById('riskTrend').innerHTML = months.map(function(m){
+      const h = Math.round((m.count / max) * 100);
+      return '<div class="risk-bar-col">' +
+        '<div class="risk-bar-n">' + m.count + '</div>' +
+        '<div class="risk-bar-wrap"><div class="risk-bar' + (m.count === max && max > 0 ? ' peak' : '') + '" style="height:' + Math.max(h, 2) + '%;"></div></div>' +
+        '<div class="risk-bar-m">' + m.label + '</div>' +
+      '</div>';
+    }).join('');
+    card.style.display = 'block';
+  }
+
+  function renderRiskTimeline(reset){
+    const box = document.getElementById('riskTimeline');
+    if (reset) box.innerHTML = '';
+
+    const next = riskList.slice(riskShown, riskShown + RISK_PAGE_SIZE);
+    next.forEach(function(a){
+      const div = document.createElement('div');
+      div.className = 'risk-item';
+      const badge = getScoreBadge(a);
+      div.innerHTML =
+        '<div class="risk-item-top">' +
+          '<span class="risk-date">' + escapeHtml(riskDateKey(a) || '날짜미상') + '</span>' +
+          '<span class="group-chip">' + getGroupEmoji(a.group) + ' ' + escapeHtml(a.group || '기타') + '</span>' +
+          (badge ? '<span class="score-badge">' + escapeHtml(badge) + '</span>' : '') +
+        '</div>' +
+        '<a class="risk-item-title" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">' +
+          getDirectionIcon(a.direction) + escapeHtml(a.title) + '</a>' +
+        (a.reason ? '<div class="risk-item-reason">💬 ' + escapeHtml(a.reason) + '</div>' : '');
+      box.appendChild(div);
+    });
+    riskShown += next.length;
+
+    document.getElementById('riskEmpty').style.display = riskList.length === 0 ? 'block' : 'none';
+    document.getElementById('riskMoreBtn').style.display = riskShown < riskList.length ? 'block' : 'none';
   }
 
   function getScoreNum(v){
@@ -787,6 +992,7 @@
         document.getElementById('resultsSection').style.display = 'block';
         renderGroupOptions();
         applyFilters();
+        renderRiskDashboard();
       })
       .catch(err => {
         hideLoading();
@@ -1272,6 +1478,7 @@
     setupDualRangeFilter('filterMinRelevance', 'filterMaxRelevance', 'filterRelevanceFill', 'filterRelevanceLabel', '점');
     setupDualRangeFilter('filterMinUrgency', 'filterMaxUrgency', 'filterUrgencyFill', 'filterUrgencyLabel', '점');
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
+    document.getElementById('riskMoreBtn').addEventListener('click', function(){ renderRiskTimeline(false); });
     document.getElementById('articleList').addEventListener('click', function(e){
       const btn = e.target.closest('.fb-btn');
       if (btn && !btn.disabled) sendFeedback(btn);
