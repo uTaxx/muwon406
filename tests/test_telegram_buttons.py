@@ -181,3 +181,47 @@ def test_아무것도_안_눌렀을_때도_상태가_보인다():
     글 = 상태블록([버튼항목("005930", "삼성전자")], {})
     assert "✅ 승인 0종목" in 글
     assert "아직 안 정함 1종목" in 글
+
+
+def _payload(글):
+    """스크립트의 payload 해석기를 가져다 쓴다 — 규칙이 거기 있다."""
+    import importlib.util
+    from pathlib import Path
+
+    경로 = Path(__file__).resolve().parent.parent / "scripts" / "telegram_control.py"
+    spec = importlib.util.spec_from_file_location("telegram_control_script", 경로)
+    모듈 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(모듈)
+    return 모듈._payload_updates(글)
+
+
+def test_n8n이_넘긴_업데이트를_읽는다():
+    import json
+
+    것 = {"update_id": 1, "callback_query": {"id": "x", "data": "a|2026-08-20|005930"}}
+    assert _payload(json.dumps(것)) == [것]
+
+
+def test_body로_감싸_보내도_받는다():
+    """n8n 설정 하나 때문에 안 먹으면 원인을 찾기 어렵다."""
+    import json
+
+    안 = {"update_id": 2, "message": {"text": "/상태"}}
+    assert _payload(json.dumps({"body": 안})) == [안]
+
+
+def test_목록으로_와도_받는다():
+    import json
+
+    것들 = [{"update_id": 1, "message": {"text": "/상태"}}]
+    assert _payload(json.dumps(것들)) == 것들
+
+
+def test_업데이트가_아니면_터진다():
+    """조용히 넘어가면 버튼이 먹통인데 워크플로는 성공으로 끝난다."""
+    import json
+
+    import pytest
+
+    with pytest.raises(SystemExit, match="업데이트 같지"):
+        _payload(json.dumps({"아무": "거나"}))

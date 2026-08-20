@@ -28,6 +28,7 @@
 """
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
@@ -71,6 +72,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="읽기만 하고 아무것도 안 고친다")
     parser.add_argument("--touch-when-changed", default="",
                         help="처리한 것이 있으면 이 파일을 만든다 (워크플로가 DB를 올릴지 판단)")
+    parser.add_argument("--from-payload", default="",
+                        help="n8n이 넘겨준 업데이트 JSON 하나를 처리한다 (물어보러 가지 않는다)")
     args = parser.parse_args()
 
     ensure_schema(bootstrap_settings.database_url)
@@ -92,22 +95,35 @@ def main() -> int:
 
     보내기 = TelegramNotifier(service).send
     offset = service.get_telegram_offset()
-    # 웹훅이 걸려 있으면 getUpdates는 영영 빈손이다. 그 사실이 어디에도
-    # 안 나타나므로 시작할 때 물어보고 찍는다.
-    정보 = webhook_info(cfg.bot_token)
-    if 정보.get("url"):
-        print(f"⚠️ 이 봇에 **웹훅이 걸려 있습니다**: {정보['url']}", file=sys.stderr)
-        print("   한 봇을 두 곳에서 받을 수는 없어, 여기서는 아무것도 못 받습니다.",
-              file=sys.stderr)
-    elif 정보.get("pending_update_count"):
-        print(f"  텔레그램에 밀려 있는 것 {정보['pending_update_count']}개", file=sys.stderr)
 
-    업데이트 = get_updates(cfg.bot_token, offset)
-    print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
+    if args.from_payload:
+        # ── n8n이 넘겨준 것 ────────────────────────────────────────
+        # 물어보러 가지 않는다. n8n이 텔레그램 웹훅을 받아 그대로 넘겨준
+        # 것이므로, 여기서 또 getUpdates를 부르면 웹훅과 충돌해 터진다.
+        업데이트 = _payload_updates(args.from_payload)
+        print(f"■ n8n이 넘겨준 것 {len(업데이트)}개")
+        # 읽은 위치는 안 건드린다 — 폴링으로 되돌아갈 때 쓸 값이다.
+        마지막_고정 = True
+    else:
+        # ── 우리가 물어보러 갈 때 ─────────────────────────────────
+        # 웹훅이 걸려 있으면 getUpdates는 영영 빈손이다(한 봇을 두 곳에서
+        # 받을 수 없다). 그 사실이 어디에도 안 나타나므로 먼저 물어본다.
+        정보 = webhook_info(cfg.bot_token)
+        if 정보.get("url"):
+            print(f"■ 이 봇은 **웹훅으로 받고 있습니다**: {정보['url']}")
+            print("  n8n이 받아 넘겨주는 구조입니다 — 여기서 물어보러 가면 충돌합니다.")
+            print("  이 워크플로의 schedule은 꺼 두는 것이 맞습니다.")
+            return 0
+        if 정보.get("pending_update_count"):
+            print(f"  텔레그램에 밀려 있는 것 {정보['pending_update_count']}개", file=sys.stderr)
+        업데이트 = get_updates(cfg.bot_token, offset)
+        print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
+        마지막_고정 = False
 
     처리수, 마지막 = 0, offset
     for u in 업데이트[:MAX_PER_RUN]:
-        마지막 = max(마지막, int(u["update_id"]) + 1)
+        if not 마지막_고정:
+            마지막 = max(마지막, int(u.get("update_id", 0)) + 1)
         # ── 버튼을 눌렀을 때 ──────────────────────────────────────
         누른것 = u.get("callback_query")
         if 누른것:
@@ -150,7 +166,7 @@ def main() -> int:
             print(f"    터짐: {type(e).__name__}: {e}", file=sys.stderr)
             보내기(f"⚠️ 그 명령을 처리하다 문제가 생겼습니다.\n{type(e).__name__}: {e}")
 
-    if not args.dry_run and 마지막 != offset:
+    if not args.dry_run and not 마지막_고정 and 마지막 != offset:
         # **여기까지 읽었다고 남긴다.** 안 남기면 다음 실행에서 또 실행된다.
         service.set_telegram_offset(마지막)
     print(f"■ 처리 {처리수}건 · 다음 offset {마지막}")
@@ -161,6 +177,26 @@ def main() -> int:
     if args.touch_when_changed and not args.dry_run and 마지막 != offset:
         Path(args.touch_when_changed).write_text("changed\n", encoding="utf-8")
     return 0
+
+
+def _payload_updates(글: str) -> list[dict]:
+    """n8n이 넘겨준 글 → 업데이트 목록.
+
+    n8n의 텔레그램 트리거는 **업데이트 하나**를 넘긴다. 목록으로 와도
+    받아 준다 — 나중에 여러 개를 묶어 보내게 바꿔도 여기가 안 깨진다."""
+    것 = json.loads(글)
+    if isinstance(것, dict):
+        # 텔레그램 트리거가 update를 통째로 주기도 하고, 그 안의 body만
+        # 주기도 한다. 둘 다 받는다 — n8n 설정 하나 때문에 안 먹으면
+        # 원인을 찾기 어렵다.
+        if "message" in 것 or "callback_query" in 것:
+            return [것]
+        if isinstance(것.get("body"), dict):
+            return [것["body"]]
+        raise SystemExit(f"업데이트 같지 않습니다 (열쇠: {sorted(것)[:8]})")
+    if isinstance(것, list):
+        return 것
+    raise SystemExit(f"업데이트를 못 읽었습니다: {type(것).__name__}")
 
 
 def _버튼처리(누른것: dict, sheet_id: str, cfg) -> None:
