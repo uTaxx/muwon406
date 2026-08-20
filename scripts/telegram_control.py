@@ -44,11 +44,16 @@ from muwon.db.session import ensure_schema
 from muwon.notify.telegram import TelegramNotifier
 from muwon.notify.telegram_api import (
     answer_callback,
-    edit_reply_markup,
+    edit_text,
     get_updates,
     webhook_info,
 )
-from muwon.notify.telegram_buttons import keyboard, parse_callback, 누른뒤말
+from muwon.notify.telegram_buttons import (
+    keyboard,
+    parse_callback,
+    글에_상태붙이기,
+    누른뒤말,
+)
 from muwon.notify.telegram_control import parse_command, 도움말, 바꾼말
 from muwon.settings.from_sheet import apply, describe, parse_settings, 기준표
 from muwon.settings.service import build_settings_service
@@ -196,8 +201,12 @@ def _버튼처리(누른것: dict, sheet_id: str, cfg) -> None:
 
     적은것, _ = set_decisions(sheet_id, 오늘, 결정)
     후보, 지금결정 = read_today(sheet_id, 오늘)
+
+    # 버튼 글자만 바꾸면 나중에 대화를 훑을 때 무슨 일이 있었는지 안 보인다.
+    # 글에도 지금 상태를 적어 둔다 — 버튼은 지금 누르는 것이고 글은 남는다.
     if message_id:
-        edit_reply_markup(토큰, chat_id, message_id, keyboard(후보, 오늘, 지금결정))
+        새글 = 글에_상태붙이기(메시지.get("text", ""), 후보, 지금결정)
+        edit_text(토큰, chat_id, message_id, 새글, keyboard(후보, 오늘, 지금결정))
     answer_callback(토큰, 질문id, 누른뒤말(c, 있는것.get(c.symbol, "")))
     print(f"    → {len(적은것)}종목에 적음: {결정}")
 

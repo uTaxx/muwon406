@@ -138,3 +138,46 @@ def test_받을_종류에_버튼이_들어_있다():
 
     assert "callback_query" in 받을것
     assert "message" in 받을것
+
+
+def test_상태블록이_승인_거절_미정을_모두_센다():
+    """승인 1건이라는 말만으로는 나머지를 봤는지 알 수 없다."""
+    from muwon.notify.telegram_buttons import 버튼항목, 상태블록
+
+    후보 = [버튼항목("005930", "삼성전자"), 버튼항목("000660", "SK하이닉스"),
+            버튼항목("403870", "HPSP")]
+    글 = 상태블록(후보, {"005930": "Y", "000660": "N"})
+    assert "✅ 승인 1종목 — 삼성전자" in 글
+    assert "❌ 거절 1종목 — SK하이닉스" in 글
+    assert "아직 안 정함 1종목 — HPSP" in 글
+
+
+def test_다_보면_그렇다고_말한다():
+    from muwon.notify.telegram_buttons import 버튼항목, 상태블록
+
+    글 = 상태블록([버튼항목("005930", "삼성전자")], {"005930": "Y"})
+    assert "다 보셨습니다" in 글
+
+
+def test_상태블록은_누를때마다_갈아_끼워진다():
+    """안 자르면 누를 때마다 글이 길어져 후보 목록이 화면 밖으로 밀려난다."""
+    from muwon.notify.telegram_buttons import 글에_상태붙이기, 버튼항목
+
+    후보 = [버튼항목("005930", "삼성전자")]
+    원래 = "📋 매수 후보 1종목\n\n  삼성전자(005930) @ 70,000원"
+    한번 = 글에_상태붙이기(원래, 후보, {})
+    두번 = 글에_상태붙이기(한번, 후보, {"005930": "Y"})
+    세번 = 글에_상태붙이기(두번, 후보, {"005930": "N"})
+
+    assert 세번.count("지금 상태") == 1
+    assert 세번.startswith(원래)
+    assert "❌ 거절 1종목" in 세번
+    assert "✅ 승인 1종목 — 삼성전자" not in 세번   # 되돌린 것은 안 남는다
+
+
+def test_아무것도_안_눌렀을_때도_상태가_보인다():
+    from muwon.notify.telegram_buttons import 버튼항목, 상태블록
+
+    글 = 상태블록([버튼항목("005930", "삼성전자")], {})
+    assert "✅ 승인 0종목" in 글
+    assert "아직 안 정함 1종목" in 글
