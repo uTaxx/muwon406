@@ -36,35 +36,22 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import requests
 
-from muwon.cloud.approval import approve_in_sheet
+from muwon.cloud.approval import approve_in_sheet, read_today, set_decisions
 from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create, read, update_setting
 from muwon.config import bootstrap_settings
 from muwon.db.session import ensure_schema
 from muwon.notify.telegram import TelegramNotifier
+from muwon.notify.telegram_api import answer_callback, edit_reply_markup, get_updates
+from muwon.notify.telegram_buttons import keyboard, parse_callback, 누른뒤말
 from muwon.notify.telegram_control import parse_command, 도움말, 바꾼말
 from muwon.settings.from_sheet import apply, describe, parse_settings, 기준표
 from muwon.settings.service import build_settings_service
 
 KST = ZoneInfo("Asia/Seoul")
-API = "https://api.telegram.org/bot{token}/{method}"
 #: 한 번에 몇 개까지 처리할 것인가. 밀려 있어도 한꺼번에 다 실행하면
 #: 무슨 일이 일어났는지 따라갈 수가 없다.
 MAX_PER_RUN = 20
-
-
-def _받기(token: str, offset: int) -> list[dict]:
-    r = requests.get(
-        API.format(token=token, method="getUpdates"),
-        params={"offset": offset, "timeout": 0, "allowed_updates": '["message"]'},
-        timeout=30,
-    )
-    r.raise_for_status()
-    몸통 = r.json()
-    if not 몸통.get("ok"):
-        raise RuntimeError(f"텔레그램이 거절했습니다: {몸통}")
-    return 몸통.get("result", [])
 
 
 def main() -> int:
@@ -95,12 +82,32 @@ def main() -> int:
 
     보내기 = TelegramNotifier(service).send
     offset = service.get_telegram_offset()
-    업데이트 = _받기(cfg.bot_token, offset)
+    업데이트 = get_updates(cfg.bot_token, offset)
     print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
 
     처리수, 마지막 = 0, offset
     for u in 업데이트[:MAX_PER_RUN]:
         마지막 = max(마지막, int(u["update_id"]) + 1)
+        # ── 버튼을 눌렀을 때 ──────────────────────────────────────
+        누른것 = u.get("callback_query")
+        if 누른것:
+            보낸이 = str(((누른것.get("message") or {}).get("chat") or {}).get("id", ""))
+            if 보낸이 != str(cfg.chat_id):
+                print(f"  모르는 chat_id({보낸이})가 누른 버튼은 버립니다")
+                continue
+            print(f"  버튼: {누른것.get('data')!r}")
+            처리수 += 1
+            if args.dry_run:
+                print(f"    → {parse_callback(누른것.get('data', '')).종류} (--dry-run이라 실행 안 함)")
+                continue
+            try:
+                _버튼처리(누른것, sheet_id, cfg)
+            except Exception as e:  # noqa: BLE001 — 하나가 터져도 나머지는 처리한다
+                print(f"    터짐: {type(e).__name__}: {e}", file=sys.stderr)
+                answer_callback(cfg.bot_token, 누른것["id"], f"문제가 생겼습니다: {type(e).__name__}")
+            continue
+
+        # ── 글로 보냈을 때 ────────────────────────────────────────
         메시지 = u.get("message") or {}
         보낸이 = str((메시지.get("chat") or {}).get("id", ""))
         글 = (메시지.get("text") or "").strip()
@@ -134,6 +141,50 @@ def main() -> int:
     if args.touch_when_changed and not args.dry_run and 마지막 != offset:
         Path(args.touch_when_changed).write_text("changed\n", encoding="utf-8")
     return 0
+
+
+def _버튼처리(누른것: dict, sheet_id: str, cfg) -> None:
+    """버튼 하나를 눌렀을 때. **누른 결과가 화면에 바로 보여야 한다.**
+
+    답을 안 보내면 버튼이 계속 도는 표시로 남고, 판을 안 갈아 끼우면 방금
+    누른 게 먹었는지 몰라서 또 누르게 된다. 둘 다 한다."""
+    토큰, 질문id = cfg.bot_token, 누른것["id"]
+    메시지 = 누른것.get("message") or {}
+    chat_id = str((메시지.get("chat") or {}).get("id", ""))
+    message_id = 메시지.get("message_id")
+
+    c = parse_callback(누른것.get("data", ""))
+    if c.종류 == "모름":
+        answer_callback(토큰, 질문id, c.말, show_alert=True)
+        return
+
+    오늘 = datetime.now(KST).date()
+    if c.날짜 != 오늘:
+        # 어제 목록의 버튼이다. 어차피 사지 않지만(승인 규칙 ②), 눌린 채로
+        # 두면 나중에 기록을 읽을 때 헷갈린다.
+        answer_callback(토큰, 질문id,
+                        f"{c.날짜} 후보라 이제 못 씁니다. 오늘 목록에서 눌러 주세요.",
+                        show_alert=True)
+        return
+
+    후보, _ = read_today(sheet_id, 오늘)
+    있는것 = {c2.symbol: c2.name for c2 in 후보}
+
+    if c.종류 in ("전부승인", "전부거절"):
+        값 = "Y" if c.종류 == "전부승인" else "N"
+        결정 = dict.fromkeys(있는것, 값)
+    else:
+        if c.symbol not in 있는것:
+            answer_callback(토큰, 질문id, "오늘 후보에 없는 종목입니다.", show_alert=True)
+            return
+        결정 = {c.symbol: "Y" if c.종류 == "승인" else "N"}
+
+    적은것, _ = set_decisions(sheet_id, 오늘, 결정)
+    후보, 지금결정 = read_today(sheet_id, 오늘)
+    if message_id:
+        edit_reply_markup(토큰, chat_id, message_id, keyboard(후보, 오늘, 지금결정))
+    answer_callback(토큰, 질문id, 누른뒤말(c, 있는것.get(c.symbol, "")))
+    print(f"    → {len(적은것)}종목에 적음: {결정}")
 
 
 def _처리(글: str, sheet_id: str, service) -> str:

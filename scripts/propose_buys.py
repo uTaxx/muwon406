@@ -233,11 +233,20 @@ def main() -> int:
     주소 = f"https://docs.google.com/spreadsheets/d/{sheet_id}"
     print(f"\n승인대기 탭에 {올린수}줄 올렸습니다 — {주소}")
 
+    # 후보 밑에 **승인 / 거절 버튼**을 붙여 보낸다. 종목코드 여섯 자리를
+    # 폰에서 손으로 치는 일은 귀찮고, 귀찮으면 안 하게 되고, 안 하면 승인
+    # 스텝이 없는 것과 같다.
     try:
-        from muwon.notify.telegram import TelegramNotifier
+        from muwon.notify.telegram_api import send
+        from muwon.notify.telegram_buttons import keyboard
 
-        TelegramNotifier(service).send(알림글(고른것, 오늘, 주소))
-        print("텔레그램으로 알렸습니다.", file=sys.stderr)
+        cfg = service.get_telegram_config()
+        if not cfg.bot_token or not cfg.chat_id:
+            print("텔레그램 설정이 없어 알림은 건너뜁니다.", file=sys.stderr)
+        else:
+            send(cfg.bot_token, cfg.chat_id, 알림글(고른것, 오늘, 주소),
+                 reply_markup=keyboard(고른것, 오늘) if 고른것 else None)
+            print("텔레그램으로 알렸습니다(버튼 포함).", file=sys.stderr)
     except Exception as e:  # noqa: BLE001 — 알림 실패가 후보 목록을 지우면 안 된다
         print(f"텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
     return 0

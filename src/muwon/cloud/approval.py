@@ -67,9 +67,24 @@ class 승인결과:
     거부된것: tuple[str, ...]
     지난날것: tuple[str, ...]
     목록밖: tuple[str, ...]
+    #: 거부된 것 중 **버튼으로 명시하게 거절한 것.** 매매 결과는 빈 칸과
+    #: 같지만, "안 봤다"와 "보고 거절했다"는 전혀 다른 이야기다. 앞의 것은
+    #: 알림이 안 갔거나 놓친 것이고, 뒤의 것은 판단이다. 구별해 두지 않으면
+    #: 승인 스텝이 실제로 쓰이고 있는지 알 수가 없다.
+    명시거절: tuple[str, ...] = ()
+
+    @property
+    def 무응답(self) -> tuple[str, ...]:
+        본것 = set(self.명시거절)
+        return tuple(s for s in self.거부된것 if s not in 본것)
 
     def 요약(self) -> str:
         줄 = [f"승인 {len(self.승인된것)}종목 · 미승인 {len(self.거부된것)}종목"]
+        if self.거부된것:
+            줄.append(
+                f"  그중 눌러서 거절 {len(self.명시거절)}종목 · "
+                f"아무 답 없음 {len(self.무응답)}종목"
+            )
         if self.지난날것:
             줄.append(f"  지난 날짜라 무시 {len(self.지난날것)}건 — 어제 승인은 오늘 못 씁니다")
         if self.목록밖:
@@ -113,7 +128,7 @@ def parse_approvals(
 
     **네트워크 없이 시험할 수 있게 따로 뺐다.** 규칙이 이 함수의 전부다."""
     제안 = set(제안한것)
-    승인, 거부, 지난날, 목록밖 = [], [], [], []
+    승인, 거부, 지난날, 목록밖, 명시거절 = [], [], [], [], []
 
     for 줄 in 줄들[1:]:  # 머리줄 건너뜀
         칸 = (list(줄) + [""] * len(승인머리))[: len(승인머리)]
@@ -121,10 +136,13 @@ def parse_approvals(
             continue
         적힌날 = str(칸[1]).strip()
         symbol = str(칸[2]).strip()
-        체크됨 = str(칸[8]).strip().upper() in 승인표시
+        적힌것 = str(칸[8]).strip().upper()
+        체크됨 = 적힌것 in 승인표시
 
         if not 체크됨:
             거부.append(symbol)
+            if 적힌것:
+                명시거절.append(symbol)
             continue
         if 적힌날 != 날짜.isoformat():
             지난날.append(symbol)
@@ -139,6 +157,7 @@ def parse_approvals(
         거부된것=tuple(dict.fromkeys(거부)),
         지난날것=tuple(dict.fromkeys(지난날)),
         목록밖=tuple(dict.fromkeys(목록밖)),
+        명시거절=tuple(dict.fromkeys(명시거절)),
     )
 
 
@@ -155,28 +174,33 @@ def 알림글(후보들: Sequence[후보], 날짜: date, 주소: str) -> str:
             줄.append(f"     {c.reason}")
     줄 += [
         "",
-        f"시트: {주소}",
+        "아래 버튼으로 승인하거나 거절하세요. 시트에서 직접 고치셔도 됩니다:",
+        주소,
         "",
-        "빈 칸은 '안 산다'입니다. 아무것도 안 하시면 아무것도 안 삽니다.",
+        "**아무것도 안 하시면 아무것도 안 삽니다.**",
     ]
     return "\n".join(줄)
 
 
-def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None) -> tuple[list[str], list[str]]:
-    """`승인대기` 탭의 승인 칸에 Y를 적는다. (적은 것, 못 찾은 것).
+def set_decisions(sheet_id: str, 날짜: date, 결정: dict[str, str], svc=None
+                  ) -> tuple[list[str], list[str]]:
+    """`승인대기` 탭의 승인 칸에 Y(승인)나 N(거절)을 적는다. (적은 것, 못 찾은 것).
 
-    **오늘 줄만 고친다.** 어제 줄에 Y를 적어도 사지 않지만(위의 규칙 ②),
-    거기 흔적을 남기면 나중에 기록을 읽을 때 헷갈린다.
+    **오늘 줄만 고친다.** 어제 줄은 어차피 사지 않지만(위의 규칙 ②), 거기
+    흔적을 남기면 나중에 기록을 읽을 때 헷갈린다.
+
+    **거절도 적는다.** 빈 칸으로 두면 매매 결과는 같지만, 나중에 "안 봤다"와
+    "보고 거절했다"를 구별할 수 없다.
 
     못 찾은 것을 돌려주는 이유는, 승인했다고 믿는 종목이 실제로는 후보에
     없었을 때 **그 사실을 말해 줘야** 하기 때문이다."""
     from muwon.cloud.sheet_log import _service
 
     svc = svc or _service().spreadsheets()
-    칸 = svc.values().get(spreadsheetId=sheet_id, range="승인대기!A1:J5000").execute()
+    칸 = svc.values().get(spreadsheetId=sheet_id, range="승인대기!A1:J5000").execute(num_retries=3)
     줄들 = 칸.get("values", [])
-    찾음, 못찾음 = [], []
-    남은것 = set(종목들)
+    적은것 = []
+    남은것 = dict(결정)
 
     for i, 줄 in enumerate(줄들):
         칸값 = (list(줄) + [""] * len(승인머리))[: len(승인머리)]
@@ -187,10 +211,38 @@ def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None) -> tuple[
             continue
         svc.values().update(
             spreadsheetId=sheet_id, range=f"승인대기!I{i + 1}",
-            valueInputOption="RAW", body={"values": [["Y"]]},
-        ).execute()
-        찾음.append(symbol)
-        남은것.discard(symbol)
+            valueInputOption="RAW", body={"values": [[남은것[symbol]]]},
+        ).execute(num_retries=3)
+        적은것.append(symbol)
+        남은것.pop(symbol)
 
-    못찾음 = sorted(남은것)
-    return 찾음, 못찾음
+    return 적은것, sorted(남은것)
+
+
+def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None
+                     ) -> tuple[list[str], list[str]]:
+    """`/승인 005930`처럼 손으로 친 명령이 쓰는 길. 전부 Y로 적는다."""
+    return set_decisions(sheet_id, 날짜, dict.fromkeys(종목들, "Y"), svc=svc)
+
+
+def read_today(sheet_id: str, 날짜: date, svc=None):
+    """오늘 후보 (종목코드, 이름) 목록과 지금까지의 결정.
+
+    버튼을 다시 그리려면 **지금 상태**를 알아야 한다 — 누른 뒤에 화면이
+    안 바뀌면 먹었는지 몰라서 또 누르게 된다."""
+    from muwon.cloud.sheet_log import _service
+    from muwon.notify.telegram_buttons import 버튼항목
+
+    svc = svc or _service().spreadsheets()
+    칸 = svc.values().get(spreadsheetId=sheet_id, range="승인대기!A1:J5000").execute(num_retries=3)
+    후보, 결정 = [], {}
+    for 줄 in 칸.get("values", [])[1:]:
+        칸값 = (list(줄) + [""] * len(승인머리))[: len(승인머리)]
+        if str(칸값[1]).strip() != 날짜.isoformat():
+            continue
+        symbol = str(칸값[2]).strip()
+        후보.append(버튼항목(symbol, str(칸값[3]).strip()))
+        적힌것 = str(칸값[8]).strip().upper()
+        if 적힌것:
+            결정[symbol] = "Y" if 적힌것 in 승인표시 else "N"
+    return 후보, 결정
