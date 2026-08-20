@@ -575,6 +575,14 @@ def render_admin_tab(service: SettingsService) -> None:
         st.caption("매수·매도가 체결되거나 오류가 나면 텔레그램으로 바로 알려 줍니다.")
         render_telegram_tab(service)
 
+    with section("📋", "매매 기준", "모의투자를 돌리기 전에 정해 둬야 하는 값들"):
+        st.caption(
+            "**구글 시트가 원본입니다.** 여기서 고치면 시트가 바뀌고, 다음 실행부터 "
+            "그 값으로 돕니다. 텔레그램에서 `/설정 <이름> <값>`으로도 같은 일을 할 수 "
+            "있습니다 — 셋이 같은 곳을 봅니다."
+        )
+        render_criteria_tab()
+
     with section("🧾", "최근 실행", "돌긴 돌았나 · 무엇을 보고 무엇을 했나"):
         st.caption(
             "**화면이 비어 있을 때 가장 먼저 볼 표입니다.** 체결이 없어도 한 줄은 남습니다."
@@ -1304,6 +1312,94 @@ def render_strategy_picker(service: SettingsService) -> None:
         f"활성 전략을 바꿨습니다 — {선택.describe()} · 다음 매매 실행부터 반영됩니다.",
     ):
         st.rerun()
+
+
+def _시트연결():
+    """대시보드가 시트를 만질 수 있나. 없으면 화면만 보여 준다."""
+    import os
+
+    from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
+
+    폴더 = os.environ.get("GDRIVE_FOLDER_ID", "")
+    시트 = os.environ.get("MUWON_SHEET_ID", "")
+    if 시트:
+        return 시트
+    if not 폴더 or not os.environ.get("GDRIVE_SA_KEY_JSON"):
+        return ""
+    return find_or_create(폴더, DEFAULT_TITLE)[0]
+
+
+def render_criteria_tab() -> None:
+    """기준표를 그대로 화면에 편다.
+
+    목록을 여기에 손으로 적지 않는다 — `settings/from_sheet.py`의 기준표
+    하나만 본다. 기준을 새로 추가했는데 화면에 안 나오면 아무도 못 고친다.
+
+    **왜 이 값이 중요한지를 값 옆에 붙여 둔다.** 숫자만 있으면 몇 달 뒤에
+    '이걸 왜 12로 뒀지'를 답할 수 없다."""
+    from muwon.cloud.sector_sheet import read, update_setting
+    from muwon.settings.from_sheet import parse_settings, 값글자, 기준들
+
+    sheet_id = _시트연결()
+    if not sheet_id:
+        st.warning(
+            "구글 시트에 연결돼 있지 않습니다 (`GDRIVE_FOLDER_ID`·`GDRIVE_SA_KEY_JSON`). "
+            "기준은 시트가 원본이라 여기서는 보여 드릴 수가 없습니다.",
+            icon="🔌",
+        )
+        return
+
+    try:
+        시트 = parse_settings(read(sheet_id).설정)
+    except Exception as e:  # noqa: BLE001 — 화면이 통째로 죽는 것보다 낫다
+        st.error(f"시트를 못 읽었습니다 — {type(e).__name__}: {e}")
+        st.caption("**이 상태에서는 매매가 자동으로 꺼집니다.** 시트를 고쳐 주세요.")
+        return
+
+    st.link_button("구글 시트에서 열기", f"https://docs.google.com/spreadsheets/d/{sheet_id}")
+
+    바꿀것: dict[str, str] = {}
+    with st.form("criteria_form"):
+        for b in 기준들:
+            지금 = 시트.가져오기(b.이름)
+            왼, 오 = st.columns([2, 3])
+            with 왼:
+                if b.종류 == "참거짓":
+                    새것 = st.checkbox(b.표시, value=bool(지금), key=f"cr_{b.이름}")
+                    글자 = "true" if 새것 else "false"
+                else:
+                    새것 = st.number_input(
+                        b.표시, value=float(지금), key=f"cr_{b.이름}",
+                        min_value=float(b.최소) if b.최소 is not None else None,
+                        max_value=float(b.최대) if b.최대 is not None else None,
+                        step=1.0 if b.종류 == "정수" else 0.5,
+                        format="%d" if b.종류 == "정수" else "%.2f",
+                    )
+                    글자 = f"{int(새것)}" if b.종류 == "정수" else f"{새것:g}"
+                st.caption(f"`{b.이름}` · 지금 {값글자(b, 지금)}")
+            with 오:
+                st.caption(f"**{b.설명}**")
+                st.caption(b.왜)
+            if 글자 != _글자로(b, 지금):
+                바꿀것[b.이름] = 글자
+            st.divider()
+
+        저장 = st.form_submit_button("시트에 저장", type="primary")
+
+    if 저장:
+        if not 바꿀것:
+            st.info("바뀐 값이 없습니다.")
+            return
+        for 이름, 글자 in 바꿀것.items():
+            update_setting(sheet_id, 이름, 글자)
+        st.success(f"{len(바꿀것)}개를 시트에 저장했습니다 — 다음 실행부터 적용됩니다.")
+        st.rerun()
+
+
+def _글자로(b, 것) -> str:
+    if b.종류 == "참거짓":
+        return "true" if 것 else "false"
+    return f"{int(것)}" if b.종류 == "정수" else f"{float(것):g}"
 
 
 def render_risk_tab(service: SettingsService) -> None:

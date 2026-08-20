@@ -1,0 +1,83 @@
+name: 기준 제안
+
+# 지금 걸려 있는 기준을 보고 "이렇게 바꾸는 게 어떻겠냐"고 텔레그램으로
+# 제안한다. **아무것도 바꾸지 않는다.**
+#
+# 제안하는 것은 두 종류뿐이다.
+#   - 산수로 확인되는 것 (한 종목 15% × 8종목 = 120%인데 현금은 100%다)
+#   - 세어 보면 나오는 것 (유니버스 45종목 중 몇이 거래대금 문턱에 걸리나)
+#
+# 손절선을 얼마로 할지 같은 것은 모의투자 표본이 쌓여야 말할 수 있다.
+# 그때까지는 "모른다"고 말한다.
+#
+# 답은 텔레그램에서 /설정 <이름> <값> 으로 한다 (텔레그램 명령 받기 워크플로).
+
+on:
+  schedule:
+    - cron: "0 23 * * 0"      # 월요일 08:00 KST
+  workflow_dispatch:
+    inputs:
+      no_telegram:
+        description: "화면에만 찍고 텔레그램은 안 보낸다"
+        type: boolean
+        default: false
+      skip_turnover:
+        description: "거래대금은 안 본다 (빠름)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: settings-proposal
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 시세 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: prices-proposal-${{ github.run_id }}
+          restore-keys: |
+            prices-proposal-
+            prices-propose-
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
+      - name: 제안 만들기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/propose_settings.py \
+            ${{ github.event.inputs.no_telegram == 'true' && '--no-telegram' || '' }} \
+            ${{ github.event.inputs.skip_turnover == 'true' && '--skip-turnover' || '' }} \
+            | tee proposal.txt
+
+      - name: 결과 아티팩트로 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: settings-proposal-${{ github.run_number }}
+          path: proposal.txt

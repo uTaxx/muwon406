@@ -122,3 +122,13 @@ def test_밀려난것도_돌려준다():
 
     남김, 밀림 = cap_per_sector([가짜후보("A", "X"), 가짜후보("B", "X")], 상한=1)
     assert len(남김) == 1 and len(밀림) == 1
+
+
+def test_기본값이_기준표와_어긋나지_않는다():
+    """두 군데에 기본값을 적어 두면 하나만 고치고 다른 하나를 잊는다."""
+    from muwon.sector.selection import LOOKBACK, MAX_PER_SECTOR, TOP_N
+    from muwon.settings.from_sheet import 기준표
+
+    assert str(LOOKBACK) == 기준표["sector_lookback"].기본
+    assert str(TOP_N) == 기준표["sector_top_n"].기본
+    assert str(MAX_PER_SECTOR) == 기준표["max_per_sector"].기본

@@ -109,3 +109,54 @@ def test_섹터가_시트에_적힌다():
     """왜 샀는지를 나중에 볼 때 '어느 섹터에서 나왔나'가 첫 물음이다."""
     줄 = pending_rows(후보들, 오늘)[0]
     assert 줄[4] == "반도체"
+
+
+class 가짜값들:
+    def __init__(self, 줄들):
+        self.줄들 = 줄들
+        self.고친것 = []
+
+    def get(self, spreadsheetId, range):
+        return _즉시({"values": self.줄들})
+
+    def update(self, spreadsheetId, range, valueInputOption, body):
+        self.고친것.append((range, body["values"][0][0]))
+        return _즉시({})
+
+
+class 가짜svc:
+    def __init__(self, 값들):
+        self._값들 = 값들
+
+    def values(self):
+        return self._값들
+
+
+class _즉시:
+    def __init__(self, 값):
+        self.값 = 값
+
+    def execute(self):
+        return self.값
+
+
+def test_텔레그램_승인은_오늘_줄에만_Y를_적는다():
+    from muwon.cloud.approval import approve_in_sheet, 승인머리
+
+    값들 = 가짜값들([
+        승인머리,
+        ["A2026-08-18|005930", "2026-08-18", "005930", "삼성", "반도체", "s", "1", "1", "", ""],
+        ["A2026-08-19|005930", "2026-08-19", "005930", "삼성", "반도체", "s", "1", "1", "", ""],
+    ])
+    찾음, 못찾음 = approve_in_sheet("id", 오늘, ["005930"], svc=가짜svc(값들))
+    assert 찾음 == ["005930"] and 못찾음 == []
+    assert 값들.고친것 == [("승인대기!I3", "Y")]   # 어제 줄(2행)은 안 건드린다
+
+
+def test_후보에_없는_종목을_승인하면_그렇다고_말한다():
+    """승인했다고 믿는 종목이 실제로는 후보에 없었으면 말해 줘야 한다."""
+    from muwon.cloud.approval import approve_in_sheet, 승인머리
+
+    값들 = 가짜값들([승인머리])
+    찾음, 못찾음 = approve_in_sheet("id", 오늘, ["005930"], svc=가짜svc(값들))
+    assert 찾음 == [] and 못찾음 == ["005930"]

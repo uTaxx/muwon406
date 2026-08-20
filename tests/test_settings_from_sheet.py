@@ -116,7 +116,7 @@ def test_설명은_시트가_없어도_돈다():
 
 
 def test_최소거래대금이_음수면_거부한다():
-    with pytest.raises(SettingsError, match="음수"):
+    with pytest.raises(SettingsError, match="0 이상"):
         parse_settings(기본설정(min_turnover_eok="-1"))
 
 
@@ -125,6 +125,36 @@ def test_아무것도_없으면_안전한_기본값():
     assert 빈것.승인필요 is True
     정책, _ = apply(RiskPolicy(), 빈것)
     assert 정책.max_position_weight == RiskPolicy().max_position_weight
+
+
+def test_기준표에_있는_항목은_시트에_없어도_기본값이_나온다():
+    """새 기준을 추가했는데 시트를 아직 안 고쳤을 때 터지면 안 된다."""
+    시트 = parse_settings(기본설정())
+    assert 시트.가져오기("max_per_sector") == 2
+    assert 시트.가져오기("sector_filter_enabled") is False
+    assert 시트.가져오기("sector_lookback") == 20
+
+
+def test_시트에_적으면_그_값이_나온다():
+    시트 = parse_settings(기본설정(max_per_sector="1", sector_filter_enabled="Y"))
+    assert 시트.가져오기("max_per_sector") == 1
+    assert 시트.가져오기("sector_filter_enabled") is True
+
+
+def test_섹터_기준도_범위를_본다():
+    with pytest.raises(SettingsError, match="250"):
+        parse_settings(기본설정(sector_lookback="9999"))
+    with pytest.raises(SettingsError, match="정수"):
+        parse_settings(기본설정(max_per_sector="1.5"))
+
+
+def test_기준표와_시트초안이_어긋나지_않는다():
+    """초안에 없는 기준이 생기면, 시트를 새로 만들 때 그 줄이 빠진다."""
+    from muwon.cloud.sector_sheet import default_settings_rows
+    from muwon.settings.from_sheet import 기준표
+
+    초안이름 = {줄[0] for 줄 in default_settings_rows()[1:]}
+    assert 초안이름 == set(기준표)
 
 
 class 가짜서비스:

@@ -199,17 +199,14 @@ def catalog_rows() -> tuple[list[list[str]], list[list[str]]]:
 
 
 def default_settings_rows() -> list[list[str]]:
-    """설정 탭 초안. **값은 사람이 시트에서 고친다.**"""
-    return [
-        설정머리,
-        ["trading_enabled", "false", "킬스위치. false면 신규 매수를 전부 거부합니다"],
-        ["max_position_weight", "15", "한 종목에 자금의 몇 %까지"],
-        ["max_concurrent_positions", "8", "동시에 몇 종목까지"],
-        ["stop_loss_pct", "-5", "이만큼 빠지면 손절"],
-        ["daily_loss_limit_pct", "-3", "하루에 이만큼 잃으면 그날 신규 매수 중단"],
-        ["min_turnover_eok", "50", "최근 20일 평균 거래대금 문턱(억원). 못 넘으면 안 삽니다"],
-        ["require_approval", "true", "true면 매수 전에 텔레그램 승인을 받습니다"],
-    ]
+    """설정 탭 초안. **값은 사람이 시트에서 고친다.**
+
+    목록을 여기에 손으로 적지 않는다 — `settings/from_sheet.py`의 기준표
+    하나만 보고 만든다. 두 군데에 적어 두면 하나만 고치고 다른 하나를
+    잊는데, 그러면 시트를 새로 만들 때 그 줄이 조용히 빠진다."""
+    from muwon.settings.from_sheet import 기준들
+
+    return [설정머리, *[[b.이름, b.기본, b.설명] for b in 기준들]]
 
 
 def _service():
@@ -269,3 +266,34 @@ def write_all(sheet_id: str, 섹터행, 종목행, 설정행) -> None:
             spreadsheetId=sheet_id, range=f"{탭}!A1",
             valueInputOption="RAW", body={"values": 행},
         ).execute()
+
+
+def update_setting(sheet_id: str, 이름: str, 글자: str, svc=None) -> str:
+    """`설정` 탭의 한 줄을 고친다. 옛 값을 돌려준다.
+
+    **텔레그램에서 온 변경도 여기로 들어온다.** 시트가 원본이라는 규칙을
+    깨지 않기 위해서다 — 코드가 따로 기억하는 값이 생기면 시트를 봐도
+    지금 뭐가 걸려 있는지 알 수 없게 된다. 텔레그램 명령은 '사람이 시트를
+    고친 것'과 같은 취급이다.
+
+    줄이 없으면 맨 아래에 새로 만든다 — 기준을 새로 추가했는데 시트가
+    아직 옛것일 때 그냥 터지면 고칠 방법이 없다."""
+    svc = svc or _service().spreadsheets()
+    칸 = svc.values().get(spreadsheetId=sheet_id, range="설정!A1:C1000").execute()
+    줄들 = 칸.get("values", [])
+
+    for i, 줄 in enumerate(줄들):
+        if 줄 and str(줄[0]).strip() == 이름:
+            옛것 = str(줄[1]).strip() if len(줄) > 1 else ""
+            svc.values().update(
+                spreadsheetId=sheet_id, range=f"설정!B{i + 1}",
+                valueInputOption="RAW", body={"values": [[글자]]},
+            ).execute()
+            return 옛것
+
+    svc.values().append(
+        spreadsheetId=sheet_id, range="설정!A1",
+        valueInputOption="RAW", insertDataOption="INSERT_ROWS",
+        body={"values": [[이름, 글자, "텔레그램에서 추가됨"]]},
+    ).execute()
+    return ""

@@ -160,3 +160,37 @@ def 알림글(후보들: Sequence[후보], 날짜: date, 주소: str) -> str:
         "빈 칸은 '안 산다'입니다. 아무것도 안 하시면 아무것도 안 삽니다.",
     ]
     return "\n".join(줄)
+
+
+def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None) -> tuple[list[str], list[str]]:
+    """`승인대기` 탭의 승인 칸에 Y를 적는다. (적은 것, 못 찾은 것).
+
+    **오늘 줄만 고친다.** 어제 줄에 Y를 적어도 사지 않지만(위의 규칙 ②),
+    거기 흔적을 남기면 나중에 기록을 읽을 때 헷갈린다.
+
+    못 찾은 것을 돌려주는 이유는, 승인했다고 믿는 종목이 실제로는 후보에
+    없었을 때 **그 사실을 말해 줘야** 하기 때문이다."""
+    from muwon.cloud.sheet_log import _service
+
+    svc = svc or _service().spreadsheets()
+    칸 = svc.values().get(spreadsheetId=sheet_id, range="승인대기!A1:J5000").execute()
+    줄들 = 칸.get("values", [])
+    찾음, 못찾음 = [], []
+    남은것 = set(종목들)
+
+    for i, 줄 in enumerate(줄들):
+        칸값 = (list(줄) + [""] * len(승인머리))[: len(승인머리)]
+        if str(칸값[1]).strip() != 날짜.isoformat():
+            continue
+        symbol = str(칸값[2]).strip()
+        if symbol not in 남은것:
+            continue
+        svc.values().update(
+            spreadsheetId=sheet_id, range=f"승인대기!I{i + 1}",
+            valueInputOption="RAW", body={"values": [["Y"]]},
+        ).execute()
+        찾음.append(symbol)
+        남은것.discard(symbol)
+
+    못찾음 = sorted(남은것)
+    return 찾음, 못찾음

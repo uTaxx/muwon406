@@ -110,6 +110,19 @@ class SettingsService:
         self._store.set("telegram.bot_token", cfg.bot_token, secret=True)
         self._store.set("telegram.chat_id", cfg.chat_id)
 
+    def get_telegram_offset(self) -> int:
+        """텔레그램에서 '여기까지 읽었다'고 남겨 둔 표시.
+
+        텔레그램은 이 표시를 우리가 올려 줄 때까지 같은 메시지를 계속 준다.
+        안 남기면 **워크플로가 돌 때마다 어제 명령이 다시 실행된다.**"""
+        try:
+            return int(self._store.get("telegram.update_offset", "0") or 0)
+        except ValueError:
+            return 0
+
+    def set_telegram_offset(self, offset: int) -> None:
+        self._store.set("telegram.update_offset", str(int(offset)))
+
     def get_strategy_selection(self) -> StrategySelection:
         """전략 여러 개를 걸 수 있게 바뀌었지만 옛 키(strategy.active_key)도
         읽는다 — 운영 DB에는 그게 이미 들어 있고, 컬럼 하나 바꾸느라 지금

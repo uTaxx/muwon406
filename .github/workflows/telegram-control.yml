@@ -1,0 +1,76 @@
+name: 텔레그램 명령 받기
+
+# 텔레그램에서 온 명령을 읽어 구글 시트의 기준을 고친다.
+#
+# ## 왜 물어보러 가나
+#
+# 봇에 웹훅을 걸지 않는다 — 받으려면 상시 도는 서버가 필요한데 이 저장소에는
+# 그런 게 없다. 대신 여기서 주기적으로 getUpdates로 물어본다. 늦어야 몇
+# 분이고, 설정을 바꾸는 일에 몇 분은 늦어도 된다.
+#
+# ## 안전
+#
+# - 저장된 chat_id에서 온 것만 듣는다 (봇 이름은 누구나 알 수 있다)
+# - **매매를 켜는 것은 여기서 못 한다.** 끄는 것만 된다
+# - 값 검증은 시트에서 읽을 때와 같은 규칙을 쓴다
+#
+# 장중에만 자주 본다. 밤새 5분마다 도는 것은 낭비다.
+
+on:
+  schedule:
+    - cron: "*/10 23,0-7 * * 0-5"   # 08:00~16:50 KST에 10분마다
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "읽기만 하고 아무것도 안 고친다"
+        type: boolean
+        default: false
+
+concurrency:
+  # 둘이 동시에 돌면 같은 명령을 두 번 실행한다.
+  group: telegram-control
+  cancel-in-progress: false
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: 텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
+      - name: 명령 처리
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/telegram_control.py \
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      # 읽은 위치(offset)를 안 올려 두면 다음 실행에서 같은 명령이 또 돈다.
+      - name: 상태 DB 올리기
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py upload \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --path ./muwon.db

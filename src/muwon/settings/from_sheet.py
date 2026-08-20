@@ -40,20 +40,131 @@ from muwon.settings.schema import RiskPolicy
 #: 명시적으로 이 중 하나여야 '켜짐'이다. 빈 칸·오타는 전부 꺼짐이다.
 켜짐표시 = ("Y", "YES", "TRUE", "1", "O", "ON", "예", "켬", "켜짐")
 
-#: 시트 이름 → RiskPolicy 필드. 시트에는 %로, 정책에는 소수로 들어간다.
-백분율항목 = {
-    "max_position_weight": "max_position_weight",
-    "stop_loss_pct": "stop_loss_pct",
-    "daily_loss_limit_pct": "daily_loss_limit_pct",
-    "take_profit_pct": "take_profit_pct",
-}
-정수항목 = {"max_concurrent_positions": "max_concurrent_positions"}
-참거짓항목 = {"trading_enabled": "trading_enabled"}
 
-#: 정책이 아니라 매매 스크립트가 따로 쓰는 값들.
-기타항목 = ("require_approval", "min_turnover_eok")
+#: ── 기준 목록 — **여기가 한 군데다** ───────────────────────────────
+#
+# 시트 초안, 검증 규칙, 대시보드 화면, 텔레그램 명령, 문서가 전부 이 표를
+# 읽는다. 다섯 군데에 같은 목록을 적어 두면 하나만 고치고 넷을 잊는다.
 
-아는이름 = set(백분율항목) | set(정수항목) | set(참거짓항목) | set(기타항목)
+
+@dataclass(frozen=True)
+class 기준:
+    """모의투자를 돌리기 전에 정해 둬야 하는 값 하나."""
+
+    이름: str            # 시트에 적히는 열쇠말
+    표시: str            # 사람이 읽는 이름
+    종류: str            # "퍼센트" | "정수" | "참거짓" | "숫자"
+    기본: str            # 시트 초안에 넣을 값
+    설명: str            # 시트 설명 칸에 들어갈 한 줄
+    왜: str              # 무엇을 보고 이 값을 정하나
+    정책필드: str = ""   # RiskPolicy의 어느 칸으로 가나 (없으면 스크립트가 직접 씀)
+    최소: float | None = None
+    최대: float | None = None
+    #: 텔레그램에서 바꿀 수 있나. 매매를 **켜는** 방향은 여기서 막는다.
+    텔레그램가능: bool = True
+
+
+기준들: tuple[기준, ...] = (
+    기준(
+        "trading_enabled", "킬스위치", "참거짓", "false",
+        "false면 신규 매수를 전부 거부합니다",
+        "이것부터 정한다. 나머지가 다 맞아도 이게 꺼져 있으면 아무것도 안 산다. "
+        "**켜는 것은 시트나 대시보드에서만** 되고 텔레그램으로는 못 켠다 — "
+        "끄는 길은 넓히고 켜는 길은 좁힌다",
+        정책필드="trading_enabled", 텔레그램가능=False,
+    ),
+    기준(
+        "require_approval", "매수 전 승인", "참거짓", "true",
+        "true면 매수 전에 사람이 승인한 것만 삽니다",
+        "완전 자동이 무서우면 이걸 켠다. 켠 채로 며칠 돌려 보고 제안이 "
+        "납득되면 그때 끄는 것이 순서다",
+    ),
+    기준(
+        "max_position_weight", "한 종목 최대 비중", "퍼센트", "15",
+        "한 종목에 자금의 몇 %까지",
+        "한 종목이 반토막 나도 계좌가 얼마나 다치는지가 이 값으로 정해진다. "
+        "15%면 반토막이 계좌 -7.5%다. 동시보유 수와 곱해서 100%를 넘으면 "
+        "현금이 모자라 뒤쪽 종목은 못 산다",
+        정책필드="max_position_weight", 최소=0, 최대=50,
+    ),
+    기준(
+        "max_concurrent_positions", "동시 보유 종목 수", "정수", "8",
+        "동시에 몇 종목까지",
+        "적으면 한 종목이 계좌를 흔들고, 많으면 현금이 흩어져 좋은 신호에 "
+        "충분히 못 싣는다. 지금 하루 신호가 1~3개라 8은 사실상 제한이 아니다",
+        정책필드="max_concurrent_positions", 최소=1, 최대=50,
+    ),
+    기준(
+        "max_per_sector", "섹터당 종목 수", "정수", "2",
+        "한 섹터에서 몇 종목까지 (0이면 제한 없음)",
+        "**예측이 아니라 제약이다.** 신호 난 것을 그냥 사면 어떤 날 반도체 "
+        "다섯 종목이 한꺼번에 잡히는데, 그건 분산이 아니라 반도체 하나에 "
+        "다섯 배로 건 것이다. 섹터 강도 검증이 실패한 것과 무관하게 유효하다",
+        최소=0, 최대=10,
+    ),
+    기준(
+        "stop_loss_pct", "손절선", "퍼센트", "-5",
+        "이만큼 빠지면 손절 (음수로 적습니다)",
+        "좁으면 잡음에 털리고 넓으면 한 번에 크게 잃는다. 하루에 보통 몇 % "
+        "움직이는 종목인지에 맞춰야 하는데, 지금은 모든 종목에 같은 자를 "
+        "댄다(ATR 손절은 꺼져 있다)",
+        정책필드="stop_loss_pct", 최소=-50, 최대=0,
+    ),
+    기준(
+        "daily_loss_limit_pct", "하루 손실 한도", "퍼센트", "-3",
+        "하루에 이만큼 잃으면 그날 신규 매수 중단 (음수)",
+        "손실 난 날 만회하려고 더 사는 것을 막는다. 사람이 가장 크게 잃는 "
+        "패턴이라 자동매매에도 그대로 넣어 뒀다",
+        정책필드="daily_loss_limit_pct", 최소=-50, 최대=0,
+    ),
+    기준(
+        "take_profit_pct", "익절선", "퍼센트", "0",
+        "이만큼 오르면 판다 (0이면 끔)",
+        "**지금은 0(끔)이다.** 익절을 붙였을 때 나아지는지 재 봤는데 "
+        "기각됐다 — 오르는 중에 팔면 큰 수익을 놓친다. 0인 것은 '안 재 봤다'가 "
+        "아니라 '재 보고 뺐다'는 뜻이다",
+        정책필드="take_profit_pct", 최소=0, 최대=100,
+    ),
+    기준(
+        "min_turnover_eok", "거래대금 문턱(억)", "숫자", "50",
+        "최근 20일 평균 거래대금이 이보다 적으면 안 삽니다",
+        "거래가 적은 종목은 사고팔 때 값이 밀린다(슬리피지). 우리는 슬리피지 "
+        "실측이 0건이라 그 위험을 감당할 근거가 없다. 이 문턱에 삼익THK(4억)와 "
+        "국내 구리 ETF 전부가 걸려서 뺐다",
+        최소=0, 최대=100000,
+    ),
+    기준(
+        "sector_filter_enabled", "1차 섹터 거르기", "참거짓", "false",
+        "true면 강도 상위 섹터의 종목만 삽니다",
+        "**기본이 꺼짐인 이유는 근거가 없어서다**(docs/섹터선정_검증.md). "
+        "여섯 조합 전부 우연 폭 안이고 여덟 해 중 다섯 해가 마이너스였다. "
+        "순위는 켜든 끄든 화면에 보여 준다 — 끄는 것은 그걸 근거로 사고파는 "
+        "것이지 보는 것이 아니다",
+    ),
+    기준(
+        "sector_lookback", "섹터 강도 기간(일)", "정수", "20",
+        "며칠을 돌아보고 섹터 강도를 잴 것인가",
+        "검증에서 20/60/120일을 다 재 봤고 전부 우연 폭 안이었다. 길수록 "
+        "조금 나았지만 차이가 우연과 구별되지 않는다. **제일 좋아 보이는 "
+        "값을 고르는 것이 곧 과최적화**라 기본값을 바꾸지 않았다",
+        최소=5, 최대=250,
+    ),
+    기준(
+        "sector_top_n", "고를 섹터 수", "정수", "3",
+        "1차에서 몇 섹터까지 고를 것인가",
+        "섹터 거르기가 꺼져 있으면 화면 표시에만 쓰인다. 켜면 이 수만큼만 "
+        "매수 대상이 된다",
+        최소=1, 최대=10,
+    ),
+)
+
+기준표: dict[str, 기준] = {b.이름: b for b in 기준들}
+
+
+백분율항목 = {b.이름: b.정책필드 for b in 기준들 if b.종류 == "퍼센트" and b.정책필드}
+정수항목 = {b.이름: b.정책필드 for b in 기준들 if b.종류 == "정수" and b.정책필드}
+참거짓항목 = {b.이름: b.정책필드 for b in 기준들 if b.종류 == "참거짓" and b.정책필드}
+아는이름 = set(기준표)
 
 
 class SettingsError(ValueError):
@@ -73,12 +184,64 @@ def _숫자(이름: str, 값: str) -> float:
 
 @dataclass(frozen=True)
 class 시트설정:
-    """시트에서 읽어 검증까지 끝난 값."""
+    """시트에서 읽어 검증까지 끝난 값.
 
+    `값`에는 **기준표에 있는 모든 항목**이 시트에 적힌 대로 들어간다(빈 칸은
+    안 들어간다). `덮개`는 그중 RiskPolicy로 갈 것만 골라 단위까지 바꾼
+    것이다. 둘을 나눠 두는 이유는, 정책이 아닌 값(섹터 상한 같은 것)도
+    똑같이 시트에서 관리해야 하기 때문이다."""
+
+    값: dict[str, object] = field(default_factory=dict)
     덮개: dict[str, object] = field(default_factory=dict)
-    승인필요: bool = True
-    최소거래대금_억: float = 0.0
     모르는이름: tuple[str, ...] = ()
+
+    def 가져오기(self, 이름: str):
+        """시트에 있으면 그 값, 없으면 기준표의 기본값."""
+        if 이름 in self.값:
+            return self.값[이름]
+        return 기본값(기준표[이름])
+
+    @property
+    def 승인필요(self) -> bool:
+        return bool(self.가져오기("require_approval"))
+
+    @property
+    def 최소거래대금_억(self) -> float:
+        return float(self.가져오기("min_turnover_eok"))
+
+
+def 기본값(b: 기준):
+    return 해석값(b, b.기본)
+
+
+def 해석값(b: 기준, 값: str):
+    """한 칸의 글자 → 그 기준의 종류에 맞는 값. 범위도 여기서 본다."""
+    if b.종류 == "참거짓":
+        return _참인가(값)
+    수 = _숫자(b.이름, 값)
+    if b.종류 == "정수" and 수 != int(수):
+        raise SettingsError(f"{b.이름}({b.표시}): {값!r} — 정수여야 합니다")
+    if b.최소 is not None and 수 < b.최소:
+        raise SettingsError(_범위말(b, 수))
+    if b.최대 is not None and 수 > b.최대:
+        raise SettingsError(_범위말(b, 수))
+    # 0을 허용하지 않는 항목은 최소가 0으로 적혀 있어도 0이면 안 된다.
+    if b.이름 == "max_position_weight" and 수 == 0:
+        raise SettingsError(_범위말(b, 수))
+    return int(수) if b.종류 == "정수" else 수
+
+
+def _범위말(b: 기준, 수: float) -> str:
+    단위 = "%" if b.종류 == "퍼센트" else ""
+    아래 = "" if b.최소 is None else f"{b.최소:g}{단위} 이상"
+    위 = "" if b.최대 is None else f"{b.최대:g}{단위} 이하"
+    범위 = " ".join(x for x in (아래, 위) if x)
+    끝말 = ""
+    if b.이름 == "max_position_weight":
+        끝말 = " — 절반 넘게 한 종목에 넣을 수 있으면 분산이 아닙니다"
+    elif b.이름 in ("stop_loss_pct", "daily_loss_limit_pct"):
+        끝말 = " — '이만큼 빠지면'이므로 -5처럼 음수로 적습니다"
+    return f"{b.이름}({b.표시}): {수:g}{단위} — {범위}여야 합니다{끝말}"
 
 
 def parse_settings(설정: dict[str, str]) -> 시트설정:
@@ -86,70 +249,35 @@ def parse_settings(설정: dict[str, str]) -> 시트설정:
 
     **네트워크 없이 시험할 수 있게 따로 뺐다.** 규칙이 이 함수의 전부이고,
     그걸 시험하려고 매번 구글에 붙을 수는 없다."""
-    덮개: dict[str, object] = {}
+    값: dict[str, object] = {}
     모르는것: list[str] = []
 
     for 이름, 원값 in 설정.items():
         키 = str(이름).strip()
-        값 = str(원값).strip()
+        글자 = str(원값).strip()
         if not 키:
             continue
-        if 키 not in 아는이름:
+        b = 기준표.get(키)
+        if b is None:
             모르는것.append(키)
             continue
-        if 값 == "":
+        if 글자 == "":
             # 빈 칸은 "안 적었다"이지 "0으로 하라"가 아니다. 아래 단계가
             # DB나 기본값으로 채운다. 다만 킬스위치만은 빈 칸도 꺼짐이다.
             if 키 == "trading_enabled":
-                덮개["trading_enabled"] = False
+                값[키] = False
             continue
+        값[키] = 해석값(b, 글자)
 
-        if 키 in 참거짓항목:
-            덮개[참거짓항목[키]] = _참인가(값)
-        elif 키 in 정수항목:
-            수 = _숫자(키, 값)
-            if not (1 <= 수 <= 50) or 수 != int(수):
-                raise SettingsError(
-                    f"{키}: {값!r} — 1에서 50 사이의 정수여야 합니다 "
-                    "(동시에 들 수 있는 종목 수입니다)"
-                )
-            덮개[정수항목[키]] = int(수)
-        elif 키 in 백분율항목:
-            덮개[백분율항목[키]] = _백분율(키, _숫자(키, 값)) / 100.0
+    덮개 = {}
+    for 이름, 것 in 값.items():
+        b = 기준표[이름]
+        if not b.정책필드:
+            continue
+        # 시트에는 사람이 읽는 %로, 정책에는 소수로 들어간다.
+        덮개[b.정책필드] = (것 / 100.0) if b.종류 == "퍼센트" else 것
 
-    승인 = 설정.get("require_approval", "")
-    최소거래대금 = _숫자("min_turnover_eok", 설정["min_turnover_eok"]) if str(
-        설정.get("min_turnover_eok", "")
-    ).strip() else 0.0
-    if 최소거래대금 < 0:
-        raise SettingsError(f"min_turnover_eok: {최소거래대금:g} — 음수일 수 없습니다")
-
-    return 시트설정(
-        덮개=덮개,
-        # 승인 항목도 빈 칸이면 '받는다'가 안전한 쪽이다.
-        승인필요=_참인가(승인) if str(승인).strip() else True,
-        최소거래대금_억=최소거래대금,
-        모르는이름=tuple(모르는것),
-    )
-
-
-def _백분율(키: str, 수: float) -> float:
-    """사람이 %로 적은 값의 범위를 확인한다. 여기가 마지막 방어선이다."""
-    if 키 == "max_position_weight":
-        if not 0 < 수 <= 50:
-            raise SettingsError(
-                f"max_position_weight: {수:g}% — 0 초과 50 이하여야 합니다. "
-                "절반 넘게 한 종목에 넣을 수 있으면 분산이 아닙니다"
-            )
-    elif 키 in ("stop_loss_pct", "daily_loss_limit_pct"):
-        if not -50 <= 수 < 0:
-            raise SettingsError(
-                f"{키}: {수:g}% — 음수여야 하고 -50%보다는 커야 합니다. "
-                "손절선은 '이만큼 빠지면 판다'이므로 -5처럼 적습니다"
-            )
-    elif 키 == "take_profit_pct" and not 0 <= 수 <= 100:
-        raise SettingsError(f"take_profit_pct: {수:g}% — 0 이상 100 이하여야 합니다")
-    return 수
+    return 시트설정(값=값, 덮개=덮개, 모르는이름=tuple(모르는것))
 
 
 def apply(기본: RiskPolicy, 시트: 시트설정 | None) -> tuple[RiskPolicy, dict[str, str]]:
@@ -190,32 +318,58 @@ def apply(기본: RiskPolicy, 시트: 시트설정 | None) -> tuple[RiskPolicy, 
     return replace(기본, **덮개), 출처
 
 
-def describe(정책: RiskPolicy, 출처: dict[str, str], 시트: 시트설정 | None) -> str:
-    """사람이 읽을 한 덩어리. 로그와 텔레그램이 같은 말을 쓰게 한 군데에 둔다."""
-    켬 = "켜짐" if 정책.trading_enabled else "**꺼짐**"
-    줄 = [
-        f"■ 지금 걸려 있는 설정 (킬스위치 {켬})",
-        "",
-        f"  한 종목 최대       {정책.max_position_weight * 100:>6.1f}%   [{출처.get('max_position_weight', '?')}]",
-        f"  동시 보유          {정책.max_concurrent_positions:>6d}종목  [{출처.get('max_concurrent_positions', '?')}]",
-        f"  손절선             {정책.stop_loss_pct * 100:>6.1f}%   [{출처.get('stop_loss_pct', '?')}]",
-        f"  하루 손실 한도     {정책.daily_loss_limit_pct * 100:>6.1f}%   [{출처.get('daily_loss_limit_pct', '?')}]",
-    ]
-    if 시트 is not None:
-        줄.append(f"  매수 전 승인       {'받음' if 시트.승인필요 else '안 받음':>6}    [시트]")
-        if 시트.최소거래대금_억:
-            줄.append(f"  거래대금 문턱      {시트.최소거래대금_억:>6.0f}억   [시트]")
-        if 시트.모르는이름:
-            줄 += [
-                "",
-                (f"  ⚠️ 시트에 **모르는 이름 {len(시트.모르는이름)}개**가 있습니다 — "
-                 "적어 두셨지만 **아무 효과가 없습니다**:"),
-                f"     {', '.join(시트.모르는이름)}",
-            ]
-    else:
-        줄 += ["", "  ⚠️ **시트를 못 읽어 매매를 껐습니다.**"]
-    return "\n".join(줄)
+def 지금값(정책: RiskPolicy, 시트: 시트설정 | None, b: 기준):
+    """이 기준이 지금 실제로 얼마인가. 정책으로 간 것은 정책에서 읽는다 —
+    거기가 킬스위치의 AND 규칙까지 반영된 최종값이기 때문이다."""
+    if b.정책필드:
+        것 = getattr(정책, b.정책필드)
+        return 것 * 100 if b.종류 == "퍼센트" else 것
+    return 시트.가져오기(b.이름) if 시트 is not None else 기본값(b)
 
+
+def _폭(글: str) -> int:
+    """한글은 자리를 두 칸 먹는다. 세지 않으면 표가 어긋난다."""
+    from unicodedata import east_asian_width
+
+    return sum(2 if east_asian_width(c) in "WF" else 1 for c in 글)
+
+
+def _채움(글: str, 폭: int, 오른쪽=False) -> str:
+    빈칸 = " " * max(0, 폭 - _폭(글))
+    return 빈칸 + 글 if 오른쪽 else 글 + 빈칸
+
+
+def 값글자(b: 기준, 것) -> str:
+    if b.종류 == "참거짓":
+        return "켜짐" if 것 else "꺼짐"
+    if b.종류 == "퍼센트":
+        return f"{float(것):+.1f}%" if float(것) < 0 else f"{float(것):.1f}%"
+    if b.종류 == "정수":
+        return f"{int(것)}"
+    return f"{float(것):g}"
+
+
+def describe(정책: RiskPolicy, 출처: dict[str, str], 시트: 시트설정 | None) -> str:
+    """사람이 읽을 한 덩어리. 로그·텔레그램·화면이 같은 말을 쓰게 한 군데에 둔다."""
+    켬 = "켜짐" if 정책.trading_enabled else "**꺼짐**"
+    줄 = [f"■ 지금 걸려 있는 기준 (킬스위치 {켬})", ""]
+    for b in 기준들:
+        어디 = 출처.get(b.정책필드 or b.이름)
+        if 어디 is None:
+            어디 = "시트" if (시트 is not None and b.이름 in 시트.값) else "기본값"
+        줄.append(
+            f"  {_채움(b.표시, 22)}{_채움(값글자(b, 지금값(정책, 시트, b)), 8, True)}   [{어디}]"
+        )
+    if 시트 is None:
+        줄 += ["", "  ⚠️ **시트를 못 읽어 매매를 껐습니다.**"]
+    elif 시트.모르는이름:
+        줄 += [
+            "",
+            (f"  ⚠️ 시트에 **모르는 이름 {len(시트.모르는이름)}개**가 있습니다 — "
+             "적어 두셨지만 **아무 효과가 없습니다**:"),
+            f"     {', '.join(시트.모르는이름)}",
+        ]
+    return "\n".join(줄)
 
 def build_policy_provider(service, sheet_id: str, reader=None):
     """매매 스크립트가 쓸 정책 제공자. **한 번만 읽고 그 값으로 그 회차를 돈다.**

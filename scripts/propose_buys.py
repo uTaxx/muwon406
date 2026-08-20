@@ -52,9 +52,6 @@ from muwon.db.session import ensure_schema, make_session_factory
 from muwon.domain.types import SignalType
 from muwon.market.sector_index import build_index
 from muwon.sector.selection import (
-    LOOKBACK,
-    MAX_PER_SECTOR,
-    TOP_N,
     cap_per_sector,
     format_ranking,
     pick,
@@ -78,9 +75,11 @@ def main() -> int:
     parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     parser.add_argument("--dry-run", action="store_true", help="시트·텔레그램에 안 보내고 화면에만")
     parser.add_argument("--max", type=int, default=0, help="후보를 몇 개까지 (0이면 설정의 동시보유 수)")
-    parser.add_argument("--lookback", type=int, default=LOOKBACK, help="섹터 강도를 며칠로 잴 것인가")
-    parser.add_argument("--top-sectors", type=int, default=TOP_N, help="1차에서 몇 섹터를 고를 것인가")
-    parser.add_argument("--max-per-sector", type=int, default=MAX_PER_SECTOR,
+    # 아래 넷은 **시트가 원본**이다. 여기 값은 시험해 볼 때만 쓴다 —
+    # 안 주면 시트에 적힌 것을 쓰고, 시트에도 없으면 기준표의 기본값을 쓴다.
+    parser.add_argument("--lookback", type=int, default=0, help="섹터 강도를 며칠로 잴 것인가")
+    parser.add_argument("--top-sectors", type=int, default=0, help="1차에서 몇 섹터를 고를 것인가")
+    parser.add_argument("--max-per-sector", type=int, default=-1,
                         help="한 섹터에서 몇 종목까지 (0이면 제한 없음)")
     parser.add_argument("--sector-filter", action="store_true",
                         help="강도 상위 섹터만 매수 대상으로 (근거 없음 — docs/섹터선정_검증.md)")
@@ -94,6 +93,11 @@ def main() -> int:
 
     내용 = read(sheet_id)
     설정 = parse_settings(내용.설정)
+
+    lookback = args.lookback or int(설정.가져오기("sector_lookback"))
+    top_sectors = args.top_sectors or int(설정.가져오기("sector_top_n"))
+    섹터당 = args.max_per_sector if args.max_per_sector >= 0 else int(설정.가져오기("max_per_sector"))
+    섹터거르기 = args.sector_filter or bool(설정.가져오기("sector_filter_enabled"))
 
     ensure_schema(bootstrap_settings.database_url)
     service = build_settings_service()
@@ -139,12 +143,12 @@ def main() -> int:
         for 코드, 모음 in 섹터시세.items()
         if len(모음) >= 3
     }
-    순위 = pick(rank(지수들, 이름표, 시장, lookback=args.lookback), top_n=args.top_sectors)
+    순위 = pick(rank(지수들, 이름표, 시장, lookback=lookback), top_n=top_sectors)
     print()
-    print(format_ranking(순위, lookback=args.lookback))
+    print(format_ranking(순위, lookback=lookback))
     print()
 
-    if args.sector_filter:
+    if 섹터거르기:
         살섹터 = {p.코드 for p in 순위 if p.뽑힘}
         print("  ⚠️ `--sector-filter`로 **1차에서 거르는 중**입니다. 이 기준이 성적을 "
               "올린다는 근거는 없습니다 (docs/섹터선정_검증.md).")
@@ -153,7 +157,7 @@ def main() -> int:
         print("  ※ 지금은 **줄만 세우고 거르지 않습니다.** 강도 상위만 사는 것이 "
               "성적을 올린다는 근거가 없어서입니다 (docs/섹터선정_검증.md).")
         print("     대신 한 섹터에서 최대 "
-              f"{args.max_per_sector or '제한 없이'}종목까지만 삽니다 — 이건 예측이 아니라 제약입니다.")
+              f"{섹터당 or '제한 없이'}종목까지만 삽니다 — 이건 예측이 아니라 제약입니다.")
     print()
 
     # ── 2차: 종목 신호 ───────────────────────────────────────────
@@ -185,8 +189,8 @@ def main() -> int:
     줄선것 = [c for _, c in 신호들]
 
     # 한 섹터에 몰리는 것을 막는다.
-    if args.max_per_sector:
-        줄선것, 밀린것 = cap_per_sector(줄선것, 상한=args.max_per_sector)
+    if 섹터당:
+        줄선것, 밀린것 = cap_per_sector(줄선것, 상한=섹터당)
     else:
         밀린것 = []
 
@@ -206,7 +210,7 @@ def main() -> int:
 
     # **왜 안 샀는지가 왜 샀는지만큼 중요하다.**
     if 밀린것:
-        print(f"  섹터 상한({args.max_per_sector}종목)에 걸려 뺀 것 {len(밀린것)}개")
+        print(f"  섹터 상한({섹터당}종목)에 걸려 뺀 것 {len(밀린것)}개")
         for c in 밀린것:
             print(f"    · {c.name}({c.symbol}) [{c.sector_name}]")
     if 넘친것:
