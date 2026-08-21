@@ -1131,6 +1131,20 @@
     return m ? m[1] : '';
   }
 
+  /* 목록 정렬 기준: 보도일자 최신순. 보도일자가 없는 기사만 수집일시로 대체하고,
+     보도일자가 같으면 수집일시가 늦은 기사를 앞에 둔다. */
+  function articleDateKey(a){
+    return extractDateOnly(a.pubDate) || extractDateOnly(a.collectedAt) || '';
+  }
+  function sortByDateDesc(list){
+    return list.slice().sort(function(x, y){
+      const dx = articleDateKey(x);
+      const dy = articleDateKey(y);
+      if (dx !== dy) return dy.localeCompare(dx);
+      return String(y.collectedAt || '').localeCompare(String(x.collectedAt || ''));
+    });
+  }
+
   function passDateFilter(value, fromV, toV){
     if (!fromV && !toV) return true;
     const d = extractDateOnly(value);
@@ -1167,6 +1181,7 @@
       const hay = (a.title + ' ' + a.matched + ' ' + a.group).toLowerCase();
       return hay.includes(q);
     });
+    filtered = sortByDateDesc(filtered);
     shown = 0;
     renderList(true);
   }
