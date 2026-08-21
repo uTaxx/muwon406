@@ -197,6 +197,20 @@
   .cost-bar{width:100%; background:var(--green-tint); border:1px solid var(--green); border-radius:3px 3px 0 0; min-height:2px;}
   .cost-bar.peak{background:var(--green);}
   .cost-bar-d{font-size:9.5px; color:var(--muted); white-space:nowrap;}
+  .cost-share{display:flex; height:9px; border-radius:5px; overflow:hidden; border:1px solid var(--line); margin-top:8px; margin-bottom:9px;}
+  .cost-share i{display:block; height:100%;}
+  .cost-p0{background:var(--green);} .cost-p1{background:#C4746F;}
+  .cost-p2{background:#D8A79E;} .cost-p3{background:#E5CBBF;} .cost-p4{background:var(--green-tint);}
+  .cost-dot{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:baseline;}
+  .cost-log{margin-top:8px;}
+  .cost-log-row{display:flex; gap:10px; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--line);}
+  .cost-log-row:last-child{border-bottom:none;}
+  .cost-log-main{flex:1; min-width:0;}
+  .cost-log-t{font-size:12.5px; color:var(--text); font-weight:600;}
+  .cost-log-d{font-size:11px; color:var(--muted); margin-top:2px; word-break:break-word;}
+  .cost-log-c{font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .cost-more{margin-top:10px; font-size:11.5px; color:var(--green); font-weight:700; background:none; border:none; padding:0; cursor:pointer;}
+  .cost-bar-cap{font-size:10px; color:var(--muted); margin-top:5px;}
   .cost-note{font-size:10.5px; color:var(--muted); line-height:1.65; margin-top:14px; padding-top:11px; border-top:1px solid var(--line);}
   .case-summary{font-size:12.5px; color:#4A453F; line-height:1.75; margin-top:13px;}
   .case-src{font-size:11.5px; margin-top:9px;}
@@ -800,27 +814,65 @@
     const maxCost = daily.reduce(function(m, x){ return Math.max(m, Number(x.cost) || 0); }, 0);
     const recent = daily.slice(-14);
 
+    /* 막대가 많아지면 날짜 라벨이 겹쳐서, 일(日)만 남기고 촘촘할 땐 하나 걸러 표시한다 */
+    const labelStep = recent.length > 8 ? 2 : 1;
     const bars = recent.length > 1
       ? '<div class="cost-sec">최근 ' + recent.length + '일 추이</div>' +
-        '<div class="cost-bars">' + recent.map(function(x){
+        '<div class="cost-bars">' + recent.map(function(x, i){
           const h = maxCost > 0 ? Math.round((Number(x.cost) / maxCost) * 100) : 0;
           const isPeak = maxCost > 0 && Number(x.cost) === maxCost;
+          const isLast = i === recent.length - 1;
+          const showLabel = isLast || (recent.length - 1 - i) % labelStep === 0;
           return '<div class="cost-bar-col">' +
             '<div class="cost-bar-wrap"><div class="cost-bar' + (isPeak ? ' peak' : '') +
               '" style="height:' + Math.max(h, 2) + '%;" title="' + escapeHtml(x.day) + ' · ' + fmtUsd4(x.cost) + '"></div></div>' +
-            '<div class="cost-bar-d">' + escapeHtml(String(x.day).slice(5)) + '</div>' +
+            '<div class="cost-bar-d">' + (showLabel ? escapeHtml(String(x.day).slice(8)) : '') + '</div>' +
           '</div>';
-        }).join('') + '</div>'
+        }).join('') + '</div>' +
+        '<div class="cost-bar-cap">' + escapeHtml(String(recent[0].day)) + ' ~ ' +
+          escapeHtml(String(recent[recent.length - 1].day)) + ' · 막대에 올리면 그날 금액이 보입니다</div>'
       : '';
 
+    /* 어떤 동작에서 나온 비용인지 — 정기 수집 / 즉시 조회 / 키워드 검색 / 소송 사건 조사 */
     const purposes = Array.isArray(d.byPurpose) ? d.byPurpose : [];
+    const purposeSum = purposes.reduce(function(a, p){ return a + (Number(p.cost) || 0); }, 0);
+    const shareBar = purposes.length > 1 && purposeSum > 0
+      ? '<div class="cost-share">' + purposes.map(function(p, i){
+          const w = (Number(p.cost) || 0) / purposeSum * 100;
+          return '<i class="cost-p' + Math.min(i, 4) + '" style="width:' + w.toFixed(2) + '%;" title="' +
+            escapeHtml(p.purpose) + ' ' + w.toFixed(0) + '%"></i>';
+        }).join('') + '</div>'
+      : '';
     const purposeTable = purposes.length
-      ? '<div class="cost-sec">용도별 누계</div><table class="cost-table"><tbody>' +
-        purposes.map(function(p){
-          return '<tr><td>' + escapeHtml(p.purpose) + '</td>' +
-            '<td class="m">' + p.calls + '회</td>' +
+      ? '<div class="cost-sec">동작별 비용</div>' + shareBar +
+        '<table class="cost-table"><tbody>' +
+        purposes.map(function(p, i){
+          const share = purposeSum > 0 ? Math.round((Number(p.cost) || 0) / purposeSum * 100) : 0;
+          return '<tr><td><span class="cost-dot cost-p' + Math.min(i, 4) + '"></span>' +
+              escapeHtml(p.purpose) +
+              '<div class="cost-log-d">' + p.calls + '회 · 전체의 ' + share + '%' +
+              (p.cost30 > 0 ? ' · 최근 30일 ' + fmtUsd4(p.cost30) : '') + '</div></td>' +
             '<td class="r">' + fmtUsd4(p.cost) + '</td></tr>';
         }).join('') + '</tbody></table>'
+      : '';
+
+    /* 최근 사용 내역 — 언제 어떤 동작이 얼마를 썼는지 그대로 */
+    const log = Array.isArray(d.recent) ? d.recent : [];
+    const shown = costLogAll ? log : log.slice(0, 6);
+    const logBlock = log.length
+      ? '<div class="cost-sec">최근 사용 내역</div><div class="cost-log">' +
+        shown.map(function(r){
+          return '<div class="cost-log-row"><div class="cost-log-main">' +
+            '<div class="cost-log-t">' + escapeHtml(r.purpose || '기타') + '</div>' +
+            '<div class="cost-log-d">' + escapeHtml(r.at || '') +
+              (r.detail ? ' · ' + escapeHtml(r.detail) : '') +
+              (r.searches ? ' · 웹 검색 ' + r.searches + '회' : '') + '</div>' +
+            '</div><div class="cost-log-c">' + fmtUsd4(r.cost) + '</div></div>';
+        }).join('') + '</div>' +
+        (log.length > 6
+          ? '<button class="cost-more" type="button" onclick="toggleCostLog()">' +
+              (costLogAll ? '접기' : '전체 ' + log.length + '건 보기') + '</button>'
+          : '')
       : '';
 
     box.innerHTML =
@@ -837,11 +889,20 @@
       '</div>' +
       bars +
       purposeTable +
+      logBlock +
       '<div class="cost-note">토큰 ' + Number(d.inputTokens || 0).toLocaleString() + ' 입력 / ' +
         Number(d.outputTokens || 0).toLocaleString() + ' 출력' +
         (d.webSearches ? ' · 웹 검색 ' + d.webSearches + '회' : '') + '<br>' +
         '호출마다 응답의 usage를 그대로 읽어 공개 단가로 계산한 값입니다. 캐시 생성은 입력 단가의 1.25배, 캐시 읽기는 0.1배, 웹 검색은 1,000회당 $10로 반영했습니다. ' +
+        '정기 수집은 하루치 기사 전체를 한 번의 호출로 평가하므로, 그룹별(예: 실리코시스) 비용은 따로 갈리지 않고 상세의 그룹별 건수로만 확인할 수 있습니다.<br>' +
         '할인 계약이 있으면 실제 청구액은 이보다 낮을 수 있고, 원화는 ' + USD_KRW.toLocaleString() + '원 기준 참고치입니다.</div>';
+  }
+
+  let costLogAll = false;
+  let costData = null;
+  function toggleCostLog(){
+    costLogAll = !costLogAll;
+    if (costData) renderCost(costData);
   }
 
   function loadCost(force){
@@ -852,7 +913,7 @@
       body: JSON.stringify({})
     })
       .then(function(res){ return res.json(); })
-      .then(function(d){ costLoaded = true; renderCost(d); })
+      .then(function(d){ costLoaded = true; costData = d; renderCost(d); })
       .catch(function(){
         costLoaded = false;
         document.getElementById('costBody').innerHTML =
