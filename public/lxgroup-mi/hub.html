@@ -175,6 +175,29 @@
   .case-table tr.rolehead .role-sum{font-weight:600; color:var(--muted); margin-left:6px;}
   .case-amt{font-size:11px; font-weight:600; color:var(--muted); margin-top:2px; white-space:nowrap;}
   .case-amt-note{font-size:10.5px; color:var(--muted); line-height:1.6; margin-top:9px;}
+
+  /* Claude API 비용 */
+  .cost-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;}
+  .cost-cell{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 12px; min-width:0;}
+  .cost-cell.wide{grid-column:1 / -1;}
+  .cost-l{font-size:11px; color:var(--muted); line-height:1.4;}
+  .cost-n{font-size:19px; font-weight:700; color:var(--text); margin-top:4px; font-variant-numeric:tabular-nums;}
+  .cost-n.hot{color:var(--green);}
+  .cost-sub{font-size:11px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .cost-krw{font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;}
+  .cost-sec{font-size:12px; font-weight:700; color:var(--text); margin-top:18px; margin-bottom:8px;}
+  .cost-table{width:100%; border-collapse:collapse;}
+  .cost-table td{font-size:12.5px; color:var(--text); padding:8px 0; border-bottom:1px solid var(--line);}
+  .cost-table td.r{text-align:right; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .cost-table td.m{color:var(--muted); font-size:11.5px; text-align:right; white-space:nowrap; padding-left:8px;}
+  .cost-table tr:last-child td{border-bottom:none;}
+  .cost-bars{display:flex; align-items:stretch; gap:5px; height:76px; margin-top:8px;}
+  .cost-bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0;}
+  .cost-bar-wrap{width:100%; flex:1; display:flex; align-items:flex-end;}
+  .cost-bar{width:100%; background:var(--green-tint); border:1px solid var(--green); border-radius:3px 3px 0 0; min-height:2px;}
+  .cost-bar.peak{background:var(--green);}
+  .cost-bar-d{font-size:9.5px; color:var(--muted); white-space:nowrap;}
+  .cost-note{font-size:10.5px; color:var(--muted); line-height:1.65; margin-top:14px; padding-top:11px; border-top:1px solid var(--line);}
   .case-summary{font-size:12.5px; color:#4A453F; line-height:1.75; margin-top:13px;}
   .case-src{font-size:11.5px; margin-top:9px;}
   .case-src a{color:var(--green-dark); word-break:break-all;}
@@ -506,6 +529,12 @@
 
     <button type="button" class="submit-btn" id="submitBtn">제출하기</button>
     <div class="status" id="statusBox"></div>
+
+    <section class="card" id="costCard">
+      <div class="step-head"><span class="step-num">💰</span><span class="step-title">Claude API 비용</span></div>
+      <div class="step-desc">기사 평가와 소송 사건 조사에 쓰인 AI 호출 비용을 매 호출마다 누적 기록합니다.</div>
+      <div id="costBody"><div class="empty-note">불러오는 중…</div></div>
+    </section>
   </div>
 
   <!-- 탭 3: 특정 키워드 검색 -->
@@ -618,6 +647,7 @@
   const FEEDBACK_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-feedback';
   const CASES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-cases';
   const CASE_EXTRACT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-case-extract';
+  const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -717,7 +747,7 @@
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     history.replaceState(null, '', url);
-    if (tabName === 'apply') maybeAutoLoadApply();
+    if (tabName === 'apply'){ maybeAutoLoadApply(); loadCost(false); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
   }
 
@@ -734,6 +764,100 @@
     const groups = [...new Set(allArticles.map(a => a.group).filter(Boolean))];
     const sel = document.getElementById('groupSelect');
     sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  }
+
+  /* ---------- Claude API 비용 누적 ---------- */
+  let costLoaded = false;
+  /* 원화 환산은 참고용 개략치. 실제 청구는 USD 기준이라 환율에 따라 달라진다. */
+  const USD_KRW = 1380;
+
+  function fmtUsd4(v){
+    const n = Number(v);
+    if (!isFinite(n)) return '—';
+    if (n === 0) return '$0';
+    if (n < 0.01) return '$' + n.toFixed(4);
+    if (n < 100) return '$' + n.toFixed(2);
+    return '$' + Math.round(n).toLocaleString();
+  }
+  function fmtKrw(v){
+    const n = Number(v) * USD_KRW;
+    if (!isFinite(n) || n === 0) return '';
+    return '약 ' + Math.round(n).toLocaleString() + '원';
+  }
+
+  function renderCost(d){
+    const box = document.getElementById('costBody');
+    if (!d || d.ok !== true){
+      box.innerHTML = '<div class="empty-note">비용 기록을 불러오지 못했습니다.</div>';
+      return;
+    }
+    if (!d.calls){
+      box.innerHTML = '<div class="empty-note">아직 기록된 API 호출이 없습니다.<br>다음 수집부터 자동으로 쌓입니다.</div>';
+      return;
+    }
+
+    const daily = Array.isArray(d.daily) ? d.daily : [];
+    const maxCost = daily.reduce(function(m, x){ return Math.max(m, Number(x.cost) || 0); }, 0);
+    const recent = daily.slice(-14);
+
+    const bars = recent.length > 1
+      ? '<div class="cost-sec">최근 ' + recent.length + '일 추이</div>' +
+        '<div class="cost-bars">' + recent.map(function(x){
+          const h = maxCost > 0 ? Math.round((Number(x.cost) / maxCost) * 100) : 0;
+          const isPeak = maxCost > 0 && Number(x.cost) === maxCost;
+          return '<div class="cost-bar-col">' +
+            '<div class="cost-bar-wrap"><div class="cost-bar' + (isPeak ? ' peak' : '') +
+              '" style="height:' + Math.max(h, 2) + '%;" title="' + escapeHtml(x.day) + ' · ' + fmtUsd4(x.cost) + '"></div></div>' +
+            '<div class="cost-bar-d">' + escapeHtml(String(x.day).slice(5)) + '</div>' +
+          '</div>';
+        }).join('') + '</div>'
+      : '';
+
+    const purposes = Array.isArray(d.byPurpose) ? d.byPurpose : [];
+    const purposeTable = purposes.length
+      ? '<div class="cost-sec">용도별 누계</div><table class="cost-table"><tbody>' +
+        purposes.map(function(p){
+          return '<tr><td>' + escapeHtml(p.purpose) + '</td>' +
+            '<td class="m">' + p.calls + '회</td>' +
+            '<td class="r">' + fmtUsd4(p.cost) + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '';
+
+    box.innerHTML =
+      '<div class="cost-grid">' +
+        '<div class="cost-cell"><div class="cost-l">오늘</div><div class="cost-n' + (d.today > 0 ? ' hot' : '') + '">' + fmtUsd4(d.today) + '</div>' +
+          '<div class="cost-sub">' + (d.todayCalls || 0) + '회 호출</div></div>' +
+        '<div class="cost-cell"><div class="cost-l">일평균</div><div class="cost-n">' + fmtUsd4(d.avgPerDay) + '</div>' +
+          '<div class="cost-sub">운영 ' + (d.activeDays || 0) + '일 기준</div></div>' +
+        '<div class="cost-cell"><div class="cost-l">최근 7일</div><div class="cost-n">' + fmtUsd4(d.last7) + '</div></div>' +
+        '<div class="cost-cell"><div class="cost-l">최근 30일</div><div class="cost-n">' + fmtUsd4(d.last30) + '</div></div>' +
+        '<div class="cost-cell wide"><div class="cost-l">누적 합계 · ' + escapeHtml(d.firstDay || '') + ' ~ ' + escapeHtml(d.lastDay || '') + '</div>' +
+          '<div class="cost-n hot">' + fmtUsd4(d.total) + '</div>' +
+          '<div class="cost-krw">' + fmtKrw(d.total) + ' · 총 ' + (d.calls || 0) + '회 호출</div></div>' +
+      '</div>' +
+      bars +
+      purposeTable +
+      '<div class="cost-note">토큰 ' + Number(d.inputTokens || 0).toLocaleString() + ' 입력 / ' +
+        Number(d.outputTokens || 0).toLocaleString() + ' 출력' +
+        (d.webSearches ? ' · 웹 검색 ' + d.webSearches + '회' : '') + '<br>' +
+        '호출마다 응답의 usage를 그대로 읽어 공개 단가로 계산한 값입니다. 캐시 생성은 입력 단가의 1.25배, 캐시 읽기는 0.1배, 웹 검색은 1,000회당 $10로 반영했습니다. ' +
+        '할인 계약이 있으면 실제 청구액은 이보다 낮을 수 있고, 원화는 ' + USD_KRW.toLocaleString() + '원 기준 참고치입니다.</div>';
+  }
+
+  function loadCost(force){
+    if (costLoaded && !force) return;
+    fetch(COST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(d){ costLoaded = true; renderCost(d); })
+      .catch(function(){
+        costLoaded = false;
+        document.getElementById('costBody').innerHTML =
+          '<div class="empty-note">비용 기록을 불러오지 못했습니다.</div>';
+      });
   }
 
   /* ---------- 소송 사건 원장 · 책임 배분 ---------- */
