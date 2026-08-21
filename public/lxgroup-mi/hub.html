@@ -579,7 +579,7 @@
     </section>
 
     <section class="card" id="riskTrendCard" style="display:none;">
-      <div class="step-head"><span class="step-num">📈</span><span class="step-title">월별 보도 추이</span></div>
+      <div class="step-head"><span class="step-num">📈</span><span class="step-title" id="riskTrendTitle">보도 추이</span></div>
       <div class="risk-trend" id="riskTrend"></div>
     </section>
 
@@ -1021,28 +1021,51 @@
 
   function renderRiskTrend(){
     const card = document.getElementById('riskTrendCard');
+    const title = document.getElementById('riskTrendTitle');
     if (riskList.length < 2){ card.style.display = 'none'; return; }
 
-    const now = new Date();
-    const months = [];
-    for (let i = 5; i >= 0; i--){
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push({
-        key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
-        label: (d.getMonth() + 1) + '월',
-        count: 0
-      });
+    /* 수집 기간이 길어지면 최근 6개월 막대로는 누적 흐름이 안 보이므로,
+       보도일 기준 기간이 18개월을 넘으면 연도별 막대로 전환한다. */
+    const keys = riskList.map(function(a){ return riskDateKey(a); }).filter(Boolean).sort();
+    if (!keys.length){ card.style.display = 'none'; return; }
+    const firstY = parseInt(keys[0].slice(0, 4), 10);
+    const firstM = parseInt(keys[0].slice(5, 7), 10);
+    const lastY = parseInt(keys[keys.length - 1].slice(0, 4), 10);
+    const lastM = parseInt(keys[keys.length - 1].slice(5, 7), 10);
+    const spanMonths = (lastY - firstY) * 12 + (lastM - firstM) + 1;
+
+    const buckets = [];
+    if (spanMonths > 18){
+      for (let y = firstY; y <= lastY; y++){
+        buckets.push({ key: String(y), label: String(y).slice(2) + '년', count: 0, len: 4 });
+      }
+      if (title) title.textContent = '연도별 보도 추이';
+    } else {
+      const now = new Date();
+      for (let i = 5; i >= 0; i--){
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        buckets.push({
+          key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+          label: (d.getMonth() + 1) + '월',
+          count: 0,
+          len: 7
+        });
+      }
+      if (title) title.textContent = '월별 보도 추이';
     }
+
     riskList.forEach(function(a){
-      const k = riskDateKey(a).slice(0, 7);
-      const hit = months.find(function(m){ return m.key === k; });
-      if (hit) hit.count++;
+      const k = riskDateKey(a);
+      if (!k) return;
+      for (let i = 0; i < buckets.length; i++){
+        if (k.slice(0, buckets[i].len) === buckets[i].key){ buckets[i].count++; break; }
+      }
     });
 
-    const max = Math.max.apply(null, months.map(function(m){ return m.count; }));
+    const max = Math.max.apply(null, buckets.map(function(m){ return m.count; }));
     if (!max){ card.style.display = 'none'; return; }
 
-    document.getElementById('riskTrend').innerHTML = months.map(function(m){
+    document.getElementById('riskTrend').innerHTML = buckets.map(function(m){
       const h = Math.round((m.count / max) * 100);
       return '<div class="risk-bar-col">' +
         '<div class="risk-bar-n">' + m.count + '</div>' +
