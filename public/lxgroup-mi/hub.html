@@ -173,6 +173,23 @@
   .case-add{margin-top:20px; padding-top:18px; border-top:1px solid var(--line);}
   .case-add-h{font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:12px;}
   .case-add input{margin-bottom:10px;}
+
+  /* 사건 집계 */
+  .case-sum{background:var(--green-tint); border:1px solid var(--line); border-radius:12px; padding:14px 15px; margin-bottom:4px;}
+  .case-sum-h{font-size:12.5px; font-weight:700; color:var(--green-dark); margin-bottom:11px;}
+  .case-sum-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .case-sum-cell{background:#fff; border:1px solid var(--line); border-radius:9px; padding:9px 11px; min-width:0;}
+  .case-sum-l{font-size:10.5px; color:var(--muted); line-height:1.4;}
+  .case-sum-n{font-size:17px; font-weight:700; color:var(--text); margin-top:3px; font-variant-numeric:tabular-nums; word-break:break-all;}
+  .case-sum-sub{font-size:12px; font-weight:700; color:var(--text); margin-top:15px;}
+  .case-bar{display:flex; height:15px; border-radius:8px; overflow:hidden; margin-top:8px; border:1px solid var(--line); background:#fff;}
+  .case-bar span{display:block; height:100%;}
+  .cb-mfr{background:var(--green);}
+  .cb-emp{background:#C29A70;}
+  .cb-vic{background:#8E8579;}
+  .case-legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:9px; font-size:11px; color:var(--muted);}
+  .case-legend i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; font-style:normal;}
+  .case-sum-note{font-size:10.5px; color:var(--muted); line-height:1.65; margin-top:12px; padding-top:10px; border-top:1px solid var(--line);}
   .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
   .add-btn{background:var(--green-tint); border:1.5px dashed var(--green); color:var(--green-dark); border-radius:10px; padding:12px; width:100%; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:16px;}
   .add-btn:hover{background:#e9dfd6;}
@@ -548,6 +565,7 @@
 
     <section class="card" id="riskCaseCard">
       <div class="step-head"><span class="step-num">⚖️</span><span class="step-title">주요 소송 사건 · 책임 배분</span></div>
+      <div id="caseSummary"></div>
       <div id="caseList"></div>
       <div class="empty-note" id="caseEmpty" style="display:none;">아직 등록된 소송 사건이 없습니다.</div>
       <div class="case-add">
@@ -725,9 +743,82 @@
     return (Math.round(n * 10) / 10) + '%';
   }
 
+  function caseDefendantSum(c){
+    const alloc = Array.isArray(c.allocation) ? c.allocation : [];
+    let sum = null;
+    alloc.forEach(function(x){
+      if (x.pct !== null && x.pct !== undefined && isFinite(Number(x.pct))){
+        sum = (sum === null ? 0 : sum) + Number(x.pct);
+      }
+    });
+    return sum;
+  }
+
+  function renderCaseSummary(){
+    const box = document.getElementById('caseSummary');
+    if (!caseList.length){ box.innerHTML = ''; return; }
+
+    const withAmount = caseList.filter(function(c){ return Number(c.totalUsd) > 0; });
+    const totalUsd = withAmount.reduce(function(a, c){ return a + Number(c.totalUsd); }, 0);
+    const perVictim = withAmount.length ? totalUsd / withAmount.length : null;
+
+    function known(v){ return v !== null && v !== undefined && v !== '' && isFinite(Number(v)); }
+    function avg(vals){
+      if (!vals.length) return null;
+      return vals.reduce(function(a, v){ return a + Number(v); }, 0) / vals.length;
+    }
+    /* 제조사·고용주·피해자 세 몫이 각각 따로 확인된 건만 평균한다.
+       일부 평결은 고용주를 '기타 당사자'로 묶어 피고 목록 안에 넣기 때문에,
+       그런 건까지 섞으면 고용주 몫이 이중 계산된다. */
+    const full = caseList.filter(function(c){
+      return known(caseDefendantSum(c)) && known(c.employerPct) && known(c.plaintiffFaultPct);
+    });
+    const mfr = avg(full.map(caseDefendantSum));
+    const emp = avg(full.map(function(c){ return Number(c.employerPct); }));
+    const vic = avg(full.map(function(c){ return Number(c.plaintiffFaultPct); }));
+
+    // 평결일 범위
+    const dates = caseList.map(function(c){ return String(c.verdictDate || ''); })
+      .filter(function(d){ return /^\d{4}-\d{2}-\d{2}$/.test(d); }).sort();
+    const span = dates.length ? (dates[0].slice(0, 7) + ' ~ ' + dates[dates.length - 1].slice(0, 7)) : '—';
+
+    let bar = '';
+    if (full.length && mfr !== null && emp !== null && vic !== null){
+      const tot = mfr + emp + vic;
+      const w = function(v){ return tot > 0 ? (v / tot * 100) : 0; };
+      bar =
+        '<div class="case-sum-sub">평균 책임 배분 <span style="font-weight:400;color:var(--muted);">· 배분 내역이 모두 확인된 ' + full.length + '건</span></div>' +
+        '<div class="case-bar">' +
+          '<span class="cb-mfr" style="width:' + w(mfr).toFixed(2) + '%"></span>' +
+          '<span class="cb-emp" style="width:' + w(emp).toFixed(2) + '%"></span>' +
+          '<span class="cb-vic" style="width:' + w(vic).toFixed(2) + '%"></span>' +
+        '</div>' +
+        '<div class="case-legend">' +
+          '<span><i class="cb-mfr"></i>제조·유통사 ' + fmtPct(mfr) + '</span>' +
+          '<span><i class="cb-emp"></i>고용주 ' + fmtPct(emp) + '</span>' +
+          '<span><i class="cb-vic"></i>피해 노동자 ' + fmtPct(vic) + '</span>' +
+        '</div>';
+    }
+
+    box.innerHTML =
+      '<div class="case-sum">' +
+        '<div class="case-sum-h">📊 평결 집계 · ' + span + '</div>' +
+        '<div class="case-sum-grid">' +
+          '<div class="case-sum-cell"><div class="case-sum-l">누적 평결</div><div class="case-sum-n">' + caseList.length + '건</div></div>' +
+          '<div class="case-sum-cell"><div class="case-sum-l">원고 승소</div><div class="case-sum-n">' + withAmount.length + '건</div></div>' +
+          '<div class="case-sum-cell"><div class="case-sum-l">총 보상규모</div><div class="case-sum-n">' + fmtUsd(totalUsd) + '</div></div>' +
+          '<div class="case-sum-cell"><div class="case-sum-l">인당(승소 건 평균)</div><div class="case-sum-n">' + fmtUsd(perVictim) + '</div></div>' +
+        '</div>' +
+        bar +
+        '<div class="case-sum-note">인당 금액은 배상액이 확인된 원고 승소 건만 평균한 값입니다(피고 승소 건 제외). 평균 책임 배분은 제조·유통사 / 고용주 / 피해 노동자 몫이 각각 따로 확인된 평결만 단순 평균한 것으로, 금액 가중 평균이 아닙니다. 고용주 몫을 피고 목록에 묶어 발표한 평결은 이중 계산을 피하기 위해 이 평균에서 제외됩니다.</div>' +
+      '</div>';
+  }
+
   function renderCases(){
     const box = document.getElementById('caseList');
     const empty = document.getElementById('caseEmpty');
+
+    renderCaseSummary();
 
     if (!caseList.length){
       box.innerHTML = '';
@@ -738,12 +829,7 @@
 
     box.innerHTML = caseList.map(function(c){
       const alloc = Array.isArray(c.allocation) ? c.allocation : [];
-      let defendantSum = null;
-      alloc.forEach(function(a){
-        if (a.pct !== null && a.pct !== undefined && isFinite(Number(a.pct))){
-          defendantSum = (defendantSum === null ? 0 : defendantSum) + Number(a.pct);
-        }
-      });
+      const defendantSum = caseDefendantSum(c);
 
       const meta = [];
       if (c.caseNumber) meta.push('사건번호 ' + escapeHtml(c.caseNumber));
