@@ -82,6 +82,19 @@
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
+  .kn-box{background:var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:14px 15px; margin-top:10px; white-space:pre-wrap; word-break:break-word;
+    font-size:12.5px; line-height:1.8; color:#4A453F; max-height:340px; overflow-y:auto;}
+  .kn-box.empty{color:var(--muted); font-style:normal; text-align:center; padding:26px 15px;}
+  .kn-meta{display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    font-size:11.5px; color:var(--muted); margin-top:8px;}
+  .kn-sec{font-size:12.5px; font-weight:700; color:var(--text); margin-top:22px;}
+  .kn-hint{font-size:11.5px; color:var(--muted); line-height:1.7; margin:4px 0 10px;}
+  #knInput{min-height:220px; font-family:inherit; line-height:1.8; resize:vertical;}
+  .kn-count{font-size:11px; color:var(--muted); text-align:right; margin-top:4px;}
+  .kn-warn{font-size:11px; color:var(--muted); line-height:1.65; margin-top:14px; padding:9px 11px;
+    background:var(--bg); border:1px dashed var(--line); border-radius:8px;}
+
   .filter-row{display:flex; gap:10px; margin-top:14px;}
   .filter-row > div{flex:1;}
   .filter-row label{margin-bottom:6px;}
@@ -409,6 +422,7 @@
     <button type="button" class="tab-btn" data-tab="apply">키워드<br>신청/변경</button>
     <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
     <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
+    <button type="button" class="tab-btn" data-tab="knowledge">AI 학습<br>데이터</button>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
@@ -700,6 +714,30 @@
     </section>
   </div>
 
+  <!-- 탭 5: AI 학습 데이터 -->
+  <div id="tab-knowledge" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🧠</span><span class="step-title">AI에게 알려줄 배경 지식</span></div>
+      <div class="step-desc">기사 중요도를 매길 때 AI가 배경 지식으로 삼는 내용입니다. 지속가능경영보고서 요약처럼 &lsquo;기사에 직접 안 나와도 사업구조상 연결되는&rsquo; 정보를 넣어두면 판단이 정확해집니다.</div>
+
+      <div class="kn-sec" style="margin-top:4px;">새 내용 작성</div>
+      <div class="kn-hint">아래에 쓰고 제출하면 <b>기존 내용을 통째로 대체</b>합니다. 이어 붙이는 게 아니니, 고칠 때는 아래 &lsquo;현재 등록된 내용&rsquo;을 복사해 와서 수정하세요.</div>
+      <textarea id="knInput" placeholder="예) [참고자료: 사업구조 요약]&#10;그룹은 ○○를 핵심 사업축으로 …"></textarea>
+      <div class="kn-count" id="knCount">0자</div>
+      <button type="button" class="submit-btn" id="knSubmitBtn">제출하기</button>
+      <div class="status" id="knStatus"></div>
+
+      <div class="kn-sec">현재 등록된 내용</div>
+      <div class="kn-box" id="knCurrent">불러오는 중…</div>
+      <div class="kn-meta">
+        <span id="knLen"></span>
+        <button type="button" class="cost-more" id="knCopyBtn" style="display:none;">위 입력칸으로 복사</button>
+      </div>
+
+      <div class="kn-warn">이 내용은 매 수집 때마다 AI 프롬프트 앞에 붙습니다. 길수록 판단 근거는 늘지만 호출 비용도 함께 늘어납니다 — 위에 표시된 회당·월 비용이 이 내용 때문에 추가로 드는 몫입니다(토큰 수는 어림치라 실제와 다를 수 있습니다). 비워두면 배경 지식 없이 기사 제목과 그룹 목적만으로 평가합니다.</div>
+    </section>
+  </div>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다. · <a id="excelLink" href="#" target="_blank" rel="noopener" style="display:none;">📊 엑셀 원본보기(관리자용)</a> · <a id="costLink" href="#" role="button">💰 비용관리(관리자용)</a></footer>
@@ -714,6 +752,7 @@
   const FEEDBACK_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-feedback';
   const CASES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-cases';
   const CASE_STATUS_URL  = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-case-status';
+  const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
   const PAGE_SIZE = 50;
 
@@ -805,6 +844,107 @@
     return parts.join(' · ');
   }
 
+  /* ---------- AI 학습 데이터 ---------- */
+  /* 한글은 글자당 토큰이 많이 붙고 영문·숫자는 적게 붙는다. 정확한 값은
+     실제 호출의 usage로만 알 수 있으므로 여기 값은 어디까지나 어림치다. */
+  function estimateTokens(t){
+    const s = String(t || '');
+    const ko = (s.match(/[가-힣]/g) || []).length;
+    return Math.round(ko * 1.8 + (s.length - ko) / 3.5);
+  }
+
+  let knowledgeLoaded = false;
+  let knowledgeCurrent = '';
+
+  function renderKnowledge(content){
+    knowledgeCurrent = String(content || '');
+    const box = document.getElementById('knCurrent');
+    const len = document.getElementById('knLen');
+    const copyBtn = document.getElementById('knCopyBtn');
+
+    if (!knowledgeCurrent.trim()){
+      box.className = 'kn-box empty';
+      box.textContent = '등록된 배경 지식이 없습니다. 위에 작성해 제출하세요.';
+      len.textContent = '';
+      copyBtn.style.display = 'none';
+      return;
+    }
+    box.className = 'kn-box';
+    box.textContent = knowledgeCurrent;
+    const tok = estimateTokens(knowledgeCurrent);
+    /* 기사 평가는 Haiku(입력 100만 토큰당 $1), 하루 3회 */
+    const perCallKrw = tok / 1e6 * 1 * USD_KRW;
+    len.textContent = knowledgeCurrent.length.toLocaleString() + '자 · 약 ' +
+      tok.toLocaleString() + '토큰 · 회당 ' + perCallKrw.toFixed(1) + '원 (월 약 ' +
+      Math.round(perCallKrw * 3 * 30).toLocaleString() + '원)';
+    copyBtn.style.display = 'inline';
+  }
+
+  function loadKnowledge(force){
+    if (knowledgeLoaded && !force) return;
+    const box = document.getElementById('knCurrent');
+    box.className = 'kn-box empty';
+    box.textContent = '불러오는 중…';
+
+    fetch(KNOWLEDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS', action: 'get' })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(d){
+        if (!d || d.ok !== true) throw new Error('failed');
+        knowledgeLoaded = true;
+        renderKnowledge(d.content);
+      })
+      .catch(function(){
+        knowledgeLoaded = false;
+        box.className = 'kn-box empty';
+        box.textContent = '불러오지 못했습니다. 탭을 다시 열어보세요.';
+      });
+  }
+
+  function submitKnowledge(){
+    const code = sharedCode();
+    if (!code){ alert('먼저 상단에 식별코드를 입력해주세요.'); return; }
+
+    const input = document.getElementById('knInput');
+    const content = input.value;
+    const box = document.getElementById('knStatus');
+    const btn = document.getElementById('knSubmitBtn');
+
+    if (!content.trim() && !confirm('입력칸이 비어 있습니다.\n배경 지식을 모두 지우고 빈 상태로 저장할까요?')) return;
+    if (content.trim() && knowledgeCurrent.trim() &&
+        !confirm('현재 등록된 내용을 이 내용으로 대체합니다.\n계속할까요?')) return;
+
+    btn.disabled = true;
+    btn.textContent = '저장 중…';
+    box.className = 'status';
+
+    fetch(KNOWLEDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, action: 'save', content: content })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(d){
+        btn.disabled = false;
+        btn.textContent = '제출하기';
+        if (!d || d.ok !== true) throw new Error((d && d.message) || 'failed');
+        renderKnowledge(d.content);
+        input.value = '';
+        document.getElementById('knCount').textContent = '0자';
+        box.className = 'status show ok';
+        box.textContent = '저장했습니다. 다음 수집부터 이 내용으로 평가합니다.';
+      })
+      .catch(function(err){
+        btn.disabled = false;
+        btn.textContent = '제출하기';
+        box.className = 'status show err';
+        box.textContent = '저장하지 못했습니다: ' + err.message;
+      });
+  }
+
   /* ---------- 탭 전환 ---------- */
   let applyAutoLoaded = false;
 
@@ -816,6 +956,7 @@
     history.replaceState(null, '', url);
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
+    if (tabName === 'knowledge'){ loadKnowledge(false); }
   }
 
   function maybeAutoLoadApply(){
@@ -2289,6 +2430,19 @@
     document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
 
     /* 관리자 전용 비용 화면 */
+    document.getElementById('knSubmitBtn').addEventListener('click', submitKnowledge);
+    document.getElementById('knInput').addEventListener('input', function(){
+      document.getElementById('knCount').textContent = this.value.length.toLocaleString() + '자';
+    });
+    document.getElementById('knCopyBtn').addEventListener('click', function(){
+      const input = document.getElementById('knInput');
+      input.value = knowledgeCurrent;
+      document.getElementById('knCount').textContent = knowledgeCurrent.length.toLocaleString() + '자';
+      input.focus();
+      input.setSelectionRange(0, 0);
+      input.scrollTop = 0;
+    });
+
     document.getElementById('costLink').addEventListener('click', function(e){
       e.preventDefault();
       openAdminPanel();
@@ -2322,7 +2476,7 @@
     document.getElementById('changeCodeLabel').textContent = initialCode;
 
     const tabFromUrl = urlParams.get('tab');
-    const initialTab = ['search','apply','adhoc'].includes(tabFromUrl) ? tabFromUrl : 'search';
+    const initialTab = ['search','apply','adhoc','risk','knowledge'].includes(tabFromUrl) ? tabFromUrl : 'search';
     showTab(initialTab);
 
     loadArticles();
