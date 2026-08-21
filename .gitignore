@@ -6,3 +6,14 @@ dist-ssr
 .env.*.local
 npm-debug.log*
 *.tsbuildinfo
+
+# Python 바이트코드
+__pycache__/
+*.pyc
+
+# LCIP_PILOT 실행 산출물 — 소스가 아니라 돌린 결과물이다
+LCIP_PILOT/output/
+LCIP_PILOT/logs/
+LCIP_PILOT/archive/
+LCIP_PILOT/n8n/backups/
+LCIP_PILOT/n8n_credential_ids.json
