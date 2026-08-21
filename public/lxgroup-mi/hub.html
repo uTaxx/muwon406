@@ -140,6 +140,39 @@
   .risk-item-title{font-size:14px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.5;}
   .risk-item-title:hover{color:var(--green-dark);}
   .risk-item-reason{font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.6;}
+
+  /* 소송 사건 원장 · 책임 배분 */
+  .case-item{padding:18px 0; border-bottom:1px solid var(--line);}
+  .case-item:first-child{padding-top:4px;}
+  .case-item:last-child{border-bottom:none; padding-bottom:4px;}
+  .case-name{font-size:15px; font-weight:700; color:var(--text); line-height:1.45;}
+  .case-status{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px;
+    background:#FDECEC; color:#B3322E; border:1px solid #F3D2D1; margin-left:6px; vertical-align:2px; white-space:nowrap;}
+  .case-meta{font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.7;}
+  .case-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px;}
+  .case-cell{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 12px; min-width:0;}
+  .case-cell-l{font-size:11px; color:var(--muted); line-height:1.4;}
+  .case-cell-n{font-size:19px; font-weight:700; color:var(--text); line-height:1.25; margin-top:4px;
+    font-variant-numeric:tabular-nums; word-break:break-all;}
+  .case-cell-n.hot{color:var(--green);}
+  .case-split{font-size:11.5px; color:var(--muted); margin-top:9px; line-height:1.6;}
+  .case-alloc{margin-top:16px;}
+  .case-alloc-h{font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:2px;}
+  .case-table{width:100%; border-collapse:collapse; margin-top:6px;}
+  .case-table th{font-size:11px; color:var(--muted); font-weight:600; text-align:left; padding:0 0 8px; border-bottom:1px solid var(--line);}
+  .case-table th.r, .case-table td.r{text-align:right;}
+  .case-table td{font-size:13px; color:var(--text); padding:10px 0; border-bottom:1px solid var(--line); line-height:1.45;}
+  .case-table td.r{font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; padding-left:10px;}
+  .case-table tr:last-child td{border-bottom:none;}
+  .case-table tr.sub td{color:var(--muted); font-size:12.5px;}
+  .case-summary{font-size:12.5px; color:#4A453F; line-height:1.75; margin-top:13px;}
+  .case-src{font-size:11.5px; margin-top:9px;}
+  .case-src a{color:var(--green-dark); word-break:break-all;}
+  .case-warn{font-size:11px; color:var(--muted); line-height:1.65; margin-top:14px; padding:9px 11px;
+    background:var(--bg); border:1px dashed var(--line); border-radius:8px;}
+  .case-add{margin-top:20px; padding-top:18px; border-top:1px solid var(--line);}
+  .case-add-h{font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:12px;}
+  .case-add input{margin-bottom:10px;}
   .empty-note{text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0;}
   .add-btn{background:var(--green-tint); border:1.5px dashed var(--green); color:var(--green-dark); border-radius:10px; padding:12px; width:100%; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:16px;}
   .add-btn:hover{background:#e9dfd6;}
@@ -513,6 +546,20 @@
       <div id="riskLatest"></div>
     </section>
 
+    <section class="card" id="riskCaseCard">
+      <div class="step-head"><span class="step-num">⚖️</span><span class="step-title">주요 소송 사건 · 책임 배분</span></div>
+      <div id="caseList"></div>
+      <div class="empty-note" id="caseEmpty" style="display:none;">아직 등록된 소송 사건이 없습니다.</div>
+      <div class="case-add">
+        <div class="case-add-h">사건 추가</div>
+        <input type="text" id="caseTitle" placeholder="사건명 또는 기사 제목 (필수)">
+        <input type="text" id="caseLink" placeholder="기사 링크 (선택)">
+        <input type="text" id="caseNote" placeholder="추가 메모 (선택) — 법원, 평결일 등 알고 있는 단서">
+        <button type="button" class="add-btn" id="caseAddBtn">🔎 AI로 사건 정보 조사·추가</button>
+        <div class="case-warn">공개 보도를 AI가 검색해 정리합니다(1—3분 소요). 모든 수치는 <b>AI추출 — 확인 필요</b> 상태로 저장되니, 반드시 원문으로 검증한 뒤 보고에 사용하세요.</div>
+      </div>
+    </section>
+
     <section class="card" id="riskTrendCard" style="display:none;">
       <div class="step-head"><span class="step-num">📈</span><span class="step-title">월별 보도 추이</span></div>
       <div class="risk-trend" id="riskTrend"></div>
@@ -538,6 +585,8 @@
   const ARTICLES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-articles';
   const ADHOC_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-adhoc-search';
   const FEEDBACK_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-feedback';
+  const CASES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-cases';
+  const CASE_EXTRACT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-case-extract';
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -638,7 +687,7 @@
     url.searchParams.set('tab', tabName);
     history.replaceState(null, '', url);
     if (tabName === 'apply') maybeAutoLoadApply();
-    if (tabName === 'risk') renderRiskDashboard();
+    if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
   }
 
   function maybeAutoLoadApply(){
@@ -654,6 +703,150 @@
     const groups = [...new Set(allArticles.map(a => a.group).filter(Boolean))];
     const sel = document.getElementById('groupSelect');
     sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  }
+
+  /* ---------- 소송 사건 원장 · 책임 배분 ---------- */
+  let caseList = [];
+  let casesLoaded = false;
+
+  function fmtUsd(v){
+    if (v === null || v === undefined || v === '') return '—';
+    const n = Number(v);
+    if (!isFinite(n) || n <= 0) return '—';
+    if (n >= 1e9) return 'US$' + (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return 'US$' + (n / 1e6).toFixed(2) + 'M';
+    return 'US$' + Math.round(n).toLocaleString();
+  }
+
+  function fmtPct(v){
+    if (v === null || v === undefined || v === '') return '—';
+    const n = Number(v);
+    if (!isFinite(n)) return '—';
+    return (Math.round(n * 10) / 10) + '%';
+  }
+
+  function renderCases(){
+    const box = document.getElementById('caseList');
+    const empty = document.getElementById('caseEmpty');
+
+    if (!caseList.length){
+      box.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    box.innerHTML = caseList.map(function(c){
+      const alloc = Array.isArray(c.allocation) ? c.allocation : [];
+      let defendantSum = null;
+      alloc.forEach(function(a){
+        if (a.pct !== null && a.pct !== undefined && isFinite(Number(a.pct))){
+          defendantSum = (defendantSum === null ? 0 : defendantSum) + Number(a.pct);
+        }
+      });
+
+      const meta = [];
+      if (c.caseNumber) meta.push('사건번호 ' + escapeHtml(c.caseNumber));
+      if (c.court) meta.push(escapeHtml(c.court));
+      if (c.verdictDate) meta.push('평결일 ' + escapeHtml(c.verdictDate));
+      if (c.plaintiff) meta.push('원고 ' + escapeHtml(c.plaintiff));
+
+      const split = [];
+      if (c.economicUsd) split.push('경제적 손해 ' + fmtUsd(c.economicUsd));
+      if (c.nonEconomicUsd) split.push('비경제적 손해 ' + fmtUsd(c.nonEconomicUsd));
+
+      const allocRows = alloc.length
+        ? alloc.map(function(a){
+            return '<tr><td>' + escapeHtml(a.party) + '</td><td class="r">' + fmtPct(a.pct) + '</td></tr>';
+          }).join('') +
+          (c.employerPct !== null && c.employerPct !== undefined
+            ? '<tr class="sub"><td>고용주(가공업체) 등 기타 당사자</td><td class="r">' + fmtPct(c.employerPct) + '</td></tr>' : '') +
+          (c.plaintiffFaultPct !== null && c.plaintiffFaultPct !== undefined
+            ? '<tr class="sub"><td>피해 노동자 과실</td><td class="r">' + fmtPct(c.plaintiffFaultPct) + '</td></tr>' : '')
+        : '';
+
+      return '<div class="case-item">' +
+        '<div class="case-name">' + escapeHtml(c.caseName || '(사건명 미확인)') +
+          (c.status ? '<span class="case-status">' + escapeHtml(c.status) + ' · 확인 필요</span>' : '') + '</div>' +
+        (meta.length ? '<div class="case-meta">' + meta.join(' · ') + '</div>' : '') +
+        '<div class="case-grid">' +
+          '<div class="case-cell"><div class="case-cell-l">총 평결액</div><div class="case-cell-n hot">' + fmtUsd(c.totalUsd) + '</div></div>' +
+          '<div class="case-cell"><div class="case-cell-l">제조·유통사 책임비율 합계</div><div class="case-cell-n">' + fmtPct(defendantSum) + '</div></div>' +
+          '<div class="case-cell"><div class="case-cell-l">고용주 책임비율</div><div class="case-cell-n">' + fmtPct(c.employerPct) + '</div></div>' +
+          '<div class="case-cell"><div class="case-cell-l">피해 노동자 과실</div><div class="case-cell-n">' + fmtPct(c.plaintiffFaultPct) + '</div></div>' +
+        '</div>' +
+        (split.length ? '<div class="case-split">' + split.join(' · ') + '</div>' : '') +
+        (allocRows
+          ? '<div class="case-alloc"><div class="case-alloc-h">책임 배분</div>' +
+            '<table class="case-table"><thead><tr><th>당사자</th><th class="r">책임비율</th></tr></thead>' +
+            '<tbody>' + allocRows + '</tbody></table></div>'
+          : '') +
+        (c.summary ? '<div class="case-summary">' + escapeHtml(c.summary) + '</div>' : '') +
+        (c.link ? '<div class="case-src">🔗 <a href="' + escapeHtml(c.link) + '" target="_blank" rel="noopener">출처 기사</a></div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  function loadCases(force){
+    const code = sharedCode();
+    if (!code) return;
+    if (casesLoaded && !force) return;
+
+    fetch(CASES_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        casesLoaded = true;
+        caseList = (data && Array.isArray(data.cases)) ? data.cases : [];
+        renderCases();
+      })
+      .catch(function(){
+        casesLoaded = false;
+        caseList = [];
+        renderCases();
+      });
+  }
+
+  function addCase(){
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 입력해주세요.'); return; }
+
+    const title = document.getElementById('caseTitle').value.trim();
+    if (!title){ alert('사건명 또는 기사 제목을 입력해주세요.'); return; }
+
+    const link = document.getElementById('caseLink').value.trim();
+    const note = document.getElementById('caseNote').value.trim();
+
+    const btn = document.getElementById('caseAddBtn');
+    btn.disabled = true;
+    showLoading('AI가 사건 정보를 조사하고 있습니다', '공개 보도 검색 중 · 1~3분 소요', true);
+
+    fetch(CASE_EXTRACT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, title, link, note })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        hideLoading();
+        btn.disabled = false;
+        if (!data || data.ok !== true){
+          alert('사건 정보를 확인하지 못했습니다. 사건명을 더 구체적으로 입력해 주세요.');
+          return;
+        }
+        document.getElementById('caseTitle').value = '';
+        document.getElementById('caseLink').value = '';
+        document.getElementById('caseNote').value = '';
+        loadCases(true);
+      })
+      .catch(function(err){
+        hideLoading();
+        btn.disabled = false;
+        alert('사건 추가 중 오류가 발생했습니다: ' + err.message);
+      });
   }
 
   /* ---------- 탭4: 실리코시스 리스크 ---------- */
@@ -1479,6 +1672,7 @@
     setupDualRangeFilter('filterMinUrgency', 'filterMaxUrgency', 'filterUrgencyFill', 'filterUrgencyLabel', '점');
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
     document.getElementById('riskMoreBtn').addEventListener('click', function(){ renderRiskTimeline(false); });
+    document.getElementById('caseAddBtn').addEventListener('click', addCase);
     document.getElementById('articleList').addEventListener('click', function(e){
       const btn = e.target.closest('.fb-btn');
       if (btn && !btn.disabled) sendFeedback(btn);
