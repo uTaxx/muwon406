@@ -1314,19 +1314,30 @@ def render_strategy_picker(service: SettingsService) -> None:
         st.rerun()
 
 
-def _시트연결():
-    """대시보드가 시트를 만질 수 있나. 없으면 화면만 보여 준다."""
+@st.cache_data(ttl=600, show_spinner=False)
+def _시트연결() -> str:
+    """대시보드가 시트를 만질 수 있나. 없으면 화면만 보여 준다.
+
+    **여기서 터지면 관리 탭이 통째로 죽는다.** 구글이 느리거나 자격증명이
+    만료돼도 화면은 살아 있어야 한다 — 화면이 죽으면 킬스위치를 끄러 들어올
+    수조차 없다. 그래서 어떤 실패든 빈 값으로 돌려준다.
+
+    그리고 캐시한다. 화면을 열 때마다 구글에 물어보면 그만큼 느려지는데,
+    시트 주소는 거의 안 바뀐다."""
     import os
 
-    from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
-
-    폴더 = os.environ.get("GDRIVE_FOLDER_ID", "")
     시트 = os.environ.get("MUWON_SHEET_ID", "")
     if 시트:
         return 시트
+    폴더 = os.environ.get("GDRIVE_FOLDER_ID", "")
     if not 폴더 or not os.environ.get("GDRIVE_SA_KEY_JSON"):
         return ""
-    return find_or_create(폴더, DEFAULT_TITLE)[0]
+    try:
+        from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
+
+        return find_or_create(폴더, DEFAULT_TITLE)[0]
+    except Exception:  # noqa: BLE001 — 화면이 죽는 것보다 낫다
+        return ""
 
 
 def render_criteria_tab() -> None:
@@ -1337,8 +1348,12 @@ def render_criteria_tab() -> None:
 
     **왜 이 값이 중요한지를 값 옆에 붙여 둔다.** 숫자만 있으면 몇 달 뒤에
     '이걸 왜 12로 뒀지'를 답할 수 없다."""
-    from muwon.cloud.sector_sheet import read, update_setting
-    from muwon.settings.from_sheet import parse_settings, 값글자, 기준들
+    try:
+        from muwon.cloud.sector_sheet import read, update_setting
+        from muwon.settings.from_sheet import parse_settings, 값글자, 기준들
+    except ImportError as e:
+        st.warning(f"구글 시트 라이브러리가 없습니다 — {e}", icon="📦")
+        return
 
     sheet_id = _시트연결()
     if not sheet_id:
