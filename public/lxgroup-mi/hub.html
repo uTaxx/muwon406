@@ -640,7 +640,7 @@
 
     <section class="card">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">특정 키워드 검색</span></div>
-      <div class="step-desc">등록된 키워드와 별개로, 원하는 키워드를 지금 바로 조사합니다. 쉼표(,)로 구분하면 여러 개를 한 번에 조사할 수 있습니다. 결과는 상단 식별코드의 텔레그램/이메일로 즉시 발송됩니다.</div>
+      <div class="step-desc">등록된 키워드와 별개로, 원하는 키워드를 지금 바로 조사합니다. 쉼표(,)로 구분하면 여러 개를 한 번에 조사할 수 있습니다. 결과는 텔레그램으로만 발송됩니다 — 요청한 사람만 보면 되는 조사라 이메일 수신자 전체에게는 보내지 않습니다.</div>
 
       <label>키워드</label>
       <input type="text" id="adhocKeyword" placeholder="예: 삼성전자, LG전자">
@@ -2359,7 +2359,7 @@
         }
 
         resultBox.innerHTML =
-          '<div class="instant-summary">✓ \'' + escapeHtml(keyword) + '\' 관련 기사 ' + count + '건을 찾아 텔레그램/이메일로 발송했습니다.</div>' +
+          '<div class="instant-summary">✓ \'' + escapeHtml(keyword) + '\' 관련 기사 ' + count + '건을 찾아 텔레그램으로 발송했습니다.</div>' +
           renderAdhocArticles(data.articles);
       })
       .catch(err => {
