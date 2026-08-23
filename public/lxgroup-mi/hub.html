@@ -264,9 +264,7 @@
   .case-sum-sub{font-size:12px; font-weight:700; color:var(--text); margin-top:15px;}
   .case-bar{display:flex; height:15px; border-radius:8px; overflow:hidden; margin-top:8px; border:1px solid var(--line); background:#fff;}
   .case-bar span{display:block; height:100%;}
-  .cb-mfr{background:var(--green);}
-  .cb-dist{background:#D08C86;}
-  .cb-etc{background:#E0CBB8;}
+  .cb-def{background:var(--green);}
   .cb-emp{background:#C29A70;}
   .cb-vic{background:#8E8579;}
   .case-legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:9px; font-size:11px; color:var(--muted);}
@@ -1281,11 +1279,10 @@
     const full = caseList.filter(function(c){
       return known(caseDefendantSum(c)) && known(c.employerPct) && known(c.plaintiffFaultPct);
     });
-    const mfr = avg(full.map(function(c){ return caseRoleSum(c, '제조사') || 0; }));
-    const dist = avg(full.map(function(c){ return caseRoleSum(c, '유통사') || 0; }));
-    const etc = avg(full.map(function(c){
-      return (caseDefendantSum(c) || 0) - (caseRoleSum(c, '제조사') || 0) - (caseRoleSum(c, '유통사') || 0);
-    }));
+    /* 요약에서는 제조사·유통사를 나누지 않고 피고 몫으로 합친다.
+       역할 분류는 보도마다 표현이 달라 제조인지 유통인지 헷갈리는 사건이 있고,
+       어느 쪽인지는 아래 사건별 '책임 배분' 표에 그대로 남는다. */
+    const def_ = avg(full.map(function(c){ return caseDefendantSum(c) || 0; }));
     const emp = avg(full.map(function(c){ return Number(c.employerPct); }));
     const vic = avg(full.map(function(c){ return Number(c.plaintiffFaultPct); }));
 
@@ -1295,21 +1292,18 @@
     const span = dates.length ? (dates[0].slice(0, 7) + ' ~ ' + dates[dates.length - 1].slice(0, 7)) : '—';
 
     let bar = '';
-    if (full.length && mfr !== null && emp !== null && vic !== null){
-      const tot = mfr + dist + etc + emp + vic;
+    if (full.length && def_ !== null && emp !== null && vic !== null){
+      const tot = def_ + emp + vic;
       const w = function(v){ return tot > 0 ? (v / tot * 100) : 0; };
       const seg = function(cls, v){ return v > 0 ? '<span class="' + cls + '" style="width:' + w(v).toFixed(2) + '%"></span>' : ''; };
       const leg = function(cls, label, v){ return v > 0 ? '<span><i class="' + cls + '"></i>' + label + ' ' + fmtPct(v) + '</span>' : ''; };
       bar =
         '<div class="case-sum-sub">평균 책임 배분 <span style="font-weight:400;color:var(--muted);">· 배분 내역이 모두 확인된 ' + full.length + '건</span></div>' +
         '<div class="case-bar">' +
-          seg('cb-mfr', mfr) + seg('cb-dist', dist) + seg('cb-etc', etc) +
-          seg('cb-emp', emp) + seg('cb-vic', vic) +
+          seg('cb-def', def_) + seg('cb-emp', emp) + seg('cb-vic', vic) +
         '</div>' +
         '<div class="case-legend">' +
-          leg('cb-mfr', '제조사', mfr) +
-          leg('cb-dist', '유통사', dist) +
-          leg('cb-etc', '기타 피고', etc) +
+          leg('cb-def', '제조·유통사', def_) +
           leg('cb-emp', '고용주', emp) +
           leg('cb-vic', '피해 노동자', vic) +
         '</div>';
@@ -1346,8 +1340,6 @@
     box.innerHTML = caseList.map(function(c){
       const alloc = Array.isArray(c.allocation) ? c.allocation : [];
       const defendantSum = caseDefendantSum(c);
-      const mfrSum = caseRoleSum(c, '제조사');
-      const distSum = caseRoleSum(c, '유통사');
 
       const meta = [];
       if (c.caseNumber) meta.push('사건번호 ' + escapeHtml(c.caseNumber));
@@ -1397,8 +1389,7 @@
         (meta.length ? '<div class="case-meta">' + meta.join(' · ') + '</div>' : '') +
         '<div class="case-grid">' +
           '<div class="case-cell"><div class="case-cell-l">총 평결액</div><div class="case-cell-n hot">' + fmtUsd(c.totalUsd) + '</div></div>' +
-          '<div class="case-cell"><div class="case-cell-l">제조사 책임비율</div><div class="case-cell-n">' + fmtPct(mfrSum) + '</div></div>' +
-          '<div class="case-cell"><div class="case-cell-l">유통사 책임비율</div><div class="case-cell-n">' + fmtPct(distSum) + '</div></div>' +
+          '<div class="case-cell"><div class="case-cell-l">제조·유통사 책임비율</div><div class="case-cell-n">' + fmtPct(defendantSum) + '</div></div>' +
           '<div class="case-cell"><div class="case-cell-l">고용주 책임비율</div><div class="case-cell-n">' + fmtPct(c.employerPct) + '</div></div>' +
           '<div class="case-cell"><div class="case-cell-l">피해 노동자 과실</div><div class="case-cell-n">' + fmtPct(c.plaintiffFaultPct) + '</div></div>' +
         '</div>' +
