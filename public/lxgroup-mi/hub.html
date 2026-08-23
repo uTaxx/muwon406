@@ -72,8 +72,10 @@
   .loading-msg{font-size:14.5px; font-weight:700; color:var(--text); line-height:1.55;}
   .loading-sub{font-size:12px; color:var(--muted); line-height:1.55;}
   @media (prefers-reduced-motion:reduce){
-    .spinner{animation:softpulse 1.6s ease-in-out infinite; border-top-color:var(--green);}
-    @keyframes softpulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+    /* 시스템 '애니메이션 줄이기'가 켜져 있으면 깜빡이기만 해서 멈춘 것처럼 보였다.
+       진행 중이라는 건 보여야 하므로 깜빡임 대신 느린 회전으로 바꾼다
+       (40px 원 하나뿐이라 눈에 부담이 적다). */
+    .spinner{animation-duration:2.4s;}
   }
 
   .tab-nav{display:flex; gap:6px; margin-bottom:14px;}
