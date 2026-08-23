@@ -1,0 +1,95 @@
+name: 승인된 것만 매수
+
+# 08:50에 제안한 후보 중 **시트에 Y가 적힌 것만** 산다.
+#
+#     08:50  매수 후보 제안  →  텔레그램 버튼  →  시트에 Y
+#     09:05  여기 — Y가 적힌 것만 매수
+#
+# ## 매도는 승인과 무관하다
+#
+# 승인은 사는 것에만 걸린다. 들고 있는 종목의 손절·청산은 승인 여부와
+# 관계없이 늘 돈다. 그래서 살펴볼 종목이 '승인된 것 ∪ 보유 중인 것'이다.
+#
+# ## 자동 실행은 아직 안 걸었다
+#
+# schedule이 없다. 손으로 돌려야 한다. 승인 흐름을 며칠 눈으로 보고 나서
+# 켜는 것이 순서다 — 지금까지 이 저장소가 지켜 온 방식이다.
+#
+# 켜려면 아래 schedule 두 줄의 주석을 풀면 된다(평일 09:05 KST).
+# 다만 GitHub cron은 몇십 분 늦으므로, 실제로는 n8n 시계에서 부르는 편이
+# 낫다(docs/설계_n8n.md).
+#
+# ## 모의투자 전용이다
+#
+# 스크립트가 kis.env == "real"이면 스스로 종료한다. 여기서 한 번 더 막지는
+# 않는다 — 막는 자리가 여럿이면 어디서 막혔는지 알기 어려워진다.
+
+on:
+  # schedule:
+  #   - cron: "5 0 * * 1-5"   # 평일 09:05 KST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "KIS에 안 붙고 야후 시세로 흉내만 (주문 안 나감)"
+        type: boolean
+        default: true
+
+concurrency:
+  # 두 번 겹쳐 돌면 같은 종목을 두 번 산다.
+  group: execute-approved
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --out ./muwon.db || true
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
+
+      - name: KIS·텔레그램 설정 갱신
+        run: |
+          python scripts/configure.py kis --env paper \
+            --app-key "${{ secrets.KIS_APP_KEY }}" --app-secret "${{ secrets.KIS_APP_SECRET }}" \
+            --account-no "${{ secrets.KIS_ACCOUNT_NO }}" --account-product-cd "01"
+          python scripts/configure.py telegram \
+            --bot-token "${{ secrets.TELEGRAM_BOT_TOKEN }}" --chat-id "${{ secrets.TELEGRAM_CHAT_ID }}"
+
+      - name: 승인된 것만 매수
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/execute_approved.py \
+            ${{ github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
+            | tee execute.txt
+
+      # 보유·현금 상태가 바뀌었을 수 있다. 안 올리면 다음 실행이 옛 상태로 돈다.
+      - name: 상태 DB 올리기
+        if: always()
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py upload \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --path ./muwon.db
+
+      - name: 결과 아티팩트로 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execute-approved-${{ github.run_number }}
+          path: execute.txt
