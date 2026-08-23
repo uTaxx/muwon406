@@ -116,6 +116,15 @@
   .direction-icon.dir-down{color:#1565C0;}
   .stars{color:var(--green); font-size:12px; margin-left:2px;}
   .article-reason{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .sel-bar{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px;}
+  .sel-btn{background:var(--card); border:1.5px solid var(--line); color:var(--muted); border-radius:9px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .sel-btn:hover{border-color:var(--muted);}
+  .sel-btn.danger{background:#A32B26; border-color:#A32B26; color:#fff;}
+  .sel-btn.danger:disabled{background:var(--line); border-color:var(--line); color:var(--muted); cursor:default;}
+  .sel-count{font-size:12px; color:var(--muted);}
+  .article-item.picking{display:flex; gap:10px; align-items:flex-start;}
+  .article-item.picking .art-body{flex:1; min-width:0;}
+  .art-check{margin-top:3px; width:17px; height:17px; flex-shrink:0; accent-color:#A32B26; cursor:pointer;}
   .fb-row{display:flex; gap:6px; margin-top:8px;}
   .fb-btn{background:var(--bg); border:1.5px solid var(--line); color:var(--muted); border-radius:8px; padding:4px 10px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s, border-color .15s, color .15s;}
   .fb-btn:hover:not(:disabled){border-color:var(--muted);}
@@ -496,6 +505,13 @@
       </div>
 
       <div class="summary-line" id="summaryLine"></div>
+      <div class="sel-bar" id="selBar" style="display:none;">
+        <button type="button" class="sel-btn" id="selStartBtn">🗑 선택삭제</button>
+        <button type="button" class="sel-btn" id="selAllBtn" style="display:none;">보이는 항목 전체 선택</button>
+        <button type="button" class="sel-btn danger" id="selDelBtn" style="display:none;" disabled>선택한 0건 삭제</button>
+        <button type="button" class="sel-btn" id="selCancelBtn" style="display:none;">취소</button>
+        <span class="sel-count" id="selHint" style="display:none;">지운 기사는 원본 시트에서도 사라집니다. 되돌릴 수 없습니다.</span>
+      </div>
       <div class="fb-guide" id="fbGuide" style="display:none;">
         👍 / 👎 로 평가를 남기면 다음 수집부터 AI가 그 기준을 참고합니다.
         점수가 낮아 발송되지 않았지만 의미 있는 기사에 👍를 눌러두면, 비슷한 성격의 기사를 더 높게 평가합니다.
@@ -757,6 +773,7 @@
   const CASES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-cases';
   const CASE_STATUS_URL  = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-case-status';
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
+  const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
   const PAGE_SIZE = 50;
 
@@ -1803,11 +1820,14 @@
     const next = filtered.slice(shown, shown + PAGE_SIZE);
     next.forEach(a => {
       const div = document.createElement('div');
-      div.className = 'article-item';
+      div.className = 'article-item' + (picking ? ' picking' : '');
       const stars = getStars(a.importance);
       const dir = getDirectionIcon(a.direction);
       const scoreBadge = getScoreBadge(a);
+      const key = artKey(a);
       div.innerHTML = `
+        ${picking ? `<input type="checkbox" class="art-check" data-key="${escapeHtml(key)}"${picked.has(key) ? ' checked' : ''}>` : ''}
+        <div class="${picking ? 'art-body' : ''}">
         <div class="article-top">
           <span class="group-chip">${getGroupEmoji(a.group)} ${escapeHtml(a.group || '기타')}</span>
           <span class="article-date">${escapeHtml(a.pubDate || a.collectedAt || '')}</span>
@@ -1819,6 +1839,7 @@
           <button type="button" class="fb-btn fb-up${a.feedback === '중요' ? ' on-up' : ''}" title="이런 성격의 기사를 앞으로 더 높게 평가">👍 이런 기사 더</button>
           <button type="button" class="fb-btn fb-down${a.feedback === '제외' ? ' on-down' : ''}" title="이런 성격의 기사를 앞으로 낮게 평가">👎 이런 건 그만</button>
         </div>
+        </div>
       `;
       list.appendChild(div);
     });
@@ -1828,6 +1849,116 @@
     document.getElementById('moreBtn').style.display = shown < filtered.length ? 'block' : 'none';
     document.getElementById('fbGuide').style.display = filtered.length ? 'block' : 'none';
     document.getElementById('summaryLine').textContent = `총 ${allArticles.length}건 중 ${filtered.length}건 검색됨`;
+    document.getElementById('selBar').style.display = allArticles.length ? 'flex' : 'none';
+    updateSelUI();
+  }
+
+  /* ---------- 선택삭제 ----------
+     기사 한 건은 '링크 + 수집일시'로 집는다. 같은 링크가 여러 번 저장된 경우가
+     있어서 링크만으로는 고르지 않은 행까지 지워진다.
+     지우기는 되돌릴 수 없으므로 확인 창을 거치고, 원본 시트에도 반영된다. */
+  let picking = false;
+  const picked = new Set();
+
+  function artKey(a){
+    return String(a.link || '') + '||' + String(a.collectedAt || '');
+  }
+
+  function updateSelUI(){
+    const startBtn  = document.getElementById('selStartBtn');
+    const allBtn    = document.getElementById('selAllBtn');
+    const delBtn    = document.getElementById('selDelBtn');
+    const cancelBtn = document.getElementById('selCancelBtn');
+    const hint      = document.getElementById('selHint');
+    if (!startBtn) return;
+
+    startBtn.style.display  = picking ? 'none' : 'inline-block';
+    allBtn.style.display    = picking ? 'inline-block' : 'none';
+    delBtn.style.display    = picking ? 'inline-block' : 'none';
+    cancelBtn.style.display = picking ? 'inline-block' : 'none';
+    hint.style.display      = picking ? 'inline' : 'none';
+
+    delBtn.disabled = picked.size === 0;
+    delBtn.textContent = '선택한 ' + picked.size + '건 삭제';
+  }
+
+  function setPicking(on){
+    picking = on;
+    if (!on) picked.clear();
+    shown = 0;
+    renderList(true);
+  }
+
+  function deletePicked(){
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 입력해주세요.'); return; }
+    if (!picked.size) return;
+
+    const keys = [...picked];
+    const items = keys.map(function(k){
+      const i = k.lastIndexOf('||');
+      return { link: k.slice(0, i), collectedAt: k.slice(i + 2) };
+    });
+
+    const sample = keys.slice(0, 3).map(function(k){
+      const a = allArticles.find(function(x){ return artKey(x) === k; });
+      return '· ' + ((a && a.title) || '(제목 없음)').slice(0, 40);
+    }).join('\n');
+    const more = keys.length > 3 ? '\n… 외 ' + (keys.length - 3) + '건' : '';
+    if (!confirm(keys.length + '건을 지웁니다.\n\n' + sample + more +
+                 '\n\n원본 시트에서도 삭제되며 되돌릴 수 없습니다. 진행할까요?')) return;
+
+    let pw = savedAdminPw();
+    if (!pw){
+      pw = prompt('삭제는 관리자만 할 수 있습니다.\n비용관리와 같은 비밀번호를 입력해주세요.');
+      if (!pw) return;
+    }
+
+    const delBtn = document.getElementById('selDelBtn');
+    delBtn.disabled = true;
+    delBtn.textContent = '삭제 중...';
+    showLoading('기사를 지우는 중입니다', '건수가 많으면 시간이 걸립니다');
+
+    fetch(DELETE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, pw, items })
+    })
+      .then(function(res){
+        return res.json().then(function(data){ return { status: res.status, data }; });
+      })
+      .then(function(r){
+        hideLoading();
+        if (r.status === 401){
+          clearAdminPw();
+          alert('비밀번호가 올바르지 않습니다.');
+          updateSelUI();
+          return;
+        }
+        if (!r.data || r.data.ok !== true){
+          alert('삭제에 실패했습니다: ' + ((r.data && r.data.message) || '알 수 없는 오류'));
+          updateSelUI();
+          return;
+        }
+        saveAdminPw(pw);
+
+        const gone = new Set(keys);
+        allArticles = allArticles.filter(function(a){ return !gone.has(artKey(a)); });
+        picked.clear();
+        picking = false;
+        renderGroupOptions();
+        applyFilters();
+        renderRiskDashboard();
+
+        const missed = keys.length - (r.data.deleted || 0);
+        alert(r.data.deleted + '건을 지웠습니다.' +
+              (missed > 0 ? '\n(' + missed + '건은 시트에서 찾지 못했습니다. 이미 지워졌을 수 있습니다.)' : ''));
+      })
+      .catch(function(err){
+        hideLoading();
+        alert('삭제 중 오류가 발생했습니다: ' + err.message);
+        updateSelUI();
+      });
   }
 
   /* ---------- 기사 평가(AI 기준 조정) ---------- */
@@ -2399,6 +2530,25 @@
     setupDualRangeFilter('filterMinRelevance', 'filterMaxRelevance', 'filterRelevanceFill', 'filterRelevanceLabel', '점');
     setupDualRangeFilter('filterMinUrgency', 'filterMaxUrgency', 'filterUrgencyFill', 'filterUrgencyLabel', '점');
     document.getElementById('moreBtn').addEventListener('click', function(){ renderList(false); });
+    document.getElementById('selStartBtn').addEventListener('click', function(){ setPicking(true); });
+    document.getElementById('selCancelBtn').addEventListener('click', function(){ setPicking(false); });
+    document.getElementById('selDelBtn').addEventListener('click', deletePicked);
+    document.getElementById('selAllBtn').addEventListener('click', function(){
+      // 지금 화면에 그려진 것만 선택한다 ('더 보기'로 안 펼친 건 건드리지 않는다)
+      const boxes = document.querySelectorAll('#articleList .art-check');
+      const allOn = [...boxes].every(function(b){ return b.checked; });
+      boxes.forEach(function(b){
+        b.checked = !allOn;
+        if (b.checked) picked.add(b.dataset.key); else picked.delete(b.dataset.key);
+      });
+      updateSelUI();
+    });
+    document.getElementById('articleList').addEventListener('change', function(e){
+      const box = e.target.closest('.art-check');
+      if (!box) return;
+      if (box.checked) picked.add(box.dataset.key); else picked.delete(box.dataset.key);
+      updateSelUI();
+    });
     document.getElementById('riskMoreBtn').addEventListener('click', function(){ renderRiskTimeline(false); });
     document.getElementById('casePending').addEventListener('click', function(e){
       const btn = e.target.closest('.pending-acts button');
