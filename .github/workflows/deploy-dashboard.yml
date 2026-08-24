@@ -59,6 +59,18 @@ jobs:
           fi
           echo "확인됨 — 화면 파일에 계좌 숫자가 없다."
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 설명이 파이썬 원본과 어긋나지 않았는지 본다
+        # 용어 사전과 전략 설명의 원본은 파이썬이고, dashboard/자료/*.json은
+        # 거기서 뽑아 둔 사본이다. 원본만 고치고 다시 안 뽑으면 화면이 옛
+        # 설명을 계속 보여 준다 — 조용히 틀리는 쪽이라 올리기 전에 막는다.
+        run: |
+          pip install -e ".[dev]" --quiet
+          python scripts/export_dashboard_data.py --check
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
