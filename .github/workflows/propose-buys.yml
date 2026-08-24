@@ -14,6 +14,15 @@ name: 매수 후보 제안
 # 눈으로 확인한 뒤에 schedule을 켜는 것이 맞다.
 
 on:
+  # 08:30 KST 평일. 판단은 **어제 종가**로 하므로 장 열리기를 기다릴
+  # 이유가 없다. 일찍 받을수록 승인할 시간이 길어진다.
+  #
+  # n8n 시계도 08:50에 같은 것을 부른다. 스크립트가 하루에 한 번만
+  # 제안하므로 먼저 온 쪽이 이기고 나중 것은 조용히 물러난다.
+  # GitHub cron은 몇십 분씩 늦지만, 늦어도 예전(08:50)보다 나빠지지 않는다.
+  schedule:
+    - cron: "30 23 * * 0-4"   # UTC. 한국시간 평일 08:30
+
   workflow_dispatch:
     inputs:
       dry_run:
@@ -37,6 +46,9 @@ concurrency:
 
 jobs:
   propose:
+    # 예약은 운영 저장소에서만 돈다(다른 워크플로와 같은 규칙).
+    # 손으로 부르는 것과 n8n이 부르는 것은 어느 쪽에서든 그대로 된다.
+    if: github.event_name != 'schedule' || github.repository == 'uTaxx/muwon406'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -80,7 +92,7 @@ jobs:
             --max "${{ github.event.inputs.max || '0' }}" \
             --max-per-sector "${{ github.event.inputs.max_per_sector || '2' }}" \
             ${{ github.event.inputs.sector_filter == 'true' && '--sector-filter' || '' }} \
-            ${{ github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
+            ${{ github.event_name != 'schedule' && github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
             | tee propose.txt
 
       - name: 결과 아티팩트로 올리기

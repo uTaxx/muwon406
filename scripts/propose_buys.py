@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import requests
 from sqlalchemy import select
 
-from muwon.cloud.approval import pending_rows, 승인머리, 알림글, 후보
+from muwon.cloud.approval import pending_rows, read_today, 승인머리, 알림글, 후보
 from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create, read
 from muwon.cloud.sheet_log import append
 from muwon.config import bootstrap_settings
@@ -74,6 +74,8 @@ def main() -> int:
     parser.add_argument("--sheet-id", default=os.environ.get("MUWON_SHEET_ID", ""))
     parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     parser.add_argument("--dry-run", action="store_true", help="시트·텔레그램에 안 보내고 화면에만")
+    parser.add_argument("--force", action="store_true",
+                        help="오늘 후보가 이미 시트에 있어도 다시 뽑아 올린다")
     parser.add_argument("--max", type=int, default=0, help="후보를 몇 개까지 (0이면 설정의 동시보유 수)")
     # 아래 넷은 **시트가 원본**이다. 여기 값은 시험해 볼 때만 쓴다 —
     # 안 주면 시트에 적힌 것을 쓰고, 시트에도 없으면 기준표의 기본값을 쓴다.
@@ -232,6 +234,28 @@ def main() -> int:
     if args.dry_run:
         print("\n(--dry-run이라 시트·텔레그램에 안 보냈습니다)")
         return 0
+
+    # ── 하루에 한 번만 제안한다 ──────────────────────────────
+    # 저장소 예약(08:30)과 n8n 시계(08:50)가 둘 다 이걸 부른다. 그냥 두면
+    # 같은 후보가 시트에 두 줄씩 쌓이고 텔레그램 알림도 두 번 간다.
+    #
+    # **먼저 도착한 쪽이 이긴다.** 저장소 cron이 늦게 울려도(GitHub cron은
+    # 몇십 분씩 늦는다) 그때는 n8n이 이미 해 놨으므로 여기서 조용히 물러난다.
+    # 즉 어느 쪽이 먼저든 결과는 같고, 늦어도 예전(08:50)보다 나빠지지 않는다.
+    #
+    # 확인 자체가 실패하면 **제안하는 쪽으로 기운다.** 후보가 두 줄 쌓이는
+    # 것보다 오늘 후보가 아예 없는 쪽이 나쁘다 — 승인할 것이 없으면 그날은
+    # 아무것도 못 산다.
+    if not args.force:
+        try:
+            이미있는것, _ = read_today(sheet_id, 오늘)
+        except Exception as 탈:  # noqa: BLE001
+            print(f"\n오늘 것이 이미 있는지 못 봤습니다({type(탈).__name__}) — 그냥 제안합니다.")
+        else:
+            if 이미있는것:
+                print(f"\n오늘({오늘}) 후보 {len(이미있는것)}종목이 이미 시트에 있습니다. "
+                      "두 번 올리지 않고 물러납니다. 다시 뽑으려면 --force.")
+                return 0
 
     올린수 = append(sheet_id, "승인대기", 승인머리, pending_rows(고른것, 오늘))
     주소 = f"https://docs.google.com/spreadsheets/d/{sheet_id}"
