@@ -27,7 +27,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  검사:
+  check:
+    name: 자료가 섞였는지 검사
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,16 +37,17 @@ jobs:
       # 사람이 실수로 스냅샷 JSON을 site/에 두면 그 순간 계좌가 공개된다.
       - name: site/에 자료 파일이 섞였는지
         run: |
-          섞인것=$(find site -type f ! -name '*.html' ! -name '*.css' ! -name '*.js' ! -name '*.svg' ! -name '*.png' ! -name '*.ico' || true)
-          if [ -n "$섞인것" ]; then
+          stray=$(find site -type f ! -name '*.html' ! -name '*.css' ! -name '*.js' ! -name '*.svg' ! -name '*.png' ! -name '*.ico' || true)
+          if [ -n "$stray" ]; then
             echo "::error::site/ 에 화면 파일이 아닌 것이 있습니다. 이 저장소는 공개라 그대로 세상에 나갑니다:"
-            echo "$섞인것"
+            echo "$stray"
             exit 1
           fi
           echo "✅ site/ 에는 화면 파일만 있습니다."
 
-  배포:
-    needs: 검사
+  deploy:
+    name: 배포
+    needs: check
     runs-on: ubuntu-latest
     environment:
       name: github-pages
