@@ -488,6 +488,7 @@ class KISClient(MarketDataSource):
             total_eval_amount=float(summary.get("scts_evlu_amt") or 0),
             net_asset=float(summary.get("nass_amt") or 0),
             holdings=holdings,
+            raw_summary={str(k): str(v) for k, v in summary.items()},
         )
 
     #: fid_blng_cls_code — 어떤 기준으로 줄을 세울지.

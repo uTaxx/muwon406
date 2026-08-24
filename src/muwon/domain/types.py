@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
 
@@ -84,10 +84,15 @@ class AccountBalance:
     주문이 일부만 체결되거나 거부되면 그 계산이 실제 계좌와 조용히
     어긋나는데, 대조할 기준이 없어 눈치챌 방법이 없었다."""
 
-    cash: float  # 주문 가능 현금(예수금)
+    #: 예수금 총액(dnca_tot_amt). **주문 가능 금액과 같지 않다** — 매수 대금은
+    #: 결제(T+2)가 끝나야 여기서 빠지므로, 오늘 산 것은 이 값에 아직 안 잡힌다.
+    cash: float
     total_eval_amount: float  # 보유 주식 평가금액 합계
     net_asset: float  # 순자산(현금+주식)
     holdings: list[Holding]
+    #: 증권사가 준 계좌요약 원본(output2). 어떤 필드가 무엇인지 눈으로
+    #: 확인해야 할 때가 있어서 그대로 들고 다닌다.
+    raw_summary: dict[str, str] = field(default_factory=dict)
 
     def holding_for(self, symbol: str) -> Holding | None:
         return next((h for h in self.holdings if h.symbol == symbol), None)

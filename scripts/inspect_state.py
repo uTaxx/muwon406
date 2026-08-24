@@ -47,8 +47,23 @@ def _계좌대조(session_factory) -> None:
     if not creds.app_key or not creds.app_secret or not creds.account_no:
         print("\n■ 계좌 대조 — KIS 인증정보가 없어 건너뜁니다.")
         return
-    if check_account_consistency(KISClient.from_settings(service), session_factory) is None:
+    client = KISClient.from_settings(service)
+    if check_account_consistency(client, session_factory) is None:
         print("  (잔고 조회에 실패해 대조하지 못했습니다)")
+        return
+
+    # 대조가 "현금 일치"라고 해도 안심하면 안 된다. 우리가 비교하는 값은
+    # 예수금 총액(dnca_tot_amt)인데, 매수 대금은 결제(T+2)가 끝나야 거기서
+    # 빠진다. 즉 **오늘 산 것은 이 숫자에 아직 안 잡힌다.**
+    # 어느 필드가 무엇인지는 증권사 응답을 직접 봐야 알 수 있어서 그대로 찍는다.
+    try:
+        원본 = client.get_balance().raw_summary
+    except Exception as e:  # noqa: BLE001 — 참고 출력이 점검을 막으면 안 된다
+        print(f"  (계좌요약 원본 조회 실패: {type(e).__name__}: {e})")
+        return
+    print("\n■ 계좌요약 원본 — 예수금 관련 필드 (결제 시점 때문에 서로 다르다)")
+    for k, v in sorted(원본.items()):
+        print(f"  {k:<24} {v}")
 
 
 def main() -> None:
