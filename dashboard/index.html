@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>sdlab 매매 대시보드</title>
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="주식 자동매매 — 지금 손익, 오늘 승인, 기록, 전략과 기준을 한 화면에서.">
+
+<!--
+  이 화면은 계좌 자료를 담고 있지 않다. 저장소가 공개라서, 숫자를 파일에
+  넣는 순간 보유 종목과 잔고가 공개되고 그건 되돌릴 수가 없다(캐시·크롤러).
+  파일에는 그리는 코드만 두고, 숫자는 볼 때마다 웹훅에서 받아 온다.
+  열쇠는 보는 사람 브라우저에만 있고 저장소에는 안 올라간다.
+-->
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="싸개">
+
+  <!-- ── 머리 ────────────────────────────────────────── -->
+  <div class="머리">
+    <div>
+      <h1>매매 대시보드</h1>
+      <p class="부제">증권사 계좌를 그대로 조회한 값입니다 · 모의투자</p>
+    </div>
+    <div class="오른쪽">
+      <span id="킬딱지" class="딱지 켜짐 숨김">매매 켜짐</span>
+    </div>
+  </div>
+
+  <!-- ── 열쇠 넣기 ───────────────────────────────────── -->
+  <section id="설정" class="숨김" style="margin-top:18px">
+    <div class="알림 순한">
+      <strong>열쇠를 한 번만 넣어 주세요.</strong><br>
+      이 화면은 <b>계좌 자료를 담고 있지 않습니다</b> — 주소를 아는 사람은
+      화면을 열 수 있으니, 숫자는 열쇠가 있어야만 나옵니다.
+      열쇠는 <b>이 브라우저에만</b> 저장됩니다.
+    </div>
+    <label for="열쇠">열쇠</label>
+    <input id="열쇠" type="password" placeholder="열쇠를 붙여 넣으세요" autocomplete="off">
+    <details>
+      <summary>자료를 다른 곳에서 받아야 한다면</summary>
+      <label for="주소">n8n 주소 (비우면 기본값을 씁니다)</label>
+      <input id="주소" type="url" placeholder="https://....app.n8n.cloud" autocomplete="off">
+    </details>
+    <div class="줄">
+      <button id="저장" class="주된">저장하고 불러오기</button>
+    </div>
+  </section>
+
+  <div id="기억못함" class="알림 숨김" style="margin-top:14px">
+    <strong>이 브라우저가 열쇠를 기억하지 못합니다.</strong><br>
+    숫자는 지금 그대로 나옵니다. 다만 <b>창을 닫았다 다시 열면 열쇠를 한 번 더
+    넣어야 합니다.</b>
+  </div>
+
+  <!-- ── 본문 ────────────────────────────────────────── -->
+  <main id="본문" class="숨김">
+
+    <div class="탭줄" role="tablist">
+      <button class="탭" role="tab" data-탭="손익"  aria-selected="true">지금 손익</button>
+      <button class="탭" role="tab" data-탭="승인"  aria-selected="false">오늘 승인</button>
+      <button class="탭" role="tab" data-탭="기록"  aria-selected="false">기록</button>
+      <button class="탭" role="tab" data-탭="기준"  aria-selected="false">전략과 기준</button>
+    </div>
+
+    <!-- 탭 1 · 지금 손익 ─────────────────────────────── -->
+    <section id="쪽-손익" role="tabpanel">
+      <div id="손익알림"></div>
+      <div class="칸들">
+        <div class="칸 넓게">
+          <div class="이름표">평가손익</div>
+          <div class="값" id="손익">—</div>
+          <div class="곁말" id="수익률">아직 안 판 종목이 지금 얼마가 됐는지입니다</div>
+        </div>
+        <div class="칸">
+          <div class="이름표">순자산</div>
+          <div class="값" id="순자산">—</div>
+          <div class="곁말">현금 + 주식</div>
+        </div>
+        <div class="칸">
+          <div class="이름표">주문 가능 현금</div>
+          <div class="값" id="현금">—</div>
+          <div class="곁말">결제(T+2) 반영</div>
+        </div>
+      </div>
+
+      <div class="표싸개">
+        <table>
+          <thead><tr>
+            <th>종목</th><th>평가손익</th><th>수익률</th><th>수량</th>
+            <th>평균매입가</th><th>현재가</th><th>평가금액</th>
+          </tr></thead>
+          <tbody id="보유몸"></tbody>
+        </table>
+      </div>
+
+      <div class="줄">
+        <button id="다시" class="주된">🔄 지금 다시 조회</button>
+        <button id="자동전환">자동 갱신 켜기</button>
+      </div>
+      <div class="때" id="때"></div>
+    </section>
+
+    <!-- 탭 2 · 오늘 승인 ─────────────────────────────── -->
+    <section id="쪽-승인" role="tabpanel" class="숨김">
+      <div id="승인알림"></div>
+      <h2>오늘 살 만하다고 고른 것</h2>
+      <p class="h2곁말">
+        체크한 것만 <b>09:05에</b> 삽니다. 아무것도 안 누르면 아무것도 안 삽니다 —
+        빈 칸은 승인이 아닙니다.
+      </p>
+      <div id="승인몸" class="후보들"></div>
+      <div class="줄">
+        <button id="승인다시">🔄 다시 불러오기</button>
+      </div>
+      <div class="때" id="승인때"></div>
+
+      <details>
+        <summary>승인에 걸린 규칙 셋</summary>
+        <p><b>빈 칸은 승인이 아니다</b> — 안 누른 것, 지운 것은 전부 거부입니다.
+           사는 쪽으로 기우는 기본값을 두지 않습니다.</p>
+        <p><b>어제 승인은 오늘 못 쓴다</b> — 후보를 낸 날과 주문 날이 다르면 무시합니다.
+           어제 좋아 보이던 종목이 오늘 20% 올라 있을 수 있습니다.</p>
+        <p><b>파는 것은 승인과 무관하다</b> — 들고 있는 종목의 손절·청산은
+           아무것도 안 눌러도 늘 돕니다.</p>
+      </details>
+    </section>
+
+    <!-- 탭 3 · 기록 ──────────────────────────────────── -->
+    <section id="쪽-기록" role="tabpanel" class="숨김">
+      <div id="기록알림"></div>
+      <h2>성적</h2>
+      <p class="h2곁말">청산까지 끝난 거래만 셉니다. 아직 들고 있는 것은 위 <b>지금 손익</b>에 있습니다.</p>
+      <div class="칸들">
+        <div class="칸">
+          <div class="이름표">승률</div>
+          <div class="값" id="승률">—</div>
+          <div class="곁말">이긴 거래 비율</div>
+        </div>
+        <div class="칸">
+          <div class="이름표">손익비</div>
+          <div class="값" id="손익비">—</div>
+          <div class="곁말">이길 때 평균 이익 ÷ 질 때 평균 손실</div>
+        </div>
+        <div class="칸">
+          <div class="이름표">최대낙폭</div>
+          <div class="값" id="최대낙폭">—</div>
+          <div class="곁말">고점 대비 가장 많이 빠졌던 폭</div>
+        </div>
+      </div>
+      <div class="알림 순한" style="margin-top:14px">
+        <strong>승률만 보면 안 됩니다.</strong> 승률 33%여도 손익비가 3이면 본전 이상입니다.
+        그리고 <b>제일 먼저 볼 것은 평균이 아니라 최대낙폭</b>입니다 — 한 해에 30%를
+        잃으면 대부분 중간에 그만두고, 그러면 좋은 평균은 받아 보지도 못합니다.
+      </div>
+
+      <h2>완결된 거래</h2>
+      <div class="표싸개">
+        <table>
+          <thead><tr>
+            <th>종목</th><th>손익</th><th>수익률</th><th>수량</th>
+            <th>산 값</th><th>판 값</th><th>기간</th>
+          </tr></thead>
+          <tbody id="기록몸"></tbody>
+        </table>
+      </div>
+      <div class="줄"><button id="기록다시">🔄 다시 불러오기</button></div>
+      <div class="때" id="기록때"></div>
+    </section>
+
+    <!-- 탭 4 · 전략과 기준 ───────────────────────────── -->
+    <section id="쪽-기준" role="tabpanel" class="숨김">
+      <div id="기준알림"></div>
+
+      <h2>매매 스위치</h2>
+      <p class="h2곁말">끄면 <b>새로 사는 것이 전부 멈춥니다.</b> 들고 있는 것의 손절은 그대로 돕니다.</p>
+      <div class="칸 넓게">
+        <div class="줄" style="margin:0; justify-content:space-between">
+          <div>
+            <div class="값" id="킬값" style="font-size:19px">—</div>
+            <div class="곁말" id="킬곁말">불러오는 중…</div>
+          </div>
+          <button id="킬전환">바꾸기</button>
+        </div>
+      </div>
+
+      <h2>쓰는 전략</h2>
+      <p class="h2곁말">고르면 <b>다음 실행부터</b> 적용됩니다. 지금 들고 있는 것은 안 건드립니다.</p>
+      <select id="전략"></select>
+      <p class="설명" id="전략설명"></p>
+
+      <h2>기준</h2>
+      <p class="h2곁말">전략보다 위에 있는 안전선입니다. 전략이 사라고 해도 여기 걸리면 안 삽니다.</p>
+      <div class="짝">
+        <div>
+          <label for="손절">손절 폭 (%)</label>
+          <input id="손절" type="number" step="0.5" min="1" max="50">
+          <p class="설명">산 값에서 이만큼 빠지면 무조건 판다</p>
+        </div>
+        <div>
+          <label for="비중">종목당 비중 (%)</label>
+          <input id="비중" type="number" step="1" min="1" max="100">
+          <p class="설명">한 종목에 순자산의 몇 %까지</p>
+        </div>
+        <div>
+          <label for="동시보유">동시 보유 수</label>
+          <input id="동시보유" type="number" step="1" min="1" max="30">
+          <p class="설명">한 번에 몇 종목까지 들고 있을지</p>
+        </div>
+      </div>
+
+      <div class="줄">
+        <button id="기준저장" class="주된">저장</button>
+        <button id="기준다시">되돌리기</button>
+      </div>
+      <div class="때" id="기준때"></div>
+    </section>
+
+    <div class="줄" style="margin-top:26px">
+      <button id="연결풀기" class="작게">연결 지우기</button>
+    </div>
+  </main>
+
+  <div id="탈남" class="알림 숨김" style="margin-top:16px"></div>
+
+</div>
+<script src="./app.js"></script>
+</body>
+</html>

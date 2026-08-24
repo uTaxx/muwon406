@@ -1,0 +1,227 @@
+/* ─────────────────────────────────────────────────────────────
+   sdlab 대시보드 — 색과 글꼴은 전부 여기 토큰으로만 정한다.
+   MI 수집 대시보드 디자인이 확정되면 이 파일 위쪽 토큰만 갈아 끼운다.
+   컴포넌트 쪽은 토큰만 참조하므로 손댈 일이 없다.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* 바탕과 글 */
+  --바탕: #F4F6F8;
+  --판: #FFFFFF;
+  --판2: #EDF1F4;
+  --선: #D8E0E6;
+  --선연함: #E7EDF1;
+  --글: #111820;
+  --글2: #3B4854;
+  --흐린글: #6A7783;
+
+  /* 강조 — 한 곳에만 쓴다 */
+  --강조: #1F5F8B;
+  --강조연함: #E3EDF4;
+
+  /* 한국 증시 관례: 오르면 빨강, 내리면 파랑 */
+  --오름: #D0303A;
+  --내림: #1E64C8;
+  --중립: #6A7783;
+
+  /* 상태 — 강조색과 섞이지 않게 따로 */
+  --켜짐: #1B7F5A;
+  --켜짐연함: #E1F1EA;
+  --꺼짐: #A9501F;
+  --꺼짐연함: #F7E9DF;
+
+  --그림자: 0 1px 2px rgba(17, 24, 32, .05), 0 10px 28px -20px rgba(17, 24, 32, .35);
+  --둥글: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --바탕: #0F141A;
+    --판: #171E26;
+    --판2: #1F2831;
+    --선: #2E3A45;
+    --선연함: #263039;
+    --글: #E7EDF2;
+    --글2: #BCC7D1;
+    --흐린글: #8996A3;
+    --강조: #6FAAD0;
+    --강조연함: #1A2A36;
+    --오름: #F06A72;
+    --내림: #6FA3EE;
+    --중립: #8996A3;
+    --켜짐: #58C29A;
+    --켜짐연함: #162C25;
+    --꺼짐: #DE9163;
+    --꺼짐연함: #2F2119;
+    --그림자: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 28px -20px rgba(0, 0, 0, .8);
+  }
+}
+
+:root[data-theme="dark"] {
+  --바탕: #0F141A;
+  --판: #171E26;
+  --판2: #1F2831;
+  --선: #2E3A45;
+  --선연함: #263039;
+  --글: #E7EDF2;
+  --글2: #BCC7D1;
+  --흐린글: #8996A3;
+  --강조: #6FAAD0;
+  --강조연함: #1A2A36;
+  --오름: #F06A72;
+  --내림: #6FA3EE;
+  --중립: #8996A3;
+  --켜짐: #58C29A;
+  --켜짐연함: #162C25;
+  --꺼짐: #DE9163;
+  --꺼짐연함: #2F2119;
+  --그림자: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 28px -20px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--바탕);
+  color: var(--글);
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+               "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+.싸개 { max-width: 900px; margin: 0 auto; padding: 20px 16px 72px; }
+
+/* ── 머리 ───────────────────────────── */
+.머리 { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+.부제 { color: var(--흐린글); font-size: 13px; margin: 2px 0 0; }
+.머리 .오른쪽 { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* ── 탭 ─────────────────────────────── */
+.탭줄 {
+  display: flex; gap: 4px; margin: 18px 0 16px;
+  border-bottom: 1px solid var(--선); overflow-x: auto;
+  scrollbar-width: none;
+}
+.탭줄::-webkit-scrollbar { display: none; }
+.탭 {
+  font: inherit; font-size: 14px; font-weight: 500;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--흐린글); padding: 9px 12px; cursor: pointer; white-space: nowrap;
+  margin-bottom: -1px;
+}
+.탭:hover { color: var(--글2); }
+.탭[aria-selected="true"] { color: var(--강조); border-bottom-color: var(--강조); }
+
+/* ── 카드 ───────────────────────────── */
+.칸들 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.칸 {
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--둥글);
+  padding: 14px 16px; box-shadow: var(--그림자);
+}
+.칸.넓게 { grid-column: 1 / -1; }
+.이름표 { font-size: 12px; color: var(--흐린글); margin-bottom: 4px; }
+.값 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.칸.넓게 .값 { font-size: 30px; }
+.곁말 { font-size: 12px; color: var(--흐린글); margin-top: 3px; }
+
+.오름 { color: var(--오름); }
+.내림 { color: var(--내림); }
+.중립 { color: var(--중립); }
+
+/* ── 표 ─────────────────────────────── */
+.표싸개 {
+  margin-top: 14px; overflow-x: auto; background: var(--판);
+  border: 1px solid var(--선); border-radius: var(--둥글); box-shadow: var(--그림자);
+}
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--선연함); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th {
+  font-size: 11px; font-weight: 600; letter-spacing: .05em; color: var(--흐린글);
+  background: var(--판2); border-bottom: 1px solid var(--선);
+}
+tbody tr:last-child td { border-bottom: none; }
+td { font-variant-numeric: tabular-nums; }
+td.가운데, th.가운데 { text-align: center; }
+
+/* ── 단추 ───────────────────────────── */
+button {
+  font: inherit; cursor: pointer; border-radius: 8px;
+  border: 1px solid var(--선); background: var(--판); color: var(--글);
+  padding: 8px 14px; font-size: 14px;
+}
+button:hover:not(:disabled) { border-color: var(--강조); color: var(--강조); }
+button:disabled { opacity: .5; cursor: default; }
+button.주된 { background: var(--강조); border-color: var(--강조); color: #fff; }
+button.주된:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+button.작게 { padding: 5px 10px; font-size: 13px; border-radius: 6px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--강조); outline-offset: 2px;
+}
+.줄 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+
+/* 승인 · 거절 */
+button.고름[aria-pressed="true"] { background: var(--켜짐연함); border-color: var(--켜짐); color: var(--켜짐); font-weight: 600; }
+button.거름[aria-pressed="true"] { background: var(--꺼짐연함); border-color: var(--꺼짐); color: var(--꺼짐); font-weight: 600; }
+
+/* ── 알림 ───────────────────────────── */
+.알림 {
+  background: var(--꺼짐연함); border: 1px solid var(--꺼짐);
+  border-radius: var(--둥글); padding: 13px 15px; font-size: 14px; color: var(--글2);
+}
+.알림.순한 { background: var(--강조연함); border-color: var(--강조); }
+.알림 strong { color: var(--글); }
+.알림 + * { margin-top: 14px; }
+
+/* ── 표딱지 ─────────────────────────── */
+.딱지 {
+  font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  padding: 3px 8px; border-radius: 20px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.딱지.켜짐 { background: var(--켜짐연함); color: var(--켜짐); border-color: var(--켜짐); }
+.딱지.꺼짐 { background: var(--꺼짐연함); color: var(--꺼짐); border-color: var(--꺼짐); }
+.딱지.예시 { background: var(--판2); color: var(--흐린글); border-color: var(--선); }
+
+/* ── 입력 ───────────────────────────── */
+label { display: block; font-size: 13px; color: var(--흐린글); margin: 14px 0 5px; }
+input, select {
+  font: inherit; width: 100%; padding: 9px 11px;
+  border: 1px solid var(--선); border-radius: 8px;
+  background: var(--판); color: var(--글);
+}
+.설명 { font-size: 12.5px; color: var(--흐린글); margin: 5px 0 0; }
+.짝 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 14px; }
+
+/* ── 기타 ───────────────────────────── */
+.숨김 { display: none !important; }
+.때 { color: var(--흐린글); font-size: 12px; margin-top: 12px; }
+details { margin-top: 16px; font-size: 13px; color: var(--흐린글); }
+summary { cursor: pointer; }
+.빔 { text-align: center; color: var(--흐린글); padding: 26px 12px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em;
+       background: var(--판2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+h2 { font-size: 16px; font-weight: 700; margin: 22px 0 2px; }
+h2:first-child { margin-top: 0; }
+.h2곁말 { font-size: 13px; color: var(--흐린글); margin: 0 0 12px; }
+
+/* ── 승인 후보 카드 ──────────────────────────────────
+   표로 두면 폰에서 버튼이 가로 스크롤 뒤로 숨는다. 하루 중 유일하게
+   손대는 자리라 어떤 폭에서도 바로 보여야 한다. */
+.후보들 { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.후보 {
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--둥글);
+  padding: 14px 16px; box-shadow: var(--그림자);
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+}
+.후보 .누구 { flex: 1 1 190px; min-width: 0; }
+.후보 .이름 { font-weight: 600; font-size: 15px; }
+.후보 .잔글 { font-size: 12.5px; color: var(--흐린글); margin-top: 1px;
+              font-variant-numeric: tabular-nums; }
+.후보 .고르기 { display: flex; gap: 6px; margin-left: auto; }
+.후보.정해짐 { border-color: var(--강조); }
+.후보 .빔 { padding: 0; }
