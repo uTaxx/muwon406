@@ -7,7 +7,7 @@ PC든 그 주소만 열면 언제든 현재 리스크 정책·보유 종목·매
 결과를 볼 수 있다.
 
 **비용은 0원이다** — Streamlit Community Cloud는 공개(public) GitHub
-저장소를 무료로 호스팅해준다. 이 저장소(`uTaxx/muwon406`)는 이미 공개
+저장소를 무료로 호스팅해준다. 이 저장소(`uTaxx/sdlab_trading`)는 이미 공개
 저장소라 바로 쓸 수 있다.
 
 ## 왜 이게 되는지 (배경)
@@ -37,8 +37,8 @@ Streamlit Cloud도 GitHub Actions와 마찬가지로 **컨테이너가 재배포
    (이 저장소에 접근 권한이 있는 GitHub 계정이어야 함)
 2. **Create app** → **Deploy a public app from GitHub**
 3. 입력값:
-   - **Repository**: `uTaxx/muwon406`
-   - **Branch**: `claude/reset-lfe6ro` (또는 지금 쓰는 브랜치)
+   - **Repository**: `uTaxx/sdlab_trading`
+   - **Branch**: `main` (또는 지금 쓰는 브랜치)
    - **Main file path**: `src/muwon/dashboard/app.py`
 4. **Advanced settings** 펼치기 → **Python version**을 `3.11`로 지정
 5. 아직 **Deploy는 누르지 말고** 같은 화면(또는 배포 후 앱 설정 → **Secrets**)에서

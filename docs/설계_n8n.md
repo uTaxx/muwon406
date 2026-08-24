@@ -157,7 +157,7 @@ API로는 자격증명을 뗄 수가 없어서(반드시 어떤 것이든 가리
 HTTP Request 설정:
 
 ```
-POST https://api.github.com/repos/uTaxx/muwon406/actions/workflows/telegram-n8n.yml/dispatches
+POST https://api.github.com/repos/uTaxx/sdlab_trading/actions/workflows/telegram-n8n.yml/dispatches
 
 Headers
   Authorization: Bearer <PAT>
@@ -165,7 +165,7 @@ Headers
 
 Body (JSON)
 {
-  "ref": "claude/reset-lfe6ro",
+  "ref": "main",
   "inputs": { "payload": "={{ JSON.stringify($json) }}" }
 }
 ```

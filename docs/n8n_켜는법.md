@@ -35,7 +35,7 @@ n8n이 GitHub를 부르려면 열쇠가 필요합니다. **제일 좁은 열쇠*
 |---|---|
 | **Token name** | `n8n muwon406` |
 | **Expiration** | 90일 정도 (지나면 다시 만들어야 합니다) |
-| **Repository access** | **Only select repositories** → `uTaxx/muwon406` 하나만 |
+| **Repository access** | **Only select repositories** → `uTaxx/sdlab_trading` 하나만 |
 
 그다음 **Repository permissions**를 펼치고 **`Actions`** 항목을 찾아
 **`Read and write`**로 바꿉니다.
@@ -97,15 +97,15 @@ Authentication Template에 넣을 것:
 2. 초록색으로 끝나면 성공입니다
 
 **GitHub에서도 확인하세요**:
-https://github.com/uTaxx/muwon406/actions — `시장·섹터 리포트`가 방금
+https://github.com/uTaxx/sdlab_trading/actions — `시장·섹터 리포트`가 방금
 돌기 시작했으면 열쇠가 제대로 된 겁니다.
 
 | 나오는 말 | 뜻 | 할 일 |
 |---|---|---|
 | `401` | 열쇠가 틀렸다 | 1부를 다시 |
 | `403` | 권한이 모자란다 | `Actions: Read and write` 확인 |
-| `404` | 저장소나 워크플로 이름이 틀렸다 | 저장소를 `uTaxx/muwon406`으로 골랐는지 |
-| `422` | 몸통이 틀렸다 | `ref`가 `claude/reset-lfe6ro`인지 |
+| `404` | 저장소나 워크플로 이름이 틀렸다 | 저장소를 `uTaxx/sdlab_trading`으로 골랐는지 |
+| `422` | 몸통이 틀렸다 | `ref`가 `main`인지 |
 
 ### 2-5. 켜기
 
@@ -227,7 +227,7 @@ n8n이 GitHub를 못 부르고, 그게 전부입니다.
 # 자주 걸리는 것
 
 **"n8n에서는 성공인데 GitHub에서 아무 일도 안 일어난다"**
-→ `ref` 가 `claude/reset-lfe6ro`인지 보세요. 다른 가지 이름을 넣으면
+→ `ref` 가 `main`인지 보세요. 다른 가지 이름을 넣으면
    GitHub가 성공으로 답하고 아무것도 안 합니다.
 
 **"자격증명을 고쳤는데도 웹훅이 안 걸린다"**

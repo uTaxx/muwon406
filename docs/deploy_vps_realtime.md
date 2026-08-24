@@ -24,9 +24,9 @@ KIS Developers 공식 문서를 기준으로 작성한 최선의 추정이다. V
 
 ```bash
 sudo apt update && sudo apt install -y python3.11 python3.11-venv git
-git clone https://github.com/uTaxx/muwon406.git
-cd muwon406
-git checkout claude/reset-lfe6ro   # 아직 병합 전이면
+git clone https://github.com/uTaxx/sdlab_trading.git
+cd sdlab_trading
+git checkout main   # 아직 병합 전이면
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,realtime]"
@@ -74,8 +74,8 @@ After=network.target
 [Service]
 Type=simple
 User=<본인 리눅스 사용자명>
-WorkingDirectory=/home/<사용자명>/muwon406
-ExecStart=/home/<사용자명>/muwon406/.venv/bin/python scripts/run_realtime_trading.py
+WorkingDirectory=/home/<사용자명>/sdlab_trading
+ExecStart=/home/<사용자명>/sdlab_trading/.venv/bin/python scripts/run_realtime_trading.py
 Restart=on-failure
 RestartSec=10
 

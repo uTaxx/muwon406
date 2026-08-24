@@ -44,7 +44,7 @@ Gmail 계정은 공유 드라이브를 만들 수 없다 — 그 경우 워크�
 
 ## 3. GitHub Secrets 등록
 
-`https://github.com/uTaxx/muwon406/settings/secrets/actions` 접속 →
+`https://github.com/uTaxx/sdlab_trading/settings/secrets/actions` 접속 →
 **New repository secret**으로 아래 8개를 하나씩 추가.
 
 | Secret 이름 | 값 |
@@ -60,7 +60,7 @@ Gmail 계정은 공유 드라이브를 만들 수 없다 — 그 경우 워크�
 
 ## 4. 첫 실행 확인
 
-1. https://github.com/uTaxx/muwon406/actions/workflows/paper-trading.yml 접속
+1. https://github.com/uTaxx/sdlab_trading/actions/workflows/paper-trading.yml 접속
 2. **Run workflow** 버튼 → 브랜치 확인 → **Run workflow**
 3. 몇 분 뒤 실행 결과 확인 — 초록 체크면 성공. 빨간 X면 로그를 열어서 어느 단계에서 실패했는지 확인
 

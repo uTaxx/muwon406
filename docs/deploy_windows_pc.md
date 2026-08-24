@@ -30,9 +30,9 @@ PC가 잠들면 그 순간 매매가 멈춘다.
 
 ```powershell
 cd $HOME
-git clone https://github.com/uTaxx/muwon406.git
-cd muwon406
-git checkout claude/reset-lfe6ro
+git clone https://github.com/uTaxx/sdlab_trading.git
+cd sdlab_trading
+git checkout main
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev,realtime]"
@@ -71,7 +71,7 @@ python scripts\run_realtime_trading.py
 수동 실행이 잘 되면, PC를 켜거나 재부팅될 때 자동으로 뜨고, 프로세스가
 죽어도 스스로 재시작하도록 배치파일로 감싼다.
 
-`muwon406` 폴더에 `run_forever.bat` 파일을 새로 만든다 (메모장으로 작성 후
+`sdlab_trading` 폴더에 `run_forever.bat` 파일을 새로 만든다 (메모장으로 작성 후
 파일 형식을 "모든 파일"로, 이름을 `run_forever.bat`로 저장):
 
 ```bat

@@ -62,7 +62,7 @@ const 깃허브로넘기기 = node({
     position: [700, 0],
     parameters: {
       method: 'POST',
-      url: 'https://api.github.com/repos/uTaxx/muwon406/actions/workflows/telegram-n8n.yml/dispatches',
+      url: 'https://api.github.com/repos/uTaxx/sdlab_trading/actions/workflows/telegram-n8n.yml/dispatches',
       authentication: 'genericCredentialType',
       genericAuthType: 'httpTemplatedCustomAuth',
       sendHeaders: true,
@@ -73,7 +73,7 @@ const 깃허브로넘기기 = node({
       sendBody: true,
       contentType: 'json',
       specifyBody: 'json',
-      jsonBody: expr('{\n  "ref": "claude/reset-lfe6ro",\n  "inputs": {\n    "payload": {{ JSON.stringify(JSON.stringify($("텔레그램에서 온 것").item.json)) }}\n  }\n}')
+      jsonBody: expr('{\n  "ref": "main",\n  "inputs": {\n    "payload": {{ JSON.stringify(JSON.stringify($("텔레그램에서 온 것").item.json)) }}\n  }\n}')
     },
     credentials: { httpTemplatedCustomAuth: newCredential('무원406 깃허브 PAT (Actions 쓰기)') }
   },
