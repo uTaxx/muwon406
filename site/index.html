@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>주식매매 관리용 대시보드</title>
+
+<!--
+  무원406 대시보드 — GitHub Pages에 올라가는 정적 페이지 한 장.
+
+  ## 이 파일에는 계좌 자료가 하나도 없다
+
+  저장소가 **공개**라서 여기 올린 것은 누구나 본다. 그래서 이 파일은
+  화면을 그리는 코드만 담고, 숫자는 볼 때마다 받아 온다. 받아 오는 주소와
+  열쇠는 이 브라우저에만 저장한다(localStorage) — 저장소에도, 이 파일에도
+  안 들어간다. 주소를 아는 사람이 열어도 열쇠가 없으면 빈 화면이다.
+
+  ## 왜 서버를 안 쓰나
+
+  스트림릿이 청구하던 값 — 배포가 18커밋 밀린 것, DB 파일을 갈아 끼우다
+  연결이 죽은 것, 오류를 가려서 원인을 못 찾은 것 — 은 전부 **서버가 상태를
+  들고 있어서** 생긴 병이다. 정적 파일은 들고 있을 상태가 없다.
+-->
+
+<style>
+  :root {
+    --바탕: #F7F8FA; --판: #FFFFFF; --테두리: #EEF0F4;
+    --글: #101828; --흐린글: #667085;
+    --오름: #D92D20;   /* 한국은 빨강이 오름, 파랑이 내림 — 미국과 반대다 */
+    --내림: #175CD3;
+    --중립: #667085;
+    --버튼: #101828; --버튼글: #FFFFFF;
+    --경고바탕: #FFF8E6; --경고테두리: #F5D98B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --바탕: #14161A; --판: #1B1E24; --테두리: #2A2E36;
+      --글: #ECEDEE; --흐린글: #98A2B3;
+      --오름: #F97066; --내림: #6BA5F5;
+      --버튼: #ECEDEE; --버튼글: #14161A;
+      --경고바탕: #2A2413; --경고테두리: #5C4A16;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px 14px 48px;
+    background: var(--바탕); color: var(--글);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+                 "Malgun Gothic", "Noto Sans KR", sans-serif;
+    font-size: 15px; line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+  .싸개 { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 19px; margin: 0 0 2px; }
+  .부제 { color: var(--흐린글); font-size: 13px; margin: 0 0 16px; }
+
+  .칸들 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .칸 {
+    background: var(--판); border: 1px solid var(--테두리);
+    border-radius: 14px; padding: 12px 14px; min-width: 0;
+  }
+  .칸.넓게 { grid-column: 1 / -1; }
+  .이름표 { font-size: 12px; color: var(--흐린글); }
+  /* 금액이 잘리면 이 화면은 아무 쓸모가 없다. 폰 폭에서 줄어들게 둔다. */
+  .값 {
+    font-size: clamp(17px, 5.2vw, 23px); font-weight: 700;
+    margin-top: 2px; letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+  .곁말 { font-size: 12px; color: var(--흐린글); margin-top: 3px; }
+  .오름 { color: var(--오름); } .내림 { color: var(--내림); } .중립 { color: var(--중립); }
+
+  .표싸개 { overflow-x: auto; -webkit-overflow-scrolling: touch;
+            background: var(--판); border: 1px solid var(--테두리); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 9px 11px; text-align: right; white-space: nowrap; }
+  th { color: var(--흐린글); font-weight: 600; font-size: 12px;
+       border-bottom: 1px solid var(--테두리); }
+  td { border-bottom: 1px solid var(--테두리); }
+  tr:last-child td { border-bottom: none; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0;
+                                   background: var(--판); }
+
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--버튼); color: var(--버튼글);
+    border: none; border-radius: 10px; padding: 10px 14px;
+  }
+  button.수수 { background: transparent; color: var(--흐린글);
+                border: 1px solid var(--테두리); font-weight: 500; }
+  .줄 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; }
+  input {
+    font: inherit; width: 100%; padding: 10px 12px;
+    border: 1px solid var(--테두리); border-radius: 10px;
+    background: var(--판); color: var(--글);
+  }
+  label { display: block; font-size: 13px; color: var(--흐린글); margin: 10px 0 4px; }
+
+  .알림 {
+    background: var(--경고바탕); border: 1px solid var(--경고테두리);
+    border-radius: 12px; padding: 12px 14px; font-size: 14px;
+  }
+  .알림 code { font-size: 12px; overflow-wrap: anywhere; }
+  .때 { color: var(--흐린글); font-size: 12px; margin-top: 12px; }
+  .숨김 { display: none !important; }
+  details { margin-top: 20px; font-size: 13px; color: var(--흐린글); }
+  summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="싸개">
+  <h1>주식매매 관리용 대시보드</h1>
+  <p class="부제">증권사 계좌를 그대로 조회한 값입니다 · 모의투자</p>
+
+  <!-- 연결 설정: 처음 한 번만. 이 브라우저에만 저장된다. -->
+  <section id="설정" class="숨김">
+    <div class="알림">
+      <strong>먼저 연결해야 합니다.</strong><br>
+      이 페이지는 <b>계좌 자료를 담고 있지 않습니다</b> — 저장소가 공개라서
+      여기 올린 것은 누구나 보게 되기 때문입니다. 숫자를 어디서 받아올지
+      한 번만 알려 주세요. <b>이 브라우저에만 저장되고</b> 저장소에는 안 올라갑니다.
+    </div>
+    <label for="주소">받아올 주소</label>
+    <input id="주소" type="url" placeholder="https://....../webhook/muwon-balance" autocomplete="off">
+    <label for="열쇠">열쇠 (토큰)</label>
+    <input id="열쇠" type="password" placeholder="주소를 아는 사람이 열어도 이게 없으면 안 보입니다" autocomplete="off">
+    <div class="줄">
+      <button id="저장">저장하고 불러오기</button>
+    </div>
+  </section>
+
+  <!-- 본문 -->
+  <section id="본문" class="숨김">
+    <div class="칸들">
+      <div class="칸 넓게">
+        <div class="이름표">평가손익</div>
+        <div class="값" id="손익">—</div>
+        <div class="곁말" id="수익률">아직 안 판 종목이 지금 얼마가 됐는지입니다</div>
+      </div>
+      <div class="칸">
+        <div class="이름표">순자산</div>
+        <div class="값" id="순자산">—</div>
+        <div class="곁말">현금 + 주식</div>
+      </div>
+      <div class="칸">
+        <div class="이름표">주문 가능 현금</div>
+        <div class="값" id="현금">—</div>
+        <div class="곁말">결제 반영</div>
+      </div>
+    </div>
+
+    <div class="표싸개"><table>
+      <thead><tr>
+        <!-- 손익을 앞에 둔다. 폰에서는 표가 옆으로 잘리는데, 뒤에 두면
+             정작 보려던 두 칸이 화면 밖으로 나간다. -->
+        <th>종목</th><th>평가손익</th><th>수익률</th>
+        <th>수량</th><th>평균매입가</th><th>현재가</th><th>평가금액</th>
+      </tr></thead>
+      <tbody id="몸"></tbody>
+    </table></div>
+
+    <div class="줄">
+      <button id="다시">🔄 지금 다시 조회</button>
+      <button id="자동전환" class="수수">자동 갱신 켜기</button>
+      <button id="연결풀기" class="수수">연결 지우기</button>
+    </div>
+    <div class="때" id="때"></div>
+  </section>
+
+  <section id="탈남" class="알림 숨김"></section>
+
+  <details>
+    <summary>이 숫자들이 무슨 뜻인가요</summary>
+    <p>
+      <b>평가손익</b>은 아직 안 판 종목이 지금 얼마가 됐는지입니다. 팔아야
+      실제로 손에 들어오므로, <b>실현손익</b>(팔아서 확정된 손익)과는 다른
+      숫자입니다. 장이 열려 있으면 현재가로, 닫혀 있으면 그날 종가로 계산되니
+      밤에 열면 숫자가 안 움직이는 것이 정상입니다.
+    </p>
+    <p>
+      <b>주문 가능 현금</b>은 결제(T+2)까지 끝났다고 보고 계산한 현금입니다.
+      예수금 총액과는 다릅니다 — 오늘 산 것이 예수금에서는 이틀 뒤에야 빠집니다.
+    </p>
+    <p><b>색</b>은 한국식입니다. 빨강이 오름, 파랑이 내림입니다.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const 저장키 = "muwon406.연결";
+  const $ = (id) => document.getElementById(id);
+  const 자동간격 = 60000;   // 증권사가 토큰 발급을 자주 하면 막는다. 1분이면 넉넉하다.
+  let 자동 = null;
+
+  // ── 연결 정보는 이 브라우저에만 ──────────────────────────────
+  // localStorage를 못 쓰는 환경(사생활 보호 창 등)에서 던지는 경우가 있어
+  // 전부 감싼다. 못 읽는다고 화면이 죽으면 안 된다.
+  const 읽기 = () => {
+    try { return JSON.parse(localStorage.getItem(저장키) || "null"); }
+    catch { return null; }
+  };
+  const 쓰기 = (값) => {
+    try { localStorage.setItem(저장키, JSON.stringify(값)); return true; }
+    catch { return false; }
+  };
+  const 지우기 = () => { try { localStorage.removeItem(저장키); } catch { /* 무시 */ } };
+
+  const 돈 = (n) => (n === null || n === undefined || Number.isNaN(n))
+    ? "—" : Math.round(n).toLocaleString("ko-KR") + "원";
+  const 부호돈 = (n) => (n > 0 ? "+" : "") + 돈(n);
+  const 색 = (n) => (n > 0 ? "오름" : n < 0 ? "내림" : "중립");
+
+  const 보이기 = (id, 켤까) => $(id).classList.toggle("숨김", !켤까);
+
+  function 탈났다(제목, 설명) {
+    $("탈남").innerHTML = `<strong>${제목}</strong><br>${설명}`;
+    보이기("탈남", true);
+  }
+
+  function 그리기(자료) {
+    보이기("탈남", false);
+    보이기("본문", true);
+    보이기("설정", false);
+
+    const 손익 = Number(자료.평가손익 ?? 0);
+    const 원가 = Number(자료.원가 ?? 0);
+    $("손익").textContent = 부호돈(손익);
+    $("손익").className = "값 " + 색(손익);
+    $("수익률").textContent = 원가
+      ? `원가 ${돈(원가)} 대비 ${(손익 / 원가 * 100).toFixed(2)}%`
+      : "보유 종목이 없습니다";
+    $("순자산").textContent = 돈(Number(자료.순자산));
+    $("현금").textContent = 돈(Number(자료.현금));
+
+    const 줄들 = Array.isArray(자료.종목) ? 자료.종목 : [];
+    $("몸").innerHTML = 줄들.length === 0
+      ? `<tr><td colspan="7" style="text-align:center;color:var(--흐린글)">보유 종목이 없습니다</td></tr>`
+      : 줄들.map((s) => {
+          const ㅅ = Number(s.평가손익 ?? 0);
+          const ㅇ = Number(s.평균매입가 ?? 0);
+          const ㅈ = Number(s.현재가 ?? 0);
+          const 률 = ㅇ ? (ㅈ / ㅇ - 1) * 100 : 0;
+          const c = 색(ㅅ);
+          return `<tr>
+            <td>${안전(s.종목 ?? s.symbol ?? "")}</td>
+            <td class="${c}">${부호돈(ㅅ)}</td>
+            <td class="${c}">${(률 > 0 ? "+" : "") + 률.toFixed(2)}%</td>
+            <td>${Number(s.수량 ?? 0).toLocaleString("ko-KR")}</td>
+            <td>${돈(ㅇ)}</td><td>${돈(ㅈ)}</td>
+            <td>${돈(Number(s.평가금액 ?? 0))}</td>
+          </tr>`;
+        }).join("");
+
+    const 시각 = new Date().toLocaleTimeString("ko-KR");
+    $("때").textContent = `${시각} 조회` + (자료.조회시각 ? ` · 증권사 기준 ${자료.조회시각}` : "");
+  }
+
+  // 종목명이 어디서 오든 화면을 조작하지 못하게 한다.
+  const 안전 = (글) => String(글).replace(/[&<>"']/g,
+    (ㄱ) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ㄱ]);
+
+  async function 불러오기() {
+    const 연결 = 읽기();
+    if (!연결 || !연결.주소) { 보이기("설정", true); 보이기("본문", false); return; }
+
+    $("다시").disabled = true;
+    $("다시").textContent = "조회 중…";
+    try {
+      const 답 = await fetch(연결.주소, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 열쇠: 연결.열쇠 || "" }),
+      });
+      if (답.status === 401 || 답.status === 403) {
+        탈났다("열쇠가 맞지 않습니다.",
+          "<b>연결 지우기</b>를 누르고 다시 넣어 주세요. 기다린다고 해결되지 않습니다.");
+        return;
+      }
+      if (!답.ok) {
+        탈났다(`받아오지 못했습니다 (HTTP ${답.status}).`,
+          "증권사가 잠깐 막았을 수 있습니다 — 토큰 발급을 자주 하면 막습니다. " +
+          "1분쯤 뒤 <b>지금 다시 조회</b>를 눌러 보세요.");
+        return;
+      }
+      const 자료 = await 답.json();
+      if (자료 && 자료.오류) { 탈났다("계좌를 조회하지 못했습니다.", 안전(자료.오류)); return; }
+      그리기(자료);
+    } catch (e) {
+      // 여기 걸리는 건 대개 CORS다 — 받는 쪽이 이 주소를 허용해야 한다.
+      탈났다("연결하지 못했습니다.",
+        `주소가 맞는지, 받는 쪽이 이 페이지를 허용했는지 확인해 주세요.<br><code>${안전(e.message)}</code>`);
+    } finally {
+      $("다시").disabled = false;
+      $("다시").textContent = "🔄 지금 다시 조회";
+    }
+  }
+
+  function 자동맞추기(켤까) {
+    if (자동) { clearInterval(자동); 자동 = null; }
+    if (켤까) 자동 = setInterval(불러오기, 자동간격);
+    $("자동전환").textContent = 켤까 ? "자동 갱신 끄기 (1분)" : "자동 갱신 켜기";
+  }
+
+  $("저장").addEventListener("click", () => {
+    const 주소 = $("주소").value.trim();
+    if (!주소) { alert("받아올 주소를 넣어 주세요."); return; }
+    if (!쓰기({ 주소, 열쇠: $("열쇠").value })) {
+      탈났다("이 브라우저에 저장하지 못했습니다.",
+        "사생활 보호 창이면 저장이 막힙니다. 일반 창에서 열어 주세요.");
+      return;
+    }
+    불러오기();
+  });
+  $("다시").addEventListener("click", 불러오기);
+  $("자동전환").addEventListener("click", () => 자동맞추기(!자동));
+  $("연결풀기").addEventListener("click", () => {
+    지우기(); 자동맞추기(false);
+    보이기("본문", false); 보이기("탈남", false); 보이기("설정", true);
+  });
+
+  자동맞추기(false);
+  불러오기();
+})();
+</script>
+</body>
+</html>
