@@ -1,5 +1,4 @@
 import asyncio
-import html
 
 from loguru import logger
 from telegram import Bot
@@ -24,17 +23,12 @@ class TelegramNotifier:
 
         꼬리=False는 **긴 글을 조각내 보낼 때 마지막이 아닌 조각**에만 쓴다 —
         조각마다 링크가 붙으면 읽는 흐름이 매번 끊긴다."""
-        # 링크는 HTML로 붙는다. 꼬리 없는 조각도 같은 모드로 나가므로
-        # 본문을 이스케이프해야 한다 — 종목명이나 오류 글에 <, & 가 섞이면
-        # 텔레그램이 **글 전체를 거절하고 알림이 통째로 안 간다.**
-        글 = footer.붙이기(message) if 꼬리 else html.escape(message, quote=False)
+        글 = footer.붙이기(message) if 꼬리 else message
         cfg = self._settings_service.get_telegram_config()
         if not cfg.bot_token or not cfg.chat_id:
             logger.info(f"[telegram:disabled] {글}")
             return
-        asyncio.run(Bot(token=cfg.bot_token).send_message(
-            chat_id=cfg.chat_id, text=글,
-            parse_mode="HTML", disable_web_page_preview=True))
+        asyncio.run(Bot(token=cfg.bot_token).send_message(chat_id=cfg.chat_id, text=글))
 
     def send_long(self, message: str) -> int:
         """길이 제한(4096자)을 넘는 긴 글을 여러 조각으로 나눠 보낸다.
