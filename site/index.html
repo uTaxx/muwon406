@@ -6,14 +6,22 @@
 <title>주식매매 관리용 대시보드</title>
 
 <!--
-  무원406 대시보드 — GitHub Pages에 올라가는 정적 페이지 한 장.
+  무원406 대시보드 — n8n이 그대로 내려주는 정적 페이지 한 장.
+
+  ## 왜 GitHub Pages가 아닌가
+
+  저장소 하나에 Pages 사이트는 하나뿐인데, 이 저장소의 것은 이미 임자가
+  있다 — main 브랜치의 LX MI 대시보드다. 거기에 올리면 그 화면을 통째로
+  갈아치운다. 그래서 n8n이 이 파일을 그대로 내려준다.
+
+  덤으로 **CORS가 사라진다.** 화면과 자료 웹훅이 같은 출처라서 브라우저가
+  막을 일이 없다.
 
   ## 이 파일에는 계좌 자료가 하나도 없다
 
-  저장소가 **공개**라서 여기 올린 것은 누구나 본다. 그래서 이 파일은
-  화면을 그리는 코드만 담고, 숫자는 볼 때마다 받아 온다. 받아 오는 주소와
-  열쇠는 이 브라우저에만 저장한다(localStorage) — 저장소에도, 이 파일에도
-  안 들어간다. 주소를 아는 사람이 열어도 열쇠가 없으면 빈 화면이다.
+  주소를 아는 사람은 이 화면을 열 수 있다. 그래서 여기엔 화면을 그리는
+  코드만 두고, 숫자는 볼 때마다 받아 온다. 열쇠는 이 브라우저에만
+  저장한다(localStorage) — 열쇠가 없으면 숫자가 안 나온다.
 
   ## 왜 서버를 안 쓰나
 
@@ -115,18 +123,21 @@
   <!-- 연결 설정: 처음 한 번만. 이 브라우저에만 저장된다. -->
   <section id="설정" class="숨김">
     <div class="알림">
-      <strong>먼저 연결해야 합니다.</strong><br>
-      이 페이지는 <b>계좌 자료를 담고 있지 않습니다</b> — 저장소가 공개라서
-      여기 올린 것은 누구나 보게 되기 때문입니다. 숫자를 어디서 받아올지
-      한 번만 알려 주세요. <b>이 브라우저에만 저장되고</b> 저장소에는 안 올라갑니다.
+      <strong>열쇠를 한 번만 넣어 주세요.</strong><br>
+      이 화면은 <b>계좌 자료를 담고 있지 않습니다</b> — 주소를 아는 사람은
+      화면을 열 수 있으니, 숫자는 열쇠가 있어야만 나옵니다.
+      <b>열쇠는 이 브라우저에만 저장됩니다.</b>
     </div>
-    <label for="주소">받아올 주소</label>
-    <input id="주소" type="url" placeholder="https://....../webhook/muwon-balance" autocomplete="off">
-    <label for="열쇠">열쇠 (토큰)</label>
-    <input id="열쇠" type="password" placeholder="주소를 아는 사람이 열어도 이게 없으면 안 보입니다" autocomplete="off">
+    <label for="열쇠">열쇠</label>
+    <input id="열쇠" type="password" placeholder="열쇠를 붙여 넣으세요" autocomplete="off">
     <div class="줄">
       <button id="저장">저장하고 불러오기</button>
     </div>
+    <details>
+      <summary>숫자를 다른 곳에서 받아와야 한다면</summary>
+      <label for="주소">받아올 주소 (비우면 이 화면과 같은 곳에서 받습니다)</label>
+      <input id="주소" type="url" placeholder="https://....../webhook/muwon-balance" autocomplete="off">
+    </details>
   </section>
 
   <!-- 본문 -->
@@ -196,6 +207,10 @@
   // ── 연결 정보는 이 브라우저에만 ──────────────────────────────
   // localStorage를 못 쓰는 환경(사생활 보호 창 등)에서 던지는 경우가 있어
   // 전부 감싼다. 못 읽는다고 화면이 죽으면 안 된다.
+  // 이 화면을 n8n이 내려주므로 자료 웹훅도 같은 곳에 있다. 주소를 손으로
+  // 넣게 하면 틀릴 일만 생긴다 — 기본값을 같은 출처로 둔다.
+  const 기본주소 = () => location.origin + "/webhook/muwon-balance";
+
   const 읽기 = () => {
     try { return JSON.parse(localStorage.getItem(저장키) || "null"); }
     catch { return null; }
@@ -262,12 +277,13 @@
 
   async function 불러오기() {
     const 연결 = 읽기();
-    if (!연결 || !연결.주소) { 보이기("설정", true); 보이기("본문", false); return; }
+    if (!연결 || !연결.열쇠) { 보이기("설정", true); 보이기("본문", false); return; }
+    const 주소 = 연결.주소 || 기본주소();
 
     $("다시").disabled = true;
     $("다시").textContent = "조회 중…";
     try {
-      const 답 = await fetch(연결.주소, {
+      const 답 = await fetch(주소, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 열쇠: 연결.열쇠 || "" }),
@@ -303,9 +319,9 @@
   }
 
   $("저장").addEventListener("click", () => {
-    const 주소 = $("주소").value.trim();
-    if (!주소) { alert("받아올 주소를 넣어 주세요."); return; }
-    if (!쓰기({ 주소, 열쇠: $("열쇠").value })) {
+    const 열쇠 = $("열쇠").value.trim();
+    if (!열쇠) { alert("열쇠를 넣어 주세요."); return; }
+    if (!쓰기({ 주소: $("주소").value.trim(), 열쇠 })) {
       탈났다("이 브라우저에 저장하지 못했습니다.",
         "사생활 보호 창이면 저장이 막힙니다. 일반 창에서 열어 주세요.");
       return;
