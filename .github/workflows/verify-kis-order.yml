@@ -55,6 +55,11 @@ jobs:
             --account-no "${{ secrets.KIS_ACCOUNT_NO }}" --account-product-cd "01"
 
       - name: 주문 경로 검증
+        # 시트를 읽는 건 로그에 종목명을 찍으려는 목적뿐이다. 못 읽어도
+        # 검증은 그대로 진행된다(코드만 찍힌다).
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           python scripts/verify_kis_order.py \
             --symbol "${{ github.event.inputs.symbol }}" \

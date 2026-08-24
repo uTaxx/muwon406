@@ -38,6 +38,29 @@ from muwon.domain.types import OrderSide
 from muwon.settings.service import build_settings_service
 
 
+def _시트이름(symbol: str) -> str:
+    """시트의 섹터·종목 목록에서 이름을 찾는다. 못 찾으면 빈 값.
+
+    이름 하나 때문에 검증이 멈추면 안 되므로 어떤 실패든 조용히 넘긴다."""
+    import os
+
+    if not os.environ.get("GDRIVE_SA_KEY_JSON"):
+        return ""
+    try:
+        from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create, read
+
+        sheet_id = os.environ.get("MUWON_SHEET_ID") or find_or_create(
+            os.environ["GDRIVE_FOLDER_ID"], DEFAULT_TITLE
+        )[0]
+        for s in read(sheet_id).섹터:
+            for m in s.종목:
+                if m.symbol == symbol:
+                    return m.name
+    except Exception:  # noqa: BLE001 — 이름 때문에 검증이 멈추면 안 된다
+        return ""
+    return ""
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="KIS 모의투자 주문 실행 경로 검증")
     parser.add_argument("--symbol", default="005930", help="종목코드 6자리 (기본: 삼성전자)")
@@ -64,8 +87,11 @@ def main() -> None:
             "(configure.py kis ... 또는 대시보드)."
         )
 
+    # 이름은 기본 목록에만 있었다. 지금 매매 대상은 시트의 섹터·종목이라,
+    # 시트에 있는 종목을 시험하면 로그에 코드만 두 번 찍혔다.
+    # 무엇을 주문했는지 로그로 못 읽으면 나중에 되짚을 수가 없다.
     ticker = find_by_symbol(args.symbol)
-    name = ticker.name if ticker else args.symbol
+    name = ticker.name if ticker else _시트이름(args.symbol) or args.symbol
     side = OrderSide.BUY if args.side == "buy" else OrderSide.SELL
 
     print("=== KIS 주문 실행 경로 검증 ===")
