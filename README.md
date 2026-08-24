@@ -7,7 +7,7 @@
 하는지, 매일 무슨 일이 자동으로 일어나는지, 급할 때 어떻게 끄는지를 용어 해설과 함께
 정리했습니다.
 
-🔗 대시보드: https://muwon406-qgjnwy5n6qth8yexeedwwy.streamlit.app
+🔗 대시보드: https://utaxx.github.io/sdlab_trading/
 
 ## 구조
 

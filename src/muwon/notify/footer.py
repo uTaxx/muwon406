@@ -25,10 +25,11 @@ import os
 이름 = "주식매매 관리용 대시보드"
 표시 = f"📊 {이름}"
 
-#: Streamlit Community Cloud 주소(docs/사용설명서.md). 주소가 바뀌면
-#: MUWON_DASHBOARD_URL 환경변수로 덮어쓸 수 있게 해 둔다 — 배포 주소는
+#: GitHub Pages 주소(docs/대시보드_통합.md). 스트림릿에서 옮겨 왔다 —
+#: 관리 지점이 다섯이라 답답하다는 말을 듣고 화면 하나로 모았다.
+#: MUWON_DASHBOARD_URL 환경변수로 덮어쓸 수 있게 해 둔다. 배포 주소는
 #: 우리가 정하는 값이 아니라서 코드를 고치지 않고도 갈아 끼워야 한다.
-기본주소 = "https://muwon406-qgjnwy5n6qth8yexeedwwy.streamlit.app"
+기본주소 = "https://utaxx.github.io/sdlab_trading/"
 
 
 def 주소() -> str:
