@@ -57,6 +57,7 @@ from muwon.config import bootstrap_settings
 from muwon.dashboard.glossary import TERMS, terms_for
 from muwon.dashboard.schedule import KST, WEEKDAYS, automation_state, upcoming
 from muwon.dashboard.strategy_rules import common_rules, describe, exit_rules
+from muwon.data.kis_client import KISClient
 from muwon.data.universe import UNIVERSE, find_by_symbol
 from muwon.data.universe_builder import active_universe
 from muwon.db.models import (
@@ -981,6 +982,18 @@ def render_home_rows(service: SettingsService) -> None:
     latest_review, _ = _latest_daily_review(session_factory)
 
     with section(
+        "💵", "지금 손익", "증권사 계좌를 그대로 조회한 평가손익",
+        ["증권사 기준"], expanded=True,
+    ):
+        st.caption(
+            "**평가손익**은 아직 안 판 종목이 지금 얼마가 됐는지입니다 — "
+            "팔아야 실제로 손에 들어오므로, 위 카드의 **실현손익**(팔아서 확정된 손익)과는 "
+            "다른 숫자입니다. 장이 열려 있으면 현재가로, 닫혀 있으면 그날 종가로 계산됩니다."
+        )
+        render_terms(["평가금액", "실현손익", "평가손익", "수익률"])
+        render_account_pnl()
+
+    with section(
         "🎯", "매매 기준", "지금 무엇을 보고 사고파는가",
         [automation_state(policy)[0], _active_strategy_label(selection)],
         expanded=True,
@@ -1633,6 +1646,143 @@ def _symbol_name(symbol: str) -> str:
 def render_trading_fragment() -> None:
     render_trading_tab()
     st.caption(f"마지막 갱신: {datetime.now():%H:%M:%S}")  # noqa: DTZ005 — 화면 표시용, 로컬시각이면 충분
+
+
+def _손익색(값: float) -> str:
+    """한국은 **빨강이 오름, 파랑이 내림**이다 — 미국과 반대다.
+
+    st.metric은 미국식이라 손실에 빨간 화살표를 붙이는데, 그걸 그대로 두면
+    화면이 "올랐다"고 말하는 셈이 된다. 그래서 카드를 직접 그리고 색을
+    여기서 정한다. 0은 오르지도 내리지도 않았으니 중립색이다."""
+    if 값 > 0:
+        return "orange"  # 이 화면에서 가장 붉은 칩
+    if 값 < 0:
+        return "blue"
+    return "green"
+
+
+#: 계좌 조회 결과를 얼마나 오래 재활용할지. KIS는 **토큰 발급을 자주 하면
+#: 403으로 막는다** — 조회할 때마다 새 토큰을 받으므로 화면을 열 때마다
+#: 부르면 금방 막힌다(실제로 막혔다). 60초면 사람이 보기엔 '지금 값'이고
+#: 증권사 한도에는 여유가 있다.
+BALANCE_CACHE_SECONDS = 60
+
+
+@st.cache_data(ttl=BALANCE_CACHE_SECONDS, show_spinner="증권사 계좌 조회 중…")
+def _계좌조회() -> tuple[dict | None, str, str]:
+    """증권사 계좌를 조회해 화면에 쓸 값만 추려 돌려준다.
+
+    (내용, 무엇이_잘못됐나, 그래서_뭘_하면_되나) 꼴이다. **왜 안내를 따로
+    돌려주나**: 원인이 둘인데 할 일이 정반대다. 인증정보가 없으면 관리 탭에
+    값을 넣어야 하고, 증권사가 막은 거면 그냥 기다리면 된다. 안내를 하나로
+    뭉쳐 두면 "기다리세요"라고 해 놓고 영영 안 고쳐지는 화면이 된다.
+
+    실패해도 예외를 올리지 않는다 — 이 구역 하나 때문에 대시보드 전체가
+    죽으면 안 된다. 화면이 통째로 빨개져서 남은 탭도 못 보게 된 적이 있었다.
+
+    st.cache_data는 돌려준 값을 피클로 저장하므로 평범한 dict로 만든다."""
+    try:
+        service = get_service()
+        creds = service.get_kis_credentials()
+        if not (creds.app_key and creds.app_secret and creds.account_no):
+            return None, "KIS 인증정보가 없습니다.", (
+                "**관리** 탭에서 앱키·시크릿·계좌번호를 넣어 주세요. "
+                "기다린다고 해결되지 않습니다."
+            )
+        잔고 = KISClient.from_settings(service).get_balance()
+    except Exception as e:  # noqa: BLE001 — 조회 실패가 화면을 죽이면 안 된다
+        return None, f"{type(e).__name__}: {e}", (
+            "증권사 서버가 잠깐 막았을 수 있습니다 — **토큰 발급을 자주 하면 막습니다.** "
+            "1분쯤 뒤 **지금 다시 조회**를 눌러 보세요."
+        )
+
+    원가 = sum(h.quantity * h.avg_buy_price for h in 잔고.holdings)
+    return {
+        "현금": 잔고.cash,
+        "주식평가금": 잔고.total_eval_amount,
+        "순자산": 잔고.net_asset,
+        "원가": 원가,
+        "평가손익": sum(h.pnl_amount for h in 잔고.holdings),
+        "조회시각": datetime.now().strftime("%H:%M:%S"),  # noqa: DTZ005 — 화면 표시용
+        "종목": [
+            # 손익을 앞에 둔다. 폰 폭에서는 표가 옆으로 잘리는데, 뒤에 두면
+            # 정작 보려던 두 칸이 화면 밖으로 나가서 가로로 밀어야 보인다.
+            {
+                "종목": f"{h.name or _symbol_name(h.symbol)}({h.symbol})",
+                "평가손익": h.pnl_amount,
+                "수익률": (
+                    (h.current_price / h.avg_buy_price - 1) * 100 if h.avg_buy_price else 0.0
+                ),
+                "수량": h.quantity,
+                "평균매입가": h.avg_buy_price,
+                "현재가": h.current_price,
+                "평가금액": h.eval_amount,
+            }
+            for h in 잔고.holdings
+        ],
+    }, "", ""
+
+
+def render_account_pnl() -> None:
+    """증권사 계좌를 그대로 조회해 지금 평가손익을 보여 준다.
+
+    **왜 우리 DB로 계산하지 않나**: DB에는 산 값(진입가)만 있고 지금 값이
+    없다. 지금 값을 알려면 어차피 시세를 받아야 하는데, 그럴 바엔 증권사가
+    이미 계산해 둔 평가손익을 그대로 받는 게 정확하다 — 수수료·세금까지
+    반영된 증권사 기준 숫자이고, 우리가 따로 계산하면 두 숫자가 어긋난다.
+
+    **왜 5초마다 자동 갱신하지 않나**: 보유 종목 표는 DB만 읽어서 5초마다
+    새로 그려도 공짜지만, 이 구역은 증권사를 부른다. 5초마다 부르면 토큰
+    한도에 걸려 아예 안 나오게 된다. 그래서 60초 캐시 + 손 새로고침이다.
+    """
+    col_left, col_right = st.columns([3, 1])
+    with col_right:
+        if st.button("🔄 지금 다시 조회", use_container_width=True, key="refresh_balance"):
+            _계좌조회.clear()
+            st.rerun()
+
+    내용, 오류, 안내 = _계좌조회()
+    if 내용 is None:
+        with col_left:
+            st.warning(f"계좌를 조회하지 못했습니다 — {오류}", icon="📡")
+            st.caption(f"{안내} 이 구역만 못 보는 것이고 나머지 화면은 그대로 씁니다.")
+        return
+
+    손익 = 내용["평가손익"]
+    수익률 = (손익 / 내용["원가"] * 100) if 내용["원가"] else 0.0
+    with col_left:
+        # st.metric은 글자가 커서 '9,999,135원'이 '9,999,13…'으로 잘렸다
+        # (900px에서도 잘렸으니 폰에서는 말할 것도 없다). 이 화면에서 제일
+        # 중요한 게 금액인데 그 금액이 안 보이면 카드가 있으나 마나다.
+        # 그래서 위 요약 카드와 같은 틀을 쓴다 — 폰 폭에서 이미 검증된 것이다.
+        st.markdown(CARD_CSS, unsafe_allow_html=True)
+        st.markdown(
+            '<div class="muwon-cards">'
+            + _card("💼", "blue", "순자산", f"{내용['순자산']:,.0f}원", "현금+주식", "blue")
+            + _card(
+                "📊", _손익색(손익), "평가손익", f"{손익:+,.0f}원",
+                f"{수익률:+.2f}%" if 내용["원가"] else "—", _손익색(손익),
+            )
+            + _card("💵", "purple", "주문 가능 현금", f"{내용['현금']:,.0f}원", "결제 반영", "purple")
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+
+    if 내용["종목"]:
+        표 = pd.DataFrame(내용["종목"])
+        st.dataframe(
+            표.style.format({
+                "평균매입가": "{:,.0f}", "현재가": "{:,.0f}",
+                "평가금액": "{:,.0f}", "평가손익": "{:+,.0f}", "수익률": "{:+.2f}%",
+            }),
+            use_container_width=True, hide_index=True,
+        )
+    else:
+        st.info("증권사 계좌에 보유 종목이 없습니다.")
+
+    st.caption(
+        f"증권사 계좌 기준 · {내용['조회시각']} 조회 · {BALANCE_CACHE_SECONDS}초까지 재사용"
+    )
 
 
 def render_trading_tab() -> None:
