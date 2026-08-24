@@ -37,6 +37,12 @@ concurrency:
 
 jobs:
   deploy:
+    # ── 이 저장소에서만 배포한다 ────────────────────────────────
+    # 이 파일은 muwon406에도 똑같이 들어 있다(두 저장소를 같게 유지한다).
+    # 그런데 muwon406의 Pages 자리는 **맛집·카페 대시보드**가 쓰고 있다.
+    # 거기서 이걸 손으로 한 번만 불러도 그 화면이 통째로 갈아치워진다.
+    # 되돌릴 수 없는 종류의 사고라 코드로 막는다.
+    if: github.repository == 'uTaxx/sdlab_trading'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
