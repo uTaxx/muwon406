@@ -491,3 +491,59 @@ def test_get_balance_raises_with_kis_reason_on_rejection(mock_get):
     client._sleep = lambda seconds: None
     with pytest.raises(RuntimeError, match="계좌번호가 올바르지 않습니다"):
         client.get_balance()
+
+
+# 계좌 잔고 조회 — 어떤 필드를 "현금"으로 삼느냐가 대조의 전부다.
+#
+# 아래 숫자는 2026-08-24에 HPSP 2주(90,100원)를 모의계좌에서 시험 매수한
+# 직후 실제로 받은 응답이다. 예수금 총액은 매수를 아직 반영하지 않는다.
+_잔고응답_매수직후 = {
+    "rt_cd": "0",
+    "output1": [
+        {
+            "pdno": "403870",
+            "prdt_name": "HPSP",
+            "hldg_qty": "2",
+            "pchs_avg_pric": "45050",
+            "prpr": "45250",
+            "evlu_amt": "90500",
+            "evlu_pfls_amt": "400",
+        }
+    ],
+    "output2": [
+        {
+            "dnca_tot_amt": "10000145",  # 예수금 총액 — 매수가 아직 안 빠졌다
+            "prvs_rcdl_excc_amt": "9910035",  # 가수도정산금액 — 이미 빠졌다
+            "nxdy_excc_amt": "10000145",
+            "thdt_buy_amt": "90100",
+            "thdt_tlex_amt": "10",
+            "scts_evlu_amt": "90500",
+            "nass_amt": "10000535",
+        }
+    ],
+}
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_balance_cash_reflects_todays_buy_not_unsettled_deposit(mock_get):
+    """오늘 낸 주문이 즉시 반영되는 값을 현금으로 써야 한다.
+
+    예수금 총액을 쓰면 매수 대금이 결제(T+2) 전까지 안 빠져서, 오늘 산 것을
+    이틀 동안 못 본다. 그동안 대조는 "현금 일치"라고 답하는데 그건 거짓이다."""
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: _잔고응답_매수직후)
+
+    balance = make_client().get_balance()
+
+    assert balance.cash == 9_910_035
+    assert balance.cash != 10_000_145  # 예수금 총액을 쓰면 안 된다
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_balance_keeps_raw_summary_for_eyeballing(mock_get):
+    """어떤 필드가 무엇인지는 응답을 직접 봐야 안다 — 원본을 버리지 않는다."""
+    mock_get.return_value = MagicMock(status_code=200, json=lambda: _잔고응답_매수직후)
+
+    balance = make_client().get_balance()
+
+    assert balance.raw_summary["thdt_buy_amt"] == "90100"
+    assert balance.holdings[0].symbol == "403870"

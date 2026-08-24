@@ -483,8 +483,23 @@ class KISClient(MarketDataSource):
 
         summary_rows = payload.get("output2") or []
         summary = summary_rows[0] if summary_rows else {}
+
+        # 현금은 **가수도정산금액(prvs_rcdl_excc_amt)**을 쓴다 — 결제(T+2)까지
+        # 끝났다고 보고 계산한 현금이라 오늘 낸 주문이 이미 반영돼 있다.
+        #
+        # 예수금 총액(dnca_tot_amt)을 쓰면 안 된다. 매수 대금이 결제 전까지
+        # 거기서 안 빠져서, 오늘 산 것을 이틀 동안 못 본다. 실제로 HPSP 2주를
+        # 시험 매수한 날 조회해서 확인한 값이다(2026-08-24):
+        #
+        #   dnca_tot_amt        10,000,145   ← 매수가 아직 안 빠짐
+        #   thdt_buy_amt            90,100   ← 오늘 매수 대금
+        #   thdt_tlex_amt               10   ← 오늘 제비용
+        #   prvs_rcdl_excc_amt   9,910,035   ← 10,000,145 − 90,100 − 10
+        #
+        # 우리 엔진의 현금도 "주문을 내면 즉시 빠지는" 값이라 이쪽과 짝이 맞는다.
+        현금 = summary.get("prvs_rcdl_excc_amt") or summary.get("dnca_tot_amt")
         return AccountBalance(
-            cash=float(summary.get("dnca_tot_amt") or 0),
+            cash=float(현금 or 0),
             total_eval_amount=float(summary.get("scts_evlu_amt") or 0),
             net_asset=float(summary.get("nass_amt") or 0),
             holdings=holdings,
