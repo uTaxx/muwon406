@@ -39,7 +39,8 @@ from muwon.db.session import make_session_factory
 def _계좌대조(session_factory) -> None:
     """증권사 계좌를 조회해 DB 기록과 대조한다 — 읽기만 한다."""
     from muwon.data.kis_client import KISClient
-    from muwon.execution.reconciliation import check_account_consistency
+    from muwon.execution import state_repository
+    from muwon.execution.reconciliation import reconcile
     from muwon.settings.service import build_settings_service
 
     service = build_settings_service()
@@ -47,22 +48,27 @@ def _계좌대조(session_factory) -> None:
     if not creds.app_key or not creds.app_secret or not creds.account_no:
         print("\n■ 계좌 대조 — KIS 인증정보가 없어 건너뜁니다.")
         return
-    client = KISClient.from_settings(service)
-    if check_account_consistency(client, session_factory) is None:
-        print("  (잔고 조회에 실패해 대조하지 못했습니다)")
+
+    # 잔고는 **한 번만** 조회한다. KIS는 토큰 발급을 자주 하면 403으로 막는데,
+    # 조회할 때마다 새 클라이언트가 토큰을 받으므로 두 번 부르면 그만큼
+    # 한도에 가까워진다. 점검하러 돌린 것이 점검을 막으면 안 된다.
+    try:
+        잔고 = KISClient.from_settings(service).get_balance()
+    except Exception as e:  # noqa: BLE001 — 점검 실패가 나머지 출력을 지우면 안 된다
+        print(f"\n■ 계좌 대조 — 잔고 조회 실패로 건너뜁니다: {type(e).__name__}: {e}")
         return
 
-    # 대조가 "현금 일치"라고 해도 안심하면 안 된다. 우리가 비교하는 값은
-    # 예수금 총액(dnca_tot_amt)인데, 매수 대금은 결제(T+2)가 끝나야 거기서
-    # 빠진다. 즉 **오늘 산 것은 이 숫자에 아직 안 잡힌다.**
-    # 어느 필드가 무엇인지는 증권사 응답을 직접 봐야 알 수 있어서 그대로 찍는다.
-    try:
-        원본 = client.get_balance().raw_summary
-    except Exception as e:  # noqa: BLE001 — 참고 출력이 점검을 막으면 안 된다
-        print(f"  (계좌요약 원본 조회 실패: {type(e).__name__}: {e})")
-        return
+    보유 = state_repository.load_positions(session_factory)
+    현금, _ = state_repository.load_engine_state(session_factory, 10_000_000.0)
+    print("\n=== 계좌 대조 (DB 기록 vs 실제 모의투자 계좌) ===")
+    for line in reconcile(보유, 현금, 잔고).summary_lines():
+        print(line)
+
+    # 어느 필드가 무엇인지는 증권사 응답을 직접 봐야 안다. 예수금 총액
+    # (dnca_tot_amt)은 매수 대금이 결제(T+2) 전까지 안 빠져서 오늘 산 것을
+    # 못 본다 — 그래서 현금은 가수도정산금액을 쓴다. 원본을 같이 찍어 둔다.
     print("\n■ 계좌요약 원본 — 예수금 관련 필드 (결제 시점 때문에 서로 다르다)")
-    for k, v in sorted(원본.items()):
+    for k, v in sorted(잔고.raw_summary.items()):
         print(f"  {k:<24} {v}")
 
 
