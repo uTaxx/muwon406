@@ -15,10 +15,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "check=읽고 검증만 / add-missing-settings=빠진 기준 줄만 채우기 / push=통째로 덮어쓰기(첫 채움 전용)"
+        description: "check=읽고 검증만 / add-missing-settings=빠진 기준 줄만 채우기 / set=기준 하나 바꾸기 / push=통째로 덮어쓰기(첫 채움 전용)"
         type: choice
-        options: ["check", "add-missing-settings", "push"]
+        options: ["check", "add-missing-settings", "set", "push"]
         default: "check"
+      set:
+        description: "mode=set일 때 바꿀 기준 (예: trading_enabled=true)"
+        default: ""
 
 jobs:
   sync:
@@ -42,6 +45,8 @@ jobs:
             python scripts/sync_sector_sheet.py --push
           elif [ "${{ github.event.inputs.mode }}" = "add-missing-settings" ]; then
             python scripts/sync_sector_sheet.py --add-missing-settings
+          elif [ "${{ github.event.inputs.mode }}" = "set" ]; then
+            python scripts/sync_sector_sheet.py --set "${{ github.event.inputs.set }}"
           else
             python scripts/sync_sector_sheet.py
           fi
