@@ -151,6 +151,33 @@ Fine-grained tokens** → 쓰던 토큰 → **Repository access**에 `sdlab_trad
 > 심사에 막힌다. 읽기와 실행은 되므로, 바꾼 뒤 제대로 됐는지는 내가 읽어서
 > 확인할 수 있다.
 
+### 6.5단계 · 사람 — 옛 저장소의 Actions 끄기 ⚠️
+
+**6단계 직후에 바로 한다.** 안 하면 같은 일이 하루에 두 번 돈다.
+
+예약(`schedule`)이 걸린 워크플로가 여섯이고, **그것들은 n8n과 무관하게
+저장소 자체의 시계로 돈다.** 새 저장소에 비밀값을 넣는 순간 양쪽에서
+똑같이 울린다.
+
+| 워크플로 | 두 번 돌면 생기는 일 |
+|---|---|
+| `push-records.yml` | **시트에 같은 기록이 두 줄 쌓인다** ← 제일 성가시다 |
+| `market-report.yml` | 텔레그램 리포트가 두 번 온다 |
+| `collect-intraday.yml` | 같은 30분봉을 두 번 받는다 |
+| `analysis-report.yml` | 주간 리포트가 두 번 온다 |
+| `settings-proposal.yml` | 기준 제안이 두 번 온다 |
+| `update-universe.yml` | 같은 결과를 두 번 쓴다 (무해) |
+
+**끄는 법**: `muwon406` → **Settings → Actions → General** →
+**Actions permissions**를 **Disable actions** → Save.
+
+되돌리려면 같은 자리에서 다시 켜면 된다. 코드는 그대로 남는다.
+
+> 3단계(비밀값)와 6단계(n8n) 사이에도 새 저장소의 예약이 울린다. 다만
+> 그때는 아직 **옛 쪽이 정상이고 새 쪽만 두 번째**라 결과가 겹치는 것은
+> 같다. 그래서 **3단계와 6단계 사이를 짧게 가져가는 것**이 좋다 —
+> 하루 안에 끝내면 겹치는 예약이 한두 개뿐이다.
+
 ### 7단계 · 사람 — 스트림릿 옮기기 (급하지 않다)
 
 share.streamlit.io → 앱 설정 → Repository를 `uTaxx/sdlab_trading`,
