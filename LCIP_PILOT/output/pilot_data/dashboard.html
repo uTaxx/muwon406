@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>엔지니어드스톤·실리코시스 Executive Dashboard — LCIP Pilot</title>
+<style>
+/* LCIP Pilot Dashboard — LX홀딩스 공시/지속가능경영보고서 톤 참고 (02_SYSTEM_BLUEPRINT.md §10)
+   흰색 배경, 충분한 여백, 얇은 구분선, 카드 최소화, 과도한 색상/그림자/이모지 금지. */
+
+:root {
+  --lcip-text: #1c1c1c;
+  --lcip-muted: #5f6368;
+  --lcip-border: #e2e4e8;
+  --lcip-bg: #ffffff;
+  --lcip-accent: #0b3d91; /* 절제된 남색 포인트 컬러 하나만 사용 */
+  --lcip-warn-bg: #fbf3ea;
+  --lcip-warn-text: #7a4a12;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--lcip-bg);
+  color: var(--lcip-text);
+  font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "맑은 고딕", sans-serif;
+  line-height: 1.6;
+  word-break: keep-all; /* 표 셀 단어 비정상 분리 금지 */
+}
+
+.lcip-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.lcip-header {
+  border-bottom: 1px solid var(--lcip-border);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+.lcip-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 6px;
+}
+
+.lcip-header .lcip-meta {
+  color: var(--lcip-muted);
+  font-size: 0.875rem;
+}
+
+.lcip-today-change {
+  border: 1px solid var(--lcip-border);
+  border-left: 3px solid var(--lcip-accent);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  background: var(--lcip-bg);
+}
+
+.lcip-today-change h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.lcip-section {
+  margin-bottom: 40px;
+}
+
+.lcip-section h2 {
+  font-size: 1.125rem;
+  border-bottom: 1px solid var(--lcip-border);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.lcip-table-scroll {
+  overflow-x: auto; /* 가로스크롤 허용 */
+}
+
+table.lcip-table {
+  width: 100%;
+  min-width: 720px; /* 열 너비 최소폭 보장 */
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+table.lcip-table th,
+table.lcip-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--lcip-border);
+  vertical-align: top;
+  white-space: normal;
+}
+
+table.lcip-table th {
+  color: var(--lcip-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+table.lcip-table td.lcip-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.lcip-table a {
+  color: var(--lcip-accent);
+  text-decoration: none;
+}
+
+table.lcip-table a:hover {
+  text-decoration: underline;
+}
+
+.lcip-empty {
+  color: var(--lcip-muted);
+  font-size: 0.875rem;
+  padding: 12px 0;
+}
+
+.lcip-footer {
+  color: var(--lcip-muted);
+  font-size: 0.75rem;
+  border-top: 1px solid var(--lcip-border);
+  padding-top: 16px;
+  margin-top: 48px;
+}
+
+/* Round 11 — Home Dashboard(Priority 1). 새 Widget이 아니라 이미 있던 .lcip-today-change
+   카드 스타일을 그대로 재사용해, 5개 카드를 2열 그리드로 배치하는 레이아웃만 추가한다. */
+.lcip-home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.lcip-home-grid .lcip-today-change {
+  margin-bottom: 0;
+}
+
+.lcip-home-command {
+  display: block;
+  background: #f5f6f8;
+  border: 1px solid var(--lcip-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8125rem;
+  margin-top: 8px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+@media (max-width: 640px) {
+  .lcip-container {
+    padding: 20px 12px 60px;
+  }
+
+  .lcip-home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="lcip-container">
+
+  <header class="lcip-header">
+    <h1>엔지니어드스톤·실리코시스 Executive Dashboard</h1>
+    <div class="lcip-meta">최종 갱신: 2026-08-11 10:03 (KST) · LCIP Pilot · LX홀딩스 전략팀 참고용 · 공개정보 기반 · Mock/dry-run 결과 포함 가능</div>
+  </header>
+
+  <section class="lcip-section" id="home">
+    <h2>Home — 오늘 확인할 것</h2>
+    <div class="lcip-home-grid">
+      <div class="lcip-today-change">
+        <h2>1. 오늘의 핵심 Intelligence</h2>
+        <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>날짜</th><th>핵심 내용</th><th>신뢰도</th><th>출처</th></tr></thead><tbody><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr></tbody></table></div>
+      </div>
+      <div class="lcip-today-change">
+        <h2>2. Quick Company Scan 실행</h2>
+        <p>회사명 하나로 회사 개요·경쟁사·투자 스크리닝까지 한 번에 생성한다.</p>
+        <code class="lcip-home-command">python3 scripts/scenarios/scenario_3_investment_review.py "회사명"</code>
+      </div>
+      <div class="lcip-today-change">
+        <h2>3. Investment Review 실행</h2>
+        <p>위 명령 하나에 Investment Review까지 함께 실행된다 — 별도 명령이 필요 없다.</p>
+        <code class="lcip-home-command">→ output/quick_company_scan_exports/{회사명}.md 에서 확인</code>
+      </div>
+      <div class="lcip-today-change">
+        <h2>4. 최근 분석 결과</h2>
+        <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>회사명</th><th>스캔일</th><th>신뢰도</th><th>종합 점수</th></tr></thead><tbody><tr><td>LX Hausys</td><td>2026-08-11</td><td>low</td><td>42.3/100</td></tr></tbody></table></div>
+        <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>회사명</th><th>추천 신호</th><th>검토일</th></tr></thead><tbody><tr><td>LX Hausys</td><td>monitor</td><td>2026-08-11</td></tr></tbody></table></div>
+      </div>
+      <div class="lcip-today-change">
+        <h2>5. 최근 뉴스</h2>
+        <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>날짜</th><th>제목</th><th>출처</th></tr></thead><tbody><tr><td>2026-08-11</td><td>Engineered stone silicosis lawsuit filed in California court</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr></tbody></table></div>
+      </div>
+      <div class="lcip-today-change">
+        <h2>6. Reference Library — AI 참고자료</h2>
+        <div class="lcip-table-scroll"><p class="lcip-empty">등록된 Reference 없음 — reference_library/inbox/에 자료를 추가하면 여기 표시된다</p></div>
+        <p>회사별 상세 참조 근거는 각 회사 Export 보고서(Markdown/Executive Report)에서 확인한다.</p>
+      </div>
+      <div class="lcip-today-change">
+        <h2>7. 뉴스 수집 설정 현황</h2>
+        <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>그룹명</th><th>포함 키워드 수</th><th>소스</th><th>상태</th></tr></thead><tbody><tr><td>실리코시스·엔지니어드스톤 소송·규제</td><td>14</td><td>SRC-0001, SRC-0002, SRC-0003</td><td>활성</td></tr></tbody></table></div>
+        <p>그룹/키워드/AI 지침/수집 주기 수정은 이 대시보드가 아니라 Google Sheets(KEYWORD_GROUPS 탭)에서 한다 — 정적 HTML은 조회 전용이다.</p>
+      </div>
+    </div>
+    <p class="lcip-empty">상세 내역은 아래 1~6번 섹션에서 계속 볼 수 있다.</p>
+  </section>
+
+  <section class="lcip-section">
+    <h2>1. Today's Intelligence</h2>
+    <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>날짜</th><th>핵심 내용</th><th>신뢰도</th><th>출처</th></tr></thead><tbody><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr></tbody></table></div>
+  </section>
+
+  <section class="lcip-section">
+    <h2>2. Critical Risk</h2>
+    <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>날짜</th><th>핵심 내용</th><th>신뢰도</th><th>출처</th></tr></thead><tbody><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr><tr><td>2026-08-11</td><td>원문 제목: Engineered stone silicosis lawsuit filed in California court</td><td>low</td><td>https://example.com/news/silicosis-lawsuit-california</td></tr></tbody></table></div>
+  </section>
+
+  <section class="lcip-section">
+    <h2>3. Future Opportunity</h2>
+    <div class="lcip-table-scroll"><p class="lcip-empty">등록된 Future Opportunity 신호 없음</p></div>
+  </section>
+
+  <section class="lcip-section">
+    <h2>4. Quick Company Scan</h2>
+    <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>회사명</th><th>스캔일</th><th>신뢰도</th><th>종합 점수</th></tr></thead><tbody><tr><td>LX Hausys</td><td>2026-08-11</td><td>low</td><td>42.3/100</td></tr></tbody></table></div>
+  </section>
+
+  <section class="lcip-section">
+    <h2>5. Investment Review</h2>
+    <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>회사명</th><th>추천 신호</th><th>검토일</th></tr></thead><tbody><tr><td>LX Hausys</td><td>monitor</td><td>2026-08-11</td></tr></tbody></table></div>
+  </section>
+
+  <section class="lcip-section">
+    <h2>6. Source Health</h2>
+    <div class="lcip-table-scroll"><table class="lcip-table"><thead><tr><th>Source</th><th>가동 상태</th><th>안정성 참고</th></tr></thead><tbody><tr><td>Google News RSS (English)</td><td>가동중</td><td>Pilot 자체 연동 이력 없음(feature_flags.real_network_calls=false, 아직 실제 호출 안 함)</td></tr><tr><td>Google News RSS (Korean)</td><td>가동중</td><td>Pilot 자체 연동 이력 없음(feature_flags.real_network_calls=false, 아직 실제 호출 안 함)</td></tr><tr><td>Naver News Search API</td><td>가동중</td><td>Pilot 자체 연동 이력 없음(뉴스 수집 실체화 라운드, 2026-08-08에 어댑터는 실제 구현됐으나 feature_flags.real_network_calls가 아직 false라 실제 호출은 없었다)</td></tr><tr><td>DART 공시 (전자공시시스템)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false, API Key 미발급)</td></tr><tr><td>KRX 상장공시시스템 (KIND)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false)</td></tr><tr><td>SEC EDGAR (미국 증권거래위원회 전자공시)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false)</td></tr><tr><td>EDINET (일본 금융청 전자공시)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false)</td></tr><tr><td>SEDAR+ (캐나다 증권 공시 시스템)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false, 현재 Pilot 대상 캐나다 상장사 없음)</td></tr><tr><td>Companies House (영국 기업 등기소)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false, 현재 Pilot 대상 영국 등기 회사 없음)</td></tr><tr><td>정부 보도자료 RSS (일반 카테고리)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false, 카테고리 placeholder)</td></tr><tr><td>기업 IR 페이지 (일반 카테고리)</td><td>미가동</td><td>Pilot 자체 연동 이력 없음(active: false, 카테고리 placeholder)</td></tr></tbody></table></div>
+  </section>
+
+  <footer class="lcip-footer">
+    본 대시보드는 공개정보만을 근거로 생성되었으며, 모든 항목은 원문 링크를 포함한다. AI 해석·추론은
+    사실과 구분하여 표기한다. LCIP Pilot — LX홀딩스 전략팀 개인용 참고자료 (사내 공식 문서 아님).
+    Mock/dry-run 기반 결과가 섞여 있을 수 있다(각 Scenario 출력의 표시 참고).
+  </footer>
+
+</div>
+
+<script>
+// LCIP Pilot Executive Dashboard — 클라이언트 사이드 스크립트.
+// Round 8부터 모든 Widget이 서버 사이드(build_dashboard.py)에서 정적 HTML 표로
+// 렌더링되므로, 클라이언트 스크립트가 할 일이 없다. 파일 자체는 template.html의
+// 인라인 스크립트 자리(single 모드)/split 모드 script src 참조 대상으로 계속 쓰이므로
+// 남겨둔다(Enterprise 확장 시 인터랙티브 기능이 필요해지면 이 자리에 추가한다).
+
+</script>
+</body>
+</html>

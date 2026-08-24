@@ -1,0 +1,27 @@
+{
+  "target_company": "Caesarstone",
+  "scan_date": "2026-08-11",
+  "company_overview": "Caesarstone Ltd.(舊 CaesarStone Sdot-Yam Ltd.)는 1987년 이스라엘 Kibbutz Sdot-Yam에서\n설립된 나스닥 상장기업(NASDAQ: CSTE, 2012년 상장)이다. 현재 본사는 이스라엘 Menashe에\n있다. 지배주주 구조는 확인하지 못했다.\n\n- 내용: 나스닥 상장(CSTE), 1987년 이스라엘 설립, 본사 Menashe(이스라엘)",
+  "business_structure": [
+    "엔지니어드 쿼츠·포슬린 표면재(조리대·세면대·벽면·바닥재)를 설계·개발·제조하며 50개국\n이상에 판매한다. 지역별 매출 비중(2024년): 미국 약 47%($186.9M), 호주 약 17%($67.5M),\nEMEA 약 13%($52.0M), 캐나다 약 13%($51.9M). 최근 수년간 구조조정을 진행해 이스라엘\nBar-Lev 생산시설을 폐쇄하고 쿼츠 생산의 상당 부분을 제3자 위탁생산으로 전환했다.\n\n- 내용: 지역별 매출(미국 47%/호주 17%/EMEA 13%/캐나다 13%, 2024년), Bar-Lev 공장 폐쇄 및\n  위탁생산 전환(2025년 구조조정)"
+  ],
+  "product_portfolio": [
+    "- **Caesarstone** 쿼츠 표면재 — 분쇄 천연 쿼츠 최대 약 93%에 수지·안료를 배합\n- 포슬린 슬랩 라인(20-F 공시 기준 존재하나 세부 브랜드명은 확인하지 못했다)"
+  ],
+  "financial_snapshot": [
+    "mock: 공개 재무 스냅샷 미확인"
+  ],
+  "competitor": [
+    "- **Cambria**(미국, 비상장, 미네소타 소재 가족기업)\n- **Cosentino/Silestone**(스페인)\n- **LG Viatera / LX Hausys**(한국)\n- **HanStone**(한국계 자본, 미국 켄터키 공장)\n- **MSI**"
+  ],
+  "lx_strategic_fit": "mock: LX 전략적 연관성 미평가 (실제 Claude 미연동)",
+  "reference_sources": [
+    "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+  ],
+  "unknowns": [
+    "실제 Claude 미연동 상태 — mock 결과이므로 신뢰하지 말 것",
+    "Knowledge Base 근거로 채운 항목: business_structure, company_overview, competitor, product_portfolio",
+    "조회된 Source: Google News RSS (English)"
+  ],
+  "confidence": "low"
+}

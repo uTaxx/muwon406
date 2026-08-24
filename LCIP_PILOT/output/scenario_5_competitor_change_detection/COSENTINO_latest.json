@@ -1,0 +1,27 @@
+{
+  "target_company": "Cosentino",
+  "scan_date": "2026-08-11",
+  "company_overview": "Cosentino, S.A.(Grupo Cosentino, 모기업 Mármoles Cosentino, S.A.)는 1979년 설립되었으며\n(대리석 채석 사업은 1940년부터), 스페인 알메리아(Almería, Cantoria/Macael 산업단지)에\n본사를 둔다. **비상장(Private)**이며 창업 형제(Paco·Eduardo·Pepe Cosentino) 가문이\n지금도 지배하는 가족기업이다.\n\n- 내용: 비상장, 스페인 알메리아 본사, 1979년 설립(대리석 사업은 1940년부터), 가족 지배",
+  "business_structure": [
+    "주방·욕실·바닥재·외장/파사드용 엔지니어드·건축 표면재를 설계·제조·유통하며 80개국\n이상(일부 자료는 110개국 이상)에서 사업을 운영, 30개국 이상에서 직접 시설을 운영한다.\n스페인 알메리아 산업단지가 핵심 생산 거점이다. 2025년 그룹 매출 €14.2억(약 $16.1억,\n전년 대비 약 -2.5%), EBITDA €2.34억(-13.6%), 순이익 $44M을 기록했다.\n\n- 내용: 2025년 매출 €14.2억/EBITDA €2.34억/순이익 $44M, 80개국 이상 판매·30개국 이상\n  직접 운영"
+  ],
+  "product_portfolio": [
+    "- **Silestone**(Cosentino) — 쿼츠 표면재, 1991년 출시\n- **Dekton**(Cosentino) — 초박형 소결(sintered) 표면재, 2013년 출시. 저/무실리카\n  대안으로도 언급됨(시장·소송 리스크 분산 목적 포함 가능성)\n- **Sensa**(Cosentino) — 천연석/화강암 라인\n- Eco by Cosentino, Scalea(천연석)"
+  ],
+  "financial_snapshot": [
+    "mock: 공개 재무 스냅샷 미확인"
+  ],
+  "competitor": [
+    "- **Caesarstone**(이스라엘, NASDAQ: CSTE)\n- **Cambria**(미국, 비상장)\n- **LG Viatera / LX Hausys**(한국)\n- **HanStone**(한국계 자본)\n- **MSI**"
+  ],
+  "lx_strategic_fit": "mock: LX 전략적 연관성 미평가 (실제 Claude 미연동)",
+  "reference_sources": [
+    "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+  ],
+  "unknowns": [
+    "실제 Claude 미연동 상태 — mock 결과이므로 신뢰하지 말 것",
+    "Knowledge Base 근거로 채운 항목: business_structure, company_overview, competitor, product_portfolio",
+    "조회된 Source: Google News RSS (English)"
+  ],
+  "confidence": "low"
+}

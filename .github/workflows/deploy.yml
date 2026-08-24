@@ -14,27 +14,20 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# public/ 를 그대로 올린다. 빌드가 없다 — 대시보드는 의존성 없는 정적 HTML이라
+# 빌드할 것이 없고, 빌드 단계를 두면 그 단계가 깨질 때 대시보드까지 같이 멈춘다.
+# 예전에는 같은 저장소의 React 앱(맛집·카페 대시보드)을 빌드해서 그 산출물에
+# 얹어 내보냈기 때문에, 그 앱의 타입 오류 하나로 대시보드 배포가 막힐 수 있었다.
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
       - id: deployment
         uses: actions/deploy-pages@v4
