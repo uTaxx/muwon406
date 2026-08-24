@@ -37,4 +37,7 @@ jobs:
           echo "MUWON_MASTER_KEY=${{ secrets.MUWON_MASTER_KEY }}" >> .env
 
       - name: 상태 찍기
-        run: python scripts/inspect_state.py
+        # --kis: 증권사 계좌까지 조회해 DB 기록과 대조한다. 우리를 거치지
+        # 않은 주문(손매매·검증 스크립트)이 있으면 여기서 드러난다.
+        # 조회만 하지 아무것도 고치지 않는다.
+        run: python scripts/inspect_state.py --kis

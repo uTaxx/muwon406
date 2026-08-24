@@ -47,6 +47,7 @@ from muwon.db.models import PositionRow
 from muwon.db.session import ensure_schema, make_session_factory
 from muwon.execution.approved_universe import build_universe
 from muwon.execution.engine import TradingEngine
+from muwon.execution.reconciliation import check_account_consistency
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 from muwon.settings.from_sheet import build_policy_provider, parse_settings
@@ -106,6 +107,42 @@ def main() -> int:
     with session_factory() as session:
         보유 = {p.symbol for p in session.scalars(select(PositionRow))}
 
+    notifier = TelegramNotifier(service)
+
+    # ── 사기 전에 실제 계좌와 대조한다 ───────────────────────────
+    #
+    # 이 프로그램의 현금은 스스로 계산해 온 값이다 — 매수하면 빼고 매도하면
+    # 더한다. 우리를 거치지 않은 주문(손매매·검증 스크립트)이나 부분 체결이
+    # 있으면 그 계산이 조용히 어긋난다. 비중 상한·일일 손실한도가 전부 이
+    # 현금값 위에서 도니까, 틀어진 걸 모르고 매매하는 게 제일 나쁘다.
+    #
+    # **살 것이 없는 날에도 돌아야 한다.** 어긋남은 우리가 안 산 날에 생기고,
+    # 그런 날 건너뛰면 영영 못 본다. 그래서 유니버스 판정보다 앞에 둔다.
+    #
+    # 고치지는 않는다. 원인이 부분 체결일 수도, 손매매일 수도, 우리 버그일
+    # 수도 있어서 자동으로 덮어쓰면 그것대로 사고다. 알리고 사람이 정한다.
+    client = None
+    if not args.dry_run:
+        from muwon.data.kis_client import KISClient
+
+        creds = service.get_kis_credentials()
+        if creds.is_real:
+            raise SystemExit(
+                "kis.env가 'real'입니다. 이 스크립트는 모의투자 전용이니 "
+                "python scripts/configure.py kis --env paper ...로 먼저 되돌리세요."
+            )
+        if not creds.app_key or not creds.app_secret or not creds.account_no:
+            raise SystemExit("KIS 인증정보가 없습니다.")
+        client = KISClient.from_settings(service)
+
+        보고 = check_account_consistency(client, session_factory)
+        if 보고 is not None and not 보고.is_consistent:
+            try:
+                notifier.send("🔍 계좌 대조 — 어긋남\n" + "\n".join(보고.summary_lines()))
+            except Exception as e:  # noqa: BLE001 — 알림 실패가 매매를 막으면 안 된다
+                print(f"대조 알림 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
+        print()
+
     # ── 유니버스 = 승인된 것 ∪ 보유 중 ──────────────────────────
     #
     # 보유 종목을 빼면 엔진이 그 종목을 아예 안 보고 **손절이 조용히 멈춘다.**
@@ -128,7 +165,6 @@ def main() -> int:
 
     selection = service.get_strategy_selection()
     strategy = build_strategies(selection.active_keys, selection.combine)
-    notifier = TelegramNotifier(service)
 
     if args.dry_run:
         from muwon.data.yahoo_client import YahooFinanceDataSource
@@ -138,18 +174,8 @@ def main() -> int:
         source_symbol = lambda t: t.yahoo_symbol
         print("■ --dry-run — 야후 시세로 주문 흉내만 냅니다. KIS에 안 붙습니다.")
     else:
-        from muwon.data.kis_client import KISClient
         from muwon.execution.kis_order_executor import KISOrderExecutor
 
-        creds = service.get_kis_credentials()
-        if creds.is_real:
-            raise SystemExit(
-                "kis.env가 'real'입니다. 이 스크립트는 모의투자 전용이니 "
-                "python scripts/configure.py kis --env paper ...로 먼저 되돌리세요."
-            )
-        if not creds.app_key or not creds.app_secret or not creds.account_no:
-            raise SystemExit("KIS 인증정보가 없습니다.")
-        client = KISClient.from_settings(service)
         data_source, executor = client, KISOrderExecutor(client)
         source_symbol = lambda t: t.symbol
 

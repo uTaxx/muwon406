@@ -6,8 +6,13 @@
 
 아무것도 쓰지 않는다. 구글드라이브에 다시 올리지도 않는다 — 확인하려고
 돌린 것이 운영 상태를 바꾸면 안 된다.
+
+`--kis`를 붙이면 증권사 계좌까지 조회해 DB 기록과 **대조**한다. 이 프로그램의
+현금은 스스로 계산해 온 값이라(매수하면 빼고 매도하면 더한다), 우리를 거치지
+않은 주문이 있으면 조용히 어긋난다. 조회만 하지 고치지는 않는다.
 """
 
+import argparse
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -31,7 +36,28 @@ from muwon.db.models import (
 from muwon.db.session import make_session_factory
 
 
+def _계좌대조(session_factory) -> None:
+    """증권사 계좌를 조회해 DB 기록과 대조한다 — 읽기만 한다."""
+    from muwon.data.kis_client import KISClient
+    from muwon.execution.reconciliation import check_account_consistency
+    from muwon.settings.service import build_settings_service
+
+    service = build_settings_service()
+    creds = service.get_kis_credentials()
+    if not creds.app_key or not creds.app_secret or not creds.account_no:
+        print("\n■ 계좌 대조 — KIS 인증정보가 없어 건너뜁니다.")
+        return
+    if check_account_consistency(KISClient.from_settings(service), session_factory) is None:
+        print("  (잔고 조회에 실패해 대조하지 못했습니다)")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="운영 DB 점검 (읽기 전용)")
+    parser.add_argument(
+        "--kis", action="store_true", help="증권사 계좌까지 조회해 DB 기록과 대조한다"
+    )
+    args = parser.parse_args()
+
     path = bootstrap_settings.database_url
     print(f"■ 운영 DB 점검 — {path}")
     print(f"  조회 시각 {datetime.now(UTC).isoformat(timespec='seconds')}\n")
@@ -130,6 +156,9 @@ def main() -> None:
             print("  없음 — 기본 18종목으로 매매하고 있다는 뜻이다.")
         for row in latest:
             print(f"  {row.snapshot_at:%Y-%m-%d %H:%M} kind={row.kind} {row.symbol} {row.name}")
+
+    if args.kis:
+        _계좌대조(session_factory)
 
 
 if __name__ == "__main__":
