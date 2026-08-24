@@ -175,6 +175,11 @@
       <button id="자동전환" class="수수">자동 갱신 켜기</button>
       <button id="연결풀기" class="수수">연결 지우기</button>
     </div>
+    <div id="기억못함" class="알림 숨김" style="margin-top:12px">
+      <strong>이 브라우저가 열쇠를 기억하지 못합니다.</strong><br>
+      숫자는 지금 그대로 나옵니다. 다만 <b>창을 닫았다 다시 열면 열쇠를
+      한 번 더 넣어야 합니다.</b>
+    </div>
     <div class="때" id="때"></div>
   </section>
 
@@ -209,17 +214,29 @@
   // 전부 감싼다. 못 읽는다고 화면이 죽으면 안 된다.
   // 이 화면을 n8n이 내려주므로 자료 웹훅도 같은 곳에 있다. 주소를 손으로
   // 넣게 하면 틀릴 일만 생긴다 — 기본값을 같은 출처로 둔다.
-  const 기본주소 = () => location.origin + "/webhook/muwon-balance";
+  const 기본주소 = () => "/webhook/muwon-balance";
+
+  // 저장이 막히는 브라우저·설정이 실제로 있다. 그때도 이번 방문은
+  // 굴러가야 한다 — 저장은 다음에 또 넣지 않게 해 주는 편의일 뿐이고,
+  // 조회의 조건이 아니다.
+  let 이번창 = null;
 
   const 읽기 = () => {
-    try { return JSON.parse(localStorage.getItem(저장키) || "null"); }
-    catch { return null; }
+    try {
+      const 담긴것 = JSON.parse(localStorage.getItem(저장키) || "null");
+      if (담긴것 && 담긴것.열쇠) return 담긴것;
+    } catch { /* 막힌 브라우저 — 아래 이번창으로 간다 */ }
+    return 이번창;
   };
   const 쓰기 = (값) => {
+    이번창 = 값;
     try { localStorage.setItem(저장키, JSON.stringify(값)); return true; }
     catch { return false; }
   };
-  const 지우기 = () => { try { localStorage.removeItem(저장키); } catch { /* 무시 */ } };
+  const 지우기 = () => {
+    이번창 = null;
+    try { localStorage.removeItem(저장키); } catch { /* 무시 */ }
+  };
 
   const 돈 = (n) => (n === null || n === undefined || Number.isNaN(n))
     ? "—" : Math.round(n).toLocaleString("ko-KR") + "원";
@@ -321,18 +338,17 @@
   $("저장").addEventListener("click", () => {
     const 열쇠 = $("열쇠").value.trim();
     if (!열쇠) { alert("열쇠를 넣어 주세요."); return; }
-    if (!쓰기({ 주소: $("주소").value.trim(), 열쇠 })) {
-      탈났다("이 브라우저에 저장하지 못했습니다.",
-        "사생활 보호 창이면 저장이 막힙니다. 일반 창에서 열어 주세요.");
-      return;
-    }
+    const 외웠나 = 쓰기({ 주소: $("주소").value.trim(), 열쇠 });
+    // 못 외웠어도 조회는 한다. 알려는 주되, 길을 막지는 않는다.
+    보이기("기억못함", !외웠나);
     불러오기();
   });
   $("다시").addEventListener("click", 불러오기);
   $("자동전환").addEventListener("click", () => 자동맞추기(!자동));
   $("연결풀기").addEventListener("click", () => {
     지우기(); 자동맞추기(false);
-    보이기("본문", false); 보이기("탈남", false); 보이기("설정", true);
+    보이기("본문", false); 보이기("탈남", false); 보이기("기억못함", false);
+    보이기("설정", true);
   });
 
   자동맞추기(false);
