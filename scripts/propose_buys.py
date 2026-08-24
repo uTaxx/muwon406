@@ -185,6 +185,10 @@ def main() -> int:
                 reason=sig.reason, sector=코드, sector_name=이름표.get(코드, 코드),
             )))
 
+    살펴본수 = sum(
+        1 for 코드, 모음 in 섹터시세.items() if 코드 in 살섹터
+        for 심볼 in 모음 if 심볼 not in 보유중
+    )
     신호들.sort(key=lambda 것: 것[0], reverse=True)
     줄선것 = [c for _, c in 신호들]
 
@@ -244,7 +248,16 @@ def main() -> int:
         if not cfg.bot_token or not cfg.chat_id:
             print("텔레그램 설정이 없어 알림은 건너뜁니다.", file=sys.stderr)
         else:
-            send(cfg.bot_token, cfg.chat_id, 알림글(고른것, 오늘, 주소),
+            # 후보가 없는 날에도 **몇 종목을 무슨 기준으로 봤는지**를 같이
+            # 보낸다. "없습니다"만 보내면 제대로 돌아서 0인지 고장 나서
+            # 0인지 구별이 안 된다.
+            강한섹터 = " · ".join(
+                f"{p.이름} {p.상대강도:+.1f}%p"
+                for p in 순위[:3] if p.상대강도 is not None
+            )
+            글 = 알림글(고른것, 오늘, 주소, 살펴본수=살펴본수,
+                     전략=selection.describe(), 섹터요약=강한섹터)
+            send(cfg.bot_token, cfg.chat_id, 글,
                  reply_markup=keyboard(고른것, 오늘) if 고른것 else None)
             print("텔레그램으로 알렸습니다(버튼 포함).", file=sys.stderr)
     except Exception as e:  # noqa: BLE001 — 알림 실패가 후보 목록을 지우면 안 된다
