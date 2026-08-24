@@ -81,7 +81,11 @@ def webhook_info(token: str) -> dict:
 
 
 def send(token: str, chat_id: str, text: str, reply_markup: dict | None = None) -> dict:
+    # footer.붙이기가 HTML을 돌려준다 — parse_mode를 빠뜨리면 태그가 글자로
+    # 보인다. 미리보기는 끈다: 링크가 이름만 보이게 바뀌었는데 그 아래
+    # 커다란 미리보기 카드가 붙으면 숨긴 뜻이 없어진다.
     return call(token, "sendMessage", chat_id=chat_id, text=footer.붙이기(text),
+                parse_mode="HTML", disable_web_page_preview=True,
                 reply_markup=reply_markup)
 
 
@@ -103,6 +107,7 @@ def edit_text(token: str, chat_id: str, message_id: int, text: str,
     하나만 실패할 수 있다."""
     call(token, "editMessageText", raise_on_error=False,
          chat_id=chat_id, message_id=message_id, text=footer.붙이기(text),
+         parse_mode="HTML", disable_web_page_preview=True,
          reply_markup=reply_markup)
 
 
