@@ -109,13 +109,20 @@ def main() -> int:
         # 웹훅이 걸려 있으면 getUpdates는 영영 빈손이다(한 봇을 두 곳에서
         # 받을 수 없다). 그 사실이 어디에도 안 나타나므로 먼저 물어본다.
         정보 = webhook_info(cfg.bot_token)
-        if 정보.get("url"):
+        # **언제나 한 줄은 찍는다.** 물어보기에 실패했을 때와 웹훅이 없을
+        # 때가 똑같이 조용하면, 조용한 것이 무슨 뜻인지 알 수가 없다.
+        # 이 진단을 만든 이유가 바로 그 모호함을 없애는 것이었다.
+        if 정보.get("ok") is False:
+            print(f"■ 봇 상태를 못 물어봤습니다 — {정보.get('description')}")
+        elif 정보.get("url"):
             print(f"■ 이 봇은 **웹훅으로 받고 있습니다**: {정보['url']}")
             print("  n8n이 받아 넘겨주는 구조입니다 — 여기서 물어보러 가면 충돌합니다.")
             print("  이 워크플로의 schedule은 꺼 두는 것이 맞습니다.")
             return 0
-        if 정보.get("pending_update_count"):
-            print(f"  텔레그램에 밀려 있는 것 {정보['pending_update_count']}개", file=sys.stderr)
+        else:
+            밀린것 = 정보.get("pending_update_count", 0)
+            print(f"■ 이 봇에 **웹훅이 없습니다** — 물어보러 가는 방식으로 돕니다"
+                  f" (밀려 있는 것 {밀린것}개)")
         업데이트 = get_updates(cfg.bot_token, offset)
         print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
         마지막_고정 = False
