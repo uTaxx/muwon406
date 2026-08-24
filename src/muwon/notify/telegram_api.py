@@ -23,6 +23,8 @@ from typing import Any
 
 import requests
 
+from muwon.notify import footer
+
 BASE = "https://api.telegram.org/bot{token}/{method}"
 TIMEOUT = 30
 
@@ -79,7 +81,8 @@ def webhook_info(token: str) -> dict:
 
 
 def send(token: str, chat_id: str, text: str, reply_markup: dict | None = None) -> dict:
-    return call(token, "sendMessage", chat_id=chat_id, text=text, reply_markup=reply_markup)
+    return call(token, "sendMessage", chat_id=chat_id, text=footer.붙이기(text),
+                reply_markup=reply_markup)
 
 
 def answer_callback(token: str, callback_query_id: str, text: str = "",
@@ -99,7 +102,8 @@ def edit_text(token: str, chat_id: str, message_id: int, text: str,
     둘을 따로 부르면 사이에 잠깐 어긋난 상태가 보이고, 호출도 두 번이라
     하나만 실패할 수 있다."""
     call(token, "editMessageText", raise_on_error=False,
-         chat_id=chat_id, message_id=message_id, text=text, reply_markup=reply_markup)
+         chat_id=chat_id, message_id=message_id, text=footer.붙이기(text),
+         reply_markup=reply_markup)
 
 
 def edit_reply_markup(token: str, chat_id: str, message_id: int,
