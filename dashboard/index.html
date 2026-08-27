@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>sdlab 매매 대시보드</title>
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="주식 자동매매 — 지금 손익, 오늘 승인, 기록, 전략과 기준을 한 화면에서.">
+<meta name="description" content="주식 자동매매. 지금 손익, 오늘 승인, 기록, 전략과 기준을 한 화면에서.">
 
 <!--
   이 화면은 계좌 자료를 담고 있지 않다. 저장소가 공개라서, 숫자를 파일에
@@ -169,7 +169,7 @@
       <div id="승인알림"></div>
       <h2>오늘 살 만하다고 고른 것</h2>
       <p class="h2곁말">
-        체크한 것만 <b>09:05에</b> 삽니다. 아무것도 안 누르면 아무것도 안 삽니다 —
+        체크한 것만 <b>09:05에</b> 삽니다. 아무것도 안 누르면 아무것도 안 삽니다.
         빈 칸은 승인이 아닙니다.
       </p>
       <div id="승인몸" class="후보들"></div>
@@ -180,11 +180,11 @@
 
       <details>
         <summary>승인에 걸린 규칙 셋</summary>
-        <p><b>빈 칸은 승인이 아니다</b> — 안 누른 것, 지운 것은 전부 거부입니다.
+        <p><b>빈 칸은 승인이 아닙니다.</b> 안 누른 것, 지운 것은 전부 거부입니다.
            사는 쪽으로 기우는 기본값을 두지 않습니다.</p>
-        <p><b>어제 승인은 오늘 못 쓴다</b> — 후보를 낸 날과 주문 날이 다르면 무시합니다.
+        <p><b>어제 승인은 오늘 못 씁니다.</b> 후보를 낸 날과 주문 날이 다르면 무시합니다.
            어제 좋아 보이던 종목이 오늘 20% 올라 있을 수 있습니다.</p>
-        <p><b>파는 것은 승인과 무관하다</b> — 들고 있는 종목의 손절·청산은
+        <p><b>파는 것은 승인과 무관합니다.</b> 들고 있는 종목의 손절·청산은
            아무것도 안 눌러도 늘 돕니다.</p>
       </details>
     </section>
@@ -213,7 +213,7 @@
       </div>
       <div class="알림 순한" style="margin-top:14px">
         <strong>승률만 보면 안 됩니다.</strong> 승률 33%여도 손익비가 3이면 본전 이상입니다.
-        그리고 <b>제일 먼저 볼 것은 평균이 아니라 최대낙폭</b>입니다 — 한 해에 30%를
+        그리고 <b>제일 먼저 볼 것은 평균이 아니라 최대낙폭</b>입니다. 한 해에 30%를
         잃으면 대부분 중간에 그만두고, 그러면 좋은 평균은 받아 보지도 못합니다.
       </div>
 
@@ -258,56 +258,29 @@
     <section id="쪽-기준" role="tabpanel" class="숨김">
       <div id="기준알림"></div>
 
-      <h2>매매 스위치</h2>
-      <p class="h2곁말">화면 맨 위 스위치와 같은 것입니다. 여기서는 <b>지금 어떤
-        상태이고 그게 무슨 뜻인지</b>를 풀어서 보여 줍니다.</p>
+      <p class="h2곁말" style="margin-top:0">매매를 <b>사는 쪽</b>과 <b>파는 쪽</b>으로
+        나눠 봅니다. 각 쪽은 두 층입니다.</p>
+      <ul style="margin:0 0 18px; padding-left:18px; font-size:13px; color:var(--흐린글)">
+        <li><b>기초전략</b> — 어떤 전략을 걸든 <b>항상</b> 걸리는 것. 여기서 바꿉니다.</li>
+        <li><b>세부전략</b> — 지금 걸려 있는 전략. 바꾸는 것은 돈이 나가는
+          결정이라 화면에서는 보기만 됩니다.</li>
+      </ul>
+
+      <!-- ── 매수 ──────────────────────────────────── -->
+      <h2>🟢 매수</h2>
+
+      <h3 class="쪽제목">기초전략 — 무엇을 걸든 항상 걸립니다</h3>
       <div class="칸 넓게">
         <div class="줄" style="margin:0; justify-content:space-between">
           <div>
             <div class="값" id="킬값" style="font-size:19px">—</div>
             <div class="곁말" id="킬곁말">불러오는 중…</div>
+            <div class="곁말" id="매수전략줄" style="margin-top:4px"></div>
           </div>
           <button id="킬전환">바꾸기</button>
         </div>
       </div>
-      <div class="칸 넓게" style="margin-top:10px">
-        <div class="줄" style="margin:0; justify-content:space-between">
-          <div>
-            <div class="값" id="매도값" style="font-size:19px">—</div>
-            <div class="곁말" id="매도곁말">불러오는 중…</div>
-          </div>
-          <button id="매도전환">바꾸기</button>
-        </div>
-      </div>
-      <details>
-        <summary>왜 두 스위치의 규칙이 다른가</summary>
-        <p style="margin-top:8px">
-          매수를 못 하면 <b>기회를 놓칠 뿐</b>이지만, 매도를 못 하면
-          <b>손실이 그대로 자랍니다.</b> 그래서 고장났을 때 기우는 쪽을
-          반대로 잡아 뒀습니다.
-        </p>
-        <ul style="margin:6px 0 0; padding-left:18px">
-          <li><b>매수</b> — 시트와 대시보드가 <b>둘 다 켜야</b> 켜집니다.
-            설정을 못 읽으면 <b>꺼집니다.</b></li>
-          <li><b>매도</b> — 시트와 대시보드가 <b>둘 다 꺼야</b> 꺼집니다.
-            설정을 못 읽으면 <b>켜집니다.</b></li>
-        </ul>
-      </details>
-
-      <h2>쓰는 전략</h2>
-      <p class="h2곁말">고르면 <b>다음 실행부터</b> 적용됩니다. 지금 들고 있는 것은 안 건드립니다.</p>
-      <select id="전략"></select>
-      <p class="설명" id="전략한줄"></p>
-      <div id="전략규칙"></div>
-
-      <h2>기준</h2>
-      <p class="h2곁말">전략보다 위에 있는 안전선입니다. 전략이 사라고 해도 여기 걸리면 안 삽니다.</p>
-      <div class="짝">
-        <div>
-          <label for="손절">손절 폭 (%)</label>
-          <input id="손절" type="number" step="0.5" min="1" max="50">
-          <p class="설명">산 값에서 이만큼 빠지면 무조건 판다</p>
-        </div>
+      <div class="짝" style="margin-top:12px">
         <div>
           <label for="비중">종목당 비중 (%)</label>
           <input id="비중" type="number" step="1" min="1" max="100">
@@ -318,9 +291,101 @@
           <input id="동시보유" type="number" step="1" min="1" max="30">
           <p class="설명">한 번에 몇 종목까지 들고 있을지</p>
         </div>
+        <div>
+          <label for="섹터당">섹터당 종목 수</label>
+          <input id="섹터당" type="number" step="1" min="0" max="10">
+          <p class="설명">한 업종에서 몇 종목까지. <b>0이면 제한 없음</b></p>
+        </div>
+        <div>
+          <label for="거래대금">거래대금 문턱 (억)</label>
+          <input id="거래대금" type="number" step="10" min="0" max="10000">
+          <p class="설명">최근 20일 평균이 이보다 적으면 안 삽니다</p>
+        </div>
+        <div>
+          <label for="하루손실">하루 손실 한도 (%)</label>
+          <input id="하루손실" type="number" step="0.5" min="1" max="50">
+          <p class="설명">하루에 이만큼 잃으면 그날은 더 안 삽니다</p>
+        </div>
+        <div>
+          <label for="승인필요">매수 전 승인</label>
+          <select id="승인필요">
+            <option value="Y">받는다 (내가 누른 것만 삽니다)</option>
+            <option value="N">안 받는다 (조건 맞으면 바로 삽니다)</option>
+          </select>
+          <p class="설명" id="승인곁말"></p>
+        </div>
       </div>
 
-      <div class="줄">
+      <h3 class="쪽제목">세부전략 — 무엇을 살지 정합니다</h3>
+      <div id="전략알림"></div>
+      <select id="전략" aria-label="사는 쪽 전략"></select>
+      <p class="설명" id="전략한줄"></p>
+      <div id="전략규칙"></div>
+
+      <!-- ── 매도 ──────────────────────────────────── -->
+      <h2 style="margin-top:28px">🔴 매도</h2>
+
+      <h3 class="쪽제목">기초전략 — 무엇을 걸든 항상 걸립니다</h3>
+      <div class="칸 넓게">
+        <div class="줄" style="margin:0; justify-content:space-between">
+          <div>
+            <div class="값" id="매도값" style="font-size:19px">—</div>
+            <div class="곁말" id="매도곁말">불러오는 중…</div>
+            <div class="곁말" id="매도전략줄" style="margin-top:4px"></div>
+          </div>
+          <button id="매도전환">바꾸기</button>
+        </div>
+      </div>
+      <div class="짝" style="margin-top:12px">
+        <div>
+          <label for="손절">손절선 (%)</label>
+          <input id="손절" type="number" step="0.5" min="1" max="50">
+          <p class="설명">산 값에서 이만큼 빠지면 무조건 판다</p>
+        </div>
+        <div>
+          <label for="익절">익절선 (%)</label>
+          <input id="익절" type="number" step="0.5" min="0" max="100">
+          <p class="설명">산 값에서 이만큼 오르면 판다. <b>0이면 끔</b></p>
+        </div>
+        <div>
+          <label for="보유기간">보유 기간 상한 (일)</label>
+          <input id="보유기간" type="number" step="1" min="0" max="60">
+          <p class="설명" id="보유기간곁말">며칠까지 들고 있을지</p>
+        </div>
+      </div>
+      <div id="익절곁말" class="곁말"></div>
+      <details style="margin-top:10px">
+        <summary>파는 순서 — 먼저 걸리는 것 하나로 팔립니다</summary>
+        <ol style="margin:8px 0 0; padding-left:20px">
+          <li><b>손절</b> — 손실을 막는 것이 언제나 먼저입니다.</li>
+          <li><b>익절</b> — 켜져 있을 때만.</li>
+          <li><b>보유 기간</b> — 오르든 내리든 무조건.</li>
+          <li><b>세부전략의 매도 신호</b> — 아래에서 고른 전략이 냅니다.</li>
+        </ol>
+      </details>
+      <details>
+        <summary>왜 두 스위치의 규칙이 다른가</summary>
+        <p style="margin-top:8px">
+          매수를 못 하면 <b>기회를 놓칠 뿐</b>이지만, 매도를 못 하면
+          <b>손실이 그대로 자랍니다.</b> 그래서 고장났을 때 기우는 쪽을
+          반대로 잡아 뒀습니다.
+        </p>
+        <ul style="margin:6px 0 0; padding-left:18px">
+          <li><b>매수.</b> 시트와 대시보드가 <b>둘 다 켜야</b> 켜집니다.
+            설정을 못 읽으면 <b>꺼집니다.</b></li>
+          <li><b>매도.</b> 시트와 대시보드가 <b>둘 다 꺼야</b> 꺼집니다.
+            설정을 못 읽으면 <b>켜집니다.</b></li>
+        </ul>
+      </details>
+
+      <h3 class="쪽제목">세부전략 — 언제 팔지 정합니다</h3>
+      <p class="설명" style="margin-top:0">여기서 고른 전략의 <b>파는 신호만</b> 씁니다.
+        사는 조건은 안 씁니다.</p>
+      <select id="매도전략" aria-label="파는 쪽 전략"></select>
+      <p class="설명" id="매도전략한줄"></p>
+      <div id="매도전략규칙"></div>
+
+      <div class="줄" style="margin-top:22px">
         <button id="기준저장" class="주된">저장</button>
         <button id="기준다시">되돌리기</button>
       </div>

@@ -63,6 +63,57 @@ def _섹터시세(source, cache, start: date, end: date) -> dict[str, dict[str, 
     return 결과
 
 
+def _오늘한일(그날: date) -> dict:
+    """오늘 낸 주문, 오늘 청산한 매매, 지금 들고 있는 종목을 DB에서 읽는다.
+
+    **못 읽어도 리포트를 죽이지 않는다.** 다만 조용히 빈 값으로 넘기지도
+    않는다 — 안 산 날과 DB를 못 읽은 날이 화면에서 같아 보이면, 매수가
+    통째로 막힌 날을 평범한 날로 읽게 된다. 못 읽으면 그렇게 적는다.
+
+    시세를 다시 부르지 않는다. 이 스크립트는 장 마감 뒤에 돌고, 지금 평가액을
+    알려면 증권사에 또 물어야 한다. 보유 종목은 이름과 산 값까지만 적고,
+    지금 얼마인지는 대시보드에서 보게 한다."""
+    try:
+        from sqlalchemy import select
+
+        from muwon.config import bootstrap_settings
+        from muwon.db.models import OrderRow, PositionRow, TradeRow
+        from muwon.db.session import make_session_factory
+
+        만들기 = make_session_factory(bootstrap_settings.database_url)
+        with 만들기() as 세션:
+            주문 = 세션.execute(select(OrderRow)).scalars().all()
+            매매 = 세션.execute(select(TradeRow)).scalars().all()
+            보유 = 세션.execute(select(PositionRow)).scalars().all()
+    except Exception as e:  # noqa: BLE001 — DB가 없어도 리포트는 나가야 한다
+        print(f"오늘 한 일을 못 읽었습니다: {type(e).__name__}: {e}", file=sys.stderr)
+        return {"못읽음": f"{type(e).__name__}"}
+
+    # 종목코드만 적으면 무엇을 들고 있는지 알 수 없다. 411060이 무엇인지
+    # 아는 사람은 이 시스템을 만든 사람뿐이다. 이름을 붙여 준다.
+    이름표 = {}
+    for 섹터 in CATALOG:
+        for m in 섹터.활성종목:
+            이름표[m.symbol] = m.name
+
+    def 부르기(코드: str) -> str:
+        이름 = 이름표.get(코드, "")
+        return f"{이름}({코드})" if 이름 else 코드
+
+    산것 = [
+        (부르기(o.symbol), int(o.quantity), float(o.price))
+        for o in 주문
+        if o.created_at and o.created_at.date() == 그날 and str(o.side).upper() == "BUY"
+    ]
+    판것 = [
+        (부르기(t.symbol), int(t.quantity), float(t.pnl_amount), float(t.pnl_pct))
+        for t in 매매
+        if t.exited_at and t.exited_at.date() == 그날
+    ]
+    가진것 = [(부르기(p.symbol), int(p.quantity), float(p.entry_price)) for p in 보유]
+    return {"산것": 산것, "판것": 판것, "보유": 가진것}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lens", default=시계열.DEFAULT_LENS, choices=list(시계열.LENSES))
@@ -72,6 +123,10 @@ def main() -> int:
     parser.add_argument("--out", default="", help="결과를 남길 파일")
     parser.add_argument("--no-log", action="store_true", help="전망 기록을 쌓지 않는다")
     parser.add_argument("--telegram", action="store_true", help="요약을 텔레그램으로 보낸다")
+    parser.add_argument(
+        "--no-send", action="store_true",
+        help="요약을 만들어 로그에만 찍고 보내지는 않는다 (형식을 확인할 때)",
+    )
     parser.add_argument("--sheet", action="store_true", help="낸 전망을 구글 시트에 덧붙인다")
     args = parser.parse_args()
 
@@ -211,6 +266,7 @@ def main() -> int:
     # 전문은 200줄이 넘는다. 그대로 보내면 아무도 안 읽고, 안 읽는 알림은
     # 진짜 중요한 알림을 묻는다. 그래서 한 통짜리로 줄여 보낸다.
     못보냄 = ""
+    보낼요약 = ""
     if args.telegram:
         from muwon.market.digest import summarize
         from muwon.notify.telegram import TelegramNotifier
@@ -223,17 +279,28 @@ def main() -> int:
             렌즈=args.lens,
             원시=원시 if 기준일 is None else 원시.loc[:기준일],
             지수=코스피 if 기준일 is None else 코스피.loc[:기준일],
+            한일=_오늘한일(기준일 or 오늘),
         )
-        try:
-            TelegramNotifier(build_settings_service()).send(요약)
-            print("\n텔레그램으로 요약을 보냈습니다.", file=sys.stderr)
-        except Exception as e:  # noqa: BLE001 — 알림 실패가 리포트를 죽이면 안 된다
-            # 리포트 자체는 끝까지 만든다. 다만 **조용히 넘어가지는 않는다** —
-            # 2026-08-19~24에 여기서 여덟 번 내리 실패했는데 워크플로는 여덟 번
-            # 다 초록불이었고, 그동안 리포트가 폰에 한 번도 안 왔다.
-            # 조용히 성공한 척하는 실패가 이 저장소에서 제일 비싼 종류다.
-            못보냄 = f"{type(e).__name__}: {e}"
-            print(f"\n텔레그램 전송 실패: {못보냄}", file=sys.stderr)
+        # 요약은 맨 마지막에 찍는다(아래 참조). stderr로 찍었더니 stdout이
+        # 블록 버퍼링이라 로그에서 리포트 본문보다 한참 위에 붙었고,
+        # 확인하려면 로그를 통째로 읽어야 했다.
+        보낼요약 = 요약
+        # 여기서 return 하지 않는다. 아래에 리포트 파일 쓰기와 시트 올리기가
+        # 남아 있어서, 일찍 끊으면 --no-send가 그 둘까지 조용히 건너뛴다.
+        # 실제로 그렇게 만들었다가 아티팩트가 안 올라갔다.
+        if args.no_send:
+            print("--no-send라 실제로 보내지는 않았습니다.", file=sys.stderr)
+        else:
+            try:
+                TelegramNotifier(build_settings_service()).send(요약)
+                print("\n텔레그램으로 요약을 보냈습니다.", file=sys.stderr)
+            except Exception as e:  # noqa: BLE001 — 알림 실패가 리포트를 죽이면 안 된다
+                # 리포트 자체는 끝까지 만든다. 다만 **조용히 넘어가지는 않는다** —
+                # 2026-08-19~24에 여기서 여덟 번 내리 실패했는데 워크플로는 여덟 번
+                # 다 초록불이었고, 그동안 리포트가 폰에 한 번도 안 왔다.
+                # 조용히 성공한 척하는 실패가 이 저장소에서 제일 비싼 종류다.
+                못보냄 = f"{type(e).__name__}: {e}"
+                print(f"\n텔레그램 전송 실패: {못보냄}", file=sys.stderr)
 
     # ── 전망을 시트에도 남긴다 ────────────────────────────────────
     #
@@ -258,6 +325,15 @@ def main() -> int:
     if args.out:
         Path(args.out).write_text("\n".join(쓴것) + "\n", encoding="utf-8")
         print(f"\n결과를 {args.out}에 남겼습니다.", file=sys.stderr)
+
+    # **보내든 못 보내든 요약을 남긴다.** 폰으로 못 받은 날일수록 여기서
+    # 읽을 수 있어야 하고, 형식을 고친 뒤에 실제로 어떻게 나가는지 보려고
+    # 알림을 한 통 더 보낼 이유도 없다. 맨 마지막에 두는 이유는 로그를
+    # 끝에서부터 조금만 읽어도 보이게 하기 위해서다.
+    if 보낼요약:
+        print("\n─── 텔레그램으로 간 요약 ───")
+        print(보낼요약)
+        print("───")
 
     if 못보냄:
         # 리포트는 다 만들었고 파일·아티팩트로도 남겼다. 그래도 실패로

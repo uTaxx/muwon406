@@ -38,6 +38,16 @@ class RiskPolicy:
     #: 재지 않았다"는 뜻이지, 익절이 나쁘다는 뜻이 아니다.
     take_profit_pct: float = 0.0
 
+    #: 보유 기간 상한을 기준 쪽에서 덮어쓴다. **0이면 전략이 정한 대로 간다.**
+    #:
+    #: 원래 이 값은 전략 안에 있었다(거래량 급증 5일 → 5일). 그건 전략마다
+    #: 다른 것이 맞지만, "며칠까지 들고 있을 것인가"는 전략을 안 바꾸고도
+    #: 정하고 싶은 값이다. 그래서 손절·익절과 같은 자리에 덮개를 둔다.
+    #:
+    #: 기본값이 0인 것은 "안 정했다"가 아니라 **"전략에게 맡긴다"**는 뜻이다.
+    #: 지금까지의 성적표가 전부 그 상태에서 나온 숫자다.
+    max_holding_days: int = 0
+
     atr_stop_enabled: bool = False
     atr_stop_multiple: float = 2.0
     trailing_stop_enabled: bool = False
@@ -76,6 +86,21 @@ class StrategySelection:
     #: 여러 개일 때 묶는 방식 — "OR"(하나라도 사라고 하면) / "AND"(전부 사라고 해야).
     #: 파는 쪽은 이 값과 무관하게 언제나 OR다(strategy/combined.py 참고).
     combine: str = "OR"
+    #: 파는 쪽을 따로 굴릴 때 쓸 전략 키들. **비어 있으면 active_keys가 양쪽을
+    #: 다 맡는다** — 지금까지의 동작이 그것이고, 기본값을 바꾸면 이미 돌고 있는
+    #: 설정의 뜻이 달라진다.
+    sell_keys: tuple[str, ...] = ()
+
+    @property
+    def 매도따로(self) -> bool:
+        return bool(self.sell_keys) and tuple(self.sell_keys) != tuple(self.active_keys)
+
+    @property
+    def sell_key(self) -> str:
+        """파는 쪽 대표 하나. 따로 안 걸었으면 사는 쪽과 같다."""
+        if self.sell_keys:
+            return self.sell_keys[0]
+        return self.active_key
 
     @property
     def active_key(self) -> str:
@@ -89,6 +114,12 @@ class StrategySelection:
     def describe(self) -> str:
         """사람이 읽을 한 줄. 로그·화면이 같은 말을 쓰게 한 군데에 둔다."""
         if len(self.active_keys) <= 1:
-            return self.active_key or "(없음)"
-        묶음 = "모두 동의해야" if self.combine == "AND" else "하나라도 신호나면"
-        return f"{len(self.active_keys)}개 · {묶음} · {', '.join(self.active_keys)}"
+            산다 = self.active_key or "(없음)"
+        else:
+            묶음 = "모두 동의해야" if self.combine == "AND" else "하나라도 신호나면"
+            산다 = f"{len(self.active_keys)}개 · {묶음} · {', '.join(self.active_keys)}"
+        if not self.매도따로:
+            return 산다
+        # 매도를 따로 걸었으면 반드시 같이 적는다. 사는 쪽만 보이면
+        # "왜 저 규칙으로 팔렸지"를 설명할 수 없다.
+        return f"매수 {산다} / 매도 {', '.join(self.sell_keys)}"

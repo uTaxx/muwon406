@@ -77,19 +77,39 @@ def _fallback(params) -> Rules:
 
 
 def _volume_surge_rules(p, strategy) -> Rules:
+    """거래량 급증 계열.
+
+    **exit_sma가 있으면 매도 신호를 낸다.** 예전에는 이 계열에 매도 신호가
+    아예 없어서 판다를 빈 칸으로 뒀는데, exit_sma를 붙인 전략이 생긴 뒤로도
+    그대로였다. 그래서 화면이 `volume_surge_5d_ma20`을 놓고 "파는 신호를
+    내지 않습니다"라고 적고 있었다. 지금 실제로 걸려 있는 전략이 그것이다.
+    """
+    판다 = (
+        [f"종가가 **{p.exit_sma}일 평균선 아래**로 내려온 날"]
+        if p.exit_sma is not None
+        else []
+    )
+    참고 = (
+        [
+            (f"파는 길이 둘입니다. **{p.exit_sma}일 평균선을 깨면** 그날 팔고, "
+            f"안 깨도 **{p.holding_days}거래일**이 지나면 팝니다."),
+            "그래서 자주 사고팝니다 — 수수료와 슬리피지가 여러 번 붙습니다.",
+        ]
+        if p.exit_sma is not None
+        else [
+            ("파는 조건이 지표가 아니라 **시간**입니다. "
+            "'재료가 터진 날 들어가서 며칠 안에 나온다'는 단타 방식입니다."),
+            "그래서 자주 사고팝니다 — 수수료와 슬리피지가 여러 번 붙습니다.",
+        ]
+    )
     return Rules(
         산다=[
             (f"{_volume_surge(p.volume_surge_ratio, p.volume_ma_window)} "
             f"그날 종가가 전날보다 **{_pct(p.min_price_change_pct)} 이상** 오른 종목"),
         ],
-        # 이 전략은 지표로 파는 조건이 없다 — 보유 기간(max_holding_days)은
-        # 엔진이 검사하므로 exit_rules가 낸다.
-        판다=[],
-        참고=[
-            ("파는 조건이 지표가 아니라 **시간**입니다. "
-            "'재료가 터진 날 들어가서 며칠 안에 나온다'는 단타 방식입니다."),
-            "그래서 자주 사고팝니다 — 수수료와 슬리피지가 여러 번 붙습니다.",
-        ],
+        # 보유 기간(max_holding_days)은 엔진이 검사하므로 exit_rules가 낸다.
+        판다=판다,
+        참고=참고,
     )
 
 
@@ -377,16 +397,29 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
         조건.append(
             f"**손절** — 산 값보다 **{abs(policy.stop_loss_pct) * 100:.0f}%** 빠지면"
         )
+    # 2순위 — 익절. 손절보다 뒤인 이유는 손실을 막는 쪽이 언제나 먼저여야
+    # 하기 때문이고, 트레일링보다 앞인 이유는 익절선에 닿았으면 트레일링이
+    # 더 기다릴 이유가 없기 때문이다(risk/exits.py의 순서와 같다).
+    익절 = getattr(policy, "take_profit_pct", 0.0) or 0.0
+    if 익절 > 0:
+        조건.append(f"**익절** — 산 값보다 **{익절 * 100:.0f}%** 오르면")
+
     if getattr(policy, "trailing_stop_enabled", False):
         조건.append(
             f"**트레일링 스톱** — 산 뒤 최고가에서 ATR의 "
             f"**{policy.trailing_stop_multiple:g}배**만큼 밀리면"
         )
 
-    # 2순위 — 보유 기간
-    holding = getattr(strategy, "max_holding_days", None)
+    # 3순위 — 보유 기간. 기준에서 덮어썼으면 그것이, 아니면 전략이 정한 대로.
+    from muwon.risk.exits import 보유상한 as _보유상한
+
+    holding = _보유상한(strategy, policy)
     if holding:
-        조건.append(f"**보유 기간** — 산 지 **{holding}거래일**이 지나면 오르든 내리든 무조건")
+        덮었나 = int(getattr(policy, "max_holding_days", 0) or 0) > 0
+        조건.append(
+            f"**보유 기간** — 산 지 **{holding}거래일**이 지나면 오르든 내리든 무조건"
+            + (" (기준에서 정한 값입니다. 전략이 정한 기간을 덮었습니다)" if 덮었나 else "")
+        )
 
     # 3순위 — 전략 자신의 매도 신호
     전략 = describe(strategy).판다
@@ -401,12 +434,15 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
             "이 전략은 **자체 매도 신호가 없습니다**. 지표가 아니라 시간과 손절로만 나옵니다."
         )
 
-    # 익절은 이 시스템에 아예 없다. 없는 걸 안 적으면 '있는데 안 보이는 것'과
-    # 구분이 안 된다 — 실제로 그 질문을 받았다.
-    주의.append(
-        "**익절(목표 수익률에 닿으면 파는 것)은 없습니다.** 오르는 중이라면 "
-        "위 조건 중 하나에 걸릴 때까지 그대로 들고 갑니다."
-    )
+    # 익절은 꺼 둘 수 있는 값이라 상태를 그대로 말해야 한다. 전에는 여기서
+    # "아예 없습니다"라고 못 박고 있었는데, 그건 켜 뒀을 때도 없다고 말하는
+    # 것이었다. 없는 것과 꺼 둔 것은 다르다.
+    if 익절 <= 0:
+        주의.append(
+            "**익절은 꺼져 있습니다(0%).** 오르는 중이라면 위 조건 중 하나에 "
+            "걸릴 때까지 그대로 들고 갑니다. 켜 봤더니 도움이 안 돼서 뺐습니다 — "
+            "이긴 매매 599건의 되돌림 중앙값이 +0.28%라 익절로 건질 것이 없었습니다."
+        )
     if not getattr(policy, "atr_stop_enabled", False):
         주의.append(
             "변동성 기준 손절(ATR)과 트레일링 스톱은 코드에는 있지만 **꺼져 있습니다** — "

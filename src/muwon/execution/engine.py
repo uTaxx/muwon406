@@ -22,6 +22,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+from loguru import logger
 from sqlalchemy.orm import sessionmaker
 
 from muwon.backtest.costs import TransactionCosts
@@ -30,8 +31,9 @@ from muwon.db.models import PositionRow
 from muwon.domain.interfaces import MarketDataSource, OrderExecutor, Strategy
 from muwon.domain.types import OrderSide, SignalType
 from muwon.execution import state_repository
+from muwon.notify import notice_format as 모양
 from muwon.notify.telegram import TelegramNotifier
-from muwon.risk.exits import atr_series, evaluate_exit
+from muwon.risk.exits import atr_series, evaluate_exit, 보유상한
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -75,80 +77,141 @@ def _손절설명(사유: str) -> str:
     return 사유
 
 
+def 전략이름(전략, *, 파는쪽: bool = False) -> str:
+    """전략 객체에서 사람이 읽을 한글 이름을 꺼낸다.
+
+    기록에 남는 `name`은 영문 키다. 알림에 그대로 쓰면 화면에 영문이 뜬다.
+    등록 안 된 이름(묶은 것, `adopted` 같은 것)이면 그대로 돌려준다.
+
+    매수와 매도를 따로 걸었으면 **어느 쪽 이름인지가 중요하다.** 사는
+    알림에 파는 쪽 이름이 뜨면 왜 샀는지 설명이 안 된다."""
+    쪽 = getattr(전략, "매도쪽" if 파는쪽 else "매수쪽", 전략)
+    이름 = getattr(쪽, "name", "") or ""
+    try:
+        from muwon.strategy.registry import get_definition
+
+        return get_definition(이름).화면이름
+    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 알림이 안 가면 안 된다
+        return 이름
+
+
+def 매도규칙(전략, 정책, 산값: float) -> list[str]:
+    """이 종목이 어떤 조건에서 팔리는지 전부.
+
+    **파는 조건은 어디에 설정돼 있든 한자리에 모여 있어야 한다.** 손절은
+    리스크 정책에, 보유 기간과 매도 신호는 전략에 있다. 흩어 두면 "매도
+    전략은 손절밖에 없냐"는 오해가 생긴다. 실제로 받은 질문이다.
+
+    엔진이 검사하는 순서대로 적는다."""
+    줄들: list[str] = []
+
+    손절비율 = getattr(정책, "stop_loss_pct", None)
+    if getattr(정책, "atr_stop_enabled", False):
+        줄들.append(
+            f"변동성 손절 (하루 평균 변동폭 ATR {정책.atr_window}일의 "
+            f"{정책.atr_stop_multiple:g}배만큼 빠지면 매도)"
+        )
+    elif 손절비율:
+        손절가 = 산값 * (1 + 손절비율)
+        줄들.append(f"{손절비율:.0%} 손절 ({_돈(손절가)}에서 매도)")
+    # 익절도 여기 적는다. 켜 뒀는데 알림에 안 적히면 "왜 갑자기 팔렸지"가 된다.
+    익절 = getattr(정책, "take_profit_pct", 0.0) or 0.0
+    if 익절 > 0:
+        줄들.append(f"+{익절:.0%} 익절 ({_돈(산값 * (1 + 익절))}에서 매도)")
+    if getattr(정책, "trailing_stop_enabled", False):
+        줄들.append(
+            f"트레일링 스톱 (산 뒤 최고가에서 ATR의 "
+            f"{정책.trailing_stop_multiple:g}배만큼 밀리면 매도)"
+        )
+
+    상한 = 보유상한(전략, 정책)
+    if 상한:
+        덮었나 = int(getattr(정책, "max_holding_days", 0) or 0) > 0
+        줄들.append(
+            f"{상한}거래일이 지나면 오르든 내리든 매도"
+            + (" (기준에서 정한 값)" if 덮었나 else "")
+        )
+
+    # 전략 자신의 매도 신호. 설명을 만드는 쪽은 화면용이라 **굵게** 표시가
+    # 섞여 있다 — 텔레그램은 그것을 별표 그대로 보여 준다.
+    try:
+        from muwon.dashboard.strategy_rules import describe
+
+        파는쪽 = getattr(전략, "매도쪽", 전략)
+        줄들 += [ㄱ.replace("**", "") for ㄱ in describe(파는쪽).판다]
+    except Exception as e:  # noqa: BLE001 — 설명 하나 때문에 알림이 안 가면 안 된다
+        # 조용히 넘기지는 않는다. 매도 조건 한 줄이 빠진 알림은 "이게 전부"로
+        # 읽히는데, 그 사실이 로그에도 없으면 영영 안 고쳐진다.
+        logger.warning(f"매도 규칙 설명을 못 만들었습니다: {type(e).__name__}: {e}")
+
+    if not 줄들:
+        줄들.append("정해진 매도 조건이 없습니다. 손으로 팔아야 합니다")
+    return 줄들
+
+
 def 매수알림(이름: str, symbol: str, order, 사유: str, 손절비율: float | None = None,
-          atr손절: bool = False) -> str:
+          atr손절: bool = False, 전략=None, 정책=None, 장중: bool = False) -> str:
     """산 뒤에 보내는 글.
 
-    예전에는 `가격: 118,300원`만 있었다. 1주 값인지 전부 합친 값인지,
-    그래서 얼마를 쓴 것인지, 앞으로 언제 팔리는지가 하나도 없었다."""
-    줄 = ["🟢 매수했습니다", f"{이름}({symbol})", ""]
+    라벨과 값을 콜론으로 가른다. 문장으로 풀어 쓰면 찾는 숫자가 매번 다른
+    자리에 있어서, 훑어보는 글로는 못 쓴다.
 
-    남은것 = getattr(order, "잔여", 0)
-    if 남은것:
-        줄 += [
-            (
-                f"주문한 {order.ordered_quantity}주 중 {order.quantity}주를 샀습니다 "
-                f"(나머지 {남은것}주는 아직)"
-            ),
-            "  오늘 안에 마저 사지거나 장 마감에 자동 취소됩니다. 손댈 것 없습니다.",
-        ]
-    else:
-        줄.append(f"{order.quantity}주를 샀습니다")
-
+    손절비율·atr손절은 정책을 통째로 못 넘기는 부르는 쪽을 위해 남겨 둔다.
+    정책을 주면 그쪽이 이긴다 — 손절 말고 다른 청산 조건까지 적을 수 있다."""
+    줄 = 모양.머리("🟢", "매수체결" + (" (장중)" if 장중 else ""), 이름, symbol)
     줄 += [
-        f"1주당 {_돈(order.price)} · 모두 {_돈(order.quantity * order.price)}",
-        f"산 이유: {사유}",
+        모양.수량칸(order),
+        모양.칸("단가", 모양.단가(order.price)),
+        모양.칸("매수총액", 모양.돈(order.quantity * order.price)),
+        "",
     ]
 
-    if 손절비율 and not atr손절:
+    전략글 = 전략이름(전략) if 전략 is not None else ""
+    줄.append(모양.칸("적용전략", f"{전략글} ({사유})" if 전략글 else 사유))
+
+    if 정책 is not None:
+        줄 += 모양.여러값("매도전략", 매도규칙(전략, 정책, order.price))
+    elif 손절비율 and not atr손절:
         손절가 = order.price * (1 + 손절비율)
-        줄 += [
-            "",
-            f"이 종목이 {_돈(손절가)}까지 떨어지면 자동으로 팝니다",
-            f"  (산 값에서 {abs(손절비율):.0%} 손해 보는 자리입니다)",
-        ]
+        줄.append(모양.칸("매도전략", f"{손절비율:.0%} 손절 ({_돈(손절가)}에서 매도)"))
     elif atr손절:
-        줄 += ["", "그 종목이 하루에 보통 움직이는 폭(ATR)을 넘어 떨어지면 자동으로 팝니다"]
-    return "\n".join(줄)
+        줄.append(모양.칸("매도전략", "변동성 손절 (하루 평균 변동폭을 넘어 떨어지면 매도)"))
+
+    if getattr(order, "잔여", 0):
+        줄 += ["", 모양.잔여안내]
+    return 모양.글(줄)
 
 
 def 매도알림(이름: str, symbol: str, order, 사유: str, 진입가: float = 0.0,
-          진입일=None, 판날=None) -> str:
+          진입일=None, 판날=None, 장중: bool = False) -> str:
     """판 뒤에 보내는 글.
 
     예전 글에는 **손익이 아예 없었다.** 팔았다는 사실만 있고 벌었는지
     잃었는지가 없으면, 받아 보는 사람이 제일 먼저 묻는 것에 답을 못 한다."""
-    줄 = ["🔴 팔았습니다", f"{이름}({symbol})", ""]
-
-    남은것 = getattr(order, "잔여", 0)
-    if 남은것:
-        줄.append(
-            f"주문한 {order.ordered_quantity}주 중 {order.quantity}주를 팔았습니다 "
-            f"(나머지 {남은것}주는 아직 남아 있습니다)"
-        )
-    else:
-        줄.append(f"{order.quantity}주를 팔았습니다")
-
+    줄 = 모양.머리("🔴", "매도체결" + (" (장중)" if 장중 else ""), 이름, symbol)
     줄 += [
-        f"1주당 {_돈(order.price)} · 모두 {_돈(order.quantity * order.price)}",
-        f"판 이유: {_손절설명(사유)}",
+        모양.수량칸(order),
+        모양.칸("단가", 모양.단가(order.price)),
+        모양.칸("매도총액", 모양.돈(order.quantity * order.price)),
+        "",
+        모양.칸("매도사유", _손절설명(사유)),
     ]
 
     if 진입가 > 0:
         손익 = (order.price - 진입가) * order.quantity
         비율 = order.price / 진입가 - 1
-        벌었나 = "벌었습니다" if 손익 >= 0 else "잃었습니다"
         줄 += [
-            "",
-            "이 거래의 결과",
-            f"  산 값 {_돈(진입가)} → 판 값 {_돈(order.price)}",
-            f"  {손익:+,.0f}원 ({비율:+.1%}) {벌었나}",
+            모양.칸("매수단가", 모양.단가(진입가)),
+            모양.칸("실현손익", f"{손익:+,.0f}원 ({비율:+.1%})"),
         ]
         if 진입일 is not None and 판날 is not None:
             with suppress(TypeError, AttributeError):
-                줄.append(f"  {(판날 - 진입일).days}일 들고 있었습니다")
-        줄.append("  (수수료·세금은 빼기 전 값입니다)")
-    return "\n".join(줄)
+                줄.append(모양.칸("보유기간", f"{(판날 - 진입일).days}일"))
+        줄 += ["", "수수료와 세금은 빼기 전 값입니다."]
+
+    if getattr(order, "잔여", 0):
+        줄 += ["", 모양.잔여안내]
+    return 모양.글(줄)
 
 
 def _수량글(order) -> str:
@@ -170,7 +233,7 @@ def _수량글(order) -> str:
         return f"수량: {order.quantity}주"
     return (
         f"수량: {order.ordered_quantity}주 중 {order.quantity}주 체결 · 잔여 {남은것}주\n"
-        "      (잔여는 마저 체결되거나 장 마감에 취소됩니다 — 손댈 것 없습니다)"
+        "      (잔여는 마저 체결되거나 장 마감에 취소됩니다. 손댈 것 없습니다)"
     )
 
 
@@ -211,6 +274,7 @@ class TradingEngine:
         costs: TransactionCosts | None = None,
         initial_cash: float = 10_000_000.0,
         orderable_provider: Callable[[str, float], int] | None = None,
+        현재가공급자: Callable[[], dict[str, float]] | None = None,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
@@ -226,6 +290,16 @@ class TradingEngine:
         #: 없으면 예전처럼 우리 현금 계산만으로 간다 — 백테스트와 흉내 실행은
         #: 증권사가 없으니 물어볼 곳도 없다.
         self._orderable_provider = orderable_provider
+        #: 종목코드 → 지금 값. **손절 판단에만 쓴다.**
+        #:
+        #: 사는 판단은 어제까지의 완성된 일봉으로 한다 — 오늘 봉은 거래량이
+        #: 아직 다 안 쌓여서 "거래량 2배 급증" 같은 조건이 성립할 수가 없다.
+        #: 그런데 손절은 다르다. 손절은 "지금 이 값에 팔아야 하나"를 묻는
+        #: 것이라 어제 종가로 재면 하루 늦게 판다.
+        #:
+        #: 없으면 예전처럼 어제 종가로 잰다 — 백테스트와 흉내 실행은
+        #: 증권사가 없으니 물어볼 곳도 없다.
+        self._현재가공급자 = 현재가공급자
 
     def run_once(self, as_of: date | None = None) -> RunSummary:
         """as_of: '오늘'로 볼 날짜(기본은 한국시간 오늘). 테스트용 주입구다."""
@@ -255,6 +329,16 @@ class TradingEngine:
             latest_prices[ticker.symbol] = float(last_row["close"])
             run_date = last_row["trade_date"]
             histories[ticker.symbol] = df
+
+        # 손절은 지금 값으로 잰다. 못 물어보면 어제 종가로 재고, **그
+        # 사실을 회차 기록에 남긴다** — 조용히 어제 값으로 재면 왜 늦게
+        # 팔렸는지 나중에 알 방법이 없다.
+        현재가: dict[str, float] = {}
+        if self._현재가공급자 is not None:
+            try:
+                현재가 = {ㄱ: float(ㄴ) for ㄱ, ㄴ in (self._현재가공급자() or {}).items() if ㄴ}
+            except Exception as e:  # noqa: BLE001 — 시세를 못 물어봐도 회차는 돌아야 한다
+                logger.warning(f"지금 값을 못 물어봤습니다. 어제 종가로 손절을 잽니다: {e}")
 
         summary = RunSummary(run_date=run_date, checked_symbols=len(latest_prices))
         cash, day_start_equity = state_repository.load_engine_state(
@@ -317,10 +401,12 @@ class TradingEngine:
         for symbol, position in list(positions.items()) if 매도켬 else []:
             if symbol not in latest_prices:
                 continue
-            price = latest_prices[symbol]
+            # 손절 판단과 매도 주문은 지금 값으로. 없으면 어제 종가로.
+            price = 현재가.get(symbol) or latest_prices[symbol]
             exit_reason = None
-            max_holding_days = self._strategy.max_holding_days
             policy = self._risk_manager.get_policy()
+            # 기준에서 덮어썼으면 그것이, 아니면 전략이 정한 대로.
+            max_holding_days = 보유상한(self._strategy, policy)
             stop = evaluate_exit(
                 entry_price=position.entry_price,
                 entry_date=position.entry_date,
@@ -417,7 +503,7 @@ class TradingEngine:
             # 실패한 것이 그날 매수를 통째로 막으면 안 된다.
             살수있는수량 = self._orderable(symbol, price)
             if 살수있는수량 == 0:
-                사유 = "증권사가 살 수 있는 수량을 0주로 알려 줬습니다 — 주문가능현금이 모자랍니다"
+                사유 = "증권사가 살 수 있는 수량을 0주로 알려 줬습니다. 주문가능현금이 모자랍니다"
                 summary.rejections.append(
                     f"{_find_ticker(self._universe, symbol).name}({symbol}): {사유}"
                 )
@@ -437,7 +523,7 @@ class TradingEngine:
                 사유 = (
                     "한 종목에 넣을 수 있는 금액 안에서 살 수 있는 수량이 0주였습니다"
                     if quantity <= 0
-                    else f"살 돈이 모자랍니다 — {cost:,.0f}원이 필요한데 {cash:,.0f}원이 남아 있습니다"
+                    else f"살 돈이 모자랍니다. {cost:,.0f}원이 필요한데 {cash:,.0f}원이 남아 있습니다"
                 )
                 summary.rejections.append(
                     f"{_find_ticker(self._universe, symbol).name}({symbol}): {사유}"
@@ -465,8 +551,7 @@ class TradingEngine:
             self._notify(
                 매수알림(
                     ticker.name, symbol, order, buy_signal.reason,
-                    손절비율=정책.stop_loss_pct,
-                    atr손절=getattr(정책, "atr_stop_enabled", False),
+                    전략=self._strategy, 정책=정책,
                 )
             )
 
