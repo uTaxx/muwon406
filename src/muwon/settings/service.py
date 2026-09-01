@@ -22,7 +22,7 @@ class SettingHistoryEntry:
 
 
 class SettingsService:
-    """리스크 정책·KIS 인증정보·텔레그램 설정에 대한 타입 안전한 접근 창구.
+    """리스크 정책·KIS 인증정보·텔레그램 설정에 대한 타입 안전한 접근 지점.
 
     CLI(scripts/configure.py)와 (Phase 2+) 대시보드는 모두 이 서비스 하나를
     통해 설정을 읽고 쓴다. 저장 방식이 바뀌어도 호출부는 영향받지 않는다.

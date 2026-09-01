@@ -1521,7 +1521,7 @@ def render_risk_tab(service: SettingsService) -> None:
                     stop_loss_pct=stop_loss_pct,
                     daily_loss_limit_pct=daily_loss_limit_pct,
                     max_concurrent_positions=int(max_concurrent_positions),
-                    trading_enabled=current.trading_enabled,  # 상단 토글이 이 값의 유일한 창구
+                    trading_enabled=current.trading_enabled,  # 상단 토글이 이 값을 바꾸는 유일한 자리
                 )
             ),
             "리스크 정책 저장 완료: 봇은 최대 5초 안에 반영합니다.",
