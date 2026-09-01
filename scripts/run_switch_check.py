@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import date, datetime, timedelta
@@ -39,7 +40,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from muwon.analysis.market_data import load_histories
-from muwon.analysis.period_check import 구간, 기간표, 돌려보기
+from muwon.analysis.period_check import 구간, 기간정의, 기간표, 돌려보기
 from muwon.analysis.switching import (
     갈아타기규칙,
     갈아타기전략,
@@ -67,6 +68,26 @@ def 전략이름(키: str) -> str:
         return get_definition(키).화면이름
     except Exception:  # noqa: BLE001 (이름을 못 찾는다고 계산이 멈추면 안 된다)
         return 키
+
+
+def 구간고르기(글: str) -> 기간정의:
+    """`1주`처럼 기간표에 있는 이름이거나 `14일`처럼 날수다.
+
+    2주는 기간표에 없다. 화면 드롭다운과 워크플로 입력이 그 표를 같이
+    읽으므로, 여기서 한 번 재 보려고 표에 넣으면 제품 쪽이 같이 바뀐다.
+    그래서 이 스크립트에서만 쓰는 임시 구간을 만든다."""
+    if 글 in 기간표:
+        return 기간표[글]
+    맞음 = re.fullmatch(r"(\d+)일", 글.strip())
+    if not 맞음:
+        raise SystemExit(f"모르는 구간입니다: {글} (기간표의 이름이나 `14일` 꼴)")
+    날수 = int(맞음.group(1))
+    if 날수 < 1:
+        raise SystemExit("구간은 하루 이상이어야 합니다.")
+    return 기간정의(
+        이름=글.strip(), 달수=0, 나눔="날", 날수=날수,
+        설명="이 스크립트에서만 쓰는 구간입니다. 화면에서 고를 수 있는 구간이 아닙니다",
+    )
 
 
 def 섹터표만들기() -> dict[str, str]:
@@ -195,6 +216,33 @@ def 순위읽기(경로: str) -> list[하루선택]:
 )
 
 
+def 시작전_한달1위(histories, 시작, 정책, costs, 제약, 전략키들) -> str:
+    """매매를 시작하기 **전날까지의** 시세로 낸 1개월 순위의 1위.
+
+    갈아타기와 1:1로 견줄 상대다. "최근 1개월에 제일 좋았던 것을 골라 그냥
+    두었다면"이 그 뜻인데, **지나고 나서 제일 좋았던 것을 고르면 안 된다.**
+    그건 미래를 보고 고른 것이라 어떤 규칙도 이길 수 없다.
+
+    그래서 시작일보다 앞선 마지막 거래일을 잰 날로 쓴다. 그날까지의 시세만
+    본다."""
+    앞선날 = [ㄴ for ㄴ in 거래일들(histories) if ㄴ < 시작]
+    if not 앞선날:
+        print("  시작일 앞에 거래일이 없어 1개월 1위를 못 고릅니다.", file=sys.stderr)
+        return ""
+    잰날 = 앞선날[-1]
+    print(f"\n[견줄 상대] {잰날}까지의 1개월 성적으로 1위를 고릅니다", file=sys.stderr)
+    선택 = 날마다고르기(
+        기간표["1개월"], histories, [잰날], [시작], 정책, 전략키들,
+        build_strategy, "", costs=costs, **제약,
+    )[0]
+    if not 선택.전체:
+        print("  그 구간에 매수가 발생한 전략이 없습니다.", file=sys.stderr)
+        return ""
+    키, 수익률, 거래수, _ = 선택.전체[0]
+    print(f"  {전략이름(키)} {수익률:+.2f}% ({거래수}건)", file=sys.stderr)
+    return 키
+
+
 def 재보기(이름, 날짜별키, histories, 시작, 끝, 정책, costs, 처음키, 제약):
     전략 = 갈아타기전략(날짜별키, build_strategy, 처음키)
     굴린것 = 굴리기(histories, 전략, 시작, 끝, 정책, costs=costs, **제약)
@@ -212,9 +260,10 @@ def 재보기(이름, 날짜별키, histories, 시작, 끝, 정책, costs, 처�
 
 def main() -> int:
     ㅍ = argparse.ArgumentParser(description="매일 검토해서 갈아탔다면 어땠을까")
-    ㅍ.add_argument("--구간", default="1개월", choices=list(기간표),
-                   help="순위를 낼 때 되돌아볼 길이. 검토가 1주·1개월·3개월을 보는 그것이다")
-    ㅍ.add_argument("--재는구간", default="", choices=["", *기간표],
+    ㅍ.add_argument("--구간", default="1개월",
+                   help="순위를 낼 때 되돌아볼 길이. 기간표의 이름(1주·1개월·3개월…) "
+                        "또는 `14일`처럼 날수로 적는다")
+    ㅍ.add_argument("--재는구간", default="",
                    help="성적을 잴 길이. 비우면 --구간과 같다. 되돌아보는 길이만 "
                         "바꿔서 견주려면 이 값을 고정한다")
     ㅍ.add_argument("--끝", default="", help="마지막 날 (YYYY-MM-DD). 비우면 오늘")
@@ -244,11 +293,11 @@ def main() -> int:
     인자 = ㅍ.parse_args()
 
     끝 = date.fromisoformat(인자.끝) if 인자.끝 else datetime.now(서울).date()
-    정의 = 기간표[인자.구간]
+    정의 = 구간고르기(인자.구간)
     # 순위를 내려고 되돌아보는 길이와, 성적을 재는 길이는 다른 것이다. 둘을
     # 묶어 두면 1주로 고른 경우는 엿새치만, 3개월로 고른 경우는 석 달치를
     # 재게 되어 서로 견줄 수가 없다.
-    잴정의 = 기간표[인자.재는구간] if 인자.재는구간 else 정의
+    잴정의 = 구간고르기(인자.재는구간) if 인자.재는구간 else 정의
     시작, _ = 구간(잴정의, 끝)
     정책 = RiskPolicy(
         max_position_weight=인자.비중,
@@ -258,6 +307,7 @@ def main() -> int:
     )
     costs = TransactionCosts(slippage_pct=인자.슬리피지)
     처음키 = 기준전략[0]
+    전략키들 = [ㅈ.key for ㅈ in list_definitions()]
     제약 = {
         "섹터표": 섹터표만들기(),
         "섹터상한": 인자.섹터당,
@@ -279,7 +329,7 @@ def main() -> int:
         print(f"순위 {len(선택들)}일치를 읽었습니다: {인자.순위읽기}", file=sys.stderr)
     else:
         선택들 = 날마다순위(정의, histories, 시작, 끝, 정책, costs, 처음키,
-                       [ㅈ.key for ㅈ in list_definitions()], 제약)
+                       전략키들, 제약)
         if 인자.순위저장:
             순위저장(선택들, 인자.순위저장)
 
@@ -295,6 +345,20 @@ def main() -> int:
                  histories, 시작, 끝, 정책, costs, 처음키, 제약)
         if ㅈ:
             ㅈ["설명"] = 규.설명
+            잰것.append(ㅈ)
+
+    # **시작 시점에 최근 1개월 1위였던 전략을 그대로 두는 경우.**
+    #
+    # 갈아타기와 1:1로 견줄 상대다. 지나고 나서 제일 좋았던 것을 고르면
+    # 미래를 보고 고른 것이 되어 비교가 안 된다. 그래서 매매를 시작하기 전
+    # 마지막 거래일까지의 시세로만 순위를 내고 그 1위를 잡는다.
+    한달1위 = 시작전_한달1위(histories, 시작, 정책, costs, 제약, 전략키들)
+    if 한달1위:
+        ㅈ = 재보기(f"안 바꿈: {전략이름(한달1위)} (시작 시점 1개월 1위)",
+                 {}, histories, 시작, 끝, 정책, costs, 한달1위, 제약)
+        if ㅈ:
+            ㅈ["설명"] = ("매매를 시작하기 전날까지의 1개월 성적으로 고른 1위를 "
+                       "그대로 두었다. 미래를 안 보고 고른 값이다")
             잰것.append(ㅈ)
 
     for 키 in 기준전략:
