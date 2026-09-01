@@ -39,8 +39,8 @@ on:
         description: "후보를 몇 개까지 (0이면 설정의 동시보유 수)"
         default: "0"
       max_per_sector:
-        description: "한 섹터에서 몇 종목까지 (0이면 제한 없음)"
-        default: "2"
+        description: "한 섹터에서 몇 종목까지 (비우거나 -1이면 시트 값, 0이면 제한 없음)"
+        default: "-1"
       sector_filter:
         description: "강도 상위 섹터만 매수 대상으로: 근거 없음(docs/섹터선정_검증.md)"
         type: boolean
@@ -99,9 +99,15 @@ jobs:
           # KIS 403으로 통째로 터졌는데 워크플로는 초록불로 끝났다.
           # 조용히 성공한 척하는 실패라 여기서 막는다.
           set -o pipefail
+          # `--max-per-sector`의 기본값은 **-1이어야 한다.** 여기에 숫자를
+          # 박아 두면 `propose_buys.py`가 `args.max_per_sector >= 0`을 보고
+          # 시트의 `max_per_sector`를 아예 안 읽는다. 예약 실행은 inputs가
+          # 비어서 `|| '2'`로 떨어지므로, 08:30이 매일 시트를 무시하고 2를
+          # 쓰고 있었다(2026-09-01에 찾음). 시트에서 값을 바꿔도 아무 일도
+          # 일어나지 않았고, 아무것도 빨개지지 않았다.
           python scripts/propose_buys.py \
             --max "${{ github.event.inputs.max || '0' }}" \
-            --max-per-sector "${{ github.event.inputs.max_per_sector || '2' }}" \
+            --max-per-sector "${{ github.event.inputs.max_per_sector || '-1' }}" \
             ${{ github.event.inputs.sector_filter == 'true' && '--sector-filter' || '' }} \
             ${{ github.event_name != 'schedule' && github.event.inputs.dry_run != 'false' && '--dry-run' || '' }} \
             | tee propose.txt
