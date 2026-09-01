@@ -72,7 +72,7 @@ def _median(values: list[float]) -> float:
 
 def format_paths(paths: list[TradePath], label: str = "") -> str:
     """되돌림 분포를 표로. 익절선을 논하기 전에 봐야 할 숫자다."""
-    머리 = f"■ 보유 중 값이 어떻게 움직였나{f' — {label}' if label else ''}"
+    머리 = f"■ 보유 중 값이 어떻게 움직였나{f' ({label})' if label else ''}"
     if not paths:
         return f"{머리}\n\n완결된 매매가 없습니다."
 

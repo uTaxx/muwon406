@@ -53,7 +53,7 @@ def test_a_sector_index_needs_at_least_three_live_names():
     '섹터'라고 부를 이유가 없고, 섹터 전망도 그 종목 전망일 뿐이다.
 
     원자재가 실제로 여기 걸렸다(금·은 ETF 둘). 그래서 기준을 낮추는 대신
-    **전망을 국제 시세로 내도록 바꿨다** — 국내 ETF 둘보다 훨씬 나은 표본이다."""
+    **전망을 국제 시세로 내도록 바꿨다**. 국내 ETF 둘보다 훨씬 나은 표본이다."""
     for s in CATALOG:
         if not s.활성 or s.전망출처 != "섹터지수":
             continue

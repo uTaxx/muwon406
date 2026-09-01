@@ -142,7 +142,7 @@ def parse(섹터행: list[list[str]], 종목행: list[list[str]], 설정행: lis
         칸 = (list(줄) + [""] * len(종목머리))[: len(종목머리)]
         코드 = str(칸[0]).strip()
         if not (코드.isdigit() and len(코드) == 6):
-            raise SheetError(f"종목코드가 여섯 자리 숫자가 아닙니다: {코드!r} ({칸[1]}) — "
+            raise SheetError(f"종목코드가 여섯 자리 숫자가 아닙니다: {코드!r} ({칸[1]}). "
                              "한 자리만 틀려도 엉뚱한 회사를 삽니다")
         섹터코드 = str(칸[3]).strip().upper()
         if 섹터코드 not in 종목들:
@@ -168,7 +168,7 @@ def parse(섹터행: list[list[str]], 종목행: list[list[str]], 설정행: lis
         if s.활성 and s.전망출처 == "섹터지수" and len(살아있는것) < MIN_LIVE_MEMBERS:
             raise SheetError(
                 f"{s.코드} {s.이름}: 활성 종목이 {len(살아있는것)}개뿐입니다 "
-                f"(최소 {MIN_LIVE_MEMBERS}개) — 그러면 섹터 지수가 사실상 그 종목입니다"
+                f"(최소 {MIN_LIVE_MEMBERS}개): 그러면 섹터 지수가 사실상 그 종목입니다"
             )
         완성.append(
             Sector(코드=s.코드, 이름=s.이름, 성격=s.성격, 종목=멤버,
@@ -249,7 +249,7 @@ def find_or_create(folder_id: str, title: str = DEFAULT_TITLE) -> tuple[str, boo
 
 
 def write_all(sheet_id: str, 섹터행, 종목행, 설정행) -> None:
-    """세 탭을 통째로 덮어쓴다. **첫 채움에만 쓴다** — 그 뒤에는 사람이
+    """세 탭을 통째로 덮어쓴다. **첫 채움에만 쓴다**. 그 뒤에는 사람이
     시트에서 고치고 코드는 읽기만 한다."""
     svc = _service().spreadsheets()
     있는탭 = {s["properties"]["title"] for s in svc.get(spreadsheetId=sheet_id).execute()["sheets"]}

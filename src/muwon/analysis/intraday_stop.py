@@ -8,7 +8,7 @@
 저가**로 근사할 수 있다. 그날 저가가 손절선을 밑돌았다면, 장중 스톱 주문은
 그날 발동했을 것이다.
 
-## 이 근사가 낙관적인 지점 — 반드시 같이 읽어야 한다
+## 이 근사가 낙관적인 지점: 반드시 같이 읽어야 한다
 
 1. **저가를 스쳤다 ≠ 그 가격에 팔렸다.** 스톱 주문은 손절선을 건드리면
    시장가로 나가므로 보통 그보다 더 아래에서 체결된다. 여기서는 손절선
@@ -82,7 +82,7 @@ def compare(trades, histories: dict[str, pd.DataFrame], stop_loss_pct: float = -
 
 
 def format_comparison(결과: list[StopComparison], label: str = "") -> str:
-    머리 = f"■ 장중 손절을 걸었다면{f' — {label}' if label else ''}"
+    머리 = f"■ 장중 손절을 걸었다면{f' ({label})' if label else ''}"
     if not 결과:
         return f"{머리}\n\n완결된 매매가 없습니다."
 

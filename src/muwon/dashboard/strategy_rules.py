@@ -61,7 +61,7 @@ def describe(strategy) -> Rules:
 
 
 def _fallback(params) -> Rules:
-    """문장을 안 붙인 전략 — 파라미터라도 그대로 보여 준다."""
+    """문장을 안 붙인 전략: 파라미터라도 그대로 보여 준다."""
     lines = [f"{f.name} = {getattr(params, f.name)}" for f in fields(params)] if is_dataclass(params) else []
     return Rules(
         산다=[],
@@ -257,7 +257,7 @@ def _ma_rsi_rules(p, strategy) -> Rules:
 
 
 def _describe_combined(strategy) -> Rules:
-    """여러 전략을 묶은 것 — 각각의 조건을 그대로 늘어놓고, 어떻게 묶였는지를 앞에 둔다.
+    """여러 전략을 묶은 것: 각각의 조건을 그대로 늘어놓고, 어떻게 묶였는지를 앞에 둔다.
 
     묶음 이름만 보여 주면 무엇을 보고 사는지 알 수 없다. 화면에서 전략을
     여러 개 고를 수 있게 만든 이상, 그 각각이 무엇을 하는지도 같이 보여야
@@ -300,7 +300,7 @@ def _describe_combined(strategy) -> Rules:
 
 
 def _describe_score(strategy) -> Rules:
-    """점수 합산 전략 — 조건이 아니라 점수와 문턱으로 판단한다."""
+    """점수 합산 전략: 조건이 아니라 점수와 문턱으로 판단한다."""
     config = getattr(strategy, "config", None)
     if config is None:
         return Rules(산다=[], 판다=[], 참고=["설명을 만들 수 없는 전략입니다."], 설명있음=False)
@@ -423,7 +423,7 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
     조건: list[str] = []
     주의: list[str] = []
 
-    # 1순위 — 손절. 엔진은 이걸 가장 먼저 본다(risk/exits.py evaluate_exit).
+    # 1순위: 손절. 엔진은 이걸 가장 먼저 본다(risk/exits.py evaluate_exit).
     if getattr(policy, "atr_stop_enabled", False):
         조건.append(
             f"**손절(변동성 기준)**: 매수가에서 해당 종목의 일평균 변동폭"
@@ -433,7 +433,7 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
         조건.append(
             f"**손절**: 매수가 대비 **{abs(policy.stop_loss_pct) * 100:.0f}%** 하락하면 매도"
         )
-    # 2순위 — 익절. 손절보다 뒤인 이유는 손실을 막는 쪽이 언제나 먼저여야
+    # 2순위: 익절. 손절보다 뒤인 이유는 손실을 막는 쪽이 언제나 먼저여야
     # 하기 때문이고, 트레일링보다 앞인 이유는 익절선에 닿았으면 트레일링이
     # 더 기다릴 이유가 없기 때문이다(risk/exits.py의 순서와 같다).
     익절 = getattr(policy, "take_profit_pct", 0.0) or 0.0
@@ -446,7 +446,7 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
             f"**{policy.trailing_stop_multiple:g}배**만큼 하락하면 매도"
         )
 
-    # 3순위 — 보유 기간. 기준에서 덮어썼으면 그것이, 아니면 전략이 정한 대로.
+    # 3순위: 보유 기간. 기준에서 덮어썼으면 그것이, 아니면 전략이 정한 대로.
     from muwon.risk.exits import 보유상한 as _보유상한
 
     holding = _보유상한(strategy, policy)
@@ -457,7 +457,7 @@ def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
             + ("(기본 전략에서 설정한 값이며, 전략의 설정값보다 우선합니다)" if 덮었나 else "")
         )
 
-    # 3순위 — 전략 자신의 매도 신호
+    # 3순위: 전략 자신의 매도 신호
     전략 = describe(strategy).판다
     if 전략:
         조건 += [f"**전략 매도 신호**: {line}" for line in 전략]

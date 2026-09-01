@@ -13,7 +13,7 @@ from muwon.data.price_cache import PriceCache
 
 
 def frame(start: date, days: int) -> pd.DataFrame:
-    """주말을 건너뛴 봉 — 실제 시세처럼 요청 구간 경계에 봉이 없을 수 있다."""
+    """주말을 건너뛴 봉: 실제 시세처럼 요청 구간 경계에 봉이 없을 수 있다."""
     rows = []
     day = start
     while len(rows) < days:

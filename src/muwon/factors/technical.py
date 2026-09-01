@@ -1,9 +1,9 @@
-"""종목 하나만 보고 계산하는 Factor들 — Trend / Momentum / Pullback / Volume.
+"""종목 하나만 보고 계산하는 Factor들: Trend / Momentum / Pullback / Volume.
 
 이 넷은 예전 구조에서도 만들 수 있었던 것들이다. 달라진 건 참/거짓이 아니라
 0~100 점수를 돌려준다는 점, 그리고 왜 그 점수인지 문장을 함께 남긴다는 점이다.
 
-성능에 관해 — 백테스트는 evaluate()를 거래일 수만큼(수백~수천 번) 호출한다.
+성능에 관해: 백테스트는 evaluate()를 거래일 수만큼(수백~수천 번) 호출한다.
 날짜마다 이동평균을 처음부터 다시 계산하면 같은 값을 수백 번 구하게 되고,
 실제로 그 방식이 다른 전략보다 25배 느렸다(18종목 730일 기준 30초 vs 1.2초).
 그래서 지표는 warmup()에서 **종목별 시계열로 한 번만** 계산하고, 날짜별
@@ -141,7 +141,7 @@ class PullbackFactor(Factor):
     훼손으로 본다. 장기선 아래로 내려간 종목은 아예 눌림으로 치지 않는다."""
 
     key = "pullback"
-    #: (조정폭 %, 점수) — 오름차순
+    #: (조정폭 %, 점수): 오름차순
     DEFAULT_CURVE: ClassVar[list[tuple[float, float]]] = [
         (-12.0, 10.0),
         (-8.0, 70.0),
@@ -177,7 +177,7 @@ class PullbackFactor(Factor):
             return FactorResult(self.key, None, "데이터 부족")
 
         if row["close"] <= row["long_ma"]:
-            return FactorResult(self.key, 0.0, f"{self.trend_ma}일선 아래 — 눌림이 아니라 하락")
+            return FactorResult(self.key, 0.0, f"{self.trend_ma}일선 아래: 눌림이 아니라 하락")
 
         dip_pct = (row["close"] / row["recent_high"] - 1) * 100
         return FactorResult(

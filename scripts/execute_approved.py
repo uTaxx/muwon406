@@ -1,7 +1,7 @@
 """**시트에서 승인된 것만 산다.** 승인 스텝의 마지막 칸이다.
 
     08:30  매수 후보 제안  →  텔레그램 버튼  →  시트에 Y
-    09:05  여기 — Y가 적힌 것만 매수
+    09:05  여기: Y가 적힌 것만 매수
 
 ## 왜 따로 만드나
 
@@ -84,12 +84,12 @@ def main() -> int:
     # ── 흉내만 낼 때는 사본에 쓴다 ───────────────────────────────
     #
     # 엔진은 dry-run인지 모른다. 주문을 흉내로 내든 진짜로 내든 결과를
-    # 똑같이 저장한다. 그래서 **쓸 곳 자체를 바꾼다** — 사본을 보게 하면
+    # 똑같이 저장한다. 그래서 **쓸 곳 자체를 바꾼다**. 사본을 보게 하면
     # 무엇을 쓰든 운영 DB에는 닿지 않는다(muwon/db/scratch.py에 경위).
     쓸곳 = bootstrap_settings.database_url
     if args.dry_run:
         쓸곳 = 사본으로(쓸곳)
-        print(f"■ --dry-run — 운영 DB 사본에 씁니다. 원본은 안 건드립니다.\n  {쓸곳}")
+        print(f"■ --dry-run: 운영 DB 사본에 씁니다. 원본은 안 건드립니다.\n  {쓸곳}")
     session_factory = make_session_factory(쓸곳)
 
     # ── 킬스위치가 먼저다 ────────────────────────────────────────
@@ -106,15 +106,15 @@ def main() -> int:
     거절한것 = [c for c in 후보 if 결정.get(c.symbol) == "N"]
     무응답 = [c for c in 후보 if c.symbol not in 결정]
 
-    print(f"■ {오늘} 승인 현황 — 후보 {len(후보)}종목")
-    print(f"  ✅ 승인   {len(승인된것)}종목" + (f" — {', '.join(c.name for c in 승인된것)}" if 승인된것 else ""))
-    print(f"  ❌ 거절   {len(거절한것)}종목" + (f" — {', '.join(c.name for c in 거절한것)}" if 거절한것 else ""))
-    print(f"  ⬜ 무응답 {len(무응답)}종목" + (f" — {', '.join(c.name for c in 무응답)}" if 무응답 else ""))
+    print(f"■ {오늘} 승인 현황: 후보 {len(후보)}종목")
+    print(f"  ✅ 승인   {len(승인된것)}종목" + (f": {', '.join(c.name for c in 승인된것)}" if 승인된것 else ""))
+    print(f"  ❌ 거절   {len(거절한것)}종목" + (f": {', '.join(c.name for c in 거절한것)}" if 거절한것 else ""))
+    print(f"  ⬜ 무응답 {len(무응답)}종목" + (f": {', '.join(c.name for c in 무응답)}" if 무응답 else ""))
     print()
 
     if not 설정.승인필요:
         print("⚠️ 시트의 require_approval이 꺼져 있습니다. 그래도 **이 스크립트는")
-        print("   승인된 것만 삽니다** — 승인 없이 사려면 run_paper_trading.py를 쓰세요.")
+        print("   승인된 것만 삽니다**. 승인 없이 사려면 run_paper_trading.py를 쓰세요.")
         print()
 
     with session_factory() as session:
@@ -155,8 +155,8 @@ def main() -> int:
         보고 = check_account_consistency(client, session_factory)
         if 보고 is not None and not 보고.is_consistent:
             try:
-                notifier.send("🔍 계좌 대조 — 어긋남\n" + "\n".join(보고.summary_lines()))
-            except Exception as e:  # noqa: BLE001 — 알림 실패가 매매를 막으면 안 된다
+                notifier.send("🔍 계좌 대조: 어긋남\n" + "\n".join(보고.summary_lines()))
+            except Exception as e:  # noqa: BLE001 (알림 실패가 매매를 막으면 안 된다)
                 print(f"대조 알림 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
         print()
 
@@ -168,7 +168,7 @@ def main() -> int:
         {c.symbol: c.name for c in 후보},
     )
 
-    print(f"■ 살펴볼 종목 {len(universe)}개 — 승인 {len(승인된것)} + 보유 {len(보유)}")
+    print(f"■ 살펴볼 종목 {len(universe)}개: 승인 {len(승인된것)} + 보유 {len(보유)}")
     print("  (매도 판단은 승인과 무관하게 보유 종목 전부에 걸립니다)")
     if 가정한것:
         # 코스닥인데 코스피로 가정하면 시세가 통째로 비고, 그 종목은
@@ -195,7 +195,7 @@ def main() -> int:
         source_symbol = lambda t: t.yahoo_symbol
         # 흉내 실행에는 증권사가 없어서 지금 값을 물어볼 곳도 없다.
         지금값 = None
-        print("■ --dry-run — 야후 시세로 주문 흉내만 냅니다. KIS에 안 붙습니다.")
+        print("■ --dry-run: 야후 시세로 주문 흉내만 냅니다. KIS에 안 붙습니다.")
         print("■ 손절은 어제 종가로 잽니다 (지금 값을 물어볼 곳이 없습니다).")
     else:
         from muwon.execution.kis_order_executor import KISOrderExecutor
@@ -242,7 +242,7 @@ def main() -> int:
     for a in summary.actions:
         쪽 = "매수" if a.side.value == "buy" else "매도"
         (산것 if a.side.value == "buy" else 판것).append(a)
-        print(f"{쪽}: {a.name}({a.symbol}) {a.quantity}주 @ {a.price:,.0f}원 — {a.reason}")
+        print(f"{쪽}: {a.name}({a.symbol}) {a.quantity}주 @ {a.price:,.0f}원: {a.reason}")
     if summary.rejections:
         print("\n리스크 매니저 거부:")
         for r in summary.rejections:
@@ -268,7 +268,7 @@ def main() -> int:
                 거부사유=summary.거부사유,
             )
         )
-    except Exception as e:  # noqa: BLE001 — 알림 실패가 매매 결과를 지우면 안 된다
+    except Exception as e:  # noqa: BLE001 (알림 실패가 매매 결과를 지우면 안 된다)
         print(f"\n텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
 

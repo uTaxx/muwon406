@@ -21,11 +21,11 @@
 
 ## 같이 맞추는 것
 
-- **현금** — 유령 매수가 빼 간 돈을 계좌 값으로 되돌린다. 안 되돌리면
+- **현금**. 유령 매수가 빼 간 돈을 계좌 값으로 되돌린다. 안 되돌리면
   엔진이 없는 돈을 없다고 믿고 그 위에서 비중 상한을 계산한다.
-- **기준평가금** — 일일 손실한도가 '오늘 얼마나 잃었나'를 재는 기준점.
+- **기준평가금**. 일일 손실한도가 '오늘 얼마나 잃었나'를 재는 기준점.
   안 맞추면 지우는 순간 손실이 난 것처럼 보여 그날 매수가 전부 막힌다.
-- **유령 주문 기록** — `--with-orders`를 주면 그 종목의 오늘 주문도 지운다.
+- **유령 주문 기록**. `--with-orders`를 주면 그 종목의 오늘 주문도 지운다.
   이 저장소는 주문의 `price`와 `reference_price`로 슬리피지를 재는데,
   흉내 낸 체결이 섞이면 **차이 0인 가짜 표본**이 통계를 눌러 버린다.
 
@@ -73,7 +73,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--orders-since-hours", type=int, default=24,
-        help="--with-orders가 지울 범위. 기본 24시간 — 옛 진짜 주문까지 지우면 안 된다.",
+        help="--with-orders가 지울 범위. 기본 24시간: 옛 진짜 주문까지 지우면 안 된다.",
     )
     args = parser.parse_args()
 
@@ -114,7 +114,7 @@ def main() -> int:
     for pos in 계획.지울것:
         원가 = pos.quantity * pos.entry_price
         유령값 += 원가
-        print(f"■ {pos.symbol} — DB엔 {pos.quantity}주, 계좌엔 없음")
+        print(f"■ {pos.symbol}: DB엔 {pos.quantity}주, 계좌엔 없음")
         print(f"   진입가 {pos.entry_price:,.0f}원 · 원가 {원가:,.0f}원 · 진입일 {pos.entry_date}")
         print(f"   기록된 사유: {pos.entry_reason}")
         print()

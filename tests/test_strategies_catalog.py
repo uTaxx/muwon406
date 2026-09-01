@@ -55,7 +55,7 @@ def sells(signals):
 def rising_then_falling(
     flat_days: int = 40, rise_days: int = 60, fall_days: int = 60, start: float = 100.0
 ):
-    """횡보하다 꾸준히 오르고 다시 꾸준히 내리는 시계열 — 추세추종 계열이
+    """횡보하다 꾸준히 오르고 다시 꾸준히 내리는 시계열: 추세추종 계열이
     매수 후 매도 신호를 한 번씩 내야 하는 가장 기본적인 패턴.
 
     앞의 횡보 구간이 반드시 필요하다: 처음부터 상승으로 시작하면 이동평균
@@ -145,7 +145,7 @@ def test_donchian_adx_filter_only_reduces_buys():
 
 
 def test_rsi_reversion_buys_on_bounce_above_long_ma():
-    """장기 이동평균 위에서 급락 후 반등 — 평균회귀가 노리는 전형적 패턴.
+    """장기 이동평균 위에서 급락 후 반등: 평균회귀가 노리는 전형적 패턴.
 
     가파른 상승으로 장기선을 한참 아래 남겨둔 뒤 8일 연속 하락시키면
     RSI가 26까지 떨어지고, 반등일에 30을 다시 넘으면서도 종가는 여전히

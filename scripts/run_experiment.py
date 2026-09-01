@@ -1,8 +1,8 @@
-"""전략 실험 실행기 — 가설을 손으로 스크립트 짜지 않고 돌려 본다.
+"""전략 실험 실행기: 가설을 손으로 스크립트 짜지 않고 돌려 본다.
 
 시세는 한 번만 받아 모든 변형이 공유한다. 그래서 변형을 여러 개 돌려도
 데이터 수집 시간은 한 번뿐이고, 무엇보다 **모든 변형이 정확히 같은 데이터를
-본다** — 이게 어긋나면 비교 자체가 성립하지 않는다.
+본다**. 이게 어긋나면 비교 자체가 성립하지 않는다.
 
 사용 예:
     # Factor를 하나씩 꺼 보고 기여도 측정 (인수인계서 28항)
@@ -79,7 +79,7 @@ def load_universe_histories(
 def _짧은이름(key: str) -> str:
     """표 한 줄에 묶음 세 개가 들어가면 이름이 화면을 넘긴다.
 
-    앞부분만 남기되 서로 구분은 되게 — volume_surge_5d와 volume_surge_3d를
+    앞부분만 남기되 서로 구분은 되게: volume_surge_5d와 volume_surge_3d를
     같은 이름으로 줄이면 표를 읽을 수가 없다."""
     조각 = key.split("_")
     if len(조각) <= 2:
@@ -193,19 +193,19 @@ def main() -> None:
         print(f"\n결과를 {args.out}에 남겼습니다.", file=sys.stderr)
 
     if args.mode == "contribution":
-        emit("■ Factor 기여도 — 하나씩 껐을 때 성과가 어떻게 변하는가")
+        emit("■ Factor 기여도: 하나씩 껐을 때 성과가 어떻게 변하는가")
         emit("  껐는데 성과가 그대로면 그 Factor는 가중치만 차지하고 있는 것이고,")
         emit("  껐더니 좋아지면 해를 끼치고 있는 것이다.\n")
         results = factor_contribution(config, histories, years)
 
     elif args.mode == "sweep":
         weights = [float(w) for w in args.weights.split(",")]
-        emit(f"■ 가중치 스윕 — {args.factor}의 비중만 바꾼다\n")
+        emit(f"■ 가중치 스윕: {args.factor}의 비중만 바꾼다\n")
         results = weight_sweep(config, args.factor, weights, histories, years)
 
     elif args.mode == "param":
         values = [int(v) for v in args.values.split(",")]
-        emit(f"■ 파라미터 스윕 — {args.factor}.{args.param}만 바꾼다\n")
+        emit(f"■ 파라미터 스윕: {args.factor}.{args.param}만 바꾼다\n")
         base = json.loads(args.base_params) if args.base_params else {}
         results = param_sweep(
             config, args.factor, args.param, values, histories, years, base_params=base
@@ -216,7 +216,7 @@ def main() -> None:
         if not keys:
             raise SystemExit("--keys에 전략을 지정하세요")
         rates = [float(v) / 100 for v in args.values.split(",")]
-        emit("■ 슬리피지 민감도 — 종가에 체결됐다는 가정을 얼마나 믿을 수 있는가")
+        emit("■ 슬리피지 민감도: 종가에 체결됐다는 가정을 얼마나 믿을 수 있는가")
         emit("  회전율이 높은 전략일수록 이 가정이 결과를 부풀린다.")
         emit("  0.1%에서 결론이 뒤집히면 그 결론은 원래 없던 것이다.\n")
         results = []
@@ -235,7 +235,7 @@ def main() -> None:
         if not keys:
             raise SystemExit("--keys에 전략을 지정하세요")
         levels = [float(v) / 100 for v in args.values.split(",")]
-        emit("■ 익절선 민감도 — 목표 수익률에서 파는 것이 나은가")
+        emit("■ 익절선 민감도: 목표 수익률에서 파는 것이 나은가")
         emit("  지금은 익절이 아예 없다. 오르는 중이면 손절이나 보유 기간에")
         emit("  걸릴 때까지 그대로 들고 간다.")
         emit("  익절은 공짜가 아니다. 크게 먹을 꼬리를 자른다. 어디까지")
@@ -255,7 +255,7 @@ def main() -> None:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 전략을 지정하세요")
-        emit("■ 보유 구간 되짚기 — 익절선을 논하기 전에 볼 숫자\n")
+        emit("■ 보유 구간 되짚기: 익절선을 논하기 전에 볼 숫자\n")
         for key in keys:
             paths = []
             for year in years:
@@ -276,7 +276,7 @@ def main() -> None:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 전략을 지정하세요")
-        emit("■ 진입 시점 되짚기 — 산 날이 어떤 날이었나\n")
+        emit("■ 진입 시점 되짚기: 산 날이 어떤 날이었나\n")
         for key in keys:
             samples = []
             for year in years:
@@ -297,7 +297,7 @@ def main() -> None:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 전략을 지정하세요")
-        emit("■ 장중 손절 — 하루 한 번 종가로만 보는 지금 구조와 비교\n")
+        emit("■ 장중 손절: 하루 한 번 종가로만 보는 지금 구조와 비교\n")
         정책 = RiskPolicy()
         for key in keys:
             비교 = []
@@ -325,7 +325,7 @@ def main() -> None:
         emit("  즉 지금까지의 5년 성적은 실거래와 다른 규칙의 성적이다.\n")
         emit("  아래 세 줄 중 **맨 아래가 실거래와 같은 규칙**이다. 맨 위(지금 백테스트)와의")
         emit("  차이가 곧 '지금 숫자가 얼마나 부풀어 있나'다.\n")
-        # (매수, 매도) — 실거래에 가까워지는 순서로 세운다
+        # (매수, 매도): 실거래에 가까워지는 순서로 세운다
         방식들 = (
             (False, False, "①종가매수·종가매도(지금)"),
             (False, True, "②종가매수·시가매도"),
@@ -360,7 +360,7 @@ def main() -> None:
         emit("■ 언제 파는가. 판단한 그날 종가 vs 다음 날 시가\n")
         emit("  지금은 그날 종가를 보고 판단해서 그 종가에 판다고 계산한다. 그런데")
         emit("  실거래는 장 마감 뒤에 정하고 다음 날 아침에 주문을 낸다.")
-        emit("  게다가 수익의 70~92%가 밤사이에 났다(설계안 §26) — 종가에 파는")
+        emit("  게다가 수익의 70~92%가 밤사이에 났다(설계안 §26): 종가에 파는")
         emit("  지금 방식은 마지막 밤을 버리고 있다.\n")
         results = []
         for key in keys:
@@ -414,7 +414,7 @@ def main() -> None:
         if not 묶음들 or any(len(g) < 2 for g in 묶음들):
             raise SystemExit("--keys의 각 묶음에 전략을 둘 이상 지정하세요 (묶음 구분은 '|')")
         keys = sorted({k for group in 묶음들 for k in group})
-        emit("■ 전략 묶기 — 여럿을 같이 걸면 나아지는가")
+        emit("■ 전략 묶기: 여럿을 같이 걸면 나아지는가")
         emit("  OR = 하나라도 신호나면 산다 / AND = 모두 신호를 내야 산다.")
         emit("  파는 쪽은 어느 쪽이든 '하나라도'다. 모두 동의해야 팔게 하면")
         emit("  한 전략이 침묵하는 동안 손실 종목을 계속 들고 있게 된다.")
@@ -449,12 +449,12 @@ def main() -> None:
         쌍들 = 조합파싱(args.keys)
 
         어떤방식 = (
-            "실거래와 같은 규칙 — 어제 판단 → 오늘 시가 매수·매도"
+            "실거래와 같은 규칙: 어제 판단 → 오늘 시가 매수·매도"
             if args.entry_at_open and args.exit_at_open
             else f"매수 {'시가' if args.entry_at_open else '종가'} · "
                  f"매도 {'시가' if args.exit_at_open else '종가'}"
         )
-        emit("■ 매수와 매도를 따로 걸었을 때 — 섞으면 나아지는가")
+        emit("■ 매수와 매도를 따로 걸었을 때: 섞으면 나아지는가")
         emit(f"  체결 방식: {어떤방식}")
         emit("  사는 신호는 왼쪽 전략에서만, 파는 신호는 오른쪽 전략에서만 나온다.")
         emit("  보유 기간 상한도 파는 쪽 것을 쓴다. 그것도 청산 규칙이라 그렇다.")
@@ -520,8 +520,8 @@ def main() -> None:
         shares = [float(w) for w in args.weights.split(",")]
         if len(pairs) != len(shares):
             raise SystemExit("--keys와 --weights의 개수가 같아야 합니다")
-        emit("■ 갈래 배분 — 나눠서 굴렸을 때 합친 계좌가 어떻게 되는가")
-        emit("  비중은 연 단위로만 맞춘다. 연중에 갈래끼리 자금을 옮기지 않는다 —")
+        emit("■ 갈래 배분: 나눠서 굴렸을 때 합친 계좌가 어떻게 되는가")
+        emit("  비중은 연 단위로만 맞춘다. 연중에 갈래끼리 자금을 옮기지 않는다.")
         emit("  매일 맞추면 깨진 쪽에 계속 돈을 부어 주는 셈이라 결과가 부풀려진다.\n")
         curves, trades = sleeve_curves(
             {key: (lambda k=key: build_strategy(k)) for key in pairs}, histories, years
@@ -538,7 +538,7 @@ def main() -> None:
         keys = [k.strip() for k in args.keys.split(",") if k.strip()]
         if not keys:
             raise SystemExit("--keys에 비교할 전략을 지정하세요")
-        emit("■ 전략 간 상관 — 자금을 갈래로 나눌 가치가 있는가")
+        emit("■ 전략 간 상관: 자금을 갈래로 나눌 가치가 있는가")
         emit("  같은 날 같이 움직이면 나눠도 분산 효과가 없다. 낮을수록 좋다.\n")
         series, exposure = daily_returns_by_strategy(
             {key: (lambda k=key: build_strategy(k)) for key in keys}, histories, years
@@ -557,12 +557,12 @@ def main() -> None:
         if not keys:
             raise SystemExit("--keys에 비교할 전략을 지정하세요 (또는 all)")
         어떤방식 = (
-            "실거래와 같은 규칙 — 어제 판단 → 오늘 시가 매수·매도"
+            "실거래와 같은 규칙: 어제 판단 → 오늘 시가 매수·매도"
             if args.entry_at_open and args.exit_at_open
             else f"매수 {'시가' if args.entry_at_open else '종가'} · "
                  f"매도 {'시가' if args.exit_at_open else '종가'}"
         )
-        emit(f"■ 전략 비교 — 같은 데이터·같은 예열 조건 ({len(keys)}개)")
+        emit(f"■ 전략 비교: 같은 데이터·같은 예열 조건 ({len(keys)}개)")
         emit(f"  체결 방식: {어떤방식}\n")
         results = [
             run_experiment(

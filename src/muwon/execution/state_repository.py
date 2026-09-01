@@ -146,7 +146,7 @@ def record_trade(session_factory, position: PositionRow, exit_order: OrderResult
                 pnl_pct=pnl_pct,
                 is_paper=exit_order.is_paper,
                 entered_at=position.entered_at,
-                exited_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
+                exited_at=datetime.utcnow(),  # noqa: DTZ003 (기록용, tz 무관)
             )
         )
         session.commit()
@@ -154,7 +154,7 @@ def record_trade(session_factory, position: PositionRow, exit_order: OrderResult
 
 def load_engine_state(session_factory, initial_cash: float) -> tuple[float, float]:
     """(cash, day_start_equity)를 돌려준다. day_start_equity는 '직전 실행이
-    끝난 시점의 평가금액' 기준점 — 상태가 아예 없는 첫 실행이면 남아 있는
+    끝난 시점의 평가금액' 기준점: 상태가 아예 없는 첫 실행이면 남아 있는
     포지션을 진입가로 어림잡아 기준을 만든다."""
     with session_factory() as session:
         cash_row = session.get(EngineStateRow, "cash")

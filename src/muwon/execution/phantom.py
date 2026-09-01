@@ -39,7 +39,7 @@ from muwon.domain.types import Holding
 
 @dataclass(frozen=True)
 class 지우기계획:
-    #: 지워도 되는 종목 — DB엔 있고 계좌엔 없다.
+    #: 지워도 되는 종목: DB엔 있고 계좌엔 없다.
     지울것: list[PositionRow] = field(default_factory=list)
     #: 계좌에 실제로 있어서 거부한 종목. 이름을 줬어도 안 지운다.
     계좌에있어서거부: list[Holding] = field(default_factory=list)

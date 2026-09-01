@@ -1,4 +1,4 @@
-"""돌파(breakout)·모멘텀 계열 전략 — "박스를 뚫고 나가면 그 방향으로 간다"에
+"""돌파(breakout)·모멘텀 계열 전략. "박스를 뚫고 나가면 그 방향으로 간다"에
 베팅한다. 단타에서 가장 흔히 쓰이는 계열이다.
 
 추세추종과 비슷하지만 진입 근거가 "선의 교차"가 아니라 "특정 가격대·
@@ -33,7 +33,7 @@ class BollingerBreakoutParams:
 
 
 class BollingerBreakoutStrategy(Strategy):
-    """볼린저밴드 상단 돌파 — 평균회귀 버전과 정반대로 해석한다.
+    """볼린저밴드 상단 돌파: 평균회귀 버전과 정반대로 해석한다.
 
     같은 지표를 놓고 "상단을 뚫었으니 과열이라 곧 떨어진다"(평균회귀)로
     볼 수도, "상단을 뚫을 만큼 힘이 강하니 더 간다"(돌파)로 볼 수도 있다.
@@ -74,7 +74,7 @@ class BollingerBreakoutStrategy(Strategy):
                         score=pct_above(cur["close"], cur["bb_upper"]),
                     )
                 )
-            # 청산은 상태 판정 — 갭 하락으로 중심선을 훌쩍 밑돈 채 머무르면
+            # 청산은 상태 판정: 갭 하락으로 중심선을 훌쩍 밑돈 채 머무르면
             # 교차 사건이 안 생겨 청산 신호를 놓친다(엔진은 보유 중일 때만 매도).
             elif cur["close"] < cur["bb_mid"]:
                 signals.append(make_signal(symbol, cur, SignalType.SELL, self.name, "볼린저 중심선 이탈"))
@@ -98,7 +98,7 @@ class VolumeSurgeParams:
 
 
 class VolumeSurgeStrategy(Strategy):
-    """거래량 급증 + 가격 상승 — 세력이 들어왔다고 보는 단타의 기본 패턴.
+    """거래량 급증 + 가격 상승: 세력이 들어왔다고 보는 단타의 기본 패턴.
 
     청산이 지표가 아니라 시간 기준이다(holding_days). "재료가 터진 날 들어가서
     며칠 안에 나온다"는 단타 습성을 그대로 옮긴 것이다.
@@ -179,7 +179,7 @@ class PriceChannelParams:
 
 
 class PriceChannelBreakoutStrategy(Strategy):
-    """종가 기준 N일 신고가 돌파 — 돈치안(고가 기준)의 종가 버전이다.
+    """종가 기준 N일 신고가 돌파: 돈치안(고가 기준)의 종가 버전이다.
 
     장중 잠깐 찍은 고가가 아니라 종가로만 판정하기 때문에 장중 흔들림에
     덜 반응한다. breakout_pct를 주면 "신고가를 살짝 넘긴 정도"는 무시하고
@@ -194,7 +194,7 @@ class PriceChannelBreakoutStrategy(Strategy):
     def generate_signals(self, symbol: str, price_history: pd.DataFrame) -> list[Signal]:
         p = self.params
         df = add_indicators(price_history, sma_short=p.exit_sma)
-        # 직전 N일(오늘 제외) 종가 최고치 — 오늘을 포함하면 항상 참이 된다
+        # 직전 N일(오늘 제외) 종가 최고치: 오늘을 포함하면 항상 참이 된다
         df["channel_high"] = df["close"].rolling(window=p.lookback).max().shift(1)
 
         signals: list[Signal] = []

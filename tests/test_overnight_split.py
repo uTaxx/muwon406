@@ -105,12 +105,12 @@ def test_the_report_refuses_to_split_a_share_when_the_signs_disagree():
     글 = format_split([_만든것(10.0, -4.0)])
     assert "번 것은 전부 밤사이" in 글
     assert "%" in 글
-    assert "기여도 — 밤" not in 글
+    assert "기여도: 밤" not in 글
 
 
 def test_the_report_splits_the_share_when_both_are_positive():
     글 = format_split([_만든것(6.0, 2.0)])
-    assert "기여도 — 밤 75% · 낮 25%" in 글
+    assert "기여도: 밤 75% · 낮 25%" in 글
 
 
 def test_the_report_says_so_when_there_is_nothing_to_share():

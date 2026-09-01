@@ -40,7 +40,7 @@ def add_indicators(
 
 
 def add_ema_pair(price_history: pd.DataFrame, ema_short: int = 12, ema_long: int = 26) -> pd.DataFrame:
-    """지수이동평균 두 개 — 단순이동평균(SMA)과 달리 최근 가격에 더 큰
+    """지수이동평균 두 개: 단순이동평균(SMA)과 달리 최근 가격에 더 큰
     가중치를 줘서 추세 전환에 더 빨리 반응한다."""
     df = _sorted(price_history)
     df["ema_short"] = EMAIndicator(df["close"], window=ema_short).ema_indicator()
@@ -51,7 +51,7 @@ def add_ema_pair(price_history: pd.DataFrame, ema_short: int = 12, ema_long: int
 def add_macd(
     price_history: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9
 ) -> pd.DataFrame:
-    """MACD — 빠른 지수이동평균에서 느린 지수이동평균을 뺀 값(macd)과, 그
+    """MACD: 빠른 지수이동평균에서 느린 지수이동평균을 뺀 값(macd)과, 그
     값을 다시 평활한 신호선(macd_signal). macd가 신호선을 위로 뚫으면
     상승 전환, 아래로 뚫으면 하락 전환으로 본다."""
     df = _sorted(price_history)
@@ -65,7 +65,7 @@ def add_macd(
 def add_bollinger(
     price_history: pd.DataFrame, window: int = 20, num_std: float = 2.0
 ) -> pd.DataFrame:
-    """볼린저밴드 — 이동평균(bb_mid)을 중심으로 표준편차 num_std배만큼
+    """볼린저밴드: 이동평균(bb_mid)을 중심으로 표준편차 num_std배만큼
     위아래로 띠(bb_upper/bb_lower)를 그린다. 가격이 아래 띠를 벗어나면
     "과하게 떨어졌다", 위 띠를 벗어나면 "과하게 올랐다"고 본다."""
     df = _sorted(price_history)
@@ -79,7 +79,7 @@ def add_bollinger(
 def add_stochastic(
     price_history: pd.DataFrame, window: int = 14, smooth_window: int = 3
 ) -> pd.DataFrame:
-    """스토캐스틱 — 최근 N일 고가~저가 범위에서 현재 종가가 어디쯤인지를
+    """스토캐스틱: 최근 N일 고가~저가 범위에서 현재 종가가 어디쯤인지를
     0~100으로 나타낸다(stoch_k). stoch_d는 그걸 평활한 신호선이다.
     20 이하는 과매도, 80 이상은 과매수로 보는 게 관례다."""
     df = _sorted(price_history)
@@ -92,7 +92,7 @@ def add_stochastic(
 
 
 def add_donchian(price_history: pd.DataFrame, window: int = 20) -> pd.DataFrame:
-    """돈치안 채널 — 최근 N일의 최고가(dc_upper)와 최저가(dc_lower).
+    """돈치안 채널: 최근 N일의 최고가(dc_upper)와 최저가(dc_lower).
     "N일 신고가 돌파 시 매수"라는 고전적인 추세추종(터틀) 규칙에 쓴다.
 
     ta 라이브러리의 DonchianChannel은 당일 고가/저가까지 포함해 계산하므로,
@@ -109,7 +109,7 @@ def add_donchian(price_history: pd.DataFrame, window: int = 20) -> pd.DataFrame:
 
 
 def add_atr(price_history: pd.DataFrame, window: int = 14) -> pd.DataFrame:
-    """ATR(평균 진폭) — 하루에 보통 얼마나 움직이는지를 나타내는 변동성
+    """ATR(평균 진폭): 하루에 보통 얼마나 움직이는지를 나타내는 변동성
     지표. "ATR의 2배만큼 떨어지면 청산" 같은 변동성 기반 손절에 쓴다."""
     df = _sorted(price_history)
     df["atr"] = AverageTrueRange(
@@ -119,7 +119,7 @@ def add_atr(price_history: pd.DataFrame, window: int = 14) -> pd.DataFrame:
 
 
 def add_adx(price_history: pd.DataFrame, window: int = 14) -> pd.DataFrame:
-    """ADX(추세 강도) — 방향과 무관하게 "지금 추세가 뚜렷한가"를 0~100으로
+    """ADX(추세 강도): 방향과 무관하게 "지금 추세가 뚜렷한가"를 0~100으로
     나타낸다. 25 이상이면 추세장, 그 아래면 횡보장으로 보는 게 관례이며,
     추세추종 전략의 진입 필터로 쓴다."""
     df = _sorted(price_history)

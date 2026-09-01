@@ -1,6 +1,6 @@
 """우리 DB가 기록해 온 상태와 증권사 계좌의 실제 잔고를 대조한다.
 
-이 프로그램은 현금을 스스로 계산해 왔다(engine_state.cash) — 매수하면 빼고
+이 프로그램은 현금을 스스로 계산해 왔다(engine_state.cash): 매수하면 빼고
 매도하면 더하는 식이다. 그런데 주문이 일부만 체결되거나 거부되면 그 계산이
 실제 계좌와 조용히 어긋나고, 대조할 기준이 없으면 어긋난 채로 계속 매매하게
 된다. 비중 계산·일일 손실한도가 전부 이 현금값에 기대고 있어서, 틀어지면
@@ -61,7 +61,7 @@ class ReconciliationReport:
         return self.cash_matches and not self.quantity_mismatches
 
     def summary_lines(self) -> list[str]:
-        """사람이 읽을 요약 — 텔레그램 알림과 콘솔 출력이 같이 쓴다."""
+        """사람이 읽을 요약: 텔레그램 알림과 콘솔 출력이 같이 쓴다."""
         lines = []
         if self.is_consistent:
             lines.append("✅ DB 기록과 실제 계좌가 일치합니다.")
@@ -123,8 +123,8 @@ def check_account_consistency(client, session_factory, initial_cash: float = 10_
     점검이라, 여기서 예외를 올려 그날 매매를 통째로 막는 건 과하다."""
     try:
         balance = client.get_balance()
-    except Exception as e:  # noqa: BLE001 — 점검 실패가 매매를 막아선 안 된다
-        logger.warning(f"계좌 잔고 조회 실패 — 대조를 건너뜁니다: {e}")
+    except Exception as e:  # noqa: BLE001 (점검 실패가 매매를 막아선 안 된다)
+        logger.warning(f"계좌 잔고 조회에 실패해 대조를 건너뜁니다: {e}")
         return None
 
     db_positions = state_repository.load_positions(session_factory)

@@ -25,7 +25,7 @@ def make_trade(
     holding_days: int = 3,
     symbol: str = "005930",
 ) -> TradeRow:
-    exited = datetime.utcnow() - timedelta(days=days_ago)  # noqa: DTZ003 — 저장 기준과 동일
+    exited = datetime.utcnow() - timedelta(days=days_ago)  # noqa: DTZ003 (저장 기준과 동일)
     entry_price = 70_000.0
     return TradeRow(
         symbol=symbol,
@@ -164,7 +164,7 @@ def test_report_includes_open_positions():
                 quantity=10,
                 entry_price=70_000.0,
                 entry_date=date(2026, 8, 17),
-                entered_at=datetime(2026, 8, 17, 9, 30),  # noqa: DTZ001 — 테스트용
+                entered_at=datetime(2026, 8, 17, 9, 30),  # noqa: DTZ001 (테스트용)
                 entry_reason="RSI 과매도 반등",
                 strategy_key="ma_rsi_v1",
             )

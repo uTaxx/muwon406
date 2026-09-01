@@ -75,7 +75,7 @@ class OrderRow(Base):
     reason: Mapped[str] = mapped_column(String(100), default="")
     #: 판단 근거가 된 가격(전략이 본 마지막 종가). price와 함께 있어야
     #: "결정한 가격과 실제로 산 가격이 얼마나 벌어졌나"를 잴 수 있다.
-    #: 나중에 추가된 컬럼이라 nullable — 이전 주문에는 값이 없다.
+    #: 나중에 추가된 컬럼이라 nullable: 이전 주문에는 값이 없다.
     reference_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     #: price가 실제 체결가인지(True), 조회 실패로 기준가를 쓴 것인지(False).
     #: 구분이 없으면 슬리피지 통계에 '차이 0'인 가짜 표본이 섞인다.
@@ -111,7 +111,7 @@ class PositionRow(Base):
 
 
 class TradeRow(Base):
-    """진입~청산이 하나로 묶인 '완결된 매매' 기록 — OrderRow는 체결 하나하나를
+    """진입~청산이 하나로 묶인 '완결된 매매' 기록: OrderRow는 체결 하나하나를
     남기지만(매수/매도가 서로 안 엮여 있음), 이건 손익까지 계산된 라운드트립
     이라 "이 전략/가설이 실전에서 어떻게 됐는지"를 바로 분석할 수 있다.
     사람이든, 나중에 붙을 AI 제언 로직이든, 전략을 고치자는 판단은 결국 이
@@ -180,7 +180,7 @@ class UniverseSnapshotRow(Base):
     #: 스키마만 NOT NULL로 두면 테스트가 운영 DB 상태를 재현하지 못한다.
     turnover: Mapped[int | None] = mapped_column(Integer, default=0, nullable=True)
     rank: Mapped[int] = mapped_column(Integer, default=0)
-    #: "market_cap" | "volume" — 어떤 기준으로 뽑은 목록인지.
+    #: "market_cap"과 "volume" 중 어떤 기준으로 뽑은 목록인지.
     #: 이게 없으면 거래량 유니버스를 저장하는 순간 실거래가 그걸 집어 간다.
     #: 실험용 목록 하나가 실계좌의 매매 대상을 바꾸는 일은 없어야 한다.
     kind: Mapped[str | None] = mapped_column(
@@ -201,7 +201,7 @@ class RunLogRow(Base):
     __tablename__ = "run_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    #: 판단에 쓴 마지막 '완성된' 일봉의 날짜. 시세를 하나도 못 받으면 NULL —
+    #: 판단에 쓴 마지막 '완성된' 일봉의 날짜. 시세를 하나도 못 받으면 NULL:
     #: 그 자체가 "데이터 공급이 끊겼다"는 신호다.
     run_date: Mapped[date | None] = mapped_column(Date, index=True, nullable=True)
     strategy_key: Mapped[str] = mapped_column(String(50), default="")

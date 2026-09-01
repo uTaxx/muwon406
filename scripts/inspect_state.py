@@ -46,7 +46,7 @@ def _계좌대조(session_factory) -> None:
     service = build_settings_service()
     creds = service.get_kis_credentials()
     if not creds.app_key or not creds.app_secret or not creds.account_no:
-        print("\n■ 계좌 대조 — KIS 인증정보가 없어 건너뜁니다.")
+        print("\n■ 계좌 대조: KIS 인증정보가 없어 건너뜁니다.")
         return
 
     # 잔고는 **한 번만** 조회한다. KIS는 토큰 발급을 자주 하면 403으로 막는데,
@@ -54,8 +54,8 @@ def _계좌대조(session_factory) -> None:
     # 한도에 가까워진다. 점검하러 돌린 것이 점검을 막으면 안 된다.
     try:
         잔고 = KISClient.from_settings(service).get_balance()
-    except Exception as e:  # noqa: BLE001 — 점검 실패가 나머지 출력을 지우면 안 된다
-        print(f"\n■ 계좌 대조 — 잔고 조회 실패로 건너뜁니다: {type(e).__name__}: {e}")
+    except Exception as e:  # noqa: BLE001 (점검 실패가 나머지 출력을 지우면 안 된다)
+        print(f"\n■ 계좌 대조는 잔고 조회 실패로 건너뜁니다: {type(e).__name__} {e}")
         return
 
     보유 = state_repository.load_positions(session_factory)
@@ -67,7 +67,7 @@ def _계좌대조(session_factory) -> None:
     # 어느 필드가 무엇인지는 증권사 응답을 직접 봐야 안다. 예수금 총액
     # (dnca_tot_amt)은 매수 대금이 결제(T+2) 전까지 안 빠져서 오늘 산 것을
     # 못 본다. 그래서 현금은 가수도정산금액을 쓴다. 원본을 같이 찍어 둔다.
-    print("\n■ 계좌요약 원본 — 예수금 관련 필드 (결제 시점 때문에 서로 다르다)")
+    print("\n■ 계좌요약 원본: 예수금 관련 필드 (결제 시점 때문에 서로 다르다)")
     for k, v in sorted(잔고.raw_summary.items()):
         print(f"  {k:<24} {v}")
 
@@ -80,7 +80,7 @@ def main() -> None:
     args = parser.parse_args()
 
     path = bootstrap_settings.database_url
-    print(f"■ 운영 DB 점검 — {path}")
+    print(f"■ 운영 DB 점검: {path}")
     print(f"  조회 시각 {datetime.now(UTC).isoformat(timespec='seconds')}\n")
 
     session_factory = make_session_factory(path)
@@ -111,7 +111,7 @@ def main() -> None:
         for row in states:
             print(f"  {row.key:<20} {row.value}")
 
-        print("\n■ 최근 실행 10회 — 무엇을 보고 무엇을 했나")
+        print("\n■ 최근 실행 10회: 무엇을 보고 무엇을 했나")
         runs = session.scalars(
             select(RunLogRow).order_by(RunLogRow.created_at.desc()).limit(10)
         ).all()
@@ -154,7 +154,7 @@ def main() -> None:
                 f"{o.quantity}주 체결 {o.price:,.0f} / 기준 {ref} [{confirmed}]"
             )
 
-        print("\n■ 유니버스 스냅샷 — 기준별로 몇 줄씩 있나")
+        print("\n■ 유니버스 스냅샷: 기준별로 몇 줄씩 있나")
         # 실거래는 market_cap 기준만 집어 간다. 거래대금(volume) 스냅샷만
         # 쌓여 있으면 실거래는 여전히 기본 18종목으로 돈다. 실제로 그랬다.
         by_kind = session.execute(

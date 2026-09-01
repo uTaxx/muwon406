@@ -215,13 +215,13 @@ def 재기(session: Session, 줄들, 재기함수, 오늘: date) -> tuple[int, i
         if 열쇠 not in 잰것:
             try:
                 잰것[열쇠] = 재기함수(줄.전략, 줄.제안일, 오늘)
-            except Exception as 탈:  # noqa: BLE001 — 하나가 터져도 나머지는 재야 한다
+            except Exception as 탈:  # noqa: BLE001 (하나가 터져도 나머지는 재야 한다)
                 잰것[열쇠] = f"{type(탈).__name__}: {탈}"
         성적 = 잰것[열쇠]
 
         줄.잰날 = 오늘
         줄.지난날수 = (오늘 - 줄.제안일).days
-        줄.바뀐때 = datetime.utcnow()  # noqa: DTZ003 — 기록용, tz 무관
+        줄.바뀐때 = datetime.utcnow()  # noqa: DTZ003 (기록용, tz 무관)
         줄.골랐나 = 골랐나확인(session, 줄.제안일, 줄.전략)
 
         if 성적 is None or isinstance(성적, str):

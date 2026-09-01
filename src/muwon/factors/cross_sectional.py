@@ -1,4 +1,4 @@
-"""전 종목을 한꺼번에 봐야 계산되는 Factor — 상대강도와 시장 국면.
+"""전 종목을 한꺼번에 봐야 계산되는 Factor: 상대강도와 시장 국면.
 
 이 둘은 예전 인터페이스에서는 **만들 수가 없었다.** generate_signals(symbol, df)
 에는 다른 종목도 지수도 들어오지 않기 때문이다. Phase 1에서 판단 단위를
@@ -203,7 +203,7 @@ class MarketRegimeFactor(Factor):
         하락 추세에서도 반등이 크면 가격이 잠시 평균선을 넘고, 그 자리가
         정확히 반등 꼭지다. 평균선의 기울기는 그때도 아직 아래를 향한다.
 
-        window가 0이면 이 조건을 쓰지 않는다(전부 True) — 검증 전에는 켜지
+        window가 0이면 이 조건을 쓰지 않는다(전부 True): 검증 전에는 켜지
         않는다."""
         if window <= 0 or not daily_returns:
             return pd.Series(True, index=index)

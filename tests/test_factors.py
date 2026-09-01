@@ -1,4 +1,4 @@
-"""개별 Factor 검증 — 특히 예전 구조에서 만들 수 없던 두 개.
+"""개별 Factor 검증: 특히 예전 구조에서 만들 수 없던 두 개.
 
 상대강도와 시장국면은 '다른 종목을 봐야' 계산되므로, generate_signals(symbol, df)
 시절에는 구현 자체가 불가능했다. 그게 정말로 가능해졌는지 확인하는 게 이
@@ -41,7 +41,7 @@ def ctx_of(histories, index_history=None):
 
 
 def run_factor(factor, ctx):
-    """실제 호출 순서 그대로 — warmup(실행당 1회) → prepare(날짜별) → score.
+    """실제 호출 순서 그대로: warmup(실행당 1회) → prepare(날짜별) → score.
 
     이 순서를 지키지 않으면 지표 표가 비어 있어 전부 '데이터 부족'이 된다."""
     factor.warmup(ctx.histories)
@@ -323,7 +323,7 @@ def test_market_filter_rejects_a_bounce_inside_a_downtrend():
     반등 꼭지다. 그래서 '평균선 위'만으로는 부족하고, 평균선 자체가 아직
     내려가고 있다는 것까지 봐야 한다. 2022년 58종목에서 이 조건 하나가
     최악 구간을 -39.1%에서 -29.2%로 바꿨다."""
-    # 300일 하락 뒤 40일 급반등 — 반등 끝에서 가격은 200일선을 넘지만
+    # 300일 하락 뒤 40일 급반등: 반등 끝에서 가격은 200일선을 넘지만
     # 200일선 자체는 여전히 내려가는 중이다
     falling = [200.0 - i * 0.4 for i in range(300)]
     bounce = [falling[-1] + i * 2.0 for i in range(40)]

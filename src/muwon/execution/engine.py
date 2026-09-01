@@ -91,7 +91,7 @@ def 전략이름(전략, *, 파는쪽: bool = False) -> str:
         from muwon.strategy.registry import get_definition
 
         return get_definition(이름).화면이름
-    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 알림이 안 가면 안 된다
+    except Exception:  # noqa: BLE001 (이름을 못 찾는다고 알림이 안 가면 안 된다)
         return 이름
 
 
@@ -139,7 +139,7 @@ def 매도규칙(전략, 정책, 산값: float) -> list[str]:
 
         파는쪽 = getattr(전략, "매도쪽", 전략)
         줄들 += [ㄱ.replace("**", "") for ㄱ in describe(파는쪽).판다]
-    except Exception as e:  # noqa: BLE001 — 설명 하나 때문에 알림이 안 가면 안 된다
+    except Exception as e:  # noqa: BLE001 (설명 하나 때문에 알림이 안 가면 안 된다)
         # 조용히 넘기지는 않는다. 매도 조건 한 줄이 빠진 알림은 "이게 전부"로
         # 읽히는데, 그 사실이 로그에도 없으면 영영 안 고쳐진다.
         logger.warning(f"매도 규칙 설명을 못 만들었습니다: {type(e).__name__}: {e}")
@@ -331,13 +331,13 @@ class TradingEngine:
             histories[ticker.symbol] = df
 
         # 손절은 지금 값으로 잰다. 못 물어보면 어제 종가로 재고, **그
-        # 사실을 회차 기록에 남긴다** — 조용히 어제 값으로 재면 왜 늦게
+        # 사실을 회차 기록에 남긴다**. 조용히 어제 값으로 재면 왜 늦게
         # 팔렸는지 나중에 알 방법이 없다.
         현재가: dict[str, float] = {}
         if self._현재가공급자 is not None:
             try:
                 현재가 = {ㄱ: float(ㄴ) for ㄱ, ㄴ in (self._현재가공급자() or {}).items() if ㄴ}
-            except Exception as e:  # noqa: BLE001 — 시세를 못 물어봐도 회차는 돌아야 한다
+            except Exception as e:  # noqa: BLE001 (시세를 못 물어봐도 회차는 돌아야 한다)
                 logger.warning(f"지금 값을 못 물어봤습니다. 어제 종가로 손절을 잽니다: {e}")
 
         summary = RunSummary(run_date=run_date, checked_symbols=len(latest_prices))
@@ -538,7 +538,7 @@ class TradingEngine:
                 quantity=order.quantity,
                 entry_price=order.price,
                 entry_date=trade_date,
-                entered_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
+                entered_at=datetime.utcnow(),  # noqa: DTZ003 (기록용, tz 무관)
                 entry_reason=buy_signal.reason,
                 strategy_key=self._strategy.name,
             )
@@ -593,7 +593,7 @@ class TradingEngine:
             return -1
         try:
             return self._orderable_provider(symbol, price)
-        except Exception:  # noqa: BLE001 — 조회 실패가 매매를 멈춰선 안 된다
+        except Exception:  # noqa: BLE001 (조회 실패가 매매를 멈춰선 안 된다)
             return -1
 
     def _notify(self, message: str) -> None:

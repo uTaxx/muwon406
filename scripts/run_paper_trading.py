@@ -97,7 +97,7 @@ def main() -> None:
         print("체결 없음")
     for action in summary.actions:
         side = "매수" if action.side.value == "buy" else "매도"
-        print(f"{side}: {action.name}({action.symbol}) {action.quantity}주 @ {action.price:,.0f}원 — {action.reason}")
+        print(f"{side}: {action.name}({action.symbol}) {action.quantity}주 @ {action.price:,.0f}원: {action.reason}")
     if summary.rejections:
         print("\n리스크 매니저 거부:")
         for rejection in summary.rejections:

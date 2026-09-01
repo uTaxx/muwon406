@@ -50,7 +50,7 @@ def main() -> None:
     parser.add_argument("--initial-cash", type=float, default=10_000_000.0)
     args = parser.parse_args()
 
-    end = date.today()  # noqa: DTZ011 — 날짜만 필요, 배치 실행 전제라 tz 무관
+    end = date.today()  # noqa: DTZ011 (날짜만 필요, 배치 실행 전제라 tz 무관)
     start = end - timedelta(days=args.lookback_days)
 
     settings_service = build_settings_service()

@@ -126,7 +126,7 @@ def main() -> int:
             return 0
         else:
             밀린것 = 정보.get("pending_update_count", 0)
-            print(f"■ 이 봇에 **웹훅이 없습니다** — 물어보러 가는 방식으로 돕니다"
+            print(f"■ 이 봇에 **웹훅이 없습니다**. 물어보러 가는 방식으로 돕니다"
                   f" (밀려 있는 것 {밀린것}개)")
         업데이트 = get_updates(cfg.bot_token, offset)
         print(f"■ 새 메시지 {len(업데이트)}개 (offset {offset})")
@@ -150,7 +150,7 @@ def main() -> int:
                 continue
             try:
                 _버튼처리(누른것, sheet_id, cfg)
-            except Exception as e:  # noqa: BLE001 — 하나가 터져도 나머지는 처리한다
+            except Exception as e:  # noqa: BLE001 (하나가 터져도 나머지는 처리한다)
                 print(f"    터짐: {type(e).__name__}: {e}", file=sys.stderr)
                 answer_callback(cfg.bot_token, 누른것["id"], f"문제가 생겼습니다: {type(e).__name__}")
             continue
@@ -174,7 +174,7 @@ def main() -> int:
             continue
         try:
             보내기(_처리(글, sheet_id, service))
-        except Exception as e:  # noqa: BLE001 — 한 명령이 터져도 나머지는 처리한다
+        except Exception as e:  # noqa: BLE001 (한 명령이 터져도 나머지는 처리한다)
             print(f"    터짐: {type(e).__name__}: {e}", file=sys.stderr)
             보내기(f"⚠️ 그 명령을 처리하다 문제가 생겼습니다.\n{type(e).__name__}: {e}")
 
@@ -227,7 +227,7 @@ _DB고쳤나 = False
 def _전략이름(키: str) -> str:
     try:
         return get_definition(키).화면이름
-    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 버튼이 죽으면 안 된다
+    except Exception:  # noqa: BLE001 (이름을 못 찾는다고 버튼이 죽으면 안 된다)
         return 키
 
 

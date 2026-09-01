@@ -108,7 +108,7 @@ def test_place_cash_order_uses_real_sell_tr_id(mock_post):
 
 
 class FakeClock:
-    """time.time()을 테스트가 제어하는 값으로 대체 — 실제로 잠들지 않고도
+    """time.time()을 테스트가 제어하는 값으로 대체: 실제로 잠들지 않고도
     요청 간격 로직(_throttle)을 검증한다."""
 
     def __init__(self, start: float = 1000.0):
@@ -125,7 +125,7 @@ class FakeClock:
 @patch("muwon.data.kis_client.time.time")
 def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     """모의투자 계좌로 유니버스 종목을 연달아 조회하다 9번째 요청부터
-    500이 난 실제 사고를 재현한 회귀 테스트 — 요청 간격이 제한보다 짧으면
+    500이 난 실제 사고를 재현한 회귀 테스트: 요청 간격이 제한보다 짧으면
     다음 요청 전에 부족한 만큼 대기해야 한다."""
     mock_get.return_value = MagicMock(status_code=200, json=lambda: {"output2": []})
     mock_get.return_value.raise_for_status = lambda: None
@@ -138,7 +138,7 @@ def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
 
     client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
-    elapsed = 0.1  # 다음 요청 전 아주 조금만 경과 — 제한 간격에 못 미침
+    elapsed = 0.1  # 다음 요청 전 아주 조금만 경과: 제한 간격에 못 미침
     clock.advance(elapsed)
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
@@ -182,7 +182,7 @@ def test_real_trading_uses_shorter_throttle_interval_than_paper(mock_time, mock_
     client._sleep = lambda seconds: (sleeps.append(seconds), clock.advance(seconds))[0]
 
     client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
-    clock.advance(0.1)  # 실전투자 제한(0.05초)보다 지남 — 대기 불필요
+    clock.advance(0.1)  # 실전투자 제한(0.05초)보다 지남: 대기 불필요
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
     assert sleeps == []
@@ -191,7 +191,7 @@ def test_real_trading_uses_shorter_throttle_interval_than_paper(mock_time, mock_
 @patch("muwon.data.kis_client.requests.get")
 def test_get_daily_ohlcv_retries_on_500_then_succeeds(mock_get):
     """throttle을 둬도 산발적으로 500이 나는 걸 실제로 관찰해서 추가한
-    재시도 로직 — 두 번째 시도에서 성공하면 그 결과를 그대로 써야 한다."""
+    재시도 로직: 두 번째 시도에서 성공하면 그 결과를 그대로 써야 한다."""
     error_response = MagicMock(status_code=500)
     ok_response = MagicMock(status_code=200, json=lambda: {"output2": []})
     ok_response.raise_for_status = lambda: None
@@ -494,7 +494,7 @@ def test_get_balance_raises_with_kis_reason_on_rejection(mock_get):
         client.get_balance()
 
 
-# 계좌 잔고 조회 — 어떤 필드를 "현금"으로 삼느냐가 대조의 전부다.
+# 계좌 잔고 조회: 어떤 필드를 "현금"으로 삼느냐가 대조의 전부다.
 #
 # 아래 숫자는 2026-08-24에 HPSP 2주(90,100원)를 모의계좌에서 시험 매수한
 # 직후 실제로 받은 응답이다. 예수금 총액은 매수를 아직 반영하지 않는다.
@@ -513,8 +513,8 @@ _잔고응답_매수직후 = {
     ],
     "output2": [
         {
-            "dnca_tot_amt": "10000145",  # 예수금 총액 — 매수가 아직 안 빠졌다
-            "prvs_rcdl_excc_amt": "9910035",  # 가수도정산금액 — 이미 빠졌다
+            "dnca_tot_amt": "10000145",  # 예수금 총액: 매수가 아직 안 빠졌다
+            "prvs_rcdl_excc_amt": "9910035",  # 가수도정산금액: 이미 빠졌다
             "nxdy_excc_amt": "10000145",
             "thdt_buy_amt": "90100",
             "thdt_tlex_amt": "10",

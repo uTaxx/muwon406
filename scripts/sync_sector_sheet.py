@@ -67,7 +67,7 @@ def main() -> int:
         print(f"올렸습니다. 섹터 {len(섹터행) - 1}줄 · 종목 {len(종목행) - 1}줄 · 설정 {len(default_settings_rows()) - 1}줄")
         print("\n**이제부터는 시트에서 고치세요.** --push는 시트를 통째로 덮어씁니다.")
 
-    # 종목을 더하거나 뺄 때 쓴다. **설정 탭은 안 건드린다** — 종목 목록을
+    # 종목을 더하거나 뺄 때 쓴다. **설정 탭은 안 건드린다**. 종목 목록을
     # 늘리려다 킬스위치와 걸어 둔 전략을 잃으면 안 된다.
     if args.push_catalog:
         from muwon.cloud.sector_sheet import write_catalog
@@ -139,7 +139,7 @@ def main() -> int:
         print("\n고치기 전까지는 이 목록으로 아무것도 사지 않습니다.", file=sys.stderr)
         return 1
 
-    print(f"\n■ 검증 통과 — 섹터 {len(내용.섹터)}개")
+    print(f"\n■ 검증 통과: 섹터 {len(내용.섹터)}개")
     print(f"  {'섹터':<8}{'이름':<16}{'활성':>5}{'상한':>7}{'전망출처':>10}{'종목':>6}{'활성종목':>8}")
     for s in 내용.섹터:
         print(
@@ -149,11 +149,11 @@ def main() -> int:
 
     꺼진것 = [(s.코드, m) for s in 내용.섹터 for m in s.종목 if not m.활성]
     if 꺼진것:
-        print(f"\n  꺼 둔 종목 {len(꺼진것)}개 — 지우지 않고 두는 이유는 '왜 뺐는지'를 남기기 위해서입니다")
+        print(f"\n  꺼 둔 종목 {len(꺼진것)}개: 지우지 않고 두는 이유는 '왜 뺐는지'를 남기기 위해서입니다")
         for 코드, m in 꺼진것:
             print(f"    {코드}/{m.symbol} {m.name}: {m.메모 or '(이유 없음)'}")
 
-    print(f"\n■ 설정 {len(내용.설정)}개 — 시트에 적힌 그대로")
+    print(f"\n■ 설정 {len(내용.설정)}개: 시트에 적힌 그대로")
     for 이름, 값 in 내용.설정.items():
         print(f"  {이름:<28}{값}")
 

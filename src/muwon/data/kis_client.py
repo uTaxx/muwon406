@@ -48,7 +48,7 @@ from muwon.settings.service import SettingsService
 REAL_BASE_URL = "https://openapi.koreainvestment.com:9443"
 PAPER_BASE_URL = "https://openapivts.koreainvestment.com:29443"
 
-# 국내주식 현금주문 TR_ID — 모의투자(V)와 실전투자(T)가 서로 다르다.
+# 국내주식 현금주문 TR_ID: 모의투자(V)와 실전투자(T)가 서로 다르다.
 _BUY_TR_ID = {"paper": "VTTC0802U", "real": "TTTC0802U"}
 _SELL_TR_ID = {"paper": "VTTC0801U", "real": "TTTC0801U"}
 _MARKET_ORDER_DVSN = "01"  # 시장가
@@ -72,7 +72,7 @@ _PSBL_ORDER_TR_ID = {"paper": "VTTC8908R", "real": "TTTC8908R"}
 
 # 주식주문(정정취소) TR_ID. 취소는 모의투자에서도 된다.
 #
-# 짝이 되는 "주식정정취소가능주문조회"(TTTC0084R)는 **실전에만 있다** —
+# 짝이 되는 "주식정정취소가능주문조회"(TTTC0084R)는 **실전에만 있다**.
 # 모의투자 계좌로는 호출할 수 없다. 그래서 취소할 주문 목록은 이미 쓰고 있는
 # 주문체결조회(inquire-daily-ccld)에서 잔여수량으로 뽑는다. 두 환경에서 같은
 # 길을 쓰게 되니 오히려 시험하기 쉽다.
@@ -98,7 +98,7 @@ _MIN_REQUEST_INTERVAL_REAL = 0.05
 # 않았다"는 뜻이므로 주문이라도 재시도해도 중복 체결 위험이 없다.
 _RATE_LIMIT_MSG_CD = "EGW00201"
 
-# 토큰이 죽었을 때 KIS가 알리는 코드. **시간이 남았어도 죽을 수 있다** —
+# 토큰이 죽었을 때 KIS가 알리는 코드. **시간이 남았어도 죽을 수 있다**.
 # 같은 앱키로 토큰을 새로 발급하면 앞의 토큰이 무효가 된다. 우리는 파이썬과
 # n8n 둘이 같은 앱키를 쓰므로, n8n이 새로 받으면 우리가 캐시해 둔 것이
 # 만료 시각과 무관하게 죽는다.
@@ -303,7 +303,7 @@ class KISClient(MarketDataSource):
             if payload is None or payload.get("msg_cd") != _RATE_LIMIT_MSG_CD:
                 return response
             logger.warning(
-                f"KIS 초당 호출 제한으로 거부됨 — {attempt}차 재시도 "
+                f"KIS 초당 호출 제한으로 거부됨: {attempt}차 재시도 "
                 f"({_RETRY_BACKOFF_SECONDS * attempt:.1f}초 대기)"
             )
             self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
@@ -323,7 +323,7 @@ class KISClient(MarketDataSource):
             payload = _kis_payload(response)
             if payload is not None:
                 logger.warning(
-                    f"KIS 시세조회 거부({response.status_code}) — "
+                    f"KIS 시세조회 거부({response.status_code}). "
                     f"{payload.get('msg1', '')} (msg_cd={payload.get('msg_cd', '')}), {attempt}차 재시도"
                 )
             self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
@@ -494,7 +494,7 @@ class KISClient(MarketDataSource):
         따라간다.** 안 따라가면 오래된 것부터 조용히 빠지는데, 대조 도구에서
         그건 "증권사에 없는 주문"으로 둔갑한다."""
         env = "paper" if self.is_paper else "real"
-        시작 = (order_date or date.today()).strftime("%Y%m%d")  # noqa: DTZ011 — 날짜만 필요
+        시작 = (order_date or date.today()).strftime("%Y%m%d")  # noqa: DTZ011 (날짜만 필요)
         끝 = (end_date or order_date or date.today()).strftime("%Y%m%d")  # noqa: DTZ011
 
         모은것: list[dict] = []
@@ -587,7 +587,7 @@ class KISClient(MarketDataSource):
         return None
 
     def get_open_orders(self, order_date: date | None = None) -> list[OpenOrder]:
-        """아직 다 채워지지 않은 그날 주문들 — 되돌릴 수 있는 것만.
+        """아직 다 채워지지 않은 그날 주문들: 되돌릴 수 있는 것만.
 
         "정정취소가능주문조회"가 모의투자에 없어서, 이미 쓰고 있는
         주문체결조회에서 뽑는다. 남기는 기준은 셋이다:
@@ -747,15 +747,15 @@ class KISClient(MarketDataSource):
                 timeout=10,
             )
             payload = response.json()
-        except Exception as e:  # noqa: BLE001 — 조회 실패가 매매를 멈춰선 안 된다
-            logger.warning(f"매수가능조회를 못 했습니다({symbol}): {e} — 우리 현금 계산으로 갑니다.")
+        except Exception as e:  # noqa: BLE001 (조회 실패가 매매를 멈춰선 안 된다)
+            logger.warning(f"매수가능조회를 못 했습니다({symbol}): {e}: 우리 현금 계산으로 갑니다.")
             return -1
 
         if str(payload.get("rt_cd", "")) != "0":
             logger.warning(
                 f"매수가능조회를 증권사가 거부했습니다({symbol}): "
                 f"{payload.get('msg1')} (msg_cd={payload.get('msg_cd')}) "
-                "— 우리 현금 계산으로 갑니다."
+                "우리 현금 계산으로 갑니다."
             )
             return -1
 
@@ -763,7 +763,7 @@ class KISClient(MarketDataSource):
         칸 = str(output.get("nrcvb_buy_qty", "")).strip()
         if not 칸:
             logger.warning(
-                f"매수가능조회 답에 미수없는매수수량이 없습니다({symbol}) — "
+                f"매수가능조회 답에 미수없는매수수량이 없습니다({symbol}). "
                 f"받은 칸: {sorted(output)[:12]}. 우리 현금 계산으로 갑니다."
             )
             return -1
@@ -862,7 +862,7 @@ class KISClient(MarketDataSource):
             raw_summary={str(k): str(v) for k, v in summary.items()},
         )
 
-    #: fid_blng_cls_code — 어떤 기준으로 줄을 세울지.
+    #: fid_blng_cls_code: 어떤 기준으로 줄을 세울지.
     #: 거래대금을 기본으로 쓴다. 주식 수(거래량)로 세우면 주가가 싼 종목이
     #: 위를 차지하는데, 100원짜리 100만주는 1억원이고 10만원짜리 1만주는
     #: 10억원이다. 실제로 돈이 몰린 곳은 후자다.
@@ -925,7 +925,7 @@ class KISClient(MarketDataSource):
         if payload.get("rt_cd") != "0":
             raise RuntimeError(
                 f"KIS 거래량순위 조회 실패: {payload.get('msg1')} "
-                f"(msg_cd={payload.get('msg_cd')}) — 모의투자 미지원 API일 수 있습니다."
+                f"(msg_cd={payload.get('msg_cd')}): 모의투자 미지원 API일 수 있습니다."
             )
 
         rows = []
@@ -948,7 +948,7 @@ class KISClient(MarketDataSource):
         이걸로 주기적으로 다시 뽑아 유니버스를 갱신한다.
 
         market: "all" | "kospi" | "kosdaq"
-        보통주만 조회한다(fid_div_cls_code=1) — 우선주는 같은 회사가 중복으로
+        보통주만 조회한다(fid_div_cls_code=1): 우선주는 같은 회사가 중복으로
         잡히는 데다 거래량도 훨씬 적어 단타 대상으로 부적절하다.
 
         주의: KIS의 순위·시세 API 일부는 모의투자를 지원하지 않는다. 모의투자
@@ -981,7 +981,7 @@ class KISClient(MarketDataSource):
         if payload.get("rt_cd") != "0":
             raise RuntimeError(
                 f"KIS 시총순위 조회 실패: {payload.get('msg1')} "
-                f"(msg_cd={payload.get('msg_cd')}) — 모의투자 미지원 API일 수 있습니다."
+                f"(msg_cd={payload.get('msg_cd')}): 모의투자 미지원 API일 수 있습니다."
             )
 
         rows = []

@@ -3,7 +3,7 @@
 후보를 시트 `승인대기` 탭에 적고 텔레그램으로 알릴 뿐이다. 실제 매수는
 사람이 승인 칸에 Y를 적은 뒤에야 일어난다.
 
-## 1차 — 섹터
+## 1차: 섹터
 
 섹터 지수를 만들고 **최근 N일 시장 대비 강도**로 줄을 세운다.
 
@@ -17,7 +17,7 @@
 사면 어떤 날은 반도체 다섯 종목이 한꺼번에 잡히는데, 그건 분산이 아니라
 반도체 하나에 다섯 배로 건 것이다.
 
-## 2차 — 종목
+## 2차: 종목
 
 **새 규칙을 만들지 않는다.** 1차를 통과한 섹터의 종목만 기존 매수 신호에
 태운다. 바뀐 것은 대상이지 판단 기준이 아니다. 그래야 성적이 달라졌을 때
@@ -262,7 +262,7 @@ def main() -> int:
     넘친것 = 줄선것[상한:]
     고른것 = 줄선것[:상한]
 
-    print(f"■ 2차 — 종목 고르기 · 매수 후보 {len(고른것)}종목 (신호 {len(신호들)}개)")
+    print(f"■ 2차: 종목 고르기 · 매수 후보 {len(고른것)}종목 (신호 {len(신호들)}개)")
     print()
     for c in 고른것:
         print(f"  {c.name}({c.symbol})  {c.price:>9,.0f}원   [{c.sector_name}] {c.reason}")
@@ -280,7 +280,7 @@ def main() -> int:
         for c in 넘친것:
             print(f"    · {c.name}({c.symbol}) [{c.sector_name}]")
     if 못본것:
-        print(f"\n  시세를 못 본 종목 {len(못본것)}개 — **이유가 있어야 다음에 무엇을 고칠지 안다**")
+        print(f"\n  시세를 못 본 종목 {len(못본것)}개: **이유가 있어야 다음에 무엇을 고칠지 안다**")
         for 줄 in 못본것:
             print(f"    · {줄}")
 
@@ -319,7 +319,7 @@ def main() -> int:
         try:
             이미있는것, _ = read_today(sheet_id, 오늘)
         except Exception as 탈:  # noqa: BLE001
-            print(f"\n오늘 것이 이미 있는지 못 봤습니다({type(탈).__name__}) — 그냥 제안합니다.")
+            print(f"\n오늘 것이 이미 있는지 못 봤습니다({type(탈).__name__}): 그냥 제안합니다.")
         else:
             if 이미있는것:
                 print(f"\n오늘({오늘}) 후보 {len(이미있는것)}종목이 이미 시트에 있습니다. "
@@ -353,7 +353,7 @@ def main() -> int:
             send(cfg.bot_token, cfg.chat_id, 글,
                  reply_markup=keyboard(고른것, 오늘) if 고른것 else None)
             print("텔레그램으로 알렸습니다(버튼 포함).", file=sys.stderr)
-    except Exception as e:  # noqa: BLE001 — 알림 실패가 후보 목록을 지우면 안 된다
+    except Exception as e:  # noqa: BLE001 (알림 실패가 후보 목록을 지우면 안 된다)
         print(f"텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
 

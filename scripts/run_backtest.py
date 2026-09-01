@@ -25,9 +25,7 @@ from muwon.strategy.rule_based import MovingAverageRsiStrategy
 
 
 def parse_date(value: str) -> date:
-    return datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007 — 날짜만 필요, tz 무관
-
-
+    return datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007 (날짜만 필요, tz 무관)
 def main() -> None:
     parser = argparse.ArgumentParser(description="규칙기반 전략 백테스트")
     parser.add_argument("--start", type=parse_date, required=True)

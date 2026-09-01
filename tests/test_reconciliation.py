@@ -18,7 +18,7 @@ def make_position(symbol: str, quantity: int) -> PositionRow:
         quantity=quantity,
         entry_price=70_000.0,
         entry_date=date(2026, 8, 17),
-        entered_at=datetime(2026, 8, 17, 9, 30),  # noqa: DTZ001 — 테스트용, tz 무관
+        entered_at=datetime(2026, 8, 17, 9, 30),  # noqa: DTZ001 (테스트용, tz 무관)
         entry_reason="테스트",
         strategy_key="ma_rsi_v1",
     )
@@ -85,7 +85,7 @@ def test_small_cash_difference_is_tolerated():
 
 
 def test_detects_partial_fill_quantity_drift():
-    """주문은 10주 넣었는데 4주만 체결된 상황 — DB엔 10주로 기록돼 있고
+    """주문은 10주 넣었는데 4주만 체결된 상황: DB엔 10주로 기록돼 있고
     계좌엔 4주만 있다. 이걸 못 잡으면 없는 6주를 팔려고 시도하게 된다."""
     report = reconcile(
         db_positions={"005930": make_position("005930", 10)},
@@ -102,7 +102,7 @@ def test_detects_partial_fill_quantity_drift():
 
 
 def test_detects_position_only_in_account():
-    """계좌엔 있는데 DB엔 없는 종목 — 수동 매매했거나 우리 기록이 유실된
+    """계좌엔 있는데 DB엔 없는 종목: 수동 매매했거나 우리 기록이 유실된
     경우다. DB에만 있는 경우와 반대 방향이라 둘 다 잡아야 한다."""
     report = reconcile(
         db_positions={},

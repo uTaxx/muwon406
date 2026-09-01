@@ -1,4 +1,4 @@
-"""장중 30분봉 — 과거를 살 수 없으니 오늘부터 쌓는다.
+"""장중 30분봉: 과거를 살 수 없으니 오늘부터 쌓는다.
 
 왜 30분인가. 장중 모멘텀(Market Intraday Momentum)이 이 저장소가 조사한
 단타 후보 중 **한국 시장 증거가 있는 유일한 것**이기 때문이다. 첫 30분
@@ -17,7 +17,7 @@
 끝 시각으로 부르는 이유는 논문이 그렇게 말하기 때문이다. "첫 30분
 수익률"은 09:30까지의 값이고 "마지막 30분 수익률"은 15:30까지의 값이다.
 
-## 알아 둘 것 — 마지막 칸은 다르다
+## 알아 둘 것: 마지막 칸은 다르다
 
 15:20~15:30은 **종가 단일가**(장 마감 전 10분간 주문만 받고 한 번에
 체결) 구간이라 그 사이 분봉이 비어 있고 15:30에 한 방에 찍힌다. 그래서
@@ -63,7 +63,7 @@ class SlotBar:
     low: float
     close: float
     volume: int
-    bars: int  # 이 칸을 만든 분봉 수 — 적으면 그 칸을 의심해야 한다
+    bars: int  # 이 칸을 만든 분봉 수: 적으면 그 칸을 의심해야 한다
 
 
 def slot_for(hhmm: str) -> str | None:
@@ -89,7 +89,7 @@ def aggregate(symbol: str, trade_date: date, bars: list[MinuteBar]) -> list[Slot
     for bar in sorted(bars, key=lambda b: b.hhmm):
         칸 = slot_for(bar.hhmm)
         if 칸 is None:
-            continue  # 시간외 거래 — 정규장 이야기가 아니다
+            continue  # 시간외 거래: 정규장 이야기가 아니다
         묶음.setdefault(칸, []).append(bar)
 
     결과 = []

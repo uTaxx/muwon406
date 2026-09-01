@@ -67,7 +67,7 @@ def get_updates(token: str, offset: int) -> list[dict]:
     버튼은 전부 버려졌다. 버튼은 도는 표시만 내다 풀리고, 로그에는 "새
     메시지 0개"만 남아서 **무엇이 잘못됐는지 알 방법이 없었다.**
 
-    고친 뒤에도 **고치기 전에 누른 것은 돌아오지 않는다** — 이미 버려졌다.
+    고친 뒤에도 **고치기 전에 누른 것은 돌아오지 않는다**. 이미 버려졌다.
     다시 눌러야 한다."""
     return call(token, "getUpdates", offset=offset, timeout=0, allowed_updates=받을것)
 
@@ -104,7 +104,7 @@ def answer_callback(token: str, callback_query_id: str, text: str = "",
                     show_alert: bool = False) -> None:
     """버튼을 누른 사람 화면에 잠깐 뜨는 한 줄.
 
-    **이걸 안 보내면 버튼이 계속 도는 표시로 남는다** — 먹었는지 아닌지
+    **이걸 안 보내면 버튼이 계속 도는 표시로 남는다**. 먹었는지 아닌지
     알 수가 없어서 또 누르게 된다."""
     call(token, "answerCallbackQuery", raise_on_error=False,
          callback_query_id=callback_query_id, text=text[:200], show_alert=show_alert)

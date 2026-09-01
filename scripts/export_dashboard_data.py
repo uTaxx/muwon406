@@ -3,7 +3,7 @@
 ## 왜 뽑아 내나
 
 새 대시보드는 정적 파일이라 파이썬을 못 부른다. 그렇다고 설명을 화면에
-손으로 옮겨 적으면 **원본이 둘이 되고 언젠가 어긋난다** — 이 저장소가
+손으로 옮겨 적으면 **원본이 둘이 되고 언젠가 어긋난다**. 이 저장소가
 이미 겪은 실수다(`strategy_rules.py` 첫 줄에 그 이야기가 적혀 있다).
 
 그래서 원본은 파이썬에 그대로 두고, 여기서 **기계적으로 옮겨 적는다.**
@@ -78,7 +78,7 @@ def 전략설명() -> list[dict]:
                 # 정한 대로"가 몇 일인지 말하려면 이 숫자가 필요하다.
                 "보유일": getattr(build_strategy(정의.key), "max_holding_days", None),
             }
-        except Exception as 탈:  # noqa: BLE001 — 무엇이 터지든 사전은 나와야 한다
+        except Exception as 탈:  # noqa: BLE001 (무엇이 터지든 사전은 나와야 한다)
             # 전략 하나가 안 만들어진다고 사전 전체를 못 뽑으면 안 된다.
             # 대신 무엇이 빠졌는지는 화면에 보이게 남긴다.
             줄 |= {"산다": [], "판다": [], "참고": [f"설명을 만들지 못했습니다: {탈}"],
@@ -209,7 +209,7 @@ def main() -> int:
                 어긋난것.append(이름)
             continue
         길.write_text(새것, encoding="utf-8")
-        print(f"{길.relative_to(나가는곳.parent.parent)} — {len(json.loads(새것))}개")
+        print(f"{길.relative_to(나가는곳.parent.parent)}: {len(json.loads(새것))}개")
 
     if 어긋난것:
         print("파이썬 원본과 뽑아 둔 JSON이 다릅니다: " + ", ".join(어긋난것), file=sys.stderr)

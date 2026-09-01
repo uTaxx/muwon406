@@ -89,7 +89,7 @@ def _칸(samples: list[EntrySample], 값뽑기, 구간들):
 
 
 def format_entries(samples: list[EntrySample], label: str = "") -> str:
-    머리 = f"■ 산 날은 어떤 날이었나{f' — {label}' if label else ''}"
+    머리 = f"■ 산 날은 어떤 날이었나{f' ({label})' if label else ''}"
     if not samples:
         return f"{머리}\n\n완결된 매매가 없습니다."
 

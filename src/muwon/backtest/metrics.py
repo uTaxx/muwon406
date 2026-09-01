@@ -77,7 +77,7 @@ def max_drawdown_pct(equity: pd.Series) -> float:
 
 
 def sharpe(equity_curve: pd.DataFrame, risk_free_rate: float = 0.0) -> float:
-    """수익률을 변동성으로 나눈 값 — 같은 수익이면 덜 흔들린 쪽이 낫다.
+    """수익률을 변동성으로 나눈 값: 같은 수익이면 덜 흔들린 쪽이 낫다.
 
     무위험수익률은 기본 0으로 둔다. 넣으려면 값을 정해야 하는데, 그 선택이
     결과를 흔드는 데 비해 전략끼리 비교하는 목적에는 영향이 없다."""

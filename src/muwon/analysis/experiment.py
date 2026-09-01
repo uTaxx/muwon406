@@ -462,13 +462,13 @@ def format_correlation(matrix: pd.DataFrame, exposure: dict[str, float] | None =
     ]
     if exposure:
         lines.append("")
-        lines.append("노출도 — 전체 기간 중 종목을 들고 있던 날의 비율")
+        lines.append("노출도: 전체 기간 중 종목을 들고 있던 날의 비율")
         lines.append("  낮으면 '다른 때에 벌어서'가 아니라 '그냥 안 사서' 상관이 낮은 것이다")
         for name, value in sorted(exposure.items(), key=lambda kv: -kv[1]):
             lines.append(f"  {name:<24}{value:>6.1f}%")
     if pairs:
         lines.append("")
-        lines.append("낮은 순 — 분산 효과가 큰 조합부터")
+        lines.append("낮은 순: 분산 효과가 큰 조합부터")
         for value, a, b in sorted(pairs)[:8]:
             verdict = "나눌 가치 큼" if value < 0.4 else ("보통" if value < 0.7 else "거의 같이 움직임")
             lines.append(f"  {a:<20} × {b:<20} {value:>6.2f}   {verdict}")
@@ -491,7 +491,7 @@ def run_header(
     종목 목록 전체를 적는 이유는, 유니버스 스냅샷이 나중에 갱신되면 '그때
     그 58종목'을 되살릴 방법이 이것뿐이기 때문이다."""
     lines = [
-        f"# 실험 결과 — {mode}",
+        f"# 실험 결과: {mode}",
         "",
         f"- 실행: {datetime.now(UTC).isoformat(timespec='seconds')}",
         f"- 커밋: {_git_sha()}",

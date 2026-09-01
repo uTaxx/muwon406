@@ -2,7 +2,7 @@
 
     17:50  검토 → 텔레그램 버튼           run_strategy_review.py
              ↓ 사람이 두 번 누른다
-    08:20  여기 — 확정된 것만 반영
+    08:20  여기: 확정된 것만 반영
              ↓
     08:30  새 전략으로 매수 후보를 뽑는다   propose_buys.py
 
@@ -64,7 +64,7 @@ from muwon.strategy.registry import get_definition, list_definitions
 def 전략이름(키: str) -> str:
     try:
         return get_definition(키).화면이름
-    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 반영이 죽으면 안 된다
+    except Exception:  # noqa: BLE001 (이름을 못 찾는다고 반영이 죽으면 안 된다)
         return 키
 
 
@@ -145,7 +145,7 @@ def 시트에남기기(sheet_id: str, 이제, 줄, 이전이름: str, 새이름:
             줄.사유 or "",
         ]])
         print(f"시트 '{탭이름}'에 남겼습니다.", file=sys.stderr)
-    except Exception as 탈:  # noqa: BLE001 — 반영은 이미 끝났다
+    except Exception as 탈:  # noqa: BLE001 (반영은 이미 끝났다)
         print(f"시트 기록 실패: {type(탈).__name__}: {탈}", file=sys.stderr)
 
 
@@ -241,6 +241,6 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except SystemExit:
         raise
-    except Exception:  # noqa: BLE001 — 무엇이 터지든 로그에 남아야 한다
+    except Exception:  # noqa: BLE001 (무엇이 터지든 로그에 남아야 한다)
         traceback.print_exc()
         raise SystemExit(1) from None

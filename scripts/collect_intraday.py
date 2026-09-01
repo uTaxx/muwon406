@@ -92,8 +92,8 @@ def main() -> int:
     # 수집 대상을 바꾸면, 나중에 "그때 무엇을 모았나"를 되짚을 수 없다.
     symbols = [t.symbol for t in active_universe(session_factory, list(UNIVERSE))]
 
-    print(f"■ {today} 30분봉 수집 — {len(symbols)}종목 × {len(SLOT_ENDS)}칸")
-    print(f"  저장 위치: {DEFAULT_PATH} (운영 DB와 분리 — 대시보드가 매번 내려받지 않게)")
+    print(f"■ {today} 30분봉 수집: {len(symbols)}종목 × {len(SLOT_ENDS)}칸")
+    print(f"  저장 위치: {DEFAULT_PATH} (운영 DB와 분리해 둔다. 대시보드가 매번 내려받지 않게)")
     if args.dry_run:
         print(f"  대상: {', '.join(symbols[:10])}{' …' if len(symbols) > 10 else ''}")
         print("  --dry-run이라 실제로 받지는 않았습니다.")

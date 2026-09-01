@@ -113,7 +113,7 @@ def test_이어받다_거부당하면_거기까지라도_돌려준다():
 
 
 def test_하루만_부르면_시작과_끝이_같다():
-    """get_fill·get_open_orders가 쓰는 길 — 기간 지원을 붙이며 안 깨졌는지 본다."""
+    """get_fill·get_open_orders가 쓰는 길: 기간 지원을 붙이며 안 깨졌는지 본다."""
     c, 보낸것 = _client([_쪽(["1"])])
 
     c.get_fill("1", date(2026, 8, 25))

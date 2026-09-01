@@ -33,7 +33,7 @@ def frame(closes, volumes=None, start=date(2024, 1, 2)):
 
 
 class StubFactor(Factor):
-    """지정한 점수를 그대로 돌려주는 Factor — 합산 로직만 떼어 검증한다."""
+    """지정한 점수를 그대로 돌려주는 Factor: 합산 로직만 떼어 검증한다."""
 
     def __init__(self, key, scores):
         super().__init__({})
@@ -297,7 +297,7 @@ def test_strategy_config_round_trips_through_settings_store():
 
 
 class FixedRegimeFactor(MarketRegimeFactor):
-    """국면을 고정해 두는 Factor — 판정 사다리만 떼어서 보기 위한 것."""
+    """국면을 고정해 두는 Factor: 판정 사다리만 떼어서 보기 위한 것."""
 
     def __init__(self, regime, score=None):
         # Factor.__init__이 곧바로 warmup()을 부르므로 먼저 채워 둔다

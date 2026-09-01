@@ -138,7 +138,7 @@ class ScoreEngine:
                     skipped.append(f"{factor.key}: {result.reason}")
                     continue
                 scores[factor.key] = result.score
-                reasons.append(f"{factor.key} {result.score:.0f} — {result.reason}")
+                reasons.append(f"{factor.key} {result.score:.0f}: {result.reason}")
 
             # 평가된 Factor의 가중치만으로 100을 다시 채운다. 이게 없으면
             # Factor 하나를 끄거나 데이터가 하루 빠질 때마다 전 종목 총점이
@@ -182,7 +182,7 @@ class FactorScoreStrategy(PortfolioStrategy):
         self.config = config or StrategyConfig()
         self.name = name
         self._engine = ScoreEngine(self.config)
-        #: 마지막 평가 결과 — 판단 근거를 밖에서 꺼내 보기 위한 것
+        #: 마지막 평가 결과: 판단 근거를 밖에서 꺼내 보기 위한 것
         self.last_results: list[ScoredSymbol] = []
 
     def prepare(self, histories) -> None:
@@ -200,11 +200,11 @@ class FactorScoreStrategy(PortfolioStrategy):
                         signal_type=SignalType.BUY,
                         strategy_name=self.name,
                         score=result.total,
-                        reason=f"{result.decision} {result.total:.0f}점 — " + top_reason(result),
+                        reason=f"{result.decision} {result.total:.0f}점. " + top_reason(result),
                     )
                 )
             elif result.symbol in ctx.held and result.total < self.config.sell_threshold:
-                # 점수 기반 청산 — 살 이유가 사라졌으면 들고 있을 이유도 없다
+                # 점수 기반 청산: 살 이유가 사라졌으면 들고 있을 이유도 없다
                 signals.append(
                     Signal(
                         symbol=result.symbol,
@@ -219,7 +219,7 @@ class FactorScoreStrategy(PortfolioStrategy):
 
 
 def top_reason(result: ScoredSymbol, limit: int = 2) -> str:
-    """가장 크게 기여한 근거만 짧게 — 텔레그램 한 줄에 들어가야 한다."""
+    """가장 크게 기여한 근거만 짧게: 텔레그램 한 줄에 들어가야 한다."""
     ranked = sorted(result.factor_scores.items(), key=lambda kv: kv[1], reverse=True)
     return ", ".join(f"{key} {value:.0f}" for key, value in ranked[:limit])
 
@@ -233,5 +233,5 @@ def load_strategy_config() -> StrategyConfig:
         from muwon.settings.service import build_settings_service
 
         return build_settings_service().get_strategy_config()
-    except Exception:  # noqa: BLE001 — DB 부재·연결 실패 등 무엇이든 기본값으로
+    except Exception:  # noqa: BLE001 (DB 부재·연결 실패 등 무엇이든 기본값으로)
         return StrategyConfig()

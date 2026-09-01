@@ -162,7 +162,7 @@ def 전략고르기(글: str) -> tuple[list[str], list[str], bool]:
 def 전략이름(열쇠: str) -> str:
     try:
         return get_definition(열쇠).화면이름
-    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 검증이 죽으면 안 된다
+    except Exception:  # noqa: BLE001 (이름을 못 찾는다고 검증이 죽으면 안 된다)
         return 열쇠
 
 
@@ -249,7 +249,7 @@ def 알리기(글: str) -> None:
         from muwon.notify.telegram import TelegramNotifier
 
         TelegramNotifier(build_settings_service()).send(글)
-    except Exception as 탈:  # noqa: BLE001 — 알림 실패로 결과를 잃지 않는다
+    except Exception as 탈:  # noqa: BLE001 (알림 실패로 결과를 잃지 않는다)
         print(f"텔레그램으로는 못 보냈습니다: {type(탈).__name__}: {탈}", file=sys.stderr)
 
 
@@ -401,11 +401,11 @@ def main() -> int:
 
     try:
         return 진짜로(골라진것, 잰때, 인자, sheet_id)
-    except Exception as 탈:  # noqa: BLE001 — 무엇이 터지든 화면에 남겨야 한다
+    except Exception as 탈:  # noqa: BLE001 (무엇이 터지든 화면에 남겨야 한다)
         traceback.print_exc()
         try:
             올리기(sheet_id, [실패줄(잰때, 기간글, f"{type(탈).__name__}: {탈}")])
-        except Exception:  # noqa: BLE001 — 시트까지 막히면 워크플로가 빨개진다
+        except Exception:  # noqa: BLE001 (시트까지 막히면 워크플로가 빨개진다)
             print("실패한 사실도 시트에 못 남겼습니다.", file=sys.stderr)
         return 1
 
@@ -598,7 +598,7 @@ def 비교하기(골라진것, 잰때: datetime, sheet_id: str, histories, 끝, 
             try:
                 성적 = 돌려보기(정의, (lambda k=열쇠: 만들기(k)),
                             histories, 끝, 정책)
-            except Exception as 탈:  # noqa: BLE001 — 하나가 터져도 나머지는 봐야 한다
+            except Exception as 탈:  # noqa: BLE001 (하나가 터져도 나머지는 봐야 한다)
                 못만든것.append(f"{열쇠} ({type(탈).__name__}: {탈})")
                 continue
             if 성적 is None:

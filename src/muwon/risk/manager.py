@@ -39,7 +39,7 @@ class RiskManager:
             return RiskDecision(
                 approved=False,
                 reason=f"일일 손실 한도 도달 (daily_pnl={daily_pnl_pct:.2%}, "
-                f"한도={policy.daily_loss_limit_pct:.2%}) — 신규 진입 중단",
+                f"한도={policy.daily_loss_limit_pct:.2%}): 신규 진입 중단",
             )
         if current_open_positions >= policy.max_concurrent_positions:
             return RiskDecision(

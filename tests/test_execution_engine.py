@@ -84,7 +84,7 @@ def test_buy_signal_executes_order_persists_position_and_notifies():
     글 = notifier.messages[0]
     assert "🟢 매수체결" in 글
     assert TEST_TICKER.name in 글
-    # 처음 쓰는 사람이 제일 먼저 묻는 둘 — 얼마를 썼고, 언제 팔리나.
+    # 처음 쓰는 사람이 제일 먼저 묻는 둘: 얼마를 썼고, 언제 팔리나.
     assert "매수총액 : " in 글, "총액이 없으면 얼마 나갔는지 암산해야 한다"
     assert "매도전략" in 글, "언제 팔리는지 안 적으면 사람이 알 방법이 없다"
     assert "손절" in 글
@@ -158,7 +158,7 @@ def test_stop_loss_sells_before_dead_cross_signal():
 
 
 class ScriptedStrategy:
-    """종목별로 지정한 점수의 매수 신호만 내는 전략 — 선택 순서 검증용."""
+    """종목별로 지정한 점수의 매수 신호만 내는 전략: 선택 순서 검증용."""
 
     name = "scripted"
 
@@ -329,10 +329,10 @@ def test_engine_enforces_time_exit_from_actual_entry_date():
     entry_summary = engine.run_once(as_of=dates[5])
     assert [a.side for a in entry_summary.actions] == [OrderSide.BUY]
 
-    # 2거래일 경과 — 아직 청산 안 됨
+    # 2거래일 경과: 아직 청산 안 됨
     assert engine.run_once(as_of=dates[7]).actions == []
 
-    # 3거래일 경과 — 청산
+    # 3거래일 경과: 청산
     exit_summary = engine.run_once(as_of=dates[8])
     assert [a.side for a in exit_summary.actions] == [OrderSide.SELL]
     assert "보유 3일 경과" in exit_summary.actions[0].reason

@@ -43,14 +43,14 @@ async def run_forever(
                 backoff = INITIAL_BACKOFF_SECONDS
                 try:
                     engine.on_tick(tick)
-                except Exception:  # noqa: BLE001 — 틱 하나 처리 실패로 전체 루프가 죽으면 안 됨
-                    logger.exception(f"틱 처리 중 오류 (symbol={tick.symbol}) — 다음 틱은 계속 처리")
+                except Exception:  # noqa: BLE001 (틱 하나 처리 실패로 전체 루프가 죽으면 안 됨)
+                    logger.exception(f"틱 처리 중 오류 (symbol={tick.symbol}): 다음 틱은 계속 처리")
         except asyncio.CancelledError:
             raise
-        except Exception:  # noqa: BLE001 — 연결 오류의 종류를 예단하지 않고 전부 재연결 대상으로 처리
+        except Exception:  # noqa: BLE001 (연결 오류의 종류를 예단하지 않고 전부 재연결 대상으로 처리)
             logger.exception("웹소켓 연결 오류")
 
-        logger.warning(f"웹소켓 스트림 종료됨 — {backoff}초 후 재연결")
+        logger.warning(f"웹소켓 스트림 종료됨: {backoff}초 후 재연결")
         await sleep(backoff)
         if not received_any:
             backoff = min(backoff * 2, MAX_BACKOFF_SECONDS)

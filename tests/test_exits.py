@@ -28,7 +28,7 @@ def frame(closes, highs=None, lows=None, start=date(2024, 1, 2)):
 
 
 def flat_atr(days=40, price=100.0, daily_range=4.0):
-    """하루에 daily_range만큼 움직이는 종목 — ATR이 대략 그 값이 된다."""
+    """하루에 daily_range만큼 움직이는 종목: ATR이 대략 그 값이 된다."""
     closes = [price] * days
     highs = [price + daily_range / 2] * days
     lows = [price - daily_range / 2] * days
@@ -97,7 +97,7 @@ def test_falls_back_to_fixed_stop_when_atr_missing():
 
 
 def test_disabled_policy_uses_fixed_stop_only():
-    policy = RiskPolicy()  # 기본값 — ATR 꺼짐
+    policy = RiskPolicy()  # 기본값: ATR 꺼짐
     df = flat_atr()
     common = {
         "entry_price": 100.0,

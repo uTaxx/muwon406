@@ -108,7 +108,7 @@ def test_slice_histories_keeps_only_window_range():
 
 def test_slice_drops_symbols_with_no_data_in_trading_window():
     """예열 구간에만 데이터가 있고 매매 구간엔 없는 종목은 제외해야 한다
-    (상장폐지 등) — 넣어봐야 거래가 발생할 수 없다."""
+    (상장폐지 등): 넣어봐야 거래가 발생할 수 없다."""
     df = make_price_df([100.0] * 30, start=date(2023, 9, 1))  # 2023년에만 존재
     window = PeriodWindow("2024", date(2024, 1, 1), date(2024, 12, 31))
 

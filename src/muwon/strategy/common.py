@@ -61,7 +61,7 @@ def volume_ratio(row: pd.Series) -> float:
 
 
 def pct_above(value: float, reference: float) -> float:
-    """기준선을 몇 % 넘어섰는지 — 돌파 폭이 클수록 강한 신호로 본다."""
+    """기준선을 몇 % 넘어섰는지. 돌파 폭이 클수록 강한 신호로 본다."""
     if pd.isna(value) or pd.isna(reference) or reference <= 0:
         return 0.0
     return float((value / reference - 1) * 100)

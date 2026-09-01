@@ -48,7 +48,7 @@ from dataclasses import dataclass, field
 from muwon.analysis.period_check import 기간성적
 
 # 조사는 알림 쪽도 쓴다. 두 곳에 따로 두면 한쪽만 고치게 된다.
-from muwon.text import 은는, 이가  # noqa: F401 — 이 모듈을 통해 쓰는 곳이 있다
+from muwon.text import 은는, 이가  # noqa: F401 (이 모듈을 통해 쓰는 곳이 있다)
 
 #: 이 배수만큼 앞서야 후보로 올린다. 조금 앞서는 것으로 바꾸면 매번 바뀐다.
 #: 지침서 8.1의 Score Hysteresis와 같은 장치다.

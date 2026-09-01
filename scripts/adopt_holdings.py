@@ -3,7 +3,7 @@
 ## 왜 필요한가
 
 검증 스크립트나 손매매로 산 종목은 증권사 계좌에만 있고 우리 DB엔 없다.
-그런데 **엔진은 자기가 모르는 종목을 팔지 않는다** — 손절도, 보유일수
+그런데 **엔진은 자기가 모르는 종목을 팔지 않는다**. 손절도, 보유일수
 청산도, 매도 신호도 전부 `positions` 테이블에 있는 종목에만 걸린다.
 그래서 그 주식은 아무도 안 지키는 채로 남는다. 값이 반토막 나도 아무 일도
 일어나지 않는다.
@@ -69,13 +69,13 @@ def main() -> int:
     parser.add_argument(
         "--fix-quantity", action="append", default=[], metavar="SYMBOL",
         help="이 종목의 수량을 **계좌 값으로 덮는다.** 여러 번 줄 수 있다. "
-             "원인을 확인한 뒤에만 쓸 것 — 부분 체결·손매매·버그가 겉모습이 같다.",
+             "원인을 확인한 뒤에만 쓸 것: 부분 체결·손매매·버그가 겉모습이 같다.",
     )
     parser.add_argument(
         "--entry-date",
         type=date.fromisoformat,
         default=None,
-        help="매수일 (YYYY-MM-DD). 기본은 오늘 — 보유일수 청산이 이 날짜부터 센다.",
+        help="매수일 (YYYY-MM-DD). 기본은 오늘: 보유일수 청산이 이 날짜부터 센다.",
     )
     args = parser.parse_args()
 

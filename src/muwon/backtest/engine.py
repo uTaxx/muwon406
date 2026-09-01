@@ -181,7 +181,7 @@ class BacktestEngine:
 
         for current_date in all_dates:
             if trade_from is not None and current_date < trade_from:
-                continue  # 지표 예열 구간 — 매매도 평가금액 기록도 하지 않는다
+                continue  # 지표 예열 구간: 매매도 평가금액 기록도 하지 않는다
 
             opens_today = {
                 symbol: df.loc[current_date, "open"]

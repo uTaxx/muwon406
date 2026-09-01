@@ -41,7 +41,7 @@ class PeriodWindow:
 
 
 def yearly_windows(start_year: int, end_year: int) -> list[PeriodWindow]:
-    """연 단위 구간 — 상승장/하락장이 해마다 다르므로 가장 읽기 쉬운 분할이다."""
+    """연 단위 구간: 상승장/하락장이 해마다 다르므로 가장 읽기 쉬운 분할이다."""
     return [
         PeriodWindow(label=str(year), trade_from=date(year, 1, 1), end=date(year, 12, 31))
         for year in range(start_year, end_year + 1)
@@ -49,7 +49,7 @@ def yearly_windows(start_year: int, end_year: int) -> list[PeriodWindow]:
 
 
 def half_year_windows(start_year: int, end_year: int) -> list[PeriodWindow]:
-    """반기 단위 — 구간을 더 잘게 쪼개 우연히 맞은 경우를 더 잘 드러낸다."""
+    """반기 단위: 구간을 더 잘게 쪼개 우연히 맞은 경우를 더 잘 드러낸다."""
     windows = []
     for year in range(start_year, end_year + 1):
         windows.append(
@@ -87,7 +87,7 @@ class RobustnessResult:
 
     @property
     def worst_return_pct(self) -> float:
-        """최악 구간의 수익률 — 실전에서 버틸 수 있는지를 가르는 값."""
+        """최악 구간의 수익률: 실전에서 버틸 수 있는지를 가르는 값."""
         return min(self.returns) if self.returns else 0.0
 
     @property

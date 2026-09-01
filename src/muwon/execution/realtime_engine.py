@@ -69,7 +69,7 @@ class RealtimeTradingEngine:
         self._started = False
 
     def start(self) -> None:
-        """장 시작 시 한 번 호출 — DB에서 현금/기준평가금액을 읽어와
+        """장 시작 시 한 번 호출: DB에서 현금/기준평가금액을 읽어와
         메모리에 올린다. 이후 거래가 있을 때마다 DB에도 즉시 반영되므로,
         중간에 프로세스가 죽어도 다음 start()에서 이어받는다."""
         self._cash, self._day_start_equity = state_repository.load_engine_state(
@@ -145,8 +145,8 @@ class RealtimeTradingEngine:
             symbol=symbol,
             quantity=order.quantity,
             entry_price=order.price,
-            entry_date=date.today(),  # noqa: DTZ011 — 기록용, tz 무관
-            entered_at=datetime.utcnow(),  # noqa: DTZ003 — 기록용, tz 무관
+            entry_date=date.today(),  # noqa: DTZ011 (기록용, tz 무관)
+            entered_at=datetime.utcnow(),  # noqa: DTZ003 (기록용, tz 무관)
             entry_reason=buy_signals[0].reason,
             strategy_key=self._strategy.name,
         )
@@ -174,7 +174,7 @@ class RealtimeTradingEngine:
             매도알림(
                 ticker.name, position.symbol, order, reason,
                 진입가=position.entry_price, 진입일=position.entry_date,
-                판날=date.today(),  # noqa: DTZ011 — 알림 표시용, tz 무관
+                판날=date.today(),  # noqa: DTZ011 (알림 표시용, tz 무관)
                 장중=True,
             )
         )

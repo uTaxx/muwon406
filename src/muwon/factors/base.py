@@ -29,7 +29,7 @@ class Factor(ABC):
         self.params = params or {}
         # 빈 데이터로 한 번 예열해 내부 표를 만들어 둔다. warmup을 안 부르고
         # score부터 호출해도 알 수 없는 AttributeError 대신 "데이터 부족"으로
-        # 떨어지게 하려는 것 — 잘못 쓴 쪽이 원인을 바로 알 수 있어야 한다.
+        # 떨어지게 하려는 것: 잘못 쓴 쪽이 원인을 바로 알 수 있어야 한다.
         self.warmup({})
 
     def warmup(self, histories: dict[str, pd.DataFrame]) -> None:

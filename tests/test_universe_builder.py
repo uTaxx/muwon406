@@ -26,7 +26,7 @@ def test_accepts_ordinary_stocks():
 
 def test_rejects_etf_etn_spac_and_preferred_stocks():
     """개별 종목 전략(이동평균·RSI)의 전제가 안 맞거나, 추세 자체가 없는
-    상품들 — 유니버스에 섞이면 신호가 오염된다."""
+    상품들: 유니버스에 섞이면 신호가 오염된다."""
     rejected = [
         "KODEX 200",  # ETF
         "TIGER 미국나스닥100",

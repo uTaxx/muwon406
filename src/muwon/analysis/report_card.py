@@ -1,4 +1,4 @@
-"""전략 성적표 — 지금까지 잰 것을 한 장에 모아 둔다.
+"""전략 성적표: 지금까지 잰 것을 한 장에 모아 둔다.
 
 왜 필요한가. 실험 결과가 세 군데에 흩어져 있다. 숫자는 GitHub Actions
 로그(만료된다)와 아티팩트에, 판단은 설계안 문서에, 가설의 채택·기각은 구글
@@ -107,7 +107,7 @@ def _row(item: dict) -> Row:
     if 빠진것:
         raise ValueError(f"성적표 항목에 빠진 칸: {sorted(빠진것)} ({item.get('키', '?')})")
     if item["판정"] not in VERDICTS:
-        raise ValueError(f"모르는 판정: {item['판정']} — {sorted(VERDICTS)} 중 하나여야 합니다")
+        raise ValueError(f"모르는 판정: {item['판정']}: {sorted(VERDICTS)} 중 하나여야 합니다")
     return Row(**{f: item[f] for f in Row.__annotations__})
 
 

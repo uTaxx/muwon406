@@ -44,7 +44,7 @@ class TelegramNotifier:
         # 더 보낸다. 링크가 없는 것보다 알림이 통째로 안 가는 쪽이 훨씬 나쁘다.
         try:
             보내기(footer.하이퍼(message), "HTML")
-        except Exception as e:  # noqa: BLE001 — 무엇이 거절이든 평문으로 되돌린다
+        except Exception as e:  # noqa: BLE001 (무엇이 거절이든 평문으로 되돌린다)
             logger.warning(f"HTML 알림이 거절당해 평문으로 다시 보냅니다: {type(e).__name__}: {e}")
             보내기(footer.평문(message), None)
 

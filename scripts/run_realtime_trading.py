@@ -63,7 +63,7 @@ async def main() -> None:
     engine.start()
 
     symbols = [t.symbol for t in UNIVERSE]
-    logger.info(f"실시간 매매 시작 — {len(symbols)}종목 구독")
+    logger.info(f"실시간 매매 시작: {len(symbols)}종목 구독")
 
     def make_stream():
         # 재연결마다 approval_key도 새로 받는다. 오래 붙들고 있으면 만료될 수 있어서다.

@@ -185,7 +185,7 @@ def save_snapshot(
     metrics는 kind에 따라 뜻이 다르다. 시총 기준이면 시가총액(억원),
     거래 기준이면 누적거래대금(백만원). 컬럼을 나눠 담아 나중에 표를 읽는
     사람이 어느 쪽 숫자인지 헷갈리지 않게 한다."""
-    snapshot_at = datetime.utcnow()  # noqa: DTZ003 — 기록용, tz 무관
+    snapshot_at = datetime.utcnow()  # noqa: DTZ003 (기록용, tz 무관)
     with session_factory() as session:
         for rank, ticker in enumerate(tickers, start=1):
             value = metrics.get(ticker.symbol, 0)
@@ -226,7 +226,7 @@ def load_latest_universe(session_factory, kind: str = KIND_MARKET_CAP) -> list[T
 def active_universe(
     session_factory, fallback: list[Ticker], kind: str = KIND_MARKET_CAP
 ) -> list[Ticker]:
-    """실제 매매에 쓸 유니버스 — 스냅샷이 있으면 그걸, 없으면 fallback을 쓴다.
+    """실제 매매에 쓸 유니버스: 스냅샷이 있으면 그걸, 없으면 fallback을 쓴다.
 
     kind 기본값이 market_cap인 것이 중요하다. 실험용으로 거래 기준 목록을
     저장해도 실거래가 그걸 집어 가면 안 된다. 실계좌의 매매 대상이 실험

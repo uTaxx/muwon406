@@ -55,8 +55,8 @@ class KISOrderExecutor(OrderExecutor):
         for attempt in range(_FILL_LOOKUP_ATTEMPTS):
             try:
                 fill = self._client.get_fill(order.order_id)
-            except Exception as e:  # noqa: BLE001 — 조회 실패가 매매를 멈춰선 안 된다
-                logger.warning(f"체결 조회 실패({order.order_id}): {e} — 기준가로 기록합니다.")
+            except Exception as e:  # noqa: BLE001 (조회 실패가 매매를 멈춰선 안 된다)
+                logger.warning(f"체결 조회 실패({order.order_id}): {e}: 기준가로 기록합니다.")
                 return order
 
             if fill is not None and not fill.is_unfilled:
@@ -91,7 +91,7 @@ class KISOrderExecutor(OrderExecutor):
                 self._sleep(_FILL_LOOKUP_DELAY_SECONDS)
 
         logger.warning(
-            f"체결 내역을 확인하지 못했습니다({order.order_id}) — 기준가 "
+            f"체결 내역을 확인하지 못했습니다({order.order_id}): 기준가 "
             f"{order.price:,.0f}원으로 기록합니다. 미체결이거나 반영이 늦을 수 있습니다."
         )
         return order

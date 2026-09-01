@@ -103,7 +103,7 @@ from muwon.strategy.registry import build_strategy, get_definition, list_definit
 def 전략이름(키: str) -> str:
     try:
         return get_definition(키).화면이름
-    except Exception:  # noqa: BLE001 — 이름을 못 찾는다고 검토가 죽으면 안 된다
+    except Exception:  # noqa: BLE001 (이름을 못 찾는다고 검토가 죽으면 안 된다)
         return 키
 
 
@@ -419,7 +419,7 @@ def main() -> int:
                   f"{인자.추적일수}일 지난 것 {센것}줄 계산"
                   f"(계산 못 한 것 {못센것}줄)")
             print(f"■ {추적글}\n")
-        except Exception as 탈:  # noqa: BLE001 — 추적이 터져도 오늘 검토는 나가야 한다
+        except Exception as 탈:  # noqa: BLE001 (추적이 터져도 오늘 검토는 나가야 한다)
             session.rollback()
             print(f"그림자 추적 실패: {type(탈).__name__}: {탈}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
@@ -441,7 +441,7 @@ def main() -> int:
             if 올릴추적:
                 올린수 = append(sheet_id, 추적탭, 추적머리, 올릴추적)
                 print(f"시트 '{추적탭}'에 {올린수}줄 올렸습니다.", file=sys.stderr)
-        except Exception as 탈:  # noqa: BLE001 — 시트가 막혀도 알림은 가야 한다
+        except Exception as 탈:  # noqa: BLE001 (시트가 막혀도 알림은 가야 한다)
             print(f"시트 기록 실패: {type(탈).__name__}: {탈}", file=sys.stderr)
 
     cfg = service.get_telegram_config()
@@ -474,6 +474,6 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except SystemExit:
         raise
-    except Exception:  # noqa: BLE001 — 무엇이 터지든 로그에 남아야 한다
+    except Exception:  # noqa: BLE001 (무엇이 터지든 로그에 남아야 한다)
         traceback.print_exc()
         raise SystemExit(1) from None

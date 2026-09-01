@@ -1,7 +1,7 @@
 """증권사에만 있는 보유 종목을 우리 기록으로 들일 때의 판단.
 
 `scripts/adopt_holdings.py`가 쓴다. 여기 규칙이 틀리면 **엔진이 실제와 다른
-보유 상태 위에서 손절을 건다** — 없는 종목을 팔려 하거나, 있는 종목을
+보유 상태 위에서 손절을 건다**. 없는 종목을 팔려 하거나, 있는 종목을
 안 지킨다. 그래서 스크립트에 묻어 두지 않고 꺼내서 테스트로 고정한다.
 
 규칙은 셋이다.
@@ -30,7 +30,7 @@ from muwon.domain.types import Holding
 #: 안 된다. `trades`를 전략별로 볼 때 이게 섞이면 판단이 오염된다.
 ADOPTED = "adopted"
 
-ENTRY_REASON = "증권사 잔고에서 들임 — 우리 주문 기록 없음"
+ENTRY_REASON = "증권사 잔고에서 들임: 우리 주문 기록 없음"
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class 수량다름:
 class 들이기계획:
     들일것: list[PositionRow]
     수량다른것: list[수량다름]
-    #: 들일 종목의 표시용 이름 — PositionRow에는 이름 자리가 없다.
+    #: 들일 종목의 표시용 이름: PositionRow에는 이름 자리가 없다.
     이름표: dict[str, str]
     #: 사람이 이름을 줘서 수량을 계좌 값으로 맞출 종목. 기본은 비어 있다.
     맞출것: list[PositionRow] = field(default_factory=list)
@@ -139,7 +139,7 @@ def plan(
 
 
 def 맞출평가금(현금: float, holdings: list[Holding]) -> float:
-    """들인 뒤의 기준평가금 — 현금 + 증권사 보유 전부의 평가금액.
+    """들인 뒤의 기준평가금: 현금 + 증권사 보유 전부의 평가금액.
 
     일일 손실한도가 "오늘 얼마나 잃었나"를 이 기준점에서 잰다. 안 맞추면
     종목을 들이는 순간 그만큼 손실이 난 것처럼 보여서, 아무 일도 안 했는데

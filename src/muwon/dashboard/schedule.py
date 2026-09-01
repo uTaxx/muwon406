@@ -175,7 +175,7 @@ def upcoming(now: datetime | None = None, workflow_dir: Path | None = None) -> l
                     설명문=describe_cron(cron),
                 )
             )
-    # 가까운 것부터. 예정을 못 구한 건 뒤로 — 화면 맨 위는 '다음에 일어날 일'이어야 한다.
+    # 가까운 것부터. 예정을 못 구한 건 뒤로: 화면 맨 위는 '다음에 일어날 일'이어야 한다.
     jobs.sort(key=lambda j: (j.다음실행 is None, j.다음실행 or now))
     return jobs
 

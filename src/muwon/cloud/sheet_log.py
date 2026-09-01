@@ -16,7 +16,7 @@
 
 ## 덧붙이기만 하고 지우지 않는다
 
-지난 줄을 고치지 않는다. **기록을 고칠 수 있으면 기록이 아니다** — 나중에
+지난 줄을 고치지 않는다. **기록을 고칠 수 있으면 기록이 아니다**. 나중에
 "그때 왜 샀지"를 볼 때 믿을 수 있어야 한다. 잘못 들어간 줄이 있으면 지우지
 말고 다음 줄에 정정을 남긴다.
 
@@ -295,7 +295,7 @@ def only_new(있는열쇠: Iterable[str], 후보: Sequence[Sequence[str]]) -> li
 # ── 여기부터는 구글에 붙는다 ────────────────────────────────────────
 
 
-def _service():  # pragma: no cover — 실제 호출은 시험하지 않는다
+def _service():  # pragma: no cover: 실제 호출은 시험하지 않는다
     from googleapiclient.discovery import build
 
     from muwon.cloud.sector_sheet import _credentials
