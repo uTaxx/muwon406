@@ -1,6 +1,6 @@
 """등록된 전략 가설들을 같은 데이터·같은 기간에 대해 비교하는 로직.
 
-scripts/run_hypothesis_sweep.py(사람이 손으로 돌리는 스윕)와
+scripts/run_hypothesis_sweep.py(사람이 손으로 실행하는 스윕)와
 scripts/run_daily_review.py(하루 매매가 끝날 때마다 자동으로 도는 리뷰)가
 이 모듈의 sweep_strategies()를 그대로 공유한다. "다른 전략이었으면
 수익률이 어땠을까"라는 질문에 답하는 계산이 두 스크립트에서 같아야

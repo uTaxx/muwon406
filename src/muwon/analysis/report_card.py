@@ -1,11 +1,11 @@
-"""전략 성적표: 지금까지 잰 것을 한 장에 모아 둔다.
+"""전략 전략 평가 결과: 지금까지 잰 것을 한 장에 모아 둔다.
 
 왜 필요한가. 실험 결과가 세 군데에 흩어져 있다. 숫자는 GitHub Actions
 로그(만료된다)와 아티팩트에, 판단은 설계안 문서에, 가설의 채택·기각은 구글
 시트에. 그래서 "이 전략 써도 되나"를 물으면 세 곳을 다 뒤져야 하고, 코드를
 안 보는 사람은 애초에 접근할 수가 없다.
 
-이 파일은 **재계산하지 않는다.** 실제로 돌린 실험의 결과를 그대로 적어 둔
+이 파일은 **재계산하지 않는다.** 실제로 실행한 실험의 결과를 그대로 적어 둔
 기록이다. 그래서 항목마다 어느 실행에서 나온 숫자인지(`실행`, `커밋`)를
 같이 둔다. 출처 없는 숫자는 나중에 검증할 수가 없다.
 
@@ -105,14 +105,14 @@ def 판정하기(최악: float, 거래: int) -> str:
 def _row(item: dict) -> Row:
     빠진것 = {f for f in Row.__annotations__ if f not in item}
     if 빠진것:
-        raise ValueError(f"성적표 항목에 빠진 칸: {sorted(빠진것)} ({item.get('키', '?')})")
+        raise ValueError(f"전략 평가 결과 항목에 빠진 칸: {sorted(빠진것)} ({item.get('키', '?')})")
     if item["판정"] not in VERDICTS:
         raise ValueError(f"모르는 판정: {item['판정']}: {sorted(VERDICTS)} 중 하나여야 합니다")
     return Row(**{f: item[f] for f in Row.__annotations__})
 
 
 def load(path: Path | None = None) -> ReportCard:
-    """성적표를 읽는다. 형식이 틀리면 조용히 넘어가지 않고 터뜨린다.
+    """전략 평가 결과를 읽는다. 형식이 틀리면 조용히 넘어가지 않고 터뜨린다.
     반쯤 비어 있는 표는 없는 것보다 나쁘다."""
     data = json.loads((path or DEFAULT_PATH).read_text(encoding="utf-8"))
     return ReportCard(

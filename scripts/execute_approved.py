@@ -196,7 +196,7 @@ def main() -> int:
         # 흉내 실행에는 증권사가 없어서 지금 값을 물어볼 곳도 없다.
         지금값 = None
         print("■ --dry-run: 야후 시세로 주문 흉내만 냅니다. KIS에 안 붙습니다.")
-        print("■ 손절은 어제 종가로 잽니다 (지금 값을 물어볼 곳이 없습니다).")
+        print("■ 손절은 어제 종가로 계산합니다 (지금 값을 물어볼 곳이 없습니다).")
     else:
         from muwon.execution.kis_order_executor import KISOrderExecutor
 
@@ -214,7 +214,7 @@ def main() -> int:
         def 지금값():
             return {h.symbol: h.current_price for h in client.get_balance().holdings}
 
-        print("■ 손절은 어제 종가가 아니라 지금 값으로 잽니다.")
+        print("■ 손절은 어제 종가가 아니라 지금 값으로 계산합니다.")
 
     engine = TradingEngine(
         strategy=strategy,

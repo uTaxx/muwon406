@@ -100,7 +100,7 @@ def test_the_parser_handles_an_empty_response():
 
 
 def test_saving_the_same_day_twice_does_not_double_the_rows(tmp_path):
-    """수집이 도중에 끊겨 다시 돌리는 일이 잦을 텐데, 그때마다 줄이 두 배로
+    """수집이 도중에 끊겨 다시 실행하는 일이 잦을 텐데, 그때마다 줄이 두 배로
     늘면 나중에 쓸 수가 없다."""
     db = tmp_path / "intraday.db"
     칸들 = aggregate("005930", date(2026, 8, 19), [_분("0901", 1, 2, 1, 2)])

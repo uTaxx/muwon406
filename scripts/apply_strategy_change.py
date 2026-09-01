@@ -14,7 +14,7 @@
 ## 바꾸면 보유 종목은 어떻게 되나
 
 **바로 새 규칙으로 팔린다.** 엔진의 청산 판단은 보유 종목이 어떤 전략으로
-들어왔는지가 아니라 지금 걸린 전략을 본다. 그래서 바꾸는 순간 들고 있는
+들어왔는지가 아니라 지금 설정된 전략을 본다. 그래서 바꾸는 순간 들고 있는
 것에도 적용된다. 이 사실을 반영 알림에 같이 적는다.
 
 ## 아무것도 안 하는 날이 대부분이다
@@ -180,7 +180,7 @@ def main() -> int:
     고름 = service.get_strategy_selection()
     지금키 = (고름.active_keys or ("",))[0]
     아는것 = [ㅈ.key for ㅈ in list_definitions()]
-    print(f"■ 지금 걸린 전략  {전략이름(지금키)} ({지금키})")
+    print(f"■ 지금 설정된 전략  {전략이름(지금키)} ({지금키})")
 
     ensure_schema(bootstrap_settings.database_url)
     session_factory = make_session_factory(bootstrap_settings.database_url)

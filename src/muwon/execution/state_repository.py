@@ -68,7 +68,7 @@ def record_signals(session_factory, signals) -> int:
     그 구분이 안 돼서 한참 헤맸다. 여기서 남기는 건 매수/매도 신호가 실제로
     떴는지이고, 그게 떴는데도 안 샀다면 이유는 run_logs.rejections에 있다.
 
-    같은 날 두 번 돌리면 같은 신호가 두 줄 남는다. 합치지 않는다.
+    같은 날 두 번 실행하면 같은 신호가 두 줄 남는다. 합치지 않는다.
     실행 자체가 두 번 있었다는 것도 사실이기 때문이다."""
     if not signals:
         return 0

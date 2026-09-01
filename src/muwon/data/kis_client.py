@@ -711,7 +711,7 @@ class KISClient(MarketDataSource):
 
         ## 2026-08-26에 실제로 그렇게 막혔다
 
-        처음 쓴 코드는 예외만 -1로 돌렸고, **거부 응답과 빈 칸은 그대로 0**이
+        처음 쓴 코드는 예외만 -1로 실행했고, **거부 응답과 빈 칸은 그대로 0**이
         됐다. rt_cd를 안 봤고 `or 0`이 빈 값을 0으로 눌렀다.
 
             output = response.json().get("output") or {}

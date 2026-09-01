@@ -265,7 +265,7 @@ def daily_rows(
     날짜: date, 매수: int, 매도: int, 거부: int,
     평가액: float | None = None, 현금: float | None = None, 메모: str = "",
 ) -> list[list[str]]:
-    """하루 한 줄. 열쇠가 날짜라서 **같은 날 두 번 돌려도 한 줄이다.**"""
+    """하루 한 줄. 열쇠가 날짜라서 **같은 날 두 번 실행해도 한 줄이다.**"""
     return [[
         f"D{날짜.isoformat()}",
         날짜.isoformat(),

@@ -1,4 +1,4 @@
-"""전략 실험을 돌리고 비교하는 실행기.
+"""전략 실험을 실행하고 비교하는 실행기.
 
 지금까지 가설 하나를 확인할 때마다 스크립트를 새로 짰다. 그러다 보니 조건이
 조금씩 달라져(예열을 줬는지, 어느 유니버스인지) 결과끼리 비교가 안 되는 일이
@@ -11,7 +11,7 @@
    비교 자체가 성립하지 않고, 매번 받으면 실험이 느려 실험을 안 하게 된다.
 2. 항상 예열 구간을 준다. 지표가 덜 채워진 채 시작하면 그 차이가 결과로
    증폭된다.
-3. 구간별로 나눠 돌린다. 한 구간 결과는 우연일 수 있다. donchian_20_10이
+3. 구간별로 나눠 실행한다. 한 구간 결과는 우연일 수 있다. donchian_20_10이
    +59%로 1등이었다가 다기간 검증에서 뒤집힌 적이 있다.
 """
 
@@ -51,7 +51,7 @@ class PeriodResult:
 
 @dataclass(frozen=True)
 class ExperimentResult:
-    """한 설정을 여러 구간에 돌린 결과."""
+    """한 설정을 여러 구간에 실행한 결과."""
 
     name: str
     periods: list[PeriodResult] = field(default_factory=list)
@@ -117,7 +117,7 @@ def run_experiment(
     exit_at_open: bool = False,
     entry_at_open: bool = False,
 ) -> ExperimentResult:
-    """같은 설정을 연도별로 각각 돌린다.
+    """같은 설정을 연도별로 각각 실행한다.
 
     strategy_factory는 매번 새 전략을 만들어야 한다. 전략이 예열 결과를
     내부에 들고 있어서, 같은 객체를 여러 구간에 재사용하면 앞 구간 데이터가
@@ -183,7 +183,7 @@ def weight_sweep(
     years: list[int],
     policy: RiskPolicy | None = None,
 ) -> list[ExperimentResult]:
-    """한 Factor의 가중치만 바꿔 가며 돌린다.
+    """한 Factor의 가중치만 바꿔 가며 실행한다.
 
     나머지 가중치는 그대로 두지만, 합계가 100이 아니어도 점수 엔진이
     재정규화하므로 '이 Factor의 상대 비중'만 달라지는 효과가 된다."""
@@ -216,7 +216,7 @@ def slippage_sweep(
     years: list[int],
     policy: RiskPolicy | None = None,
 ) -> list[ExperimentResult]:
-    """체결가 가정만 바꿔 가며 돌린다.
+    """체결가 가정만 바꿔 가며 실행한다.
 
     지금까지 낸 모든 숫자는 "종가에 원하는 만큼 체결됐다"는 가정 위에 있다.
     회전율이 높은 전략일수록 이 가정이 결과를 크게 부풀린다. 1년에 250번
@@ -246,7 +246,7 @@ def take_profit_sweep(
     years: list[int],
     policy: RiskPolicy | None = None,
 ) -> list[ExperimentResult]:
-    """익절선만 바꿔 가며 돌린다.
+    """익절선만 바꿔 가며 실행한다.
 
     이 시스템에는 익절이 아예 없었다. 오르는 중이면 손절이나 보유 기간에
     걸릴 때까지 그대로 들고 갔다. volume_surge_5d는 파는 조건이 시간이라
@@ -280,7 +280,7 @@ def param_sweep(
     policy: RiskPolicy | None = None,
     base_params: dict | None = None,
 ) -> list[ExperimentResult]:
-    """한 Factor의 파라미터 하나만 바꿔 가며 돌린다.
+    """한 Factor의 파라미터 하나만 바꿔 가며 실행한다.
 
     가중치 스윕(weight_sweep)이 '이 변수를 얼마나 믿을 것인가'를 묻는다면,
     이건 '이 변수를 어떻게 계산할 것인가'를 묻는다. 국면 판정 기준을 바꾸는

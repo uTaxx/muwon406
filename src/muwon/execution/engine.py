@@ -4,9 +4,9 @@ BacktestEngine과 최대한 같은 판단 로직(진입 조건, 손절, 비중 �
 손익 기준 서킷브레이커)을 쓰지만, 여긴 프로세스가 매번 새로 떠도 상태
 (포지션·가상현금)가 이어져야 하므로 DB(positions/engine_state 테이블)에
 둔다. run_once()는 하루에 한 번, **개장 직후** 호출하는 걸 전제로 한다.
-전략이 일봉 기준이라 더 자주 돌릴 이유가 없고, 판단은 어제까지의 완성된
+전략이 일봉 기준이라 더 자주 실행할 이유가 없고, 판단은 어제까지의 완성된
 일봉으로 하되 주문은 장이 열려 있을 때 넣어야 체결되기 때문이다. (장 마감
-시각에 돌리면 판단할 데이터는 완전하지만 주문을 넣을 시장이 없다.)
+시각에 실행하면 판단할 데이터는 완전하지만 주문을 넣을 시장이 없다.)
 
 가상현금(engine_state.cash)은 KIS 실계좌 잔고를 조회하는 대신 이 엔진이
 자체적으로 기록하는 값이다. KIS 잔고조회 API 연동은 이 MVP 범위 밖이라,
@@ -338,7 +338,7 @@ class TradingEngine:
             try:
                 현재가 = {ㄱ: float(ㄴ) for ㄱ, ㄴ in (self._현재가공급자() or {}).items() if ㄴ}
             except Exception as e:  # noqa: BLE001 (시세를 못 물어봐도 회차는 돌아야 한다)
-                logger.warning(f"지금 값을 못 물어봤습니다. 어제 종가로 손절을 잽니다: {e}")
+                logger.warning(f"지금 값을 못 물어봤습니다. 어제 종가로 손절을 계산합니다: {e}")
 
         summary = RunSummary(run_date=run_date, checked_symbols=len(latest_prices))
         cash, day_start_equity = state_repository.load_engine_state(

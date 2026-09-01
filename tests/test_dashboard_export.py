@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 def test_뽑아둔_자료가_파이썬_원본과_같다():
-    """다르면 `python scripts/export_dashboard_data.py`를 돌리고 같이 커밋한다."""
+    """다르면 `python scripts/export_dashboard_data.py`를 실행하고 같이 커밋한다."""
     끝난것 = subprocess.run(
         [sys.executable, "scripts/export_dashboard_data.py", "--check"],
         cwd=뿌리, capture_output=True, text=True, check=False,

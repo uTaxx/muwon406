@@ -82,7 +82,7 @@ def main() -> int:
     # **텔레그램에서는 매매를 켤 수 없게 막아 뒀다**(폰에서 손가락이
     # 미끄러지면 안 되므로). 그래서 켜는 길이 시트·대시보드뿐이었는데,
     # 둘 다 사람 손이 필요하다. 여기를 하나 더 둔다. 다만 **워크플로를
-    # 손으로 돌려야** 하므로 실수로 켜지지는 않는다.
+    # 손으로 실행해야** 하므로 실수로 켜지지는 않는다.
     if args.set:
         from muwon.cloud.sector_sheet import update_setting
         from muwon.settings.from_sheet import SettingsError, 기준표, 해석값

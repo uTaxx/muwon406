@@ -68,13 +68,13 @@ def test_saving_twice_does_not_duplicate(tmp_path):
 
 
 def test_rerunning_never_erases_an_actual_result(tmp_path):
-    """다시 돌렸다고 답이 사라지면 적중 기록이 통째로 날아간다."""
+    """다시 실행했다고 답이 사라지면 적중 기록이 통째로 날아간다."""
     db = tmp_path / "f.db"
     save([_줄()], db)
     fill_actuals(lambda 대상, 기준일, 지평: 3.5, db, today=date(2026, 2, 5))
     save([_줄()], db)  # 같은 날 전망을 다시 계산해 덮어씀
     (되읽은것,) = load(db)
-    assert 되읽은것.실제수익 == 3.5, "다시 돌리자 실제 결과가 지워졌다"
+    assert 되읽은것.실제수익 == 3.5, "다시 실행하자 실제 결과가 지워졌다"
 
 
 def test_actuals_are_only_filled_when_the_horizon_has_passed(tmp_path):

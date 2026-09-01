@@ -583,7 +583,7 @@ def render_admin_tab(service: SettingsService) -> None:
         st.caption("매수·매도가 체결되거나 오류가 나면 텔레그램으로 바로 알려 줍니다.")
         render_telegram_tab(service)
 
-    with section("📋", "매매 기준", "모의투자를 돌리기 전에 정해 둬야 하는 값들"):
+    with section("📋", "매매 기준", "모의투자를 실행하기 전에 정해 둬야 하는 값들"):
         st.caption(
             "**구글 시트가 원본입니다.** 여기서 고치면 시트가 바뀌고, 다음 실행부터 "
             "그 값으로 돕니다. 텔레그램에서 `/설정 <이름> <값>`으로도 같은 일을 할 수 "
@@ -637,7 +637,7 @@ def render_admin_tab(service: SettingsService) -> None:
 def 화면버전() -> str:
     """지금 화면이 어느 커밋으로 돌고 있는지.
 
-    왜 필요한가. 배포된 대시보드가 **18개 커밋 전 코드**를 그대로 돌리고
+    왜 필요한가. 배포된 대시보드가 **18개 커밋 전 코드**를 그대로 실행하고
     있던 적이 있다. 화면만 봐서는 알 길이 없어서 "고쳤는데 왜 그대로냐"를
     한참 헤맸다. 코드는 멀쩡한데 배포가 안 따라온 것이었다.
 
@@ -766,7 +766,7 @@ def render_daily_strategy(service: SettingsService) -> None:
 def render_realtime_tab() -> None:
     """실시간(장중) 매매: 아직 매매하지 않는다. 무엇을 검증 중인지를 보인다.
 
-    일단위 매매 화면과 달리 여기엔 성적표가 없다. 성적이 하나도 없기
+    일단위 매매 화면과 달리 여기엔 전략 평가 결과가 없다. 성적이 하나도 없기
     때문이다. 그런데 빈 표를 띄우면 "고장인가"로 읽힌다. 그래서 대신
     **왜 아직 성적이 없는지**를 화면 맨 위에 둔다."""
     try:
@@ -814,7 +814,7 @@ def render_realtime_tab() -> None:
     ):
         if not 계획.검증:
             st.info(
-                "아직 없습니다. 위 후보 중 '지금 가능'인 것부터 잽니다. "
+                "아직 없습니다. 위 후보 중 '지금 가능'인 것부터 계산합니다. "
                 "새 데이터를 모으지 않고도 잴 수 있는 것들입니다."
             )
         for 항목 in 계획.검증:
@@ -1212,7 +1212,7 @@ def render_report_card() -> None:
     try:
         카드 = report_card.load()
     except (OSError, ValueError, KeyError) as e:
-        st.error(f"성적표를 읽지 못했습니다: {e}")
+        st.error(f"전략 평가 결과를 읽지 못했습니다: {e}")
         return
 
     기준 = 카드.기준

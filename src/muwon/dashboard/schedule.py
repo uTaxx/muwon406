@@ -198,7 +198,7 @@ def automation_state(policy, now: datetime | None = None) -> tuple[str, str, str
         return (
             "자동 실행 꺼짐",
             "orange",
-            "자동 실행 일정이 꺼져 있습니다. 손으로 돌리지 않는 한 아무 일도 일어나지 않습니다.",
+            "자동 실행 일정이 꺼져 있습니다. 손으로 실행하지 않는 한 아무 일도 일어나지 않습니다.",
         )
     if not policy.trading_enabled:
         return (

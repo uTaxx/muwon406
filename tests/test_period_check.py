@@ -160,7 +160,7 @@ def test_검증용정책은_스위치_둘만_켠다():
     assert 바뀐것.trading_enabled is True
     assert 바뀐것.sell_enabled is True
     # 나머지는 그대로여야 한다. 지금 걸어 둔 기준으로 잰 숫자를 보는 것이
-    # 이 기능의 목적이라, 손절이나 비중까지 기본값으로 돌리면 뜻이 없어진다.
+    # 이 기능의 목적이라, 손절이나 비중까지 기본값으로 실행하면 뜻이 없어진다.
     assert 바뀐것 == replace(원본, trading_enabled=True, sell_enabled=True)
 
 
@@ -409,7 +409,7 @@ def test_신호글에_알아듣기_어려운_말을_안_쓴다():
 
     2026-08-28에 실제로 받아 보고 무슨 말인지 모르겠다는 말을 들었다.
     낙폭이라는 말을 풀어 쓰지 않았고, 이 저장소 안에서만 통하는 말인
-    성적표를 그대로 썼다."""
+    전략 평가 결과를 그대로 썼다."""
     from muwon.analysis.period_check import 신호글, 전략신호
 
     난것 = 전략신호(
@@ -484,7 +484,7 @@ def test_파는쪽만_갈아_끼워_비교할_수_있다():
     assert 파는키 == ["macd_cross", "ma_rsi_v1"]
     assert 비교하기 is False
 
-    # 사는 쪽도 파는 쪽도 다 돌리면 한 줄이 무엇을 바꾼 결과인지 알 수 없다.
+    # 사는 쪽도 파는 쪽도 다 실행하면 한 줄이 무엇을 바꾼 결과인지 알 수 없다.
     for 안되는것 in ("전부>전부", "volume_surge_3d,macd_cross>전부"):
         try:
             전략고르기(안되는것)

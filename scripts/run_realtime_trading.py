@@ -3,7 +3,7 @@
 장이 열려 있는 동안(09:00~15:30 KST) 계속 떠 있어야 하는 프로세스라
 VPS 등 상시 서버에서 실행한다. 하루 1회 배치(scripts/run_paper_trading.py,
 GitHub Actions)와는 완전히 다른 운영 모드다. 같은 계좌에 두 개를 동시에
-돌리지 말 것.
+실행하지 말 것.
 
 KIS 웹소켓은 이 프로젝트를 개발한 환경(비표준 포트 차단)에서 실제 접속
 검증을 못 했다. 처음 배포할 때는 로그를 보면서 실제로 틱이 들어오는지,
@@ -41,7 +41,7 @@ async def main() -> None:
     if creds.is_real:
         raise SystemExit(
             "kis.env가 'real'입니다. 모의투자로 충분히 검증하기 전엔 이 스크립트를 "
-            "real로 돌리지 마세요."
+            "real로 실행하지 마세요."
         )
     if not creds.app_key or not creds.app_secret or not creds.account_no:
         raise SystemExit("KIS 인증정보가 없습니다. python scripts/configure.py kis ...로 먼저 설정하세요.")

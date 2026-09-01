@@ -215,7 +215,7 @@ https://sondullab.app.n8n.cloud/workflow/7tSSThvQIsLiIsLk
 
 ---
 
-# 되실행하는 법
+# 되돌리는 법
 
 **텔레그램 워크플로를 Inactive로 바꾸면** 웹훅이 풀리고 옛 방식이 다시
 먹습니다. 그것만으로 원래대로 돌아갑니다.

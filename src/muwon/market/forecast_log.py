@@ -138,7 +138,7 @@ def row_from_forecast(f, 렌즈: str = "") -> LogRow:
 def save(rows: list[LogRow], path: Path = DEFAULT_PATH) -> int:
     """같은 (기준일, 대상, 지평)이 이미 있으면 덮어쓴다.
 
-    다만 **이미 채워 넣은 실제 결과는 지우지 않는다**. 다시 돌렸다고
+    다만 **이미 채워 넣은 실제 결과는 지우지 않는다**. 다시 실행했다고
     답이 사라지면 적중 기록이 통째로 날아간다."""
     if not rows:
         return 0

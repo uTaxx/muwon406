@@ -138,7 +138,7 @@ class TradeRow(Base):
 class BacktestRunRow(Base):
     """가설 스윕(scripts/run_hypothesis_sweep.py)이 남기는 백테스트 실행
     기록. 콘솔에 찍고 끝나면 다음 실행과 비교할 방법이 없어서, 같은 스키마로
-    누적 저장해 시간이 지나도(파라미터를 바꿔가며 여러 번 돌려도) 가설별
+    누적 저장해 시간이 지나도(파라미터를 바꿔가며 여러 번 실행해도) 가설별
     성과를 추적할 수 있게 한다."""
 
     __tablename__ = "backtest_runs"
@@ -195,7 +195,7 @@ class RunLogRow(Base):
     살 게 없었다"와 "오늘은 아예 안 돌았다". 둘은 고치는 방법이 정반대다.
     그래서 체결이 없어도 한 줄은 남긴다.
 
-    같은 날 손으로 여러 번 돌리면 줄도 여러 개 남는다. 합치지 않는다.
+    같은 날 손으로 여러 번 실행하면 줄도 여러 개 남는다. 합치지 않는다.
     "몇 번 돌았나"도 알아야 할 정보다."""
 
     __tablename__ = "run_logs"
@@ -286,7 +286,7 @@ class StrategyShadowRow(Base):
 
     ## 한 줄은 전략 하나다
 
-    같은 날 같은 구간에서 여러 줄이 나온다. 그때 걸려 있던 전략 한 줄과,
+    같은 날 같은 구간에서 여러 줄이 나온다. 그때 설정돼 있던 전략 한 줄과,
     그날 순위 위쪽 몇 줄이다. 비교하는 일은 읽을 때 한다. 저장할 때 미리
     빼 두면 나중에 다른 방식으로 비교하고 싶을 때 다시 잴 수가 없다.
 
@@ -310,7 +310,7 @@ class StrategyShadowRow(Base):
     전략: Mapped[str] = mapped_column(String(50), index=True)
     #: 그날 그 구간 순위에서 몇 번째였나. 1이 제일 좋았던 것이다.
     자리: Mapped[int] = mapped_column(Integer, default=0)
-    #: 그때 실제로 걸려 있던 전략인가.
+    #: 그때 실제로 설정돼 있던 전략인가.
     지금것: Mapped[bool] = mapped_column(Boolean, default=False)
     #: 그날 버튼으로 내보낸 후보인가.
     제안것: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -324,7 +324,7 @@ class StrategyShadowRow(Base):
     #: 뒤 수익률을 잰 날. 제안일부터 이 날까지를 잰다.
     잰날: Mapped[date | None] = mapped_column(Date, nullable=True)
     지난날수: Mapped[int] = mapped_column(Integer, default=0)
-    #: 제안일부터 잰날까지 이 전략을 걸었다면 나왔을 수익률.
+    #: 제안일부터 잰날까지 이 전략을 설정하었다면 나왔을 수익률.
     뒤수익률: Mapped[float | None] = mapped_column(Float, nullable=True)
     뒤거래수: Mapped[int] = mapped_column(Integer, default=0)
     뒤최대낙폭: Mapped[float | None] = mapped_column(Float, nullable=True)

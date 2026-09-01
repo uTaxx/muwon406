@@ -11,7 +11,7 @@
 
 ## 어긋나면 어떻게 아나
 
-배포 워크플로가 이 스크립트를 다시 돌려서 결과가 커밋된 것과 다르면
+배포 워크플로가 이 스크립트를 다시 실행해서 결과가 커밋된 것과 다르면
 **배포를 멈춘다.** 파이썬을 고치고 JSON을 안 뽑은 채로 올리면 화면이
 옛 설명을 계속 보여 주는데, 그건 조용히 틀리는 쪽이라 막아야 한다.
 
@@ -213,7 +213,7 @@ def main() -> int:
 
     if 어긋난것:
         print("파이썬 원본과 뽑아 둔 JSON이 다릅니다: " + ", ".join(어긋난것), file=sys.stderr)
-        print("python scripts/export_dashboard_data.py 를 돌리고 결과를 같이 커밋하세요.",
+        print("python scripts/export_dashboard_data.py 를 실행하고 결과를 같이 커밋하세요.",
               file=sys.stderr)
         return 1
     if 인자.check:

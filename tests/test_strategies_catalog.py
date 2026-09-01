@@ -324,9 +324,9 @@ def test_get_definition_unknown_key_raises_with_known_keys_listed():
 
 
 def _all_signals(definition_key, df):
-    """등록된 전략이 종목 단위든 유니버스 단위든 같은 방법으로 돌린다.
+    """등록된 전략이 종목 단위든 유니버스 단위든 같은 방법으로 실행한다.
 
-    두 종류가 공존하므로 테스트도 공통 경로(PortfolioStrategy)로 돌려야
+    두 종류가 공존하므로 테스트도 공통 경로(PortfolioStrategy)로 실행해야
     '등록된 전략은 전부 돈다'는 보장이 유지된다."""
     from muwon.strategy.portfolio import MarketContext, as_portfolio_strategy
 
@@ -355,7 +355,7 @@ def test_every_strategy_runs_on_realistic_series_without_error():
 
 def test_strategies_do_not_mutate_input_dataframe():
     """전략이 입력 DataFrame에 지표 컬럼을 덧붙여 버리면, 같은 데이터를
-    여러 전략에 돌리는 스윕에서 서로 오염된다."""
+    여러 전략에 실행하는 스윕에서 서로 오염된다."""
     df = rising_then_falling()
     original_columns = list(df.columns)
     original_len = len(df)
