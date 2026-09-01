@@ -77,6 +77,7 @@ from muwon.notify.telegram_buttons import 전략버튼, 전략상태블록, 전�
 from muwon.settings.from_sheet import build_policy_provider
 from muwon.settings.service import build_settings_service
 from muwon.strategy.registry import build_strategy, get_definition, list_definitions
+from muwon.text import 이가
 
 서울 = ZoneInfo("Asia/Seoul")
 
@@ -218,8 +219,12 @@ def 막는까닭(session, 오늘, 최소운용일: int) -> str:
     앞 = 승인.지금예약(session)
     if 앞 is not None:
         상태말 = "확정되어 반영을 기다리는" if 앞.상태 == 승인.확정 else "선택된"
+        # 조사를 글자로 박으면 안 된다. 전략 이름이 설정에서 오므로 무엇이
+        # 올지 모른다. 2026-09-01 17:50 첫 자동 실행에서 "변동성 돌파이 이미
+        # 확정되어"가 네 번 나갔다.
+        이름 = 전략이름(앞.새전략)
         return (
-            f"{전략이름(앞.새전략)}이 이미 {상태말} 상태입니다. "
+            f"{이름}{이가(이름)} 이미 {상태말} 상태입니다. "
             "먼저 반영하거나 취소한 뒤에 다시 검토합니다."
         )
     return ""
