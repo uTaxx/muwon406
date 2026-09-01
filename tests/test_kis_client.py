@@ -7,6 +7,7 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from muwon.data.kis_client import (
     _MIN_REQUEST_INTERVAL_PAPER,
@@ -547,3 +548,86 @@ def test_balance_keeps_raw_summary_for_eyeballing(mock_get):
 
     assert balance.raw_summary["thdt_buy_amt"] == "90100"
     assert balance.holdings[0].symbol == "403870"
+
+
+# ── 응답이 아예 오지 않을 때 ────────────────────────────────────────────────
+#
+# 2026-09-01 장중 손절 감시가 15:00과 15:15 두 차례 실패했다. 증권사가 10초
+# 안에 답을 주지 않았고, requests가 올린 ReadTimeout이 그대로 밖으로 나가
+# 실행 하나가 통째로 끝났다. 상태 코드를 보는 재시도는 응답이 있어야만
+# 동작하므로 이 경우를 못 잡는다.
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_조회가_시간초과되면_다시_보낸다(mock_get):
+    ok = MagicMock(status_code=200, json=lambda: {"output2": []})
+    ok.raise_for_status = lambda: None
+    mock_get.side_effect = [requests.exceptions.ReadTimeout("read timed out"), ok]
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    df = client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert len(df) == 0
+    assert mock_get.call_count == 2
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_조회가_연결끊김이어도_다시_보낸다(mock_get):
+    ok = MagicMock(status_code=200, json=lambda: {"output2": []})
+    ok.raise_for_status = lambda: None
+    mock_get.side_effect = [requests.exceptions.ConnectionError("연결이 끊겼습니다"), ok]
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert mock_get.call_count == 2
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_세_번_다_응답이_없으면_그대로_실패시킨다(mock_get):
+    """조용히 빈 값을 돌려주면 안 된다. 못 받은 것과 없는 것은 다르다."""
+    mock_get.side_effect = requests.exceptions.ReadTimeout("read timed out")
+
+    client = make_client()
+    client._min_request_interval = 0.0  # 호출 간격 대기가 섞이면 값을 못 본다
+    잔 = []
+    client._sleep = 잔.append
+
+    with pytest.raises(requests.exceptions.ReadTimeout):
+        client.get_daily_ohlcv("005930", date(2024, 1, 2), date(2024, 1, 3))
+
+    assert mock_get.call_count == 3  # _MAX_RETRIES
+    assert 잔 == [1.0, 2.0]  # 기다리는 시간이 시도마다 늘어난다
+
+
+@patch("muwon.data.kis_client.requests.get")
+def test_잔고조회도_시간초과를_다시_보낸다(mock_get):
+    """손절 감시가 실제로 부르는 것이 잔고조회다."""
+    ok = MagicMock(status_code=200, json=lambda: _잔고응답_매수직후)
+    mock_get.side_effect = [requests.exceptions.ReadTimeout("read timed out"), ok]
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    balance = client.get_balance()
+
+    assert balance.cash == 9_910_035
+    assert mock_get.call_count == 2
+
+
+@patch("muwon.data.kis_client.requests.post")
+def test_주문은_시간초과를_다시_보내지_않는다(mock_post):
+    """주문이 접수됐는지 알 수 없는 상태다. 다시 보내면 두 번 체결될 수 있다."""
+    mock_post.side_effect = requests.exceptions.ReadTimeout("read timed out")
+
+    client = make_client()
+    client._sleep = lambda seconds: None
+
+    with pytest.raises(requests.exceptions.ReadTimeout):
+        client.place_cash_order("005930", OrderSide.BUY, 10, 71000.0)
+
+    assert mock_post.call_count == 1

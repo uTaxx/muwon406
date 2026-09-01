@@ -237,6 +237,35 @@ class KISClient(MarketDataSource):
         self._throttle()
         return requests.get(url, **kwargs)
 
+    def _get_통신재시도(self, url: str, **kwargs) -> requests.Response:
+        """응답이 아예 오지 않을 때(시간 초과, 연결 끊김) 다시 보낸다.
+
+        아래 `_get_with_retry`는 서버가 보내 준 응답을 보고 판단한다. 그래서
+        응답 자체가 없는 경우는 그 판단에 닿지도 못하고, requests가 올린
+        예외가 그대로 밖으로 나가 실행 하나가 통째로 끝난다. 2026-09-01
+        장중 손절 감시가 15:00과 15:15 두 차례 그렇게 끝났다.
+
+        조회는 여러 번 보내도 계좌에 아무 영향이 없으므로 다시 보내도
+        안전하다. 주문(POST)은 여기에 태우지 않는다. 시간 초과는 주문이
+        접수됐는지 알 수 없는 상태라, 다시 보내면 두 번 체결될 수 있다."""
+        시도 = 1
+        while True:
+            try:
+                return self._get(url, **kwargs)
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as 오류:
+                if 시도 >= _MAX_RETRIES:
+                    logger.error(
+                        f"KIS 조회가 {_MAX_RETRIES}번 모두 응답을 받지 못했습니다: {오류}"
+                    )
+                    raise
+                대기 = _RETRY_BACKOFF_SECONDS * 시도
+                logger.warning(
+                    f"KIS 조회에 응답이 없습니다({type(오류).__name__}). "
+                    f"{대기:.1f}초 뒤에 다시 보냅니다({시도}/{_MAX_RETRIES - 1})."
+                )
+                self._sleep(대기)
+                시도 += 1
+
     def _토큰_갈아끼우기(self, kwargs: dict) -> bool:
         """죽은 토큰을 버리고 새로 받아 헤더에 끼워 넣는다.
 
@@ -282,10 +311,10 @@ class KISClient(MarketDataSource):
         return response
 
     def _get_with_retry(self, url: str, **kwargs) -> requests.Response:
-        response = self._get(url, **kwargs)
+        response = self._get_통신재시도(url, **kwargs)
         # 토큰이 죽어 있으면 HTTP 200으로 오기도 한다. 상태 코드만 보면 못 잡는다.
         if _토큰이_죽었나(_kis_payload(response)) and self._토큰_갈아끼우기(kwargs):
-            response = self._get(url, **kwargs)
+            response = self._get_통신재시도(url, **kwargs)
         attempt = 1
         while response.status_code >= 500 and attempt < _MAX_RETRIES:
             # 예전엔 "원인 모를 500"으로 뭉뚱그려 재시도했는데, 주문 검증 과정에서
@@ -298,7 +327,7 @@ class KISClient(MarketDataSource):
                     f"{payload.get('msg1', '')} (msg_cd={payload.get('msg_cd', '')}), {attempt}차 재시도"
                 )
             self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
-            response = self._get(url, **kwargs)
+            response = self._get_통신재시도(url, **kwargs)
             attempt += 1
         return response
 
