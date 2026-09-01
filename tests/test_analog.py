@@ -125,7 +125,7 @@ def test_shallow_history_and_too_few_episodes_give_different_reasons():
     """둘을 같은 문구로 내면 무엇을 고쳐야 할지 알 수 없다. 데이터를 더
     받아야 하는 건지, 문턱을 낮춰야 하는 건지."""
     얕은것 = forecast(_표(60), _가격(60), "시험")
-    assert "견줄 과거가" in 얕은것.사유
+    assert "비교할 과거가" in 얕은것.사유
     상태, 가격 = _표(1500), _가격(1500)
     구간부족 = forecast(상태, 가격, "시험", top_pct=10, min_episodes=10_000)
     assert "번뿐입니다" in 구간부족.사유

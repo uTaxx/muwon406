@@ -49,7 +49,7 @@ def yearly_windows(start_year: int, end_year: int) -> list[PeriodWindow]:
 
 
 def half_year_windows(start_year: int, end_year: int) -> list[PeriodWindow]:
-    """반기 단위: 구간을 더 잘게 쪼개 우연히 맞은 경우를 더 잘 드러낸다."""
+    """반기 단위: 구간을 더 잘게 나눠 우연히 맞은 경우를 더 잘 드러낸다."""
     windows = []
     for year in range(start_year, end_year + 1):
         windows.append(

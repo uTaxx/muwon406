@@ -44,7 +44,7 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class Split:
-    """매매 하나의 수익을 시간대별로 쪼갠 것. 단위는 %."""
+    """매매 하나의 수익을 시간대별로 나눈 것. 단위는 %."""
 
     symbol: str
     보유일: int
@@ -58,7 +58,7 @@ class Split:
 
 
 def split_overnight(trades, histories: dict[str, pd.DataFrame]) -> list[Split]:
-    """완결된 매매마다 수익을 오버나이트와 장중으로 쪼갠다."""
+    """완결된 매매마다 수익을 오버나이트와 장중으로 나눈다."""
     결과: list[Split] = []
     for trade in trades:
         df = histories.get(trade.symbol)
@@ -67,7 +67,7 @@ def split_overnight(trades, histories: dict[str, pd.DataFrame]) -> list[Split]:
         구간 = df[
             (df["trade_date"] >= trade.entry_date) & (df["trade_date"] <= trade.exit_date)
         ].sort_values("trade_date")
-        # 산 날 종가가 출발점이므로 최소 두 봉이 있어야 쪼갤 것이 생긴다.
+        # 산 날 종가가 출발점이므로 최소 두 봉이 있어야 나눌 것이 생긴다.
         if len(구간) < 2:
             continue
 
@@ -110,7 +110,7 @@ def _줄(이름: str, 밤: str, 낮: str, 전체: str) -> str:
 def format_split(결과: list[Split], label: str = "") -> str:
     머리 = f"■ 번 돈은 밤사이에 났나, 낮에 났나{f' ({label})' if label else ''}"
     if not 결과:
-        return f"{머리}\n\n쪼갤 수 있는 매매가 없습니다."
+        return f"{머리}\n\n나눌 수 있는 매매가 없습니다."
 
     밤들 = [s.오버나이트 for s in 결과]
     낮들 = [s.장중 for s in 결과]
@@ -125,7 +125,7 @@ def format_split(결과: list[Split], label: str = "") -> str:
         "  ⚠ 이 표는 전략이 아니라 진단입니다. '밤에만 들고 있기'를 실제로 하면",
         "  매일 사고팔아야 하는데, 그 비용이 여기 하나도 안 들어 있습니다.",
         "",
-        f"쪼갠 매매 {len(결과)}건 · 평균 보유 {statistics.fmean([s.보유일 for s in 결과]):.1f}거래일",
+        f"나눈 매매 {len(결과)}건 · 평균 보유 {statistics.fmean([s.보유일 for s in 결과]):.1f}거래일",
         "",
         "  '모두 더하기'는 매매별 수익률을 그냥 **더한** 것입니다. 계좌 수익률이",
         "  아닙니다. 포트폴리오는 여러 종목을 동시에 들고 있어서 매매들이 겹치므로,",

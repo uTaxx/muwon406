@@ -72,7 +72,7 @@ _최대일수 = 90
 
 
 def 우리기록(session_factory, 시작: date, 끝: date) -> list[우리주문]:
-    """기간 안의 우리 주문 기록. created_at은 UTC라 KST 날짜로 견준다."""
+    """기간 안의 우리 주문 기록. created_at은 UTC라 KST 날짜로 비교한다."""
     # 경계는 넉넉히 잡아 DB에서 긁고, 정확한 자르기는 KST 날짜로 파이썬에서 한다.
     처음 = datetime.combine(시작, datetime.min.time()) - timedelta(days=1)
     마지막 = datetime.combine(끝, datetime.max.time()) + timedelta(days=1)

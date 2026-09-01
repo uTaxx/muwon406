@@ -388,7 +388,7 @@ def main() -> None:
             raise SystemExit("--keys에 전략을 지정하세요")
         emit("■ 번 돈은 밤사이(오버나이트)에 났나, 낮(장중)에 났나\n")
         for key in keys:
-            쪼갠것 = []
+            나눈것 = []
             for year in years:
                 sliced = slice_for_year(histories, year)
                 if not sliced:
@@ -397,8 +397,8 @@ def main() -> None:
                     strategy=build_strategy(key),
                     risk_manager=RiskManager(policy_provider=RiskPolicy),
                 ).run(sliced, trade_from=date(year, 1, 1))
-                쪼갠것.extend(split_overnight(result.closed_trades, sliced))
-            emit(format_split(쪼갠것, key))
+                나눈것.extend(split_overnight(result.closed_trades, sliced))
+            emit(format_split(나눈것, key))
             emit("")
         save()
         return

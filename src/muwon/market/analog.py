@@ -53,7 +53,7 @@ GAP_DAYS = 20
 MIN_EPISODES = 8
 #: 앞으로 며칠을 볼 것인가.
 HORIZON = 20
-#: 견줄 과거가 이보다 얕으면 거리 계산 자체가 뜻이 없다(약 1년).
+#: 비교할 과거가 이보다 얕으면 거리 계산 자체가 뜻이 없다(약 1년).
 MIN_HISTORY_DAYS = 250
 
 
@@ -219,13 +219,13 @@ def forecast(
     자리 = state.index.get_loc(기준일)
     쓸수있는끝 = max(자리 - horizon, 0)
     과거 = state.iloc[:쓸수있는끝]
-    # 견줄 과거가 아예 얕으면 거리 계산 자체가 뜻이 없다. 이건 min_episodes와
+    # 비교할 과거가 아예 얕으면 거리 계산 자체가 뜻이 없다. 이건 min_episodes와
     # 다른 문제라 따로 본다. 섞어 두면 "구간이 모자라다"와 "과거가 짧다"가
     # 같은 문구로 나와서 무엇을 고쳐야 할지 알 수 없다.
     if len(과거) < MIN_HISTORY_DAYS:
         return Forecast(
             기준일, 대상, 0, 0, horizon, None, None, None, None, None, [],
-            f"견줄 과거가 {len(과거)}일뿐입니다 (최소 {MIN_HISTORY_DAYS}일 필요)",
+            f"비교할 과거가 {len(과거)}일뿐입니다 (최소 {MIN_HISTORY_DAYS}일 필요)",
         )
 
     거리 = _거리(과거, 기준).sort_values()

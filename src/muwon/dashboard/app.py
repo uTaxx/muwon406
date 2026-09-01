@@ -750,7 +750,7 @@ def render_daily_strategy(service: SettingsService) -> None:
         render_terms(["신호", "진입", "청산", "역추세", "추세추종", "팩터"])
         render_strategy_tab(service)
     with section(
-        "🎓", "전략 성적표", "지금까지 잰 것을 한 장에", ["22개 전략", "10개 조합"],
+        "🎓", "전략 평가 결과", "지금까지 계산한 것을 한 장에", ["22개 전략", "10개 조합"],
         expanded=True,
     ):
         render_report_card()

@@ -137,7 +137,7 @@ def test_사람이_넣은_값을_명령줄에_직접_박지_않는다():
     수 있다. 환경변수로 넘기면 셸이 그 값을 글자로만 본다.
 
     다만 `type: choice` 입력은 GitHub이 목록 밖의 값을 안 받으므로 예외다.
-    `== '값'`으로 견주기만 하는 것도 안전하다."""
+    `== '값'`으로 비교만 하는 것도 안전하다."""
     import re
     from pathlib import Path
 
@@ -150,7 +150,7 @@ def test_사람이_넣은_값을_명령줄에_직접_박지_않는다():
             for 식 in re.findall(r"\$\{\{(.*?)\}\}", 덩이, re.DOTALL):
                 if "github.event.inputs" not in 식:
                     continue
-                # `A == 'x' && '켬' || ''` 처럼 값을 견주기만 하는 것은 괜찮다.
+                # `A == 'x' && '켬' || ''` 처럼 값을 비교만 하는 것은 괜찮다.
                 if "==" in 식:
                     continue
                 if 길.name in 아직안고친것:

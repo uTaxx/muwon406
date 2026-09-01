@@ -67,10 +67,10 @@ def build_factors(config: StrategyConfig) -> list[Factor]:
 
 
 def threshold_reachability(config: StrategyConfig) -> dict[str, tuple[float, float]]:
-    """국면별 (도달 가능한 최고 총점, 매수 문턱)을 돌려준다.
+    """국면별 (도달 가능한 최고 총점, 매수 기준점)을 돌려준다.
 
     국면 Factor는 두 곳에서 동시에 작용한다. 점수를 끌어내리고(BEAR면 20점),
-    매수 문턱을 올린다(BEAR면 90). 방향이 같아 효과가 겹치기 때문에, 가중치를
+    매수 기준점을 올린다(BEAR면 90). 방향이 같아 효과가 겹치기 때문에, 가중치를
     조금만 만져도 '아무리 좋은 종목이어도 살 수 없는' 국면이 생긴다.
 
     기본 설정이 이미 그렇다. market_regime 가중치가 15이므로 BEAR에서 국면은
@@ -97,8 +97,8 @@ class ScoreEngine:
         for regime, (ceiling, threshold) in threshold_reachability(config).items():
             if threshold > ceiling:
                 logger.warning(
-                    "{} 국면은 매수가 수학적으로 불가능합니다. 문턱 {:.0f}, "
-                    "도달 가능한 최고 총점 {:.1f}. 설정의 문턱 값이 실제로는 "
+                    "{} 국면은 매수가 수학적으로 불가능합니다. 기준점 {:.0f}, "
+                    "도달 가능한 최고 총점 {:.1f}. 설정의 기준점 값이 실제로는 "
                     "아무 일도 하지 않습니다.",
                     regime,
                     threshold,
@@ -121,7 +121,7 @@ class ScoreEngine:
         regime = self._current_regime()
         buy_threshold = self.config.threshold_for(regime)
         # STRONG_BUY 문턱이 국면 문턱보다 낮으면 그게 우회로가 된다. 약세장에서
-        # 매수 문턱을 90으로 올려 놨는데 85점짜리가 STRONG_BUY로 먼저 걸려
+        # 매수 기준점을 90으로 올려 놨는데 85점짜리가 STRONG_BUY로 먼저 걸려
         # 통과해 버리는 식이다. 판정 사다리는 위에서부터 검사하기 때문이다.
         # 더 강한 신호라는 이름표가 더 느슨한 관문이 되어서는 안 된다.
         strong = max(self.config.strong_buy_threshold, buy_threshold)

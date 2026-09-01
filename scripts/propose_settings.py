@@ -40,9 +40,9 @@ from muwon.settings.from_sheet import parse_settings
 from muwon.settings.proposals import (
     도달할_수_없는_수인가,
     모아서,
-    문턱에_걸린_종목,
     아직_모르는것,
     완전자동인가,
+    최소기준에_걸린_종목,
     현금이_모자라나,
 )
 from muwon.settings.service import build_settings_service
@@ -112,7 +112,7 @@ def main() -> int:
     if not args.skip_turnover:
         print("■ 거래대금 세는 중…", file=sys.stderr)
         억, 이름표 = _거래대금_억(PriceCache(), YahooFinanceDataSource(), 내용.섹터)
-        제안들.append(문턱에_걸린_종목(문턱, 억, 이름표))
+        제안들.append(최소기준에_걸린_종목(문턱, 억, 이름표))
 
     글 = 모아서(제안들)
     print(글)

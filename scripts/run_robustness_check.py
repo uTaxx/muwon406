@@ -45,7 +45,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="전략 다기간 검증(과최적화 탐지)")
     parser.add_argument("--from-year", type=int, required=True)
     parser.add_argument("--to-year", type=int, required=True)
-    parser.add_argument("--half-year", action="store_true", help="연 단위 대신 반기 단위로 쪼갠다")
+    parser.add_argument("--half-year", action="store_true", help="연 단위 대신 반기 단위로 나눈다")
     parser.add_argument("--keys", type=str, default="", help="쉼표로 구분된 전략 키(비우면 전체)")
     parser.add_argument("--initial-cash", type=float, default=10_000_000.0)
     args = parser.parse_args()
