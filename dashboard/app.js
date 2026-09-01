@@ -526,7 +526,9 @@
       return `<div class="줄" style="margin:0;padding:7px 0;justify-content:flex-start;
                    ${흐리게 ? "opacity:.55" : ""}">
         <span style="font-variant-numeric:tabular-nums;font-weight:600;min-width:96px">${때}</span>
-        <span>${안전(무엇)}${차례 ? ' <span class="딱지 켜짐">다음</span>' : ""}
+        <!-- flex:1과 min-width:0이 없으면 설명이 긴 줄(17:50 전략 검토)에서
+             이 칸이 통째로 아랫줄로 밀려 시각과 내용이 어긋난다. -->
+        <span style="flex:1;min-width:0">${안전(무엇)}${차례 ? ' <span class="딱지 켜짐">다음</span>' : ""}
           <div class="곁말">${안전(왜)}</div>${오늘것}</span>
       </div>`;
     }).join("");
