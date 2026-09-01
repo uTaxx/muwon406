@@ -169,3 +169,50 @@ def test_사람이_넣은_값을_명령줄에_직접_박지_않는다():
         "이미 고쳤는데 '아직안고친것'에 남아 있습니다. 지우세요: "
         + ", ".join(sorted(남은것))
     )
+
+
+# ── 전략 검토·반영 (2026-09-01) ────────────────────────────────
+
+
+def test_전략검토는_상태DB를_안_고치므로_잠그지_않는다():
+    """읽기만 하는 워크플로를 state-write에 묶으면 5분마다 도는 손절 감시가
+    전략 27개 계산을 기다린다. 손절이 늦는 쪽이 훨씬 나쁘다.
+
+    이 스크립트가 DB에 한 줄이라도 쓰게 되면 upload 줄이 생기고, 그러면
+    위의 `test_DB를_고치면_같은_자물쇠를_쓴다`가 잡는다."""
+    글 = (_워크플로[0].parent / "strategy-review.yml").read_text(encoding="utf-8")
+    assert "group: strategy-review" in 글
+    assert "group: state-write" not in 글
+    assert "gdrive_sync.py upload" not in 글
+
+
+def test_전략반영은_상태DB를_고치므로_state_write다():
+    """전략 키를 상태 DB에 쓴다. 겹치면 DB가 통째로 덮인다."""
+    길 = _워크플로[0].parent / "strategy-apply.yml"
+    글 = 길.read_text(encoding="utf-8")
+    assert "gdrive_sync.py upload" in 글, "반영했으면 DB를 올려야 합니다"
+    묶음 = _읽기(길).get("concurrency")
+    assert 묶음.get("group") == DB잠금
+    assert 묶음.get("cancel-in-progress") is False
+
+
+def test_전략_변경은_사람이_두_번_누른_뒤에만_된다():
+    """검토가 전략을 바꾸면 승인 단계가 없는 것과 같다.
+
+    검토 스크립트는 계산만 하고, 반영 스크립트만 전략을 쓴다. 둘이 한
+    워크플로에 섞이면 그 경계가 사라진다."""
+    검토 = (_워크플로[0].parent / "strategy-review.yml").read_text(encoding="utf-8")
+    반영 = (_워크플로[0].parent / "strategy-apply.yml").read_text(encoding="utf-8")
+    assert "apply_strategy_change.py" not in 검토, "검토가 전략을 바꾸면 안 됩니다"
+    assert "run_strategy_review.py" in 검토
+    assert "apply_strategy_change.py" in 반영
+    assert "run_strategy_review.py" not in 반영
+
+
+def test_전략_반영이_매수_후보_산출보다_먼저다():
+    """후보를 뽑은 뒤에 바꾸면 화면에 뜬 후보와 실제 전략이 하루 어긋난다.
+
+    시각은 n8n 시계가 정한다. 여기서는 그 순서를 문서에 적어 두었는지만
+    본다 — 순서를 잊으면 어긋난 뒤에야 알게 된다."""
+    글 = (_워크플로[0].parent / "strategy-apply.yml").read_text(encoding="utf-8")
+    assert "매수 후보를 뽑기 전이어야 한다" in 글
