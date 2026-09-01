@@ -26,6 +26,16 @@ from muwon.execution.engine import ExecutedAction, 매도알림, 매수알림
 from muwon.execution.fill_settle import 보유고침, 주문고침
 from muwon.market.analog import Baseline, Forecast
 from muwon.market.digest import summarize
+from muwon.notify import dry_run
+from muwon.notify.telegram_buttons import (
+    callback_data,
+    parse_callback,
+    누른뒤말,
+    상태블록,
+    승인,
+    전략상태블록,
+)
+from muwon.notify.telegram_control import 도움말
 from scripts.execute_approved import _알림글 as 매수결과글
 from scripts.settle_fills import _알림글 as 정산글
 
@@ -90,6 +100,15 @@ def _상태():
                 옛진입가=118300.0, 새진입가=118241.0)],
         손절비율=-0.05)),
     ("시장 리포트", lambda: summarize(_상태(), [_전망()], 오늘, 렌즈="확장")),
+    # 아래 넷은 2026-09-01까지 이 목록에 없었다. 그래서 /도움 답장에 굵게
+    # 표기가 남아 별표가 그대로 찍히고 있었다. 사람이 실제로 읽는 글은
+    # 예외 없이 여기에 넣는다.
+    ("모의 실행 머리", lambda: dry_run.머리),
+    ("승인 상태 요약", lambda: 상태블록([_후보()], {"103140": "Y"})),
+    ("승인 버튼을 누른 뒤", lambda: 누른뒤말(
+        parse_callback(callback_data(승인, 오늘, "103140")), "풍산")),
+    ("전략 예약 상태", lambda: 전략상태블록("volatility_breakout_k05", "변동성 돌파")),
+    ("도움말", 도움말),
 ]
 
 
@@ -118,7 +137,13 @@ def test_줄표를_쓰지_않는다(이름, 만들기):
     )
 
 
-@pytest.mark.parametrize(("이름", "만들기"), 알림들, ids=[ㄱ for ㄱ, _ in 알림들])
+#: 도움말만 예외다. `/설정 <이름> <값>`으로 사람이 직접 타이핑하는 이름이라
+#: 밑줄이 든 원본을 그대로 보여 줘야 한다. 다른 알림은 예외가 없다.
+이름노출허용 = {"도움말"}
+이름검사알림 = [ㄱ for ㄱ in 알림들 if ㄱ[0] not in 이름노출허용]
+
+
+@pytest.mark.parametrize(("이름", "만들기"), 이름검사알림, ids=[ㄱ for ㄱ, _ in 이름검사알림])
 def test_영어_코드_이름이_사용자에게_안_나간다(이름, 만들기):
     """`volume_surge_5d` 같은 내부 이름은 처음 보는 사람에게 아무 뜻도 없다."""
     글 = 만들기()

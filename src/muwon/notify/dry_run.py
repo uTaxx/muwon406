@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-머리 = "🧪 모의 실행 — 실제 주문이 아닙니다"
+머리 = "🧪 모의 실행입니다. 실제 주문이 아닙니다."
 
 
 class 모의알림:
