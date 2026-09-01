@@ -216,3 +216,32 @@ def test_전략_반영이_매수_후보_산출보다_먼저다():
     본다 — 순서를 잊으면 어긋난 뒤에야 알게 된다."""
     글 = (_워크플로[0].parent / "strategy-apply.yml").read_text(encoding="utf-8")
     assert "매수 후보를 뽑기 전이어야 한다" in 글
+
+
+def test_셸_변수_이름에_한글을_안_쓴다():
+    """bash가 한글 변수 이름을 못 읽는다.
+
+    `인자=""`를 쓰면 `command not found`로 죽는다. 2026-09-01에 실제로
+    겪었다. GitHub Actions 표현식만 그런 줄 알았는데 셸도 같다.
+
+    파이썬 argparse 인자 이름은 한글이어도 된다(`--최소운용일`). 셸이
+    그건 그냥 글자로 넘긴다. 막히는 것은 **대입문의 왼쪽**이다."""
+    import re
+    from pathlib import Path
+
+    나쁜것: list[str] = []
+    for 길 in sorted((Path(__file__).resolve().parent.parent
+                     / ".github" / "workflows").glob("*.yml")):
+        for ㄴ, 줄 in enumerate(길.read_text(encoding="utf-8").splitlines(), 1):
+            벗김 = 줄.strip()
+            if 벗김.startswith("#"):
+                continue
+            # `이름=값` 꼴에서 이름에 한글이 있으면 셸이 못 읽는다.
+            맞은것 = re.match(r"^([^\s=#]+)=", 벗김)
+            if 맞은것 and any("가" <= ㄱ <= "힣" for ㄱ in 맞은것.group(1)):
+                나쁜것.append(f"{길.name}:{ㄴ}  {벗김[:60]}")
+
+    assert not 나쁜것, (
+        "셸 변수 이름에 한글이 있습니다. bash가 command not found로 죽습니다:\n  "
+        + "\n  ".join(나쁜것)
+    )

@@ -100,9 +100,12 @@ jobs:
           # `| tee`는 파이썬의 종료 코드를 삼킨다. 조용히 성공한 척하는
           # 실패가 이 저장소에서 제일 비쌌다.
           set -o pipefail
-          인자=""
+          # **셸 변수 이름은 영문이어야 한다.** `인자=""`를 쓰면 bash가
+          # `command not found`로 죽는다(2026-09-01에 겪음). GitHub Actions
+          # 표현식만 그런 줄 알았는데 셸도 같다.
+          ARGS=""
           if [ "$MUWON_DRY_RUN" = "true" ]; then
-            인자="--dry-run"
+            ARGS="--dry-run"
           fi
-          python scripts/run_strategy_review.py $인자 \
+          python scripts/run_strategy_review.py $ARGS \
             --최소운용일 "$MUWON_MIN_HOLD" --우위배수 "$MUWON_EDGE"
