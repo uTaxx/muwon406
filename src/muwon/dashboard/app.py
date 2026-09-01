@@ -1,7 +1,7 @@
 """설정·리스크정책·변경이력·개발로그를 한 화면에서 보고 고치는 통합 대시보드.
 
 scripts/configure.py와 마찬가지로 SettingsService 하나만 거쳐서 설정값을
-읽고 쓴다 — 저장 위치·형식이 CLI와 완전히 동일하다. 변경 이력/개발 로그는
+읽고 쓴다. 저장 위치·형식이 CLI와 완전히 동일하다. 변경 이력/개발 로그는
 st.fragment(run_every=...)로 자동 갱신되어, 다른 폼(예: KIS 인증정보 입력
 중)을 건드리지 않고 그 구역만 주기적으로 새로고침된다.
 
@@ -9,7 +9,7 @@ st.fragment(run_every=...)로 자동 갱신되어, 다른 폼(예: KIS 인증정
     streamlit run src/muwon/dashboard/app.py
 
 폰/PC 어디서든 접속 가능한 상시 대시보드로 쓰려면 Streamlit Community
-Cloud에 배포한다 — docs/deploy_streamlit_cloud.md 참고. 그 환경은 컨테이너가
+Cloud에 배포한다. docs/deploy_streamlit_cloud.md 참고. 그 환경은 컨테이너가
 재배포될 때마다 로컬 디스크가 사라지므로, 이 파일이 뜰 때 구글드라이브에서
 muwon.db를 내려받고(아래 sync_db_from_drive), 설정을 바꿀 때마다 다시
 올린다(sync_db_to_drive) — GitHub Actions(scripts/gdrive_sync.py)와 같은
@@ -37,7 +37,7 @@ import streamlit as st
 st.set_page_config(page_title="muwon406 대시보드", layout="wide")
 
 # Streamlit Community Cloud는 시크릿을 st.secrets로 주지 OS 환경변수로 주지
-# 않는다 — 이 프로젝트의 설정 로딩(BootstrapSettings, gdrive_sync)은 전부
+# 않는다. 이 프로젝트의 설정 로딩(BootstrapSettings, gdrive_sync)은 전부
 # os.environ/.env 기준이라, muwon.* 모듈을 import하기 전에(=BootstrapSettings가
 # 만들어지기 전에) 여기서 미리 os.environ에 복사해 둔다. 로컬에서 .env로
 # 실행할 때는 secrets.toml이 없어 아무 일도 안 하고 넘어간다.
@@ -95,7 +95,7 @@ def db_guard(무엇: str):
 
     잡지 않으면 Streamlit이 "error message is redacted"라고만 하고 원인을
     감춘다. 화면은 통째로 빨간 상자가 되고, 남은 탭도 못 본다. 실제로 그
-    상태로 한참 헤맸다 — 원인은 구글드라이브에서 받아 온 DB에 컬럼 하나가
+    상태로 한참 헤맸다. 원인은 구글드라이브에서 받아 온 DB에 컬럼 하나가
     없던 것이었는데, 화면만 봐서는 알 길이 없었다.
 
     여기서 잡으면 ① 어느 부분이 실패했는지 ② 무슨 오류인지가 화면에 남고,
@@ -146,13 +146,13 @@ def sync_db_from_drive() -> None:
     if path is None:
         return
     gdrive_download(os.environ["GDRIVE_FOLDER_ID"], Path(path).name, path)
-    # 받아 온 파일이 옛 스키마일 수 있다. 갈아 끼운 **직후에** 맞춘다 —
+    # 받아 온 파일이 옛 스키마일 수 있다. 갈아 끼운 **직후에** 맞춘다.
     # 세션 팩토리는 캐시돼 있어서 여기서 안 하면 맞출 기회가 없다.
     ensure_schema(bootstrap_settings.database_url)
 
 
 def sync_db_to_drive() -> None:
-    """설정을 바꾼 직후 호출한다 — 안 그러면 이 서버가 재배포되거나 다음
+    """설정을 바꾼 직후 호출한다. 안 그러면 이 서버가 재배포되거나 다음
     GitHub Actions 실행이 구글드라이브에서 옛 상태를 받아가서, 방금 화면에서
     바꾼 값이 없던 일이 된다."""
     if not _drive_sync_configured():
@@ -182,7 +182,7 @@ def save_and_sync(action, 성공문구: str) -> bool:
     """설정을 저장하고 구글드라이브에 올린다. 실패하면 이유를 화면에 띄운다.
 
     잡지 않고 두면 Streamlit이 "error message is redacted"라고만 하고 진짜
-    원인을 감춘다 — 실제로 자동매매 스위치가 그렇게 죽었고, 무엇이 문제인지
+    원인을 감춘다. 실제로 자동매매 스위치가 그렇게 죽었고, 무엇이 문제인지
     알아내는 데 화면만으로는 방법이 없었다."""
     st.session_state["_last_save_at"] = time.time()
     try:
@@ -205,7 +205,7 @@ def save_and_sync(action, 성공문구: str) -> bool:
         )
         return True
     # st.rerun() 뒤에는 이 자리의 st.success가 지워져서 확인 문구가 한순간
-    # 스쳤다가 사라진다. 다음 그림에서 띄우도록 넘겨 둔다 — 저장이 됐는지
+    # 스쳤다가 사라진다. 다음 그림에서 띄우도록 넘겨 둔다. 저장이 됐는지
     # 안 됐는지 모르는 채로 남는 게 제일 나쁘다.
     st.session_state["_save_notice"] = 성공문구
     return True
@@ -220,7 +220,7 @@ def render_save_notice() -> None:
 
 @st.fragment(run_every=DRIVE_SYNC_REFRESH_SECONDS)
 def render_drive_sync_fragment() -> None:
-    # 방금 저장했으면 잠깐 쉰다 — 내가 올린 것보다 먼저 남의 것을 받아 오면
+    # 방금 저장했으면 잠깐 쉰다. 내가 올린 것보다 먼저 남의 것을 받아 오면
     # 방금 바꾼 값이 되돌아간다.
     since_save = time.time() - st.session_state.get("_last_save_at", 0.0)
     if since_save < SAVE_QUIET_SECONDS:
@@ -292,7 +292,7 @@ def realized_pnl(session_factory) -> tuple[float, float, int]:
     """(오늘 실현손익, 누적 실현손익, 오늘 청산 건수).
 
     '오늘 손익'을 평가금액으로 내려면 지금 시세가 필요한데 대시보드는 시세를
-    받지 않는다. 그래서 **청산이 끝난 거래**만으로 낸다 — 추정이 아니라
+    받지 않는다. 그래서 **청산이 끝난 거래**만으로 낸다. 추정이 아니라
     실제로 계좌에 반영된 금액이다. 화면 문구도 '실현손익'이라고 못 박는다."""
     today = datetime.now().date()  # noqa: DTZ005 — 화면 표시용
     with session_factory() as session:
@@ -333,7 +333,7 @@ def section(icon: str, title: str, subtitle: str, badges=(), *, expanded: bool =
 
     목업은 카드마다 펼침 화살표가 달려 있다. Streamlit에서 그 동작을 그대로
     주는 건 expander뿐인데, expander는 라벨 하나만 받는다. 그래서 아이콘·부제·
-    뱃지를 라벨 안에 마크다운으로 넣었다 — CSS로 카드를 흉내내면 Streamlit이
+    뱃지를 라벨 안에 마크다운으로 넣었다. CSS로 카드를 흉내내면 Streamlit이
     올라갈 때마다 깨지고, 그 화면은 '고쳐야 할 줄 모르는 채로' 망가진다."""
     chips = "".join(f"  `{b}`" for b in badges)
     return st.expander(f"{icon}  **{title}** — {subtitle}{chips}", expanded=expanded)
@@ -344,7 +344,7 @@ def _terms_markdown(terms) -> str:
 
     처음엔 표(st.dataframe)로 그렸는데 두 가지가 걸렸다. 설명이 한 줄을
     넘으면 잘려서 정작 중요한 뒷말이 안 보이고, Streamlit 표는 캔버스로
-    그려져서 브라우저 Ctrl+F가 안 먹는다 — 사전인데 검색이 안 되면 곤란하다."""
+    그려져서 브라우저 Ctrl+F가 안 먹는다. 사전인데 검색이 안 되면 곤란하다."""
     blocks = []
     for t in terms:
         영문 = f" &nbsp;`{t.영문}`" if t.영문 else ""
@@ -392,7 +392,7 @@ def _active_strategy_label(selection) -> str:
     """카드에 쓸 짧은 이름.
 
     전략을 여러 개 걸 수 있게 된 뒤로 첫 번째 것만 보여 주면 화면이
-    거짓말을 한다 — 4개를 걸었는데 카드는 1개라고 말했다.
+    거짓말을 한다. 4개를 걸었는데 카드는 1개라고 말했다.
 
     파는 쪽을 따로 걸었을 때도 같은 문제가 있다. 사는 쪽 이름만 적으면
     그 전략의 파는 규칙으로 팔고 있다고 읽힌다."""
@@ -410,7 +410,7 @@ def render_summary_cards(service: SettingsService) -> None:
     """목업의 상단 요약 카드 4개.
 
     목업은 '전략 3개 활성'으로 그려져 있지만 이 엔진은 활성 전략이 하나다.
-    숫자를 3으로 맞추면 화면이 거짓말을 한다 — 실제 값을 쓰고, 여러 전략을
+    숫자를 3으로 맞추면 화면이 거짓말을 한다. 실제 값을 쓰고, 여러 전략을
     동시에 굴리는 건 엔진 쪽 결정이 끝난 뒤의 일이다(설계안 §11에서 지금은
     만들지 않기로 결론).
     """
@@ -436,7 +436,7 @@ def render_summary_cards(service: SettingsService) -> None:
 
     st.markdown(CARD_CSS, unsafe_allow_html=True)
     cards = [
-        # 킬스위치만 보고 'LIVE'를 띄우면 화면이 거짓말을 한다 — 실행
+        # 킬스위치만 보고 'LIVE'를 띄우면 화면이 거짓말을 한다. 실행
         # 일정 자체가 꺼져 있으면 킬스위치가 켜져 있어도 아무 일도 없다.
         _card("📈", "purple", "활성 전략", _active_strategy_label(selection), 뱃지, 뱃지색),
         _card(
@@ -452,7 +452,7 @@ def render_summary_cards(service: SettingsService) -> None:
         ),
         # 목업 4번째 칸은 '최근 동기화'지만, 늘 '방금 전'이라 아무것도 안 알려
         # 준다. 정작 궁금한 건 "엔진이 돌긴 돌았나"라서 그 자리를 실행 기록으로
-        # 바꿨다 — 매매가 0건인 날에도 뭔가 말해 주는 유일한 칸이다.
+        # 바꿨다. 매매가 0건인 날에도 뭔가 말해 주는 유일한 칸이다.
         _card(
             "🕒", "orange", "마지막 실행",
             last_run.created_at.strftime("%m-%d %H:%M") if last_run else "—",
@@ -471,7 +471,7 @@ def render_notifications_tab() -> None:
     """주문·청산을 시간순으로 모아 보여준다.
 
     목업에는 '미확인 뱃지'가 있지만 읽음 상태를 저장할 곳이 없다. 표시만
-    해 두고 값을 채우면 늘 미확인으로 보이거나 늘 읽음으로 보인다 — 둘 다
+    해 두고 값을 채우면 늘 미확인으로 보이거나 늘 읽음으로 보인다. 둘 다
     거짓이라 아예 넣지 않았다. 읽음 처리가 필요해지면 테이블을 하나 만들고
     그때 붙인다."""
     session_factory = get_session_factory()
@@ -521,7 +521,7 @@ def render_notifications_tab() -> None:
 def render_run_log(limit: int = 15) -> None:
     """엔진이 회차마다 남긴 한 줄을 그대로 보여 준다.
 
-    빈 대시보드는 두 가지를 동시에 뜻한다 — "살 게 없었다"와 "안 돌았다".
+    빈 대시보드는 두 가지를 동시에 뜻한다. "살 게 없었다"와 "안 돌았다".
     이 표가 그 둘을 가른다. 신호는 났는데 주문이 0이면 막은 이유가 함께
     보인다."""
     with get_session_factory()() as session:
@@ -587,7 +587,7 @@ def render_admin_tab(service: SettingsService) -> None:
         st.caption(
             "**구글 시트가 원본입니다.** 여기서 고치면 시트가 바뀌고, 다음 실행부터 "
             "그 값으로 돕니다. 텔레그램에서 `/설정 <이름> <값>`으로도 같은 일을 할 수 "
-            "있습니다 — 셋이 같은 곳을 봅니다."
+            "있습니다. 셋이 같은 곳을 봅니다."
         )
         render_criteria_tab()
 
@@ -609,7 +609,7 @@ def render_admin_tab(service: SettingsService) -> None:
     with section("⚙️", "실행 환경", "DB 위치 · 암호화 키 · 동기화 상태"):
         st.caption(
             "목업의 '앱 설정' 자리입니다. 언어·테마 같은 건 아직 없어서, 대신 "
-            "**지금 이 화면이 어느 데이터를 보고 있는지**를 둡니다 — 값이 이상할 때 "
+            "**지금 이 화면이 어느 데이터를 보고 있는지**를 둡니다. 값이 이상할 때 "
             "가장 먼저 의심할 자리입니다."
         )
         st.dataframe(
@@ -637,7 +637,7 @@ def render_admin_tab(service: SettingsService) -> None:
 def 화면버전() -> str:
     """지금 화면이 어느 커밋으로 돌고 있는지.
 
-    왜 필요한가 — 배포된 대시보드가 **18개 커밋 전 코드**를 그대로 돌리고
+    왜 필요한가. 배포된 대시보드가 **18개 커밋 전 코드**를 그대로 돌리고
     있던 적이 있다. 화면만 봐서는 알 길이 없어서 "고쳤는데 왜 그대로냐"를
     한참 헤맸다. 코드는 멀쩡한데 배포가 안 따라온 것이었다.
 
@@ -689,7 +689,7 @@ def main() -> None:
         )
 
     # 목업은 하단 탭 바지만 Streamlit에는 그 위젯이 없다. CSS로 흉내내면
-    # 버전이 오를 때마다 깨지므로 상단 탭을 쓴다 — 순서와 이름은 목업 그대로다.
+    # 버전이 오를 때마다 깨지므로 상단 탭을 쓴다. 순서와 이름은 목업 그대로다.
     tab_home, tab_strategy, tab_records, tab_alerts, tab_admin = st.tabs(
         ["🏠 대시보드", "📈 전략", "📋 기록", "🔔 알림", "👤 관리"]
     )
@@ -718,7 +718,7 @@ def main() -> None:
         with section("📊", "매매 기록", "청산까지 끝난 거래", expanded=True):
             st.caption(
                 "**청산(팔아서 정리)까지 끝난 거래만** 여기 들어옵니다. 아직 들고 있는 종목은 "
-                "대시보드 탭의 '보유 종목'에 있습니다 — 팔기 전 손익은 아직 확정된 돈이 아니기 때문입니다."
+                "대시보드 탭의 '보유 종목'에 있습니다. 팔기 전 손익은 아직 확정된 돈이 아니기 때문입니다."
             )
             render_terms(["진입", "청산", "실현손익", "손절", "익절", "체결"])
             render_trades_tab()
@@ -814,7 +814,7 @@ def render_realtime_tab() -> None:
     ):
         if not 계획.검증:
             st.info(
-                "아직 없습니다. 위 후보 중 '지금 가능'인 것부터 잽니다 — "
+                "아직 없습니다. 위 후보 중 '지금 가능'인 것부터 잽니다. "
                 "새 데이터를 모으지 않고도 잴 수 있는 것들입니다."
             )
         for 항목 in 계획.검증:
@@ -824,14 +824,14 @@ def render_realtime_tab() -> None:
                 st.success(f"**판단 →** {항목.판단}", icon="⚖️")
 
     st.caption(
-        "자세한 조사 내용은 저장소의 `docs/단타전략조사.md`에 있습니다 — "
+        "자세한 조사 내용은 저장소의 `docs/단타전략조사.md`에 있습니다. "
         "후보마다 원 출처와 한국 시장 적용 가능성을 적어 뒀습니다."
     )
 
 
 def _render_candidates(후보) -> None:
     """후보를 한 줄씩. 표(dataframe)로 하면 긴 한줄평이 잘려서 정작
-    읽어야 할 말이 안 보인다 — 용어 사전에서 같은 실수를 한 번 했다."""
+    읽어야 할 말이 안 보인다. 용어 사전에서 같은 실수를 한 번 했다."""
     for c in 후보:
         색 = realtime_plan.GRADES[c.등급][0]
         가능 = "🟢 지금 가능" if c.지금가능 else "🔒 데이터 필요"
@@ -869,7 +869,7 @@ def render_next_run_banner(service: SettingsService) -> None:
         st.warning("자동 실행 일정을 읽지 못했습니다 (.github/workflows 확인).", icon="⏰")
         return
     nxt = jobs[0]
-    # st.info는 HTML을 그리지 않는다 — <small>을 넣었더니 태그가 글자로
+    # st.info는 HTML을 그리지 않는다. <small>을 넣었더니 태그가 글자로
     # 그대로 나왔다. 그리고 %a는 'Wed'를 준다. 한국시간 안내에 영어 요일이
     # 섞이면 읽는 리듬이 끊긴다.
     st.info(
@@ -909,7 +909,7 @@ def render_schedule_table() -> None:
         width="stretch",
     )
     st.caption(
-        "이 표는 `.github/workflows`의 실제 설정을 읽어 만듭니다 — 화면에 시각을 따로 "
+        "이 표는 `.github/workflows`의 실제 설정을 읽어 만듭니다. 화면에 시각을 따로 "
         "적어 두지 않으므로, 일정을 바꾸면 여기도 같이 바뀝니다. "
         "GitHub 무료 스케줄러는 몇십 분씩 늦게 도는 일이 있어, 정각에 안 돌아도 정상입니다."
     )
@@ -954,7 +954,7 @@ def render_active_rules(service: SettingsService) -> None:
         st.markdown("**🟢 이럴 때 삽니다**")
         st.markdown("\n".join(f"- {line}" for line in rules.산다))
     # 파는 조건은 전략·리스크 정책 양쪽에 흩어져 있다. 화면에서까지
-    # 흩어 두면 "매도는 기간밖에 없냐"는 오해가 생긴다 — 실제로 생겼다.
+    # 흩어 두면 "매도는 기간밖에 없냐"는 오해가 생긴다. 실제로 생겼다.
     조건, 주의 = exit_rules(strategy, policy)
     st.markdown("**🔴 이럴 때 팝니다** — 먼저 걸리는 것 하나로 팔립니다")
     st.markdown("\n".join(f"- {line}" for line in 조건))
@@ -965,7 +965,7 @@ def render_active_rules(service: SettingsService) -> None:
         st.markdown("\n".join(f"- {line}" for line in rules.참고))
     if not rules.설명있음:
         st.warning(
-            "이 전략은 아직 사람 말 설명이 붙지 않았습니다 — 위는 설정값 그대로입니다.",
+            "이 전략은 아직 사람 말 설명이 붙지 않았습니다. 위는 설정값 그대로입니다.",
             icon="📝",
         )
 
@@ -985,7 +985,7 @@ def render_active_rules(service: SettingsService) -> None:
 def render_home_rows(service: SettingsService) -> None:
     """목업 대시보드 탭의 카드 목록 5줄.
 
-    목업은 '전략'·'기록'이 아래 탭에도 있는데 대시보드에도 같은 줄이 있다 —
+    목업은 '전략'·'기록'이 아래 탭에도 있는데 대시보드에도 같은 줄이 있다.
     대시보드를 바로가기 허브로 쓰는 구조다. 다만 같은 입력 폼을 두 탭에
     그대로 두면 Streamlit이 '같은 키의 폼이 둘'이라며 화면 전체를 죽인다
     (실제로 그렇게 한 번 죽였다). 그래서 다른 탭에 본체가 있는 줄은 여기서
@@ -1004,7 +1004,7 @@ def render_home_rows(service: SettingsService) -> None:
         ["증권사 기준"], expanded=True,
     ):
         st.caption(
-            "**평가손익**은 아직 안 판 종목이 지금 얼마가 됐는지입니다 — "
+            "**평가손익**은 아직 안 판 종목이 지금 얼마가 됐는지입니다. "
             "팔아야 실제로 손에 들어오므로, 위 카드의 **실현손익**(팔아서 확정된 손익)과는 "
             "다른 숫자입니다. 장이 열려 있으면 현재가로, 닫혀 있으면 그날 종가로 계산됩니다."
         )
@@ -1018,7 +1018,7 @@ def render_home_rows(service: SettingsService) -> None:
     ):
         render_active_rules(service)
         render_terms(["신호", "진입", "청산", "일봉", "유니버스"])
-        st.caption("전략을 바꾸려면 **전략** 탭으로 가세요 — 설정은 한 곳에만 둡니다.")
+        st.caption("전략을 바꾸려면 **전략** 탭으로 가세요. 설정은 한 곳에만 둡니다.")
 
     with section(
         "⏰", "실행 예정", "다음에 무엇이 언제 자동으로 도는가",
@@ -1032,7 +1032,7 @@ def render_home_rows(service: SettingsService) -> None:
     ):
         st.caption(
             "**보유 종목**은 샀는데 아직 안 판 것, **최근 주문**은 사거나 팔라고 낸 지시입니다. "
-            "주문을 냈다고 다 체결되는 건 아닙니다 — 장이 닫혀 있거나 가격이 안 맞으면 안 됩니다."
+            "주문을 냈다고 다 체결되는 건 아닙니다. 장이 닫혀 있거나 가격이 안 맞으면 안 됩니다."
         )
         render_terms(["체결", "진입", "평가금액", "비중", "거래대금"])
         render_trading_fragment()
@@ -1075,7 +1075,7 @@ def render_status_bar(service: SettingsService) -> None:
             value=policy.trading_enabled,
             help=(
                 "끄면 새로 사지 않습니다(킬스위치). 이미 들고 있는 종목의 손절은 "
-                "그대로 작동합니다 — '더 안 산다'이지 '방치한다'가 아닙니다."
+                "그대로 작동합니다. '더 안 산다'이지 '방치한다'가 아닙니다."
             ),
         )
         if enabled != policy.trading_enabled:
@@ -1129,7 +1129,7 @@ def render_strategy_tab(service: SettingsService) -> None:
     """실거래에 쓰는 전략(가설)을 보여주고 바꾼다.
 
     "가설"이 뭔지: 이동평균/RSI 계산에 쓰는 숫자(며칠짜리 창을 볼지 등)를
-    바꾸면 같은 로직이라도 다른 결과가 나온다 — 그 숫자 조합 하나하나가
+    바꾸면 같은 로직이라도 다른 결과가 나온다. 그 숫자 조합 하나하나가
     strategy/registry.py에 이름표(전략 키)를 달고 등록되어 있다. 여기서
     "활성"으로 고른 것 하나만 실제 매매(run_paper_trading.py /
     run_realtime_trading.py)에 쓰인다.
@@ -1162,7 +1162,7 @@ def render_strategy_tab(service: SettingsService) -> None:
         definitions = [d for d in definitions if (backtests.get(d.key) is not None and backtests[d.key].num_trades > 0)]
 
     if not definitions:
-        st.info("조건에 맞는 전략이 없습니다 — 필터를 넓혀 보세요.")
+        st.info("조건에 맞는 전략이 없습니다. 필터를 넓혀 보세요.")
         return
 
     rows = []
@@ -1259,7 +1259,7 @@ def render_report_card() -> None:
         "그것도 청산 규칙이기 때문입니다.  \n"
         "이 표는 위 전략 표와 다른 실행에서 나왔습니다"
         f"(실행 {기준.get('실행', {}).get('매수매도분리', '?')}). "
-        "그래도 같은 조건입니다 — 두 실행에 함께 들어간 전략 둘의 값이 "
+        "그래도 같은 조건입니다. 두 실행에 함께 들어간 전략 둘의 값이 "
         "소수점까지 같았습니다."
     )
     _render_card_rows(카드.매수매도분리)
@@ -1315,7 +1315,7 @@ def render_strategy_picker(service: SettingsService) -> None:
 
     고르는 칸에는 등록된 전략을 전부 넣는다. 화면 위 표는 계열 필터가
     걸려 있는데, 그 필터 때문에 이미 고른 전략이 목록에서 사라지면 저장하는
-    순간 조용히 빠진다 — 필터는 보기 위한 것이지 고르는 범위가 아니다."""
+    순간 조용히 빠진다. 필터는 보기 위한 것이지 고르는 범위가 아니다."""
     현재 = service.get_strategy_selection()
     전체 = [d.key for d in list_definitions()]
     기본 = [k for k in 현재.active_keys if k in 전체]
@@ -1355,7 +1355,7 @@ def render_strategy_picker(service: SettingsService) -> None:
     선택 = StrategySelection(active_keys=tuple(고른것), combine=방식)
     if save_and_sync(
         lambda: service.set_strategy_selection(선택),
-        f"활성 전략을 바꿨습니다 — {선택.describe()} · 다음 매매 실행부터 반영됩니다.",
+        f"활성 전략을 바꿨습니다. {선택.describe()} · 다음 매매 실행부터 반영됩니다.",
     ):
         st.rerun()
 
@@ -1365,7 +1365,7 @@ def _시트연결() -> str:
     """대시보드가 시트를 만질 수 있나. 없으면 화면만 보여 준다.
 
     **여기서 터지면 관리 탭이 통째로 죽는다.** 구글이 느리거나 자격증명이
-    만료돼도 화면은 살아 있어야 한다 — 화면이 죽으면 킬스위치를 끄러 들어올
+    만료돼도 화면은 살아 있어야 한다. 화면이 죽으면 킬스위치를 끄러 들어올
     수조차 없다. 그래서 어떤 실패든 빈 값으로 돌려준다.
 
     그리고 캐시한다. 화면을 열 때마다 구글에 물어보면 그만큼 느려지는데,
@@ -1389,7 +1389,7 @@ def _시트연결() -> str:
 def render_criteria_tab() -> None:
     """기준표를 그대로 화면에 편다.
 
-    목록을 여기에 손으로 적지 않는다 — `settings/from_sheet.py`의 기준표
+    목록을 여기에 손으로 적지 않는다. `settings/from_sheet.py`의 기준표
     하나만 본다. 기준을 새로 추가했는데 화면에 안 나오면 아무도 못 고친다.
 
     **왜 이 값이 중요한지를 값 옆에 붙여 둔다.** 숫자만 있으면 몇 달 뒤에
@@ -1398,7 +1398,7 @@ def render_criteria_tab() -> None:
         from muwon.cloud.sector_sheet import read, update_setting
         from muwon.settings.from_sheet import parse_settings, 값글자, 기준들
     except ImportError as e:
-        st.warning(f"구글 시트 라이브러리가 없습니다 — {e}", icon="📦")
+        st.warning(f"구글 시트 라이브러리가 없습니다. {e}", icon="📦")
         return
 
     sheet_id = _시트연결()
@@ -1413,7 +1413,7 @@ def render_criteria_tab() -> None:
     try:
         시트 = parse_settings(read(sheet_id).설정)
     except Exception as e:  # noqa: BLE001 — 화면이 통째로 죽는 것보다 낫다
-        st.error(f"시트를 못 읽었습니다 — {type(e).__name__}: {e}")
+        st.error(f"시트를 못 읽었습니다. {type(e).__name__}: {e}")
         st.caption("**이 상태에서는 매매가 자동으로 꺼집니다.** 시트를 고쳐 주세요.")
         return
 
@@ -1453,7 +1453,7 @@ def render_criteria_tab() -> None:
             return
         for 이름, 글자 in 바꿀것.items():
             update_setting(sheet_id, 이름, 글자)
-        st.success(f"{len(바꿀것)}개를 시트에 저장했습니다 — 다음 실행부터 적용됩니다.")
+        st.success(f"{len(바꿀것)}개를 시트에 저장했습니다. 다음 실행부터 적용됩니다.")
         st.rerun()
 
 
@@ -1470,11 +1470,11 @@ def render_risk_tab(service: SettingsService) -> None:
     # 구글 시트**다. 여기 값도 살아 있지만 시트가 이기므로, 그 사실을 안
     # 적어 두면 사람은 여기서 고치고 "왜 안 먹지"를 겪는다.
     #
-    # 킬스위치만 규칙이 다르다 — 어느 한쪽에서 꺼도 꺼진다.
+    # 킬스위치만 규칙이 다르다. 어느 한쪽에서 꺼도 꺼진다.
     st.info(
         "**이 값들의 원본은 이제 구글 시트입니다.** 시트에 적힌 항목은 시트 값이 "
         "쓰이고, 시트에 없는 항목만 여기 값이 쓰입니다.\n\n"
-        "**킬스위치는 예외입니다 — 시트와 여기가 둘 다 켜져야 켜집니다.** "
+        "**킬스위치는 예외입니다. 시트와 여기가 둘 다 켜져야 켜집니다.** "
         "끄는 것은 어느 한쪽만으로도 꺼집니다.",
         icon="📋",
     )
@@ -1682,7 +1682,7 @@ def render_trading_fragment() -> None:
 
 
 def _손익색(값: float) -> str:
-    """한국은 **빨강이 오름, 파랑이 내림**이다 — 미국과 반대다.
+    """한국은 **빨강이 오름, 파랑이 내림**이다. 미국과 반대다.
 
     st.metric은 미국식이라 손실에 빨간 화살표를 붙이는데, 그걸 그대로 두면
     화면이 "올랐다"고 말하는 셈이 된다. 그래서 카드를 직접 그리고 색을
@@ -1710,7 +1710,7 @@ def _계좌조회() -> tuple[dict | None, str, str]:
     값을 넣어야 하고, 증권사가 막은 거면 그냥 기다리면 된다. 안내를 하나로
     뭉쳐 두면 "기다리세요"라고 해 놓고 영영 안 고쳐지는 화면이 된다.
 
-    실패해도 예외를 올리지 않는다 — 이 구역 하나 때문에 대시보드 전체가
+    실패해도 예외를 올리지 않는다. 이 구역 하나 때문에 대시보드 전체가
     죽으면 안 된다. 화면이 통째로 빨개져서 남은 탭도 못 보게 된 적이 있었다.
 
     st.cache_data는 돌려준 값을 피클로 저장하므로 평범한 dict로 만든다."""
@@ -1725,7 +1725,7 @@ def _계좌조회() -> tuple[dict | None, str, str]:
         잔고 = KISClient.from_settings(service).get_balance()
     except Exception as e:  # noqa: BLE001 — 조회 실패가 화면을 죽이면 안 된다
         return None, f"{type(e).__name__}: {e}", (
-            "증권사 서버가 잠깐 막았을 수 있습니다 — **토큰 발급을 자주 하면 막습니다.** "
+            "증권사 서버가 잠깐 막았을 수 있습니다. **토큰 발급을 자주 하면 막습니다.** "
             "1분쯤 뒤 **지금 다시 조회**를 눌러 보세요."
         )
 
@@ -1761,7 +1761,7 @@ def render_account_pnl() -> None:
 
     **왜 우리 DB로 계산하지 않나**: DB에는 산 값(진입가)만 있고 지금 값이
     없다. 지금 값을 알려면 어차피 시세를 받아야 하는데, 그럴 바엔 증권사가
-    이미 계산해 둔 평가손익을 그대로 받는 게 정확하다 — 수수료·세금까지
+    이미 계산해 둔 평가손익을 그대로 받는 게 정확하다. 수수료·세금까지
     반영된 증권사 기준 숫자이고, 우리가 따로 계산하면 두 숫자가 어긋난다.
 
     **왜 5초마다 자동 갱신하지 않나**: 보유 종목 표는 DB만 읽어서 5초마다
@@ -1777,7 +1777,7 @@ def render_account_pnl() -> None:
     내용, 오류, 안내 = _계좌조회()
     if 내용 is None:
         with col_left:
-            st.warning(f"계좌를 조회하지 못했습니다 — {오류}", icon="📡")
+            st.warning(f"계좌를 조회하지 못했습니다. {오류}", icon="📡")
             st.caption(f"{안내} 이 구역만 못 보는 것이고 나머지 화면은 그대로 씁니다.")
         return
 
@@ -1787,7 +1787,7 @@ def render_account_pnl() -> None:
         # st.metric은 글자가 커서 '9,999,135원'이 '9,999,13…'으로 잘렸다
         # (900px에서도 잘렸으니 폰에서는 말할 것도 없다). 이 화면에서 제일
         # 중요한 게 금액인데 그 금액이 안 보이면 카드가 있으나 마나다.
-        # 그래서 위 요약 카드와 같은 틀을 쓴다 — 폰 폭에서 이미 검증된 것이다.
+        # 그래서 위 요약 카드와 같은 틀을 쓴다. 폰 폭에서 이미 검증된 것이다.
         st.markdown(CARD_CSS, unsafe_allow_html=True)
         st.markdown(
             '<div class="muwon-cards">'
@@ -1863,7 +1863,7 @@ def render_trading_tab() -> None:
 
 
 def render_trades_tab() -> None:
-    """청산까지 끝난 매매(진입+청산 한 왕복)만 보여준다 — 아직 들고 있는
+    """청산까지 끝난 매매(진입+청산 한 왕복)만 보여준다. 아직 들고 있는
     포지션은 위 '보유 종목' 표에 있다. 어떤 전략(strategy_key)이 어떤
     조건에서 이기고 졌는지를 보려는 용도라, 향후 이 데이터를 AI가 읽고
     전략 수정을 제안하는 단계로 이어질 수 있도록 만들어 둔 표다."""
@@ -1942,7 +1942,7 @@ def render_strategy_review_tab(service: SettingsService) -> None:
 
     if latest is None:
         st.info(
-            "아직 일일 전략 리뷰 결과가 없습니다 — "
+            "아직 일일 전략 리뷰 결과가 없습니다. "
             "scripts/run_daily_review.py가 최소 한 번은 실행되어야 합니다 "
             "(GitHub Actions가 평일마다 자동으로 실행합니다)."
         )

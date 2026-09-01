@@ -8,7 +8,7 @@
 
 결과는 세 가지로 나뉘며, 두 번째(거부)도 "검증 성공"이다:
 
-  ✅ 체결 접수     주문번호를 받음 — 경로 완전 검증
+  ✅ 체결 접수     주문번호를 받음. 경로 완전 검증
   ✅ 정상 거부     KIS가 업무 규칙으로 거부(장 시간 아님·잔고 부족 등).
                   요청 형식·인증·엔드포인트·TR_ID가 전부 맞다는 뜻이므로
                   이것도 경로 검증 성공으로 본다. 장 시간 밖에 돌리면
@@ -78,7 +78,7 @@ def main() -> None:
 
     if creds.is_real:
         raise SystemExit(
-            "❌ KIS 환경이 실거래(real)입니다. 이 스크립트는 모의투자 전용입니다 — "
+            "❌ KIS 환경이 실거래(real)입니다. 이 스크립트는 모의투자 전용입니다. "
             "실제 돈으로 검증 주문을 넣지 않도록 막습니다."
         )
     if not creds.app_key or not creds.app_secret or not creds.account_no:
@@ -115,13 +115,13 @@ def main() -> None:
     end = date.today()  # noqa: DTZ011 — 날짜만 필요
     df = client.get_daily_ohlcv(args.symbol, end - timedelta(days=30), end)
     if len(df) == 0:
-        raise SystemExit("❌ 시세 조회 결과가 비어 있습니다 — 종목코드를 확인하세요.")
+        raise SystemExit("❌ 시세 조회 결과가 비어 있습니다. 종목코드를 확인하세요.")
     reference_price = float(df["close"].iloc[-1])
     print(f"2) 시세 조회: ✅ 성공 (직전 종가 {reference_price:,.0f}원)")
 
     if not args.confirm:
         print()
-        print("예행연습 모드입니다 — 주문을 넣지 않고 종료합니다.")
+        print("예행연습 모드입니다. 주문을 넣지 않고 종료합니다.")
         print("실제로 주문 경로를 검증하려면 --confirm 을 붙여 다시 실행하세요.")
         return
 
@@ -145,7 +145,7 @@ def main() -> None:
     print(f"   ✅ 주문 접수 성공 — 주문번호 {result.order_id}")
     print()
     print("주문 실행 경로가 완전히 검증되었습니다.")
-    print("※ 이 주문은 실제 모의투자 계좌에 들어갔습니다 — 필요하면 KIS 앱에서 확인/취소하세요.")
+    print("※ 이 주문은 실제 모의투자 계좌에 들어갔습니다. 필요하면 KIS 앱에서 확인/취소하세요.")
 
 
 if __name__ == "__main__":

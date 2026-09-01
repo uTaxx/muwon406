@@ -217,7 +217,7 @@ def main() -> int:
             print("dry-run이라 전략을 안 바꿉니다.")
             return 0
 
-        # 실제로 바꾼다. 매도 전략은 건드리지 않는다 — 여기서 같이 바꾸면
+        # 실제로 바꾼다. 매도 전략은 건드리지 않는다. 여기서 같이 바꾸면
         # 무엇 때문에 성적이 달라졌는지 나중에 가를 수 없다.
         from dataclasses import replace as _replace
 

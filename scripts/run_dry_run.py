@@ -1,7 +1,7 @@
 """KIS 없이 매매 파이프라인(신호→리스크→체결→텔레그램 알림→DB 기록) 전체를
 검증하는 드라이런 스크립트.
 
-KIS 모의투자가 아니다 — 시세는 YahooFinanceDataSource(개발 전용)에서 받고,
+KIS 모의투자가 아니다. 시세는 YahooFinanceDataSource(개발 전용)에서 받고,
 주문은 SimulatedOrderExecutor가 KIS 서버 없이 로컬에서 체결됐다고 가정한다.
 이 환경의 네트워크 정책이 KIS 포트(9443/29443)를 막고 있어 실제 KIS
 모의투자(scripts/run_paper_trading.py)를 이 환경에서는 검증할 수 없기

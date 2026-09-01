@@ -64,7 +64,7 @@ def main() -> int:
     if args.push:
         섹터행, 종목행 = catalog_rows()
         write_all(sheet_id, 섹터행, 종목행, default_settings_rows())
-        print(f"올렸습니다 — 섹터 {len(섹터행) - 1}줄 · 종목 {len(종목행) - 1}줄 · 설정 {len(default_settings_rows()) - 1}줄")
+        print(f"올렸습니다. 섹터 {len(섹터행) - 1}줄 · 종목 {len(종목행) - 1}줄 · 설정 {len(default_settings_rows()) - 1}줄")
         print("\n**이제부터는 시트에서 고치세요.** --push는 시트를 통째로 덮어씁니다.")
 
     # 종목을 더하거나 뺄 때 쓴다. **설정 탭은 안 건드린다** — 종목 목록을
@@ -81,7 +81,7 @@ def main() -> int:
     #
     # **텔레그램에서는 매매를 켤 수 없게 막아 뒀다**(폰에서 손가락이
     # 미끄러지면 안 되므로). 그래서 켜는 길이 시트·대시보드뿐이었는데,
-    # 둘 다 사람 손이 필요하다. 여기를 하나 더 둔다 — 다만 **워크플로를
+    # 둘 다 사람 손이 필요하다. 여기를 하나 더 둔다. 다만 **워크플로를
     # 손으로 돌려야** 하므로 실수로 켜지지는 않는다.
     if args.set:
         from muwon.cloud.sector_sheet import update_setting
@@ -112,16 +112,16 @@ def main() -> int:
         켠것 = False
         for 이름, 글자, b in 바꿀것:
             옛글자 = update_setting(sheet_id, 이름, 글자)
-            print(f"\n■ {b.표시} 을(를) 바꿨습니다 — {옛글자 or '(빈칸)'} → {글자}")
+            print(f"\n■ {b.표시} 을(를) 바꿨습니다. {옛글자 or '(빈칸)'} → {글자}")
             print(f"  {b.설명}")
             켠것 = 켠것 or (이름 == "trading_enabled" and 해석값(b, 글자))
         if 켠것:
             print("\n🟢 **매매를 켰습니다.** 다만 시트와 대시보드가 **둘 다** 켜져야")
-            print("   실제로 켜집니다 — 아래 '지금 걸려 있는 기준'에서 확인하세요.")
+            print("   실제로 켜집니다. 아래 '지금 걸려 있는 기준'에서 확인하세요.")
 
     # 기준을 새로 만들면 시트에는 그 줄이 없다. 없어도 기본값으로 돌지만,
     # **시트에 안 보이면 고칠 수가 없다.** 있는 값은 건드리지 않고 빠진
-    # 줄만 채운다 — --push와 달리 사람이 고쳐 둔 값을 지우지 않는다.
+    # 줄만 채운다. --push와 달리 사람이 고쳐 둔 값을 지우지 않는다.
     if args.add_missing_settings:
         from muwon.cloud.sector_sheet import append_settings
         from muwon.settings.from_sheet import 기준들

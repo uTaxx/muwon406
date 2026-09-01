@@ -1,7 +1,7 @@
 """여러 기간 검증(과최적화 탐지) 로직 확인.
 
 핵심은 "한 구간 대박 + 다른 구간 폭망" 전략이 "꾸준히 조금 버는" 전략보다
-위로 올라오지 않는가다 — 평균만 보면 정확히 그 반대가 된다."""
+위로 올라오지 않는가다. 평균만 보면 정확히 그 반대가 된다."""
 
 import math
 from datetime import date
@@ -52,7 +52,7 @@ def test_half_year_windows_split_each_year_in_two():
 
 
 def test_window_data_range_includes_warmup_before_trading_starts():
-    """예열 없이 구간을 자르면 초반 지표가 NaN이라 신호가 안 나온다 —
+    """예열 없이 구간을 자르면 초반 지표가 NaN이라 신호가 안 나온다.
     짧은 구간일수록 결과가 과소평가되는 왜곡이 생긴다."""
     window = yearly_windows(2024, 2024)[0]
     assert window.data_from < window.trade_from
@@ -149,7 +149,7 @@ def test_format_table_lists_every_window_column():
 
 def test_backtest_engine_ignores_trades_before_trade_from():
     """trade_from 이전 구간은 지표 예열에만 쓰고 매매·평가금액 기록을
-    하지 않아야 한다 — 안 그러면 예열 구간의 손익이 성과에 섞인다."""
+    하지 않아야 한다. 안 그러면 예열 구간의 손익이 성과에 섞인다."""
     from muwon.backtest.engine import BacktestEngine
 
     closes = [100.0 + i for i in range(200)]

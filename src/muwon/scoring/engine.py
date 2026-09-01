@@ -40,7 +40,7 @@ FACTOR_REGISTRY: dict[str, type[Factor]] = {
 
 @dataclass(frozen=True)
 class ScoredSymbol:
-    """한 종목의 최종 평가 — 점수와 근거가 항상 함께 다닌다."""
+    """한 종목의 최종 평가. 점수와 근거가 항상 함께 다닌다."""
 
     symbol: str
     total: float
@@ -53,7 +53,7 @@ class ScoredSymbol:
 def build_factors(config: StrategyConfig) -> list[Factor]:
     """설정에서 켜져 있고 구현이 있는 Factor만 만든다.
 
-    설정에 있지만 아직 구현이 없는 key(fundamental, flow)는 조용히 건너뛴다 —
+    설정에 있지만 아직 구현이 없는 key(fundamental, flow)는 조용히 건너뛴다.
     자리를 미리 잡아 둔 것이라 없다고 터지면 안 된다."""
     factors = []
     for key, cfg in config.factors.items():
@@ -73,7 +73,7 @@ def threshold_reachability(config: StrategyConfig) -> dict[str, tuple[float, flo
     매수 문턱을 올린다(BEAR면 90). 방향이 같아 효과가 겹치기 때문에, 가중치를
     조금만 만져도 '아무리 좋은 종목이어도 살 수 없는' 국면이 생긴다.
 
-    기본 설정이 이미 그렇다 — market_regime 가중치가 15이므로 BEAR에서 국면은
+    기본 설정이 이미 그렇다. market_regime 가중치가 15이므로 BEAR에서 국면은
     3점만 기여하고, 나머지 Factor가 전부 만점이어도 총점은 88점이다. 문턱은
     90이다. 도달할 수 없다.
 
@@ -97,7 +97,7 @@ class ScoreEngine:
         for regime, (ceiling, threshold) in threshold_reachability(config).items():
             if threshold > ceiling:
                 logger.warning(
-                    "{} 국면은 매수가 수학적으로 불가능합니다 — 문턱 {:.0f}, "
+                    "{} 국면은 매수가 수학적으로 불가능합니다. 문턱 {:.0f}, "
                     "도달 가능한 최고 총점 {:.1f}. 설정의 문턱 값이 실제로는 "
                     "아무 일도 하지 않습니다.",
                     regime,
@@ -111,7 +111,7 @@ class ScoreEngine:
         self._warmed = True
 
     def evaluate(self, ctx: MarketContext) -> list[ScoredSymbol]:
-        # 엔진이 prepare()를 안 불러 준 경우에도 동작해야 한다 — 테스트나
+        # 엔진이 prepare()를 안 불러 준 경우에도 동작해야 한다. 테스트나
         # 단발 조회에서 warmup 없이 곧장 평가하는 경우가 있다.
         if not self._warmed:
             self.warmup(ctx.histories)
@@ -122,7 +122,7 @@ class ScoreEngine:
         buy_threshold = self.config.threshold_for(regime)
         # STRONG_BUY 문턱이 국면 문턱보다 낮으면 그게 우회로가 된다. 약세장에서
         # 매수 문턱을 90으로 올려 놨는데 85점짜리가 STRONG_BUY로 먼저 걸려
-        # 통과해 버리는 식이다 — 판정 사다리는 위에서부터 검사하기 때문이다.
+        # 통과해 버리는 식이다. 판정 사다리는 위에서부터 검사하기 때문이다.
         # 더 강한 신호라는 이름표가 더 느슨한 관문이 되어서는 안 된다.
         strong = max(self.config.strong_buy_threshold, buy_threshold)
 
@@ -175,7 +175,7 @@ class FactorScoreStrategy(PortfolioStrategy):
     """점수 합산 방식을 기존 전략과 같은 자리에 꽂는 어댑터.
 
     registry에 전략 하나로 등록되므로 대시보드·전략 리뷰·다기간 검증·리포트가
-    전부 그대로 동작한다. 기존 21전략과 나란히 비교되는 게 핵심이다 — 새 방식이
+    전부 그대로 동작한다. 기존 21전략과 나란히 비교되는 게 핵심이다. 새 방식이
     정말 나은지는 그 비교로만 알 수 있다."""
 
     def __init__(self, config: StrategyConfig | None = None, name: str = "factor_score_v1"):
@@ -227,7 +227,7 @@ def top_reason(result: ScoredSymbol, limit: int = 2) -> str:
 def load_strategy_config() -> StrategyConfig:
     """DB에 저장된 설정을 읽되, 읽을 수 없으면 기본값으로 계속 간다.
 
-    백테스트·테스트처럼 DB가 없는 자리에서도 전략을 만들 수 있어야 한다 —
+    백테스트·테스트처럼 DB가 없는 자리에서도 전략을 만들 수 있어야 한다.
     설정 저장소에 못 닿는다고 전략 생성이 실패하면 registry 전체가 죽는다."""
     try:
         from muwon.settings.service import build_settings_service

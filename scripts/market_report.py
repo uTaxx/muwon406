@@ -48,7 +48,7 @@ def _섹터시세(source, cache, start: date, end: date) -> dict[str, dict[str, 
         for m in sector.활성종목:
             try:
                 # 야후가 간헐적으로 최근 20일치만 준다. 그게 캐시에 굳으면
-                # 그 종목은 다음부터 영영 짧게 온다 — 최소일수로 막는다.
+                # 그 종목은 다음부터 영영 짧게 온다. 최소일수로 막는다.
                 df = cache.fetch(source, m.symbol, m.yahoo_symbol, start, end, 최소일수=250)
             except (requests.RequestException, ValueError, KeyError):
                 실패.append(m.symbol)
@@ -67,7 +67,7 @@ def _오늘한일(그날: date) -> dict:
     """오늘 낸 주문, 오늘 청산한 매매, 지금 들고 있는 종목을 DB에서 읽는다.
 
     **못 읽어도 리포트를 죽이지 않는다.** 다만 조용히 빈 값으로 넘기지도
-    않는다 — 안 산 날과 DB를 못 읽은 날이 화면에서 같아 보이면, 매수가
+    않는다. 안 산 날과 DB를 못 읽은 날이 화면에서 같아 보이면, 매수가
     통째로 막힌 날을 평범한 날로 읽게 된다. 못 읽으면 그렇게 적는다.
 
     시세를 다시 부르지 않는다. 이 스크립트는 장 마감 뒤에 돌고, 지금 평가액을
@@ -209,7 +209,7 @@ def main() -> int:
                      top_pct=args.top_pct, horizon=args.horizon)
         낸전망.append(f)
         emit(format_forecast(f))
-        # 시장 대비 강도는 생존편향에 덜 민감하다 — 같이 보여 준다.
+        # 시장 대비 강도는 생존편향에 덜 민감하다. 같이 보여 준다.
         강도 = relative_strength(지수["close"], 코스피).dropna()
         if len(강도):
             끝 = 강도.index[-1] if 기준일 is None else max(d for d in 강도.index if d <= 기준일)
@@ -259,7 +259,7 @@ def main() -> int:
         emit()
 
     emit("※ 이 리포트는 아무것도 사지 않습니다. 보는 것만 합니다.")
-    emit("※ '아주 나빴을 때' 칸이 비중을 정하는 자리입니다 — 감이 아니라 과거가 정합니다.")
+    emit("※ '아주 나빴을 때' 칸이 비중을 정하는 자리입니다. 감이 아니라 과거가 정합니다.")
 
     # ── 텔레그램 요약 ────────────────────────────────────────────
     #
@@ -337,7 +337,7 @@ def main() -> int:
 
     if 못보냄:
         # 리포트는 다 만들었고 파일·아티팩트로도 남겼다. 그래도 실패로
-        # 끝낸다 — 보내라고 했는데 못 보냈으면 그건 실패다.
+        # 끝낸다. 보내라고 했는데 못 보냈으면 그건 실패다.
         print(f"\n❌ 요약을 텔레그램으로 보내지 못했습니다: {못보냄}", file=sys.stderr)
         return 1
     return 0

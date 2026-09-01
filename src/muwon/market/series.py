@@ -30,7 +30,7 @@
 - **`확장`** (2003~, 약 5,600일) — 코스피·코스닥·금÷구리·환율·미금리.
   23년이면 2008·2011·2020·2022가 다 들어간다. **기본값으로 쓴다**
 
-둘 다 만들어 두고 결과를 비교한다 — 렌즈를 바꿨을 때 답이 크게 달라지면
+둘 다 만들어 두고 결과를 비교한다. 렌즈를 바꿨을 때 답이 크게 달라지면
 그건 그 답을 믿을 수 없다는 뜻이다.
 """
 
@@ -53,7 +53,7 @@ class Series:
     시작: date  # 실제로 받아 본 첫 날 (2026-08-19 확인)
 
 
-#: 받아 본 것들. 시작 날짜는 실측이다 — 추측으로 적으면 렌즈의 표본 기간이 거짓이 된다.
+#: 받아 본 것들. 시작 날짜는 실측이다. 추측으로 적으면 렌즈의 표본 기간이 거짓이 된다.
 SERIES: dict[str, Series] = {
     s.키: s
     for s in [
@@ -91,7 +91,7 @@ def lens_series(lens: str = DEFAULT_LENS) -> tuple[Series, ...]:
 def lens_start_year(lens: str = DEFAULT_LENS) -> int:
     """이 렌즈로 볼 수 있는 표본이 어느 해부터인가.
 
-    가장 늦게 시작하는 시계열이 정한다 — 하나라도 없으면 그날 상태를
+    가장 늦게 시작하는 시계열이 정한다. 하나라도 없으면 그날 상태를
     적을 수 없기 때문이다."""
     if lens not in LENSES:
         raise KeyError(f"모르는 렌즈: {lens}")
@@ -139,7 +139,7 @@ def load(
             if cache is not None and 시도 == 0:
                 df = cache.fetch(source, 시리즈.야후심볼, 시리즈.야후심볼, start, end)
             else:
-                # 다시 받을 때는 캐시를 건너뛴다 — 짧게 온 것이 캐시에
+                # 다시 받을 때는 캐시를 건너뛴다. 짧게 온 것이 캐시에
                 # 들어갔을 수 있고, 그러면 몇 번을 시도해도 같은 것이 온다.
                 df = source.get_daily_ohlcv(시리즈.야후심볼, start, end)
                 if cache is not None and _충분한가(df, 시리즈, start):
@@ -149,7 +149,7 @@ def load(
         if not _충분한가(df, 시리즈, start):
             받은것 = "0일" if df is None or len(df) == 0 else f"{len(df)}일 ({min(df['trade_date'])}~)"
             raise RuntimeError(
-                f"{시리즈.이름}({시리즈.야후심볼}) 시세가 짧게 왔습니다 — {받은것}. "
+                f"{시리즈.이름}({시리즈.야후심볼}) 시세가 짧게 왔습니다. {받은것}. "
                 f"{max(start, 시리즈.시작)} 근처까지 필요합니다. "
                 f"{RETRIES}번 다시 받아도 같았습니다. 야후가 간헐적으로 최근 며칠만 주는 일이 "
                 f"있으니 잠시 뒤 다시 돌려 보세요."

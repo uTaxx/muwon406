@@ -80,7 +80,7 @@ from muwon.strategy.registry import build_strategy, get_definition, list_definit
 
 서울 = ZoneInfo("Asia/Seoul")
 
-#: 매일 재는 구간. `period_check.기간표`의 이름을 그대로 쓴다 — 이름이 갈리면
+#: 매일 재는 구간. `period_check.기간표`의 이름을 그대로 쓴다. 이름이 갈리면
 #: 같은 구간이 화면마다 다르게 불린다.
 볼구간 = ("1주", "1개월", "3개월")
 

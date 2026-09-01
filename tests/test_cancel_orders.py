@@ -148,7 +148,7 @@ def test_취소는_원주문_그대로_잔량_전부를_보낸다():
     assert body["ORGN_ODNO"] == "0000012345"
     assert body["KRX_FWDG_ORD_ORGNO"] == "06010"
     assert body["ORD_DVSN"] == "01"
-    assert body["RVSE_CNCL_DVSN_CD"] == "02", "02가 취소다 — 01은 정정이라 값이 바뀐다"
+    assert body["RVSE_CNCL_DVSN_CD"] == "02", "02가 취소다. 01은 정정이라 값이 바뀐다"
     assert body["QTY_ALL_ORD_YN"] == "Y"
     assert body["ORD_QTY"] == "8", "체결된 4주가 아니라 잔여 8주가 취소 대상이다"
 

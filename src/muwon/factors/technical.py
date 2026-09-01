@@ -61,7 +61,7 @@ class TrendFactor(Factor):
         price = float(row["close"])
         mas = {w: float(row[f"ma{w}"]) for w in self.windows}
         checks: list[tuple[bool, str]] = [(price > mas[w], f"종가>{w}일선") for w in self.windows]
-        # 선끼리의 순서(정배열)도 본다 — 가격만 보면 급등 하루로 만점이 나온다
+        # 선끼리의 순서(정배열)도 본다. 가격만 보면 급등 하루로 만점이 나온다
         for short, long in pairwise(self.windows):
             checks.append((mas[short] > mas[long], f"{short}>{long}일선"))
 
@@ -82,7 +82,7 @@ class TrendFactor(Factor):
 
 
 class MomentumFactor(Factor):
-    """이 종목 자체가 오르고 있는가 — 여러 기간을 섞어 본다.
+    """이 종목 자체가 오르고 있는가. 여러 기간을 섞어 본다.
 
     최근 수익률만 보면 하루 급등에 속는다. 인수인계서 8.2항대로 장기
     모멘텀에 더 큰 비중을 둔다. 절대 수익률을 점수로 바꿀 때 임계값을 손으로
@@ -106,7 +106,7 @@ class MomentumFactor(Factor):
             returns = pd.DataFrame(
                 {p: (closes / closes.shift(p) - 1) * 100 for p in self._weights}
             )
-            # 계산된 기간의 가중치만으로 다시 나눈다 — 상장한 지 얼마 안 된
+            # 계산된 기간의 가중치만으로 다시 나눈다. 상장한 지 얼마 안 된
             # 종목이 '장기 수익률 없음' 때문에 무조건 낮은 값을 받으면 안 된다
             used = returns.notna().mul(weight_series, axis=1).sum(axis=1)
             total = returns.fillna(0).mul(weight_series, axis=1).sum(axis=1)
@@ -188,7 +188,7 @@ class PullbackFactor(Factor):
 
 
 class VolumeFactor(Factor):
-    """관심이 몰렸는가 — 평균 거래량 대비 배수.
+    """관심이 몰렸는가. 평균 거래량 대비 배수.
 
     유동성 하한도 여기서 본다. 거래대금이 너무 작은 종목은 신호가 맞아도
     실제로는 원하는 가격에 못 산다(인수인계서 12항)."""

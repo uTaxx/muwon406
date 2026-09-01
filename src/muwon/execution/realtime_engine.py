@@ -3,7 +3,7 @@
 TradingEngine(engine.py)이 "하루 한 번, 이미 확정된 종가로" 판단한다면,
 이건 "장이 열려 있는 동안 계속 떠서, 분봉이 하나 마감될 때마다" 판단한다.
 신호 판정 로직(Strategy)과 리스크 검증(RiskManager)은 완전히 동일하게
-재사용한다 — 다른 건 "언제 판단하느냐"뿐이다. 틱 하나하나에 반응하지
+재사용한다. 다른 건 "언제 판단하느냐"뿐이다. 틱 하나하나에 반응하지
 않는 이유는 tick_aggregator.py 문서 참고.
 
 TradingEngine은 프로세스가 매번 새로 뜨는 걸 전제로 매번 DB에서 상태를
@@ -14,7 +14,7 @@ TradingEngine은 프로세스가 매번 새로 뜨는 걸 전제로 매번 DB에
 
 engine.py와 이게 같은 DB를 공유하는 건 코드 재사용 때문이지, 배치
 모드(GitHub Actions)와 장중 상시 모드(VPS)를 동시에 같은 계좌에 돌리라는
-뜻이 아니다 — 운영 모드는 한 번에 하나만 고를 것."""
+뜻이 아니다. 운영 모드는 한 번에 하나만 고를 것."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from muwon.execution.engine import 매도알림, 매수알림
 from muwon.notify.telegram import TelegramNotifier
 from muwon.risk.manager import RiskManager
 
-BAR_HISTORY_LENGTH = 120  # sma60까지 계산하려면 최소 60개 봉 필요 — 여유있게 보관
+BAR_HISTORY_LENGTH = 120  # sma60까지 계산하려면 최소 60개 봉 필요. 여유있게 보관
 MIN_BARS_FOR_SIGNAL = 20  # sma20조차 안 채워졌으면 신호 자체가 항상 NaN
 
 

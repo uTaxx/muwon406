@@ -1,6 +1,6 @@
 """KIS 서버에 실제로 붙지 못하는 개발 환경에서, 최소한 요청 구성(URL·헤더·
 TR_ID·바디)과 응답 파싱이 KIS Developers 문서와 어긋나지 않는지를 requests를
-모킹해서 검증한다. 실제 서버 동작 자체는 검증하지 못한다 — 모의투자 계좌로
+모킹해서 검증한다. 실제 서버 동작 자체는 검증하지 못한다. 모의투자 계좌로
 반드시 별도 확인이 필요하다."""
 
 from datetime import date
@@ -143,7 +143,7 @@ def test_throttle_waits_between_consecutive_paper_requests(mock_time, mock_get):
     client.get_daily_ohlcv("000660", date(2024, 1, 2), date(2024, 1, 3))
 
     assert len(sleeps) == 1
-    # 간격 값 자체를 상수에서 읽는다 — 제한을 조정할 때마다 테스트가 깨지면
+    # 간격 값 자체를 상수에서 읽는다. 제한을 조정할 때마다 테스트가 깨지면
     # 정작 검증하려는 "부족한 만큼 기다린다"는 성질이 가려진다.
     assert round(sleeps[0], 4) == round(_MIN_REQUEST_INTERVAL_PAPER - elapsed, 4)
 
@@ -272,7 +272,7 @@ def test_order_rate_limit_arrives_as_http_500_and_is_retried(mock_post):
 
 @patch("muwon.data.kis_client.requests.post")
 def test_order_business_rejection_is_not_retried(mock_post):
-    """잔고 부족처럼 재시도해도 결과가 같은 거부는 다시 보내지 않아야 한다 —
+    """잔고 부족처럼 재시도해도 결과가 같은 거부는 다시 보내지 않아야 한다.
     주문 POST를 불필요하게 반복하면 중복 체결 위험만 커진다."""
     rejected = MagicMock(
         status_code=200,
@@ -291,7 +291,7 @@ def test_order_business_rejection_is_not_retried(mock_post):
 @patch("muwon.data.kis_client.requests.post")
 def test_order_raises_http_error_when_body_is_not_a_kis_response(mock_post):
     """KIS 업무 응답이 아닌 진짜 서버 오류(HTML 오류 페이지 등)는 그대로
-    HTTP 오류로 올려야 한다 — 업무 거부와 뭉뚱그리면 원인을 못 찾는다."""
+    HTTP 오류로 올려야 한다. 업무 거부와 뭉뚱그리면 원인을 못 찾는다."""
     import requests as requests_module
 
     broken = MagicMock(status_code=502, text="<html>Bad Gateway</html>")
@@ -311,7 +311,7 @@ def test_order_raises_http_error_when_body_is_not_a_kis_response(mock_post):
 @patch("muwon.data.kis_client.requests.post")
 def test_order_rejection_exposes_kis_codes_separately_from_network_errors(mock_post):
     """KIS가 업무 규칙으로 거부한 것(요청 형식은 맞음)과 네트워크·인증
-    실패(요청 자체가 틀림)를 호출부가 구분할 수 있어야 한다 — 주문 경로
+    실패(요청 자체가 틀림)를 호출부가 구분할 수 있어야 한다. 주문 경로
     검증 스크립트가 이 구분으로 성공/실패를 판정한다."""
     mock_post.return_value = MagicMock(
         json=lambda: {"rt_cd": "1", "msg_cd": "40570000", "msg1": "장시간이 아닙니다"}
@@ -386,7 +386,7 @@ def test_get_fill_returns_none_when_order_not_found(mock_get):
 
 @patch("muwon.data.kis_client.requests.get")
 def test_get_fill_reports_unfilled_order(mock_get):
-    """접수는 됐지만 아직 체결 전이면 filled_quantity=0으로 알려줘야 한다 —
+    """접수는 됐지만 아직 체결 전이면 filled_quantity=0으로 알려줘야 한다.
     호출부가 이걸 보고 기준가를 유지할지 판단한다."""
     mock_get.return_value = MagicMock(
         status_code=200,
@@ -541,7 +541,7 @@ def test_balance_cash_reflects_todays_buy_not_unsettled_deposit(mock_get):
 
 @patch("muwon.data.kis_client.requests.get")
 def test_balance_keeps_raw_summary_for_eyeballing(mock_get):
-    """어떤 필드가 무엇인지는 응답을 직접 봐야 안다 — 원본을 버리지 않는다."""
+    """어떤 필드가 무엇인지는 응답을 직접 봐야 안다. 원본을 버리지 않는다."""
     mock_get.return_value = MagicMock(status_code=200, json=lambda: _잔고응답_매수직후)
 
     balance = make_client().get_balance()

@@ -73,7 +73,7 @@ def make_services_sharing_db(old_key: str, new_key: str) -> tuple[SettingsServic
 
 
 def test_rotated_master_key_does_not_crash_and_reports_broken_keys():
-    """마스터키를 새로 발급하면 옛 키로 암호화된 값은 못 읽는다 — 이때 예외로
+    """마스터키를 새로 발급하면 옛 키로 암호화된 값은 못 읽는다. 이때 예외로
     죽지 않고(대시보드 전체가 멈추면 안 됨) 빈 값으로 넘어가면서, 어떤 키가
     안 열리는지 알려줘야 한다."""
     old_service, new_service = make_services_sharing_db(generate_master_key(), generate_master_key())
@@ -93,7 +93,7 @@ def test_rotated_master_key_does_not_crash_and_reports_broken_keys():
 
 
 def test_resaving_with_new_master_key_clears_broken_keys():
-    """못 읽던 값을 새 키로 다시 저장하면 복구되어야 한다 — 화면 안내가
+    """못 읽던 값을 새 키로 다시 저장하면 복구되어야 한다. 화면 안내가
     약속하는 동작."""
     old_service, new_service = make_services_sharing_db(generate_master_key(), generate_master_key())
     old_service.set_kis_credentials(KISCredentials(app_key="key-a", app_secret="secret-a"))
@@ -138,7 +138,7 @@ def test_strategy_selection_roundtrip_and_is_logged_in_history():
 
 
 def test_several_strategies_and_the_combine_mode_survive_a_roundtrip():
-    """전략을 여러 개 거는 것이 이 설정의 요점이다 — 개수 제한은 없다."""
+    """전략을 여러 개 거는 것이 이 설정의 요점이다. 개수 제한은 없다."""
     service = make_service()
     선택 = StrategySelection(
         active_keys=("ma_rsi_v1", "golden_cross_20_60", "macd_cross"), combine="AND"

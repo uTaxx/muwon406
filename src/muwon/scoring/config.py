@@ -7,7 +7,7 @@
 핵심 규칙 — 꺼진 Factor의 가중치는 그냥 빠지는 게 아니라 **나머지가 100을
 채우도록 재정규화된다.** 안 그러면 Factor를 하나 끌 때마다 전 종목 점수가
 통째로 내려앉아 매수 기준선(75점)의 의미가 달라진다. 데이터가 없어 평가하지
-못한 Factor도 같은 취급을 받는다 — 수급 데이터가 하루 안 들어왔다고 그날
+못한 Factor도 같은 취급을 받는다. 수급 데이터가 하루 안 들어왔다고 그날
 매매가 멈춰서는 안 된다.
 """
 
@@ -39,7 +39,7 @@ DEFAULT_FACTORS: dict[str, FactorConfig] = {
     "relative_strength": FactorConfig(enabled=True, weight=20),
     "pullback": FactorConfig(enabled=True, weight=20),
     "volume": FactorConfig(enabled=True, weight=10),
-    # 아래는 자리만 잡아 둔다 — 데이터 소스가 아직 없다(설계안 §2.1)
+    # 아래는 자리만 잡아 둔다. 데이터 소스가 아직 없다(설계안 §2.1)
     "breakout": FactorConfig(enabled=False, weight=10),
     "fundamental": FactorConfig(enabled=False, weight=10),
     "flow": FactorConfig(enabled=False, weight=10),
@@ -103,7 +103,7 @@ class StrategyConfig:
     def from_json(cls, raw: str) -> StrategyConfig:
         """저장된 값이 깨졌거나 오래돼 필드가 빠져 있어도 기본값으로 살아난다.
 
-        설정 파일 하나 때문에 매매가 멈추면 안 된다 — 모르는 키는 무시하고,
+        설정 파일 하나 때문에 매매가 멈추면 안 된다. 모르는 키는 무시하고,
         빠진 키는 기본값을 쓴다."""
         base = cls()
         try:
@@ -123,7 +123,7 @@ class StrategyConfig:
                 weight=float(value.get("weight", factors[key].weight)),
                 # params는 덮어쓰지 않고 기본값 위에 얹는다. 통째로 갈아 끼우면
                 # params 없이 저장된 오래된 설정 하나가 시장 필터를 조용히
-                # 꺼 버린다 — 문서가 "빠진 키는 기본값"이라고 약속한 것과도
+                # 꺼 버린다. 문서가 "빠진 키는 기본값"이라고 약속한 것과도
                 # 어긋난다.
                 params={**factors[key].params, **(value.get("params") or {})},
             )

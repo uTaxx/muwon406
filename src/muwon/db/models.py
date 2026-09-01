@@ -11,7 +11,7 @@ class Base(DeclarativeBase):
 class AppSettingRow(Base):
     """KIS 인증정보/텔레그램/리스크 정책 등, 재시작 없이 바꿀 수 있어야 하는
     설정값 저장소. muwon.settings.store.SettingsStore가 이 테이블을 통해
-    읽고 쓴다 — CLI와 (Phase 2+) 대시보드가 공유하는 단일 소스."""
+    읽고 쓴다. CLI와 (Phase 2+) 대시보드가 공유하는 단일 소스."""
 
     __tablename__ = "app_settings"
 
@@ -115,7 +115,7 @@ class TradeRow(Base):
     남기지만(매수/매도가 서로 안 엮여 있음), 이건 손익까지 계산된 라운드트립
     이라 "이 전략/가설이 실전에서 어떻게 됐는지"를 바로 분석할 수 있다.
     사람이든, 나중에 붙을 AI 제언 로직이든, 전략을 고치자는 판단은 결국 이
-    테이블을 근거로 한다 — 그래서 strategy_key를 반드시 채워서 가설별로
+    테이블을 근거로 한다. 그래서 strategy_key를 반드시 채워서 가설별로
     묶어 볼 수 있게 한다."""
 
     __tablename__ = "trades"
@@ -160,7 +160,7 @@ class UniverseSnapshotRow(Base):
     """유니버스(매매 대상 종목 목록)를 갱신할 때마다 남기는 스냅샷.
 
     손으로 고른 고정 목록은 시간이 지나면 낡는다(상장폐지·순위 역전 등).
-    시가총액 상위로 주기적으로 다시 뽑되, 덮어쓰지 않고 스냅샷으로 쌓는다 —
+    시가총액 상위로 주기적으로 다시 뽑되, 덮어쓰지 않고 스냅샷으로 쌓는다.
     "어제와 오늘 종목이 뭐가 달라졌는지"를 볼 수 있어야 성과 변화를 종목
     교체 탓인지 전략 탓인지 구분할 수 있기 때문이다."""
 
@@ -173,10 +173,10 @@ class UniverseSnapshotRow(Base):
     market: Mapped[str] = mapped_column(String(20))  # KOSPI | KOSDAQ
     market_cap: Mapped[int] = mapped_column(Integer, default=0)  # 억원
     #: 거래대금 상위로 뽑은 스냅샷일 때의 누적거래대금(백만원). 시총 스냅샷은 0.
-    #: market_cap 컬럼에 뜻이 다른 값을 같이 담지 않는다 — 나중에 표를 읽는
+    #: market_cap 컬럼에 뜻이 다른 값을 같이 담지 않는다. 나중에 표를 읽는
     #: 사람이 어느 쪽 숫자인지 알 수 없게 된다.
     #: 나중에 추가된 컬럼이라 nullable이다. _add_missing_columns가 기존 DB에
-    #: ALTER TABLE ADD COLUMN으로 붙이면 기존 행은 NULL이 된다 — 새로 만든
+    #: ALTER TABLE ADD COLUMN으로 붙이면 기존 행은 NULL이 된다. 새로 만든
     #: 스키마만 NOT NULL로 두면 테스트가 운영 DB 상태를 재현하지 못한다.
     turnover: Mapped[int | None] = mapped_column(Integer, default=0, nullable=True)
     rank: Mapped[int] = mapped_column(Integer, default=0)
@@ -191,11 +191,11 @@ class UniverseSnapshotRow(Base):
 class RunLogRow(Base):
     """엔진이 한 번 돌 때마다 남기는 '무엇을 보고 무엇을 했나' 한 줄.
 
-    이게 없으면 빈 대시보드가 서로 다른 두 가지를 동시에 뜻한다 — "오늘은
+    이게 없으면 빈 대시보드가 서로 다른 두 가지를 동시에 뜻한다. "오늘은
     살 게 없었다"와 "오늘은 아예 안 돌았다". 둘은 고치는 방법이 정반대다.
     그래서 체결이 없어도 한 줄은 남긴다.
 
-    같은 날 손으로 여러 번 돌리면 줄도 여러 개 남는다. 합치지 않는다 —
+    같은 날 손으로 여러 번 돌리면 줄도 여러 개 남는다. 합치지 않는다.
     "몇 번 돌았나"도 알아야 할 정보다."""
 
     __tablename__ = "run_logs"
@@ -213,7 +213,7 @@ class RunLogRow(Base):
     sell_signals: Mapped[int] = mapped_column(Integer, default=0)
     orders: Mapped[int] = mapped_column(Integer, default=0)
     #: 리스크 매니저가 막은 이유들(줄바꿈 구분). 신호는 났는데 주문이 없으면
-    #: 여기에 이유가 있다 — 없으면 애초에 신호가 안 난 것이다.
+    #: 여기에 이유가 있다. 없으면 애초에 신호가 안 난 것이다.
     rejections: Mapped[str] = mapped_column(Text, default="")
     cash: Mapped[float] = mapped_column(Float, default=0.0)
     equity: Mapped[float] = mapped_column(Float, default=0.0)
@@ -287,7 +287,7 @@ class StrategyShadowRow(Base):
     ## 한 줄은 전략 하나다
 
     같은 날 같은 구간에서 여러 줄이 나온다. 그때 걸려 있던 전략 한 줄과,
-    그날 순위 위쪽 몇 줄이다. 견주는 일은 읽을 때 한다 — 저장할 때 미리
+    그날 순위 위쪽 몇 줄이다. 견주는 일은 읽을 때 한다. 저장할 때 미리
     빼 두면 나중에 다른 방식으로 견주고 싶을 때 다시 잴 수가 없다.
 
     ## 상태

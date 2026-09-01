@@ -1,4 +1,4 @@
-"""매수 전에 사람이 체크해야 산다 — 승인 대기열.
+"""매수 전에 사람이 체크해야 산다. 승인 대기열.
 
 `docs/설계_스트림릿을_걷어낼까.md`의 **5단계**이고, LX MI 시스템에서
 가장 값나갔던 부분(사람 승인 스텝)을 이쪽에 옮긴 것이다.
@@ -410,7 +410,7 @@ def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None
 def read_today(sheet_id: str, 날짜: date, svc=None):
     """오늘 후보 (종목코드, 이름) 목록과 지금까지의 결정.
 
-    버튼을 다시 그리려면 **지금 상태**를 알아야 한다 — 누른 뒤에 화면이
+    버튼을 다시 그리려면 **지금 상태**를 알아야 한다. 누른 뒤에 화면이
     안 바뀌면 먹었는지 몰라서 또 누르게 된다."""
     from muwon.cloud.sheet_log import _service
     from muwon.notify.telegram_buttons import 버튼항목

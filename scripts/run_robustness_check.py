@@ -1,6 +1,6 @@
 """등록된 전략을 여러 기간에 나눠 검증해 "그때만 잘 맞았던 전략"을 걸러낸다.
 
-한 구간에서 +59%가 나왔다고 좋은 전략이 아니다 — 과거 데이터에 우연히
+한 구간에서 +59%가 나왔다고 좋은 전략이 아니다. 과거 데이터에 우연히
 맞아떨어졌을 수 있고(과최적화), 그런 전략은 앞으로는 통하지 않는다. 같은
 전략을 연/반기 단위로 각각 돌려 결과가 들쭉날쭉한지 꾸준한지를 본다.
 
@@ -66,7 +66,7 @@ def main() -> None:
     session_factory = make_session_factory(bootstrap_settings.database_url)
     universe = active_universe(session_factory, list(UNIVERSE))
 
-    # 예열 구간까지 한 번에 받아 두고 구간마다 잘라 쓴다 — 구간 수만큼
+    # 예열 구간까지 한 번에 받아 두고 구간마다 잘라 쓴다. 구간 수만큼
     # 다시 내려받으면 느리기만 하다.
     data_from = min(w.data_from for w in windows)
     data_to = max(w.end for w in windows)

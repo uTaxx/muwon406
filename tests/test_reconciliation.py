@@ -2,7 +2,7 @@
 
 이 프로그램은 현금을 스스로 계산해 왔고, 주문이 일부만 체결되거나 거부되면
 그 값이 실제 계좌와 조용히 어긋난다. 여기서 검증하는 건 "어긋난 걸 빠짐없이
-찾아내는가"다 — 못 찾으면 어긋난 현금으로 비중 계산과 손실한도가 계속
+찾아내는가"다. 못 찾으면 어긋난 현금으로 비중 계산과 손실한도가 계속
 돌아가게 된다."""
 
 from datetime import date, datetime
@@ -73,7 +73,7 @@ def test_detects_cash_drift():
 
 
 def test_small_cash_difference_is_tolerated():
-    """수수료·세금 반올림으로 몇 원 차이는 늘 생긴다 — 매번 경고하면
+    """수수료·세금 반올림으로 몇 원 차이는 늘 생긴다. 매번 경고하면
     진짜 문제가 묻힌다."""
     report = reconcile(
         db_positions={},

@@ -60,7 +60,7 @@ def build(session_factory, **kwargs) -> str:
 
 
 def test_summarize_computes_win_rate_and_profit_factor():
-    """승률만 보면 오해한다 — 승률 33%라도 이길 때 크게 벌면 본전 이상이다.
+    """승률만 보면 오해한다. 승률 33%라도 이길 때 크게 벌면 본전 이상이다.
     손익비를 같이 계산해 그 구분이 되게 한다."""
     trades = [make_trade(9.0), make_trade(-3.0), make_trade(-3.0)]
 
@@ -86,7 +86,7 @@ def test_summarize_computes_average_holding_days():
 
 
 def test_report_includes_settings_context():
-    """숫자만 있으면 좋은지 나쁜지 판단할 수 없다 — 어떤 설정으로 돌린
+    """숫자만 있으면 좋은지 나쁜지 판단할 수 없다. 어떤 설정으로 돌린
     결과인지가 함께 있어야 진단이 가능하다."""
     session_factory = make_session_factory("sqlite:///:memory:")
 

@@ -6,7 +6,7 @@
 된다. 비중 계산·일일 손실한도가 전부 이 현금값에 기대고 있어서, 틀어지면
 리스크 관리 자체가 헛돌게 된다.
 
-여기서는 "무엇이 얼마나 다른지"만 계산하고 고치지는 않는다 — 어긋난 원인이
+여기서는 "무엇이 얼마나 다른지"만 계산하고 고치지는 않는다. 어긋난 원인이
 부분 체결일 수도, 수동 매매일 수도, 우리 버그일 수도 있어서 자동으로
 덮어쓰면 그것대로 사고를 부른다. 알리고 사람이 판단하게 한다."""
 
@@ -20,7 +20,7 @@ from muwon.db.models import PositionRow
 from muwon.domain.types import AccountBalance
 from muwon.execution import state_repository
 
-# 이보다 작은 현금 차이는 보고하지 않는다 — 수수료·세금 반올림 등으로 몇 원
+# 이보다 작은 현금 차이는 보고하지 않는다. 수수료·세금 반올림 등으로 몇 원
 # 단위 오차는 늘 생기는데, 그걸 매번 경고하면 진짜 문제가 묻힌다.
 CASH_TOLERANCE_KRW = 1_000.0
 
@@ -119,7 +119,7 @@ def reconcile(
 def check_account_consistency(client, session_factory, initial_cash: float = 10_000_000.0):
     """실제 계좌를 조회해 DB 상태와 대조한 보고서를 돌려준다(콘솔에도 출력).
 
-    잔고 조회가 실패하면 None을 돌려주고 넘어간다 — 대조는 어디까지나
+    잔고 조회가 실패하면 None을 돌려주고 넘어간다. 대조는 어디까지나
     점검이라, 여기서 예외를 올려 그날 매매를 통째로 막는 건 과하다."""
     try:
         balance = client.get_balance()

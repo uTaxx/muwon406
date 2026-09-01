@@ -24,7 +24,7 @@ def test_every_symbol_is_six_digits():
 
 
 def test_no_symbol_appears_in_two_sectors():
-    """한 종목이 두 섹터에 있으면 섹터별 비중 상한을 두는 의미가 없다 —
+    """한 종목이 두 섹터에 있으면 섹터별 비중 상한을 두는 의미가 없다.
     그 종목만 두 배로 살 수 있게 된다."""
     본것: dict[str, str] = {}
     for 코드, m in all_members():

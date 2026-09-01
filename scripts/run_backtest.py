@@ -2,7 +2,7 @@
 
 시세는 YahooFinanceDataSource(개발·백테스트 전용, KIS와 무관)에서 가져온다.
 이 세션의 네트워크 정책이 query1.finance.yahoo.com을 막고 있다면 여기서
-바로 실패한다 — docs/kis_api_setup.md 안내 이전에, 환경 설정에서 네트워크
+바로 실패한다. docs/kis_api_setup.md 안내 이전에, 환경 설정에서 네트워크
 정책부터 확인할 것.
 
 사용 예:

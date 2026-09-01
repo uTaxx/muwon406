@@ -87,7 +87,7 @@ def save(bars: list[SlotBar], path: Path = DEFAULT_PATH) -> int:
 def coverage(trade_date: date, symbols: list[str], path: Path = DEFAULT_PATH) -> Coverage:
     """그날 무엇이 빠졌는지.
 
-    **이 API는 당일치만 준다.** 오늘 못 받은 칸은 내일 받을 수 없다 —
+    **이 API는 당일치만 준다.** 오늘 못 받은 칸은 내일 받을 수 없다.
     영영 없는 것이다. 그래서 얼마나 찼는지를 매번 소리 내어 말해야 한다.
     조용히 넘어가면 몇 달 뒤에 구멍투성이 데이터를 발견하게 된다."""
     with closing(_connect(path)) as conn:

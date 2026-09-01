@@ -24,7 +24,7 @@
 
 ## 안 하는 것
 
-**지우지 않는다.** 계좌에 없는 종목이 우리 기록에 있어도 그냥 둔다 — 이미
+**지우지 않는다.** 계좌에 없는 종목이 우리 기록에 있어도 그냥 둔다. 이미
 팔린 것일 수도, 조회가 늦은 것일 수도 있다. 매일 자동으로 도는 자리에
 지우는 권한까지 주면 위험하다. 그건 `drop_phantom_holdings.py`가 사람의
 지시를 받아 한다.
@@ -68,7 +68,7 @@ def main() -> int:
                         help="고칠 것이 없으면 텔레그램을 안 보낸다")
     args = parser.parse_args()
 
-    # 날짜만 쓰므로 시간대가 없어도 된다 — 사람이 "이 날짜로 맞춰라"라고
+    # 날짜만 쓰므로 시간대가 없어도 된다. 사람이 "이 날짜로 맞춰라"라고
     # 주는 값이라 그 날짜 그대로가 맞다.
     오늘 = (
         date.fromisoformat(args.date) if args.date else datetime.now(KST).date()
@@ -95,7 +95,7 @@ def main() -> int:
             .all()
         )
         # 한국 날짜로 다시 거른다. created_at은 UTC라 09:05 주문이 전날로
-        # 잡힌다 — 그대로 두면 어제 주문까지 KIS에 물어보게 되고, 이 계정은
+        # 잡힌다. 그대로 두면 어제 주문까지 KIS에 물어보게 되고, 이 계정은
         # 호출을 자주 하면 403으로 막힌다(2026-08-25에 세 번 겪었다).
         줄들 = [
             (o.kis_order_id, o.symbol, o.quantity, o.price, o.reference_price or 0.0, o.side)
@@ -142,7 +142,7 @@ def main() -> int:
 
     if 모르는종목:
         print(f"■ 계좌에만 있는 종목 {len(모르는종목)}개: {', '.join(모르는종목)}")
-        print("  여기서 들이지 않습니다 — 진입일을 사람이 줘야 해서")
+        print("  여기서 들이지 않습니다. 진입일을 사람이 줘야 해서")
         print("  adopt-holdings 워크플로가 할 일입니다.")
         print()
 
@@ -154,11 +154,11 @@ def main() -> int:
 
     할일 = bool(바뀌는주문 or 바뀌는보유 or 현금바뀌나)
     if not 할일:
-        print("고칠 것이 없습니다 — 기록과 계좌가 이미 같습니다.")
+        print("고칠 것이 없습니다. 기록과 계좌가 이미 같습니다.")
         return 0
 
     if not args.apply:
-        print("미리보기입니다 — 아무것도 쓰지 않았습니다.")
+        print("미리보기입니다. 아무것도 쓰지 않았습니다.")
         print("실제로 고치려면 --apply 를 붙여 다시 실행하세요.")
         return 0
 

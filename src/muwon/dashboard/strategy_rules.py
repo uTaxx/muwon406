@@ -1,6 +1,6 @@
 """지금 돌고 있는 전략이 **무엇을 보고 사고파는지**를 사람 말로 옮긴다.
 
-왜 필요한가 — 화면에는 전략 이름만 떠 있었다. `volume_surge_5d`라는 이름은
+왜 필요한가. 화면에는 전략 이름만 떠 있었다. `volume_surge_5d`라는 이름은
 그 전략이 무엇을 사는지 아무것도 말해 주지 않는다. 무엇을 기준으로 샀는지
 모르면, 결과를 봐도 무엇을 고쳐야 할지 판단할 수 없다.
 
@@ -9,7 +9,7 @@
 여기서는 전략 객체의 **실제 파라미터**를 읽어서 문장을 만든다. 파라미터를
 바꾸면 설명도 같이 바뀐다.
 
-모르는 전략이 새로 등록되면 파라미터를 그대로 나열한다 — 문장이 없더라도
+모르는 전략이 새로 등록되면 파라미터를 그대로 나열한다. 문장이 없더라도
 빈 화면보다는 낫고, '설명을 안 붙였다'는 사실 자체가 보인다.
 """
 
@@ -27,7 +27,7 @@ class Rules:
 
     산다: list[str]
     #: **전략 자신의** 매도 신호만. 보유 기간 경과와 손절은 엔진이 따로
-    #: 검사하므로 여기 넣지 않는다 — 넣었더니 화면에 같은 줄이 두 번 나왔다.
+    #: 검사하므로 여기 넣지 않는다. 넣었더니 화면에 같은 줄이 두 번 나왔다.
     #: 파는 조건 전부를 한자리에서 보려면 exit_rules()를 쓴다.
     판다: list[str]
     참고: list[str]
@@ -47,7 +47,7 @@ def describe(strategy) -> Rules:
     if hasattr(strategy, "members") and hasattr(strategy, "mode"):
         return _describe_combined(strategy)
     # 묶음 안의 전략은 SingleSymbolAdapter로 감싸여 들어온다. 껍데기에는
-    # params가 없어서 그대로 보면 "설명 없음"이 뜬다 — 실제로 그렇게 나왔다.
+    # params가 없어서 그대로 보면 "설명 없음"이 뜬다. 실제로 그렇게 나왔다.
     strategy = getattr(strategy, "inner", strategy)
     params = getattr(strategy, "params", None)
     if params is None:
@@ -73,7 +73,7 @@ def _fallback(params) -> Rules:
 
 # ── 전략별 문장 ────────────────────────────────────────────────────────
 # 각 함수는 그 전략의 generate_signals를 그대로 읽고 옮긴 것이다.
-# 코드와 어긋나면 그건 버그다 — 테스트가 파라미터 값이 문장에 들어갔는지까지 본다.
+# 코드와 어긋나면 그건 버그다. 테스트가 파라미터 값이 문장에 들어갔는지까지 본다.
 
 
 def _volume_surge_rules(p, strategy) -> Rules:
@@ -414,7 +414,7 @@ def common_rules(policy, universe_size: int, universe_kind: str) -> list[str]:
 def exit_rules(strategy, policy) -> tuple[list[str], list[str]]:
     """**엔진이 실제로 검사하는 순서대로** 청산 조건 전부.
 
-    왜 따로 두는가 — 전략의 매도 신호만 보여 줬더니 "매도 전략은 기간밖에
+    왜 따로 두는가. 전략의 매도 신호만 보여 줬더니 "매도 전략은 기간밖에
     없냐"는 질문을 받았다. 실제로는 손절이 항상 먼저 걸리는데, 그게 리스크
     정책 쪽에 있다는 이유로 다른 칸에 적혀 있었다. **파는 조건은 어디에
     설정돼 있든 한자리에 모여 있어야 한다.**

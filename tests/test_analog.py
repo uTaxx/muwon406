@@ -122,7 +122,7 @@ def test_the_minimum_is_enforced_exactly():
 
 
 def test_shallow_history_and_too_few_episodes_give_different_reasons():
-    """둘을 같은 문구로 내면 무엇을 고쳐야 할지 알 수 없다 — 데이터를 더
+    """둘을 같은 문구로 내면 무엇을 고쳐야 할지 알 수 없다. 데이터를 더
     받아야 하는 건지, 문턱을 낮춰야 하는 건지."""
     얕은것 = forecast(_표(60), _가격(60), "시험")
     assert "견줄 과거가" in 얕은것.사유

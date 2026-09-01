@@ -112,7 +112,7 @@ class VolumeSurgeStrategy(Strategy):
         self.name = name
         # 청산은 엔진이 '실제 보유일'로 집행한다. 전에는 이 전략이 스스로
         # entry_index로 보유 상태를 기억했는데, 그건 엔진이 정말 샀는지와
-        # 무관한 값이었다 — 리스크 한도로 매수가 거부된 종목도 전략은 샀다고
+        # 무관한 값이었다. 리스크 한도로 매수가 거부된 종목도 전략은 샀다고
         # 믿고 그 뒤 며칠간 신호를 막았다. 자리 경쟁이 생기는 넓은 유니버스에서
         # 특히 해롭다. 전략은 "지금 이 종목이 매력적인가"만 답한다.
         self.max_holding_days = self.params.holding_days
@@ -135,7 +135,7 @@ class VolumeSurgeStrategy(Strategy):
                 continue
 
             # 매도 신호를 먼저 본다. 같은 날 두 신호가 다 서면 파는 쪽이
-            # 먼저다 — 이 저장소는 언제나 위험을 줄이는 쪽을 앞에 둔다.
+            # 먼저다. 이 저장소는 언제나 위험을 줄이는 쪽을 앞에 둔다.
             if p.exit_sma is not None and not has_nan(cur, ["sma_short"]):
                 # 어제는 위에 있었는데 오늘 아래로 내려온 날에만 낸다.
                 # 아래에 머무는 동안 매일 신호를 내면 이미 판 종목에 대고

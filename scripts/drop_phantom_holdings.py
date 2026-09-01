@@ -101,7 +101,7 @@ def main() -> int:
         print(f"🛑 {h.name}({h.symbol})는 **계좌에 실제로 {h.quantity}주 있습니다.** 안 지웁니다.")
         print("   유령이 아닙니다. 지우면 그 주식은 손절이 안 걸린 채로 남습니다.")
     for symbol in 계획.이미없음:
-        print(f"· {symbol}는 DB에도 없습니다 — 지울 것이 없습니다.")
+        print(f"· {symbol}는 DB에도 없습니다. 지울 것이 없습니다.")
     if 계획.계좌에있어서거부 or 계획.이미없음:
         print()
 
@@ -144,7 +144,7 @@ def main() -> int:
         print()
 
     if not args.apply:
-        print("미리보기입니다 — 아무것도 쓰지 않았습니다.")
+        print("미리보기입니다. 아무것도 쓰지 않았습니다.")
         print("실제로 지우려면 --apply 를 붙여 다시 실행하세요.")
         return 0
 
