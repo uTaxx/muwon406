@@ -129,9 +129,9 @@ def _bollinger_breakout_rules(p, strategy) -> Rules:
 
 
 def _price_channel_rules(p, strategy) -> Rules:
-    문턱 = f" + {_pct(p.breakout_pct)}" if p.breakout_pct else ""
+    넘을폭 = f" + {_pct(p.breakout_pct)}" if p.breakout_pct else ""
     return Rules(
-        산다=[f"종가가 **직전 {p.lookback}일 중 가장 높은 종가**{문턱}를 넘어설 때"],
+        산다=[f"종가가 **직전 {p.lookback}일 중 가장 높은 종가**{넘을폭}를 넘어설 때"],
         판다=[f"종가가 **{p.exit_sma}일 이동평균선을 아래로 뚫으면**"],
         참고=["신고가를 따라 매수하는 방식이므로, 이미 상승한 뒤에 진입하게 됩니다."],
     )
@@ -300,14 +300,14 @@ def _describe_combined(strategy) -> Rules:
 
 
 def _describe_score(strategy) -> Rules:
-    """점수 합산 전략: 조건이 아니라 점수와 문턱으로 판단한다."""
+    """점수 합산 전략: 조건이 아니라 점수와 기준점으로 판단한다."""
     config = getattr(strategy, "config", None)
     if config is None:
         return Rules(산다=[], 판다=[], 참고=["설명을 만들 수 없는 전략입니다."], 설명있음=False)
 
     weights = config.enabled_weights()
     가중치 = ", ".join(f"{k} {v:.0f}%" for k, v in sorted(weights.items(), key=lambda x: -x[1]))
-    문턱 = ", ".join(
+    기준점 = ", ".join(
         f"{regime} {value:g}점" for regime, value in sorted(config.regime_buy_threshold.items())
     )
     return Rules(
@@ -315,9 +315,9 @@ def _describe_score(strategy) -> Rules:
             f"여러 기준에 점수를 매겨 합산하고, 총점이 **{config.buy_threshold:g}점 이상**이면 매수",
             f"쓰이는 기준과 비중: {가중치}",
         ],
-        판다=["점수가 문턱 아래로 떨어지거나, 리스크 정책의 손절 조건에 걸리면"],
+        판다=["점수가 기준점 아래로 떨어지거나, 리스크 정책의 손절 조건에 걸리면"],
         참고=[
-            (f"시장 국면에 따라 매수 기준 점수가 달라집니다({문턱}). "
+            (f"시장 국면에 따라 매수 기준 점수가 달라집니다({기준점}). "
             "하락 국면에서는 기준 점수를 크게 높여 사실상 매수하지 않습니다."),
             "개별 조건이 아니라 여러 기준의 **합산 점수**로 종목을 선별하는 방식입니다.",
         ],
