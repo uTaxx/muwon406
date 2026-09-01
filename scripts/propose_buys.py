@@ -155,6 +155,7 @@ def main() -> int:
     selection = service.get_strategy_selection()
     strategy = build_strategies(selection.active_keys, selection.combine, selection.sell_keys)
     print(f"■ 전략: {selection.describe()}", file=sys.stderr)
+    print(f"■ 기초설정: {기초설정글(설정, service, 섹터당)}", file=sys.stderr)
 
     오늘 = datetime.now(KST).date()
 
@@ -364,6 +365,32 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001 (알림 실패가 후보 목록을 지우면 안 된다)
         print(f"텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
+
+
+def 기초설정글(설정, service, 섹터당: int) -> str:
+    """오늘 후보가 어느 조건에서 나온 것인지 한 줄로.
+
+    **조건 없는 숫자는 나중에 검증할 수 없다.** 후보가 왜 셋뿐인지 물으면
+    답이 여기에 있다. 자리가 여섯인지 여덟인지, 섹터당 둘인지 셋인지가
+    후보 수를 그대로 바꾼다.
+
+    로그로만 나간다. 사람에게 가는 알림에는 안 넣는다. 매일 같은 값이
+    나가면 읽히지 않고, 그러면 정작 값이 바뀐 날에도 안 읽힌다.
+
+    2026-09-01에 이 줄이 없어서 지금 걸린 값을 확인할 방법이 화면(n8n
+    연결이 필요하다) 말고는 없었다. 같은 날 워크플로가 시트의 섹터당
+    상한을 통째로 무시하고 있던 것도 이 줄이 있었으면 한 번에 보였다."""
+    정책 = service.get_risk_policy()
+    익절 = f"{정책.take_profit_pct * 100:.0f}%" if 정책.take_profit_pct else "끔"
+    보유 = f"{정책.max_holding_days}일" if 정책.max_holding_days else "전략이 정한 대로"
+    섹터말 = f"{섹터당}종목" if 섹터당 else "제한 없음"
+    return (
+        f"비중 {정책.max_position_weight * 100:.0f}% · "
+        f"동시보유 {_동시보유(설정, service)}종목 · "
+        f"섹터당 {섹터말} · "
+        f"손절 {정책.stop_loss_pct * 100:.0f}% · 익절 {익절} · 보유 {보유} · "
+        f"하루손실 {정책.daily_loss_limit_pct * 100:.0f}%"
+    )
 
 
 def _동시보유(설정, service) -> int:
