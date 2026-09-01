@@ -727,7 +727,9 @@
       입력.checked = 켤까;
       입력.disabled = !진짜;
       입력.setAttribute("aria-checked", String(켤까));
-      $(id + "상태").textContent = 켤까 ? "ON" : "OFF";
+      // 화면 문구 지침대로 동작 중과 중지로 적는다. ON과 OFF는 돈을
+      // 다루는 화면에 영어 약어를 그대로 둔 것이라 2026-09-01에 고쳤다.
+      $(id + "상태").textContent = 켤까 ? "동작 중" : "중지";
       // 매도가 꺼진 것은 매수가 꺼진 것보다 위험하다. 손절이 안 걸린다.
       입력.closest(".스위치").classList.toggle("위험", 위험할까 && !켤까);
     };
