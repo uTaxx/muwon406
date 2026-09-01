@@ -100,6 +100,10 @@ class BacktestEngine:
         initial_cash: float = 10_000_000.0,
         exit_at_open: bool = False,
         entry_at_open: bool = False,
+        섹터표: dict[str, str] | None = None,
+        섹터상한: int = 0,
+        섹터상한셈: str = "하루후보",
+        점수순: bool = False,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
@@ -125,6 +129,25 @@ class BacktestEngine:
         # 그리고 수익의 70~92%가 밤사이에 났으므로(설계안 §26), 매수를 하루
         # 늦추면 **밤 하나를 잃는다.** 청산 쪽과 부호가 반대다.
         self._entry_at_open = entry_at_open
+
+        # 아래 넷은 **실거래가 하는 일인데 백테스트가 안 하던 것**이다.
+        # 기본값은 옛 동작 그대로다. 켜면 지금까지 낸 전략 평가 결과·기간
+        # 검증 숫자와 비교가 안 되므로, 켜는 쪽에서 그 사실을 적어야 한다.
+        #
+        # 종목코드 → 섹터코드. 없으면 섹터 상한을 안 건다.
+        self._섹터표 = 섹터표 or {}
+        #: 한 섹터에서 몇 종목까지. 0 이하면 제한 없음(시트의 max_per_sector와
+        #: 같은 뜻이다).
+        #:
+        #: 음수를 그대로 두면 상한이 -1인 셈이 되어 **한 종목도 안 산다.**
+        #: 수익률 0%가 나오는데 화면에는 그것이 "이 전략은 아무것도 못
+        #: 번다"로 보인다. 조용히 틀리는 쪽이라 여기서 막는다.
+        self._섹터상한 = max(0, int(섹터상한 or 0))
+        #: "하루후보"는 그날 새로 사는 것만 센다. 실거래가 그렇게 한다.
+        #: "보유전체"는 이미 들고 있는 것까지 세는 진짜 보유 한도다.
+        self._섹터상한셈 = 섹터상한셈
+        #: 자리가 모자랄 때 신호 점수가 높은 것부터 살 것인가.
+        self._점수순 = bool(점수순)
 
     def run(
         self, price_histories: dict[str, pd.DataFrame], trade_from: date | None = None
@@ -316,6 +339,7 @@ class BacktestEngine:
             )
 
             # 3) 진입: 리스크 매니저 승인을 받은 매수 신호만 실행
+            오늘후보 = []
             for symbol, price in closes_today.items():
                 if symbol in positions or symbol in pending_entries:
                     continue
@@ -324,17 +348,25 @@ class BacktestEngine:
                 ]
                 if not buy_signals:
                     continue
+                # 실거래는 한 종목에 신호가 여럿이면 점수가 제일 높은 것을
+                # 고른다(`propose_buys.py`). 여기서 첫 번째를 고르면 이유가
+                # 다른 신호가 기록에 남는다.
+                고른신호 = max(buy_signals, key=lambda s: s.score)
+                오늘후보.append((symbol, float(price), 고른신호))
 
+            오늘후보 = self._후보줄세우기(오늘후보, positions, pending_entries)
+
+            for symbol, price, 신호 in 오늘후보:
                 if self._entry_at_open:
                     # 오늘은 정하기만 한다. 체결도 수량 결정도 내일 아침이다.
-                    pending_entries[symbol] = buy_signals[0].reason
+                    pending_entries[symbol] = 신호.reason
                     continue
 
                 cash -= self._open_position(
                     symbol,
-                    float(price),
+                    price,
                     current_date,
-                    buy_signals[0].reason,
+                    신호.reason,
                     equity_after_exits,
                     daily_pnl_pct,
                     len(positions),
@@ -364,6 +396,43 @@ class BacktestEngine:
         return BacktestResult(
             equity_curve=equity_curve, closed_trades=closed_trades, final_positions=positions
         )
+
+    def _후보줄세우기(self, 후보들, positions, pending_entries):
+        """오늘 살 것을 실거래와 같은 순서로 줄 세우고, 섹터 상한으로 자른다.
+
+        ## 왜 순서가 결과를 바꾸나
+
+        자리는 여덟인데 신호가 열 개면 둘은 못 산다. 실거래는 신호 점수가
+        높은 순으로 세워서 위에서부터 사고(`propose_buys.py`), 여기서는
+        시세를 받은 순서대로 샀다. **같은 전략인데 다른 종목을 사고 있었다.**
+
+        기본값은 옛 동작 그대로다. 지금까지 낸 전략 평가 결과와 기간 검증
+        숫자가 전부 그 위에 있어서, 기본값을 바꾸면 과거 결과와 비교가
+        안 된다. 실거래와 같은 규칙으로 재려면 켜서 쓴다."""
+        if self._점수순:
+            후보들 = sorted(후보들, key=lambda ㅌ: -ㅌ[2].score)
+
+        if not self._섹터상한 or not self._섹터표:
+            return 후보들
+
+        # **실거래는 그날 새로 사는 것만 센다.** 이미 들고 있는 것은 안
+        # 센다(`sector/selection.cap_per_sector`가 0부터 센다). 그래서 반도체
+        # 셋을 들고 있어도 오늘 반도체 셋을 더 살 수 있다. `보유전체`는 그
+        # 규칙이 아니라 진짜 보유 한도로 쟀을 때를 보는 쪽이다.
+        센것: dict[str, int] = {}
+        if self._섹터상한셈 == "보유전체":
+            for ㅅ in list(positions) + list(pending_entries):
+                키 = self._섹터표.get(ㅅ, "")
+                센것[키] = 센것.get(키, 0) + 1
+
+        남김 = []
+        for ㅌ in 후보들:
+            키 = self._섹터표.get(ㅌ[0], "")
+            if 센것.get(키, 0) >= self._섹터상한:
+                continue
+            센것[키] = 센것.get(키, 0) + 1
+            남김.append(ㅌ)
+        return 남김
 
     def _open_position(
         self,

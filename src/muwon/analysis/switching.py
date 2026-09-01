@@ -143,6 +143,11 @@ def 날마다고르기(
     처음키: str,
     costs: TransactionCosts | None = None,
     알림=None,
+    섹터표: dict[str, str] | None = None,
+    섹터상한: int = 0,
+    섹터상한셈: str = "하루후보",
+    점수순: bool = False,
+    예수금: float = 10_000_000.0,
 ) -> list[하루선택]:
     """날마다 순위를 내고 1위를 고른다. 미래를 보지 않는다.
 
@@ -161,7 +166,12 @@ def 날마다고르기(
         줄들: list[전략줄] = []
         for 키 in 전략키들:
             try:
-                성적 = 돌려보기(정의, (lambda k=키: 만들기(k)), histories, 잰날, 정책, costs=costs)
+                # 순위를 내는 조건은 실제로 굴리는 조건과 같아야 한다.
+                성적 = 돌려보기(
+                    정의, (lambda k=키: 만들기(k)), histories, 잰날, 정책, costs=costs,
+                    섹터표=섹터표, 섹터상한=섹터상한, 섹터상한셈=섹터상한셈,
+                    점수순=점수순, 예수금=예수금,
+                )
             except Exception as 탈:  # noqa: BLE001 (하나가 터져도 나머지 순위는 봐야 한다)
                 # 조용히 넘기면 그날 순위가 몇 개짜리였는지 알 수 없다.
                 print(f"  {잰날} {키} 못 돌림 ({type(탈).__name__}: {탈})", file=sys.stderr)
@@ -250,11 +260,19 @@ def 굴리기(
     끝: date,
     정책: RiskPolicy,
     costs: TransactionCosts | None = None,
+    섹터표: dict[str, str] | None = None,
+    섹터상한: int = 0,
+    섹터상한셈: str = "하루후보",
+    점수순: bool = False,
+    예수금: float = 10_000_000.0,
 ):
     """계좌 하나를 시작부터 끝까지 굴린다.
 
     **구간을 잘라 이어 붙이지 않는다.** 잘라 붙이면 구간이 바뀔 때마다 보유
-    종목이 사라지고 현금에서 다시 시작해서, 실제로는 낼 수 없는 성적이 나온다."""
+    종목이 사라지고 현금에서 다시 시작해서, 실제로는 낼 수 없는 성적이 나온다.
+
+    섹터 상한과 점수순은 실거래가 하는 일인데 백테스트가 안 하던 것이다.
+    켜면 지금까지 낸 전략 평가 결과와 비교가 안 되므로 결과에 적어야 한다."""
     from muwon.analysis.period_check import slice_for_range
 
     잘린것 = slice_for_range(histories, 시작, 끝)
@@ -266,5 +284,10 @@ def 굴리기(
         costs=costs,
         entry_at_open=True,
         exit_at_open=True,
+        섹터표=섹터표,
+        섹터상한=섹터상한,
+        섹터상한셈=섹터상한셈,
+        점수순=점수순,
+        initial_cash=예수금,
     ).run(잘린것, trade_from=시작)
     return 결과, compute_metrics(결과)

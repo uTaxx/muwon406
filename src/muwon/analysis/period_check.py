@@ -223,6 +223,11 @@ def 돌려보기(
     costs: TransactionCosts | None = None,
     entry_at_open: bool = True,
     exit_at_open: bool = True,
+    섹터표: dict[str, str] | None = None,
+    섹터상한: int = 0,
+    섹터상한셈: str = "하루후보",
+    점수순: bool = False,
+    예수금: float = 10_000_000.0,
 ) -> 기간성적 | None:
     """한 구간을 통째로 실행한다. 시세가 없으면 None.
 
@@ -246,6 +251,13 @@ def 돌려보기(
         costs=costs,
         exit_at_open=exit_at_open,
         entry_at_open=entry_at_open,
+        # 순위를 내는 조건과 실제로 굴리는 조건이 다르면, "이 전략이 1위였다"가
+        # 실제로 그 전략을 걸었을 때의 성적을 설명하지 못한다.
+        섹터표=섹터표,
+        섹터상한=섹터상한,
+        섹터상한셈=섹터상한셈,
+        점수순=점수순,
+        initial_cash=예수금,
     ).run(잘린것, trade_from=시작)
 
     return 기간성적(

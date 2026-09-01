@@ -69,6 +69,11 @@ def 전략이름(키: str) -> str:
         return 키
 
 
+def 섹터표만들기() -> dict[str, str]:
+    """종목코드 → 섹터코드. 섹터 상한을 걸려면 이것이 있어야 한다."""
+    return {m.symbol: s.코드 for s in CATALOG for m in s.종목}
+
+
 def 대상종목() -> list[Ticker]:
     """매매 대상 종목.
 
@@ -109,12 +114,13 @@ def 잴날과적용날(전체거래일: list[date], 시작: date, 끝: date):
     return [ㄱ for ㄱ, _ in 짝], [ㄴ for _, ㄴ in 짝]
 
 
-def 고정성적(histories, 정의, 끝, 정책, costs):
+def 고정성적(histories, 정의, 끝, 정책, costs, 제약):
     """전략 하나로 그 구간을 고정해서 굴린 결과. 갈아탄 것과 견줄 상대다."""
     나온것 = []
     for ㅈ in list_definitions():
         try:
-            성적 = 돌려보기(정의, (lambda k=ㅈ.key: build_strategy(k)), histories, 끝, 정책, costs=costs)
+            성적 = 돌려보기(정의, (lambda k=ㅈ.key: build_strategy(k)), histories, 끝,
+                        정책, costs=costs, **제약)
         except Exception as 탈:  # noqa: BLE001
             print(f"  건너뜀 {ㅈ.key} ({type(탈).__name__})", file=sys.stderr)
             continue
@@ -123,7 +129,7 @@ def 고정성적(histories, 정의, 끝, 정책, costs):
     return 나온것
 
 
-def 날마다순위(정의, histories, 시작, 끝, 정책, costs, 처음키, 전략키들) -> list[하루선택]:
+def 날마다순위(정의, histories, 시작, 끝, 정책, costs, 처음키, 전략키들, 제약) -> list[하루선택]:
     """날마다 순위를 낸다. **이 계산이 전체 시간의 거의 전부다.**
 
     전략 27개를 하루마다 다시 굴리므로 한 날에 1분쯤 걸린다. 그래서 결과를
@@ -140,7 +146,7 @@ def 날마다순위(정의, histories, 시작, 끝, 정책, costs, 처음키, �
               f"  ({time.time() - 시작때:.0f}초)", file=sys.stderr)
 
     return 날마다고르기(정의, histories, 잴날들, 적용날들, 정책, 전략키들,
-                    build_strategy, 처음키, costs=costs, 알림=한줄)
+                    build_strategy, 처음키, costs=costs, 알림=한줄, **제약)
 
 
 def 순위저장(선택들: list[하루선택], 경로: str) -> None:
@@ -189,9 +195,9 @@ def 순위읽기(경로: str) -> list[하루선택]:
 )
 
 
-def 재보기(이름, 날짜별키, histories, 시작, 끝, 정책, costs, 처음키):
+def 재보기(이름, 날짜별키, histories, 시작, 끝, 정책, costs, 처음키, 제약):
     전략 = 갈아타기전략(날짜별키, build_strategy, 처음키)
-    굴린것 = 굴리기(histories, 전략, 시작, 끝, 정책, costs=costs)
+    굴린것 = 굴리기(histories, 전략, 시작, 끝, 정책, costs=costs, **제약)
     if 굴린것 is None:
         return None
     ㅁ = 굴린것[1]
@@ -214,6 +220,24 @@ def main() -> int:
     ㅍ.add_argument("--끝", default="", help="마지막 날 (YYYY-MM-DD). 비우면 오늘")
     ㅍ.add_argument("--슬리피지", type=float, default=0.0,
                    help="편도 체결 오차. 자주 갈아타면 거래가 늘어 여기에 민감해진다")
+    ㅍ.add_argument("--예수금", type=float, default=10_000_000.0,
+                   help="시작 자금")
+    ㅍ.add_argument("--비중", type=float, default=0.15,
+                   help="한 종목에 최대 몇 배까지. 0.15면 15%%")
+    ㅍ.add_argument("--동시보유", type=int, default=6,
+                   help="동시에 몇 종목까지")
+    ㅍ.add_argument("--섹터당", type=int, default=3,
+                   help="한 섹터에서 몇 종목까지. 0이면 제한 없음")
+    ㅍ.add_argument("--섹터상한셈", default="하루후보", choices=["하루후보", "보유전체"],
+                   help="하루후보는 그날 새로 사는 것만 센다(실거래가 하는 일). "
+                        "보유전체는 이미 들고 있는 것까지 세는 진짜 보유 한도다")
+    ㅍ.add_argument("--손절", type=float, default=-0.05, help="예: -0.05면 -5%%")
+    ㅍ.add_argument("--하루손실", type=float, default=-0.03,
+                   help="하루에 이만큼 잃으면 그날 신규 매수 중단")
+    ㅍ.add_argument("--점수순", action="store_true", default=True,
+                   help="자리가 모자랄 때 신호 점수가 높은 것부터 산다(실거래가 하는 일)")
+    ㅍ.add_argument("--점수순끔", dest="점수순", action="store_false",
+                   help="시세를 받은 순서대로 산다(옛 백테스트 동작)")
     ㅍ.add_argument("--순위저장", default="", help="날마다 낸 순위를 남길 경로")
     ㅍ.add_argument("--순위읽기", default="",
                    help="남겨 둔 순위를 다시 쓴다. 규칙만 바꿔 볼 때 쓴다")
@@ -226,9 +250,21 @@ def main() -> int:
     # 재게 되어 서로 견줄 수가 없다.
     잴정의 = 기간표[인자.재는구간] if 인자.재는구간 else 정의
     시작, _ = 구간(잴정의, 끝)
-    정책 = RiskPolicy()
+    정책 = RiskPolicy(
+        max_position_weight=인자.비중,
+        max_concurrent_positions=인자.동시보유,
+        stop_loss_pct=인자.손절,
+        daily_loss_limit_pct=인자.하루손실,
+    )
     costs = TransactionCosts(slippage_pct=인자.슬리피지)
     처음키 = 기준전략[0]
+    제약 = {
+        "섹터표": 섹터표만들기(),
+        "섹터상한": 인자.섹터당,
+        "섹터상한셈": 인자.섹터상한셈,
+        "점수순": 인자.점수순,
+        "예수금": 인자.예수금,
+    }
 
     histories = load_histories(
         YahooFinanceDataSource(), 대상종목(), 시작 - timedelta(days=900), 끝,
@@ -243,7 +279,7 @@ def main() -> int:
         print(f"순위 {len(선택들)}일치를 읽었습니다: {인자.순위읽기}", file=sys.stderr)
     else:
         선택들 = 날마다순위(정의, histories, 시작, 끝, 정책, costs, 처음키,
-                       [ㅈ.key for ㅈ in list_definitions()])
+                       [ㅈ.key for ㅈ in list_definitions()], 제약)
         if 인자.순위저장:
             순위저장(선택들, 인자.순위저장)
 
@@ -256,13 +292,13 @@ def main() -> int:
     잰것 = []
     for 규 in 규칙들:
         ㅈ = 재보기(규.이름, 규칙적용(선택들, 처음키, 규),
-                 histories, 시작, 끝, 정책, costs, 처음키)
+                 histories, 시작, 끝, 정책, costs, 처음키, 제약)
         if ㅈ:
             ㅈ["설명"] = 규.설명
             잰것.append(ㅈ)
 
     for 키 in 기준전략:
-        ㅈ = 재보기(f"안 바꿈: {전략이름(키)}", {}, histories, 시작, 끝, 정책, costs, 키)
+        ㅈ = 재보기(f"안 바꿈: {전략이름(키)}", {}, histories, 시작, 끝, 정책, costs, 키, 제약)
         if ㅈ:
             ㅈ["설명"] = f"그 전략 하나로 {잴정의.이름}을 그대로 갔다"
             잰것.append(ㅈ)
@@ -289,7 +325,7 @@ def main() -> int:
     print("\n" + "-" * 72)
     print(f"같은 구간을 전략 하나로 고정했을 때 ({잴정의.이름} 통째로)")
     print("-" * 72)
-    고정 = 고정성적(histories, 잴정의, 끝, 정책, costs)
+    고정 = 고정성적(histories, 잴정의, 끝, 정책, costs, 제약)
     고정.sort(key=lambda ㅌ: -ㅌ[1].수익률)
     for i, (키, 성적) in enumerate(고정, 1):
         표 = ""
