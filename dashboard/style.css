@@ -144,12 +144,16 @@ h1 {
 /* ── 탭 ───────────────────────────────
    명세서에는 탭이 없다. 그래서 단추처럼 보이게 하지 않고, 아래 굵은
    선 위에 얹힌 목차처럼 둔다. */
+/* 탭은 줄바꿈한다.
+
+   전에는 한 줄로 두고 가로 스크롤에 맡겼는데, 스크롤바를 숨겨 놓아서
+   더 있다는 표시가 아무것도 없었다. 폰 폭(390px)에서 일곱 탭 중 넷만
+   보이고 백테스트·전략 검토·용어 안내는 화면 밖에 있었다. 밀어서 볼 수는
+   있지만 밀 수 있다는 것을 알려 주는 것이 없으면 없는 탭이다. */
 .탭줄 {
-  display: flex; gap: 0; margin: 26px 0 22px;
-  border-bottom: 1px solid var(--선); overflow-x: auto;
-  scrollbar-width: none;
+  display: flex; flex-wrap: wrap; gap: 0; margin: 26px 0 22px;
+  border-bottom: 1px solid var(--선);
 }
-.탭줄::-webkit-scrollbar { display: none; }
 .탭 {
   font: inherit; font-size: 12px; font-weight: 600;
   letter-spacing: .06em;
