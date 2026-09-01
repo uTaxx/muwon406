@@ -327,6 +327,18 @@ input:disabled, select:disabled, textarea:disabled {
   border-style: dashed; cursor: not-allowed;
 }
 .설명 { font-size: 12.5px; color: var(--흐린글); margin: 6px 0 0; }
+
+/* 전략을 고르면 그 아래에 뜨는 쉬운 설명.
+
+   본문 색으로 두고 왼쪽에 선을 세운다. 곁말 색(흐린글)으로 두면 "안 읽어도
+   되는 글"로 보이는데, 처음 보는 사람에게는 여기가 제일 먼저 읽어야 하는
+   자리다. 정확한 조건은 그 아래 매수 조건 묶음이 적는다. */
+.쉬운말 {
+  font-size: 13px; line-height: 1.65; color: var(--글2);
+  border-left: 2px solid var(--선진함);
+  padding: 2px 0 2px 12px; margin: 8px 0 0;
+}
+.쉬운말 .곁말 { color: var(--흐린글); }
 .짝 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 20px; }
 
 /* ── 기타 ───────────────────────────── */
