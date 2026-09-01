@@ -314,6 +314,11 @@ def main() -> int:
                    help="하루후보는 그날 새로 사는 것만 센다(실거래가 하는 일). "
                         "보유전체는 이미 들고 있는 것까지 세는 진짜 보유 한도다")
     ㅍ.add_argument("--손절", type=float, default=-0.05, help="예: -0.05면 -5%%")
+    # 기본값 0은 "끔"이다. 지금 설정도 0이고, 전략 평가 결과도 전부 0에서
+    # 나온 숫자다. 값을 주면 그 순간부터 다른 조건의 계산이 되므로, 앞서
+    # 낸 숫자와 견줄 때는 두 번 돌려서 나란히 놓아야 한다.
+    ㅍ.add_argument("--익절", type=float, default=0.0,
+                   help="목표 수익률에 닿으면 판다. 예: 0.10이면 +10%%. 0이면 끔")
     ㅍ.add_argument("--하루손실", type=float, default=-0.03,
                    help="하루에 이만큼 잃으면 그날 신규 매수 중단")
     ㅍ.add_argument("--점수순", action="store_true", default=True,
@@ -340,6 +345,7 @@ def main() -> int:
         max_position_weight=인자.비중,
         max_concurrent_positions=인자.동시보유,
         stop_loss_pct=인자.손절,
+        take_profit_pct=인자.익절,
         daily_loss_limit_pct=인자.하루손실,
     )
     costs = TransactionCosts(slippage_pct=인자.슬리피지)
@@ -385,7 +391,11 @@ def main() -> int:
 
     print("\n" + "=" * 72)
     print(f"{정의.이름} 순위를 보고 갈아탔다면   {시작} ~ {끝} ({잴정의.이름}치)")
+    # 익절을 켠 실행과 끈 실행이 로그만 보고는 구별이 안 되면, 나중에 두
+    # 숫자를 견줄 때 어느 쪽이 어느 조건이었는지 알 수 없다.
+    익절글 = f"익절 +{인자.익절 * 100:.0f}%" if 인자.익절 else "익절 끔"
     print(f"대상종목 {len(histories)}개 · 슬리피지 {인자.슬리피지 * 100:.2f}% · "
+          f"손절 {인자.손절 * 100:.0f}% · {익절글} · "
           f"검토 {len(선택들)}일 · 되돌아본 길이 {정의.이름}")
     print("=" * 72)
 
