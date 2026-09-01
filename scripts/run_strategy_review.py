@@ -36,6 +36,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import traceback
 from datetime import datetime, timedelta
@@ -236,6 +237,8 @@ def 시트줄(잰때, 정의, 후보: 변경후보, 트렌드, 기준: str) -> l
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sheet-id", default=os.environ.get("MUWON_SHEET_ID", ""))
+    parser.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     parser.add_argument("--dry-run", action="store_true",
                         help="계산만 한다. 시트에도 안 올리고 알림도 안 보낸다")
     parser.add_argument("--최소운용일", type=int, default=기본최소운용일,
@@ -255,7 +258,12 @@ def main() -> int:
 
     from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
 
-    sheet_id = find_or_create(DEFAULT_TITLE)
+    # 시트를 찾는 길은 매수 후보를 뽑는 곳과 같아야 한다. 여기만 다른 길로
+    # 찾으면 어느 날 서로 다른 시트를 보게 되고, 그때 순위와 실제 매매가
+    # 다른 기준 위에 선다.
+    sheet_id = 인자.sheet_id
+    if not sheet_id and 인자.folder_id:
+        sheet_id, _ = find_or_create(인자.folder_id, DEFAULT_TITLE)
     if sheet_id:
         정책제공, 설명, _ = build_policy_provider(service, sheet_id)
         정책 = 정책제공()
