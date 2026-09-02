@@ -2635,12 +2635,18 @@
     resultBox.innerHTML = '<div class="empty-note">새 기사를 찾고 있습니다. 잠시만 기다려주세요...</div>';
     showLoading('새 기사를 찾고 있습니다', '최대 1~2분 소요됩니다.', true);
 
+    /* 수집은 1~2분이 걸린다. 그동안 브라우저는 연결을 붙들고 있는데, 중간에
+       끊기면 아무 답도 못 받는다. 무한정 기다리게 두지 않고 3분에서 끊는다. */
+    const 중단 = new AbortController();
+    const 시계 = setTimeout(function(){ 중단.abort(); }, 180000);
+
     fetch(INSTANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code }),
+      signal: 중단.signal
     })
-      .then(function(res){ return res.json(); })
+      .then(function(res){ clearTimeout(시계); return res.json(); })
       .then(function(data){
         hideLoading();
         btn.disabled = false;
@@ -2662,10 +2668,21 @@
           renderInstantArticles(data.articles);
       })
       .catch(function(err){
+        clearTimeout(시계);
         hideLoading();
         btn.disabled = false;
         btn.textContent = '⚡ 지금 조회하기';
-        resultBox.innerHTML = '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+
+        /* 수집은 서버에서 끝까지 돌고 화면만 답을 못 받는 경우가 있다. 그때
+           'Failed to fetch'만 띄우면 수집이 실패한 줄 알고 다시 누르게 되는데,
+           실제로는 이미 발송까지 끝난 뒤라 같은 일을 한 번 더 시키는 셈이다. */
+        const 끊김 = err.name === 'AbortError' || /fetch|network|load failed/i.test(err.message || '');
+        resultBox.innerHTML = 끊김
+          ? '<div class="empty-note">✕ 결과를 화면으로 받아오지 못했습니다.<br><br>' +
+            '<b>수집 자체는 끝났을 수 있습니다.</b> 텔레그램과 메일을 먼저 확인해 보세요. ' +
+            '새로 들어온 기사는 <b>전체 기사 조회</b> 탭에서도 보입니다.<br>' +
+            '거기에도 없으면 그때 다시 눌러주세요.</div>'
+          : '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
       });
   }
 
