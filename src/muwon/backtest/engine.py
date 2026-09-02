@@ -460,6 +460,11 @@ class BacktestEngine:
                     "trade_date": current_date,
                     "equity": equity,
                     "cash": cash,
+                    # 판 돈 중 아직 결제가 안 끝난 몫. 평가금액에는 들어
+                    # 있지만 현금은 아니다. 이 칸이 없으면 부르는 쪽이
+                    # `equity - cash`를 보유 평가액으로 읽는데, 그러면 잠긴
+                    # 돈이 통째로 "아직 안 판 수익"으로 잡힌다.
+                    "결제대기": 잠긴돈,
                     "positions": len(positions),
                 }
             )

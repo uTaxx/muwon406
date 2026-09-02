@@ -286,7 +286,12 @@ def 실현과평가(결과, 예수금: float) -> tuple[float, float]:
     곡선 = 결과.equity_curve
     if len(곡선) == 0 or "cash" not in 곡선:
         return 실현 / 예수금 * 100, 0.0
-    보유평가액 = float(곡선["equity"].iloc[-1]) - float(곡선["cash"].iloc[-1])
+    # 결제가 안 끝난 매도 대금은 평가금액에는 있지만 현금은 아니다. 안 빼면
+    # 잠긴 돈이 통째로 "아직 안 판 수익"으로 잡힌다(T+2를 켜고 처음 드러났다).
+    잠긴돈 = float(곡선["결제대기"].iloc[-1]) if "결제대기" in 곡선 else 0.0
+    보유평가액 = (
+        float(곡선["equity"].iloc[-1]) - float(곡선["cash"].iloc[-1]) - 잠긴돈
+    )
     보유원가 = sum(ㅍ.quantity * ㅍ.entry_price for ㅍ in 결과.final_positions.values())
     return 실현 / 예수금 * 100, (보유평가액 - 보유원가) / 예수금 * 100
 
