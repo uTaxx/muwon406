@@ -118,6 +118,7 @@ class BacktestEngine:
         섹터상한: int = 0,
         섹터상한셈: str = "하루후보",
         점수순: bool = False,
+        결제일수: int = 0,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
@@ -162,6 +163,24 @@ class BacktestEngine:
         self._섹터상한셈 = 섹터상한셈
         #: 자리가 모자랄 때 신호 점수가 높은 것부터 살 것인가.
         self._점수순 = bool(점수순)
+        #: 판 돈이 며칠 뒤에 쓸 수 있게 되나. **한국 주식은 2거래일이다(T+2).**
+        #:
+        #: ## 왜 기본값이 0인가
+        #:
+        #: 0은 판 즉시 그 돈으로 살 수 있다는 뜻이고, 지금까지의 모든 백테스트
+        #: 숫자가 그 가정 위에 있다. 기본값을 2로 바꾸면 전략 평가 결과와
+        #: 기간 검증 숫자가 전부 다른 조건의 값이 된다. 그래서 켜는 쪽에서
+        #: 그 사실을 적도록 두고, 기본값은 옛 동작으로 남긴다.
+        #:
+        #: ## 왜 필요한가
+        #:
+        #: 판 돈을 즉시 다시 굴리는 것은 실제로 못 하는 일이다. 회전이 빠른
+        #: 전략일수록 백테스트가 유리하게 나온다. 갭 상승 따라가기처럼 매일
+        #: 사고파는 전략은 매일 매도 대금을 그날 재투자하는 것으로 계산된다.
+        #:
+        #: **평가금액에는 들어간다.** 돈이 사라진 것이 아니라 아직 못 쓸 뿐이다.
+        #: 빼고 세면 파는 날마다 자산이 뚝 떨어졌다가 이틀 뒤 돌아온다.
+        self._결제일수 = max(0, int(결제일수 or 0))
 
     def run(
         self, price_histories: dict[str, pd.DataFrame], trade_from: date | None = None
@@ -198,6 +217,21 @@ class BacktestEngine:
         pending_exits: dict[str, str] = {}
         pending_entries: dict[str, str] = {}
 
+        # 판 돈이 언제 풀리나. {풀리는 날의 순번: 금액}
+        # 거래일 순번으로 센다. 달력 날짜로 세면 연휴에 하루씩 어긋난다.
+        날짜순번 = {d: i for i, d in enumerate(all_dates)}
+        결제대기: dict[int, float] = {}
+
+        def 입금(금액: float, 판날) -> float:
+            """매도 대금. 결제일수가 0이면 그대로 현금이 되고, 아니면 잠긴다.
+
+            돌려주는 값은 **오늘 현금에 더할 몫**이다."""
+            if self._결제일수 <= 0:
+                return 금액
+            푸는날 = 날짜순번[판날] + self._결제일수
+            결제대기[푸는날] = 결제대기.get(푸는날, 0.0) + 금액
+            return 0.0
+
         # **마지막으로 본 종가.** 들고 있는 종목의 그날 시세가 없을 때 쓴다.
         #
         # 전에는 시세가 없으면 평가금액 계산에서 그 종목을 통째로 뺐다.
@@ -217,6 +251,11 @@ class BacktestEngine:
         for current_date in all_dates:
             if trade_from is not None and current_date < trade_from:
                 continue  # 지표 예열 구간: 매매도 평가금액 기록도 하지 않는다
+
+            # 결제가 끝난 돈을 오늘 현금에 넣는다. 파는 것보다 먼저다.
+            # 오늘 푼 돈으로 오늘 살 수 있어야 실제와 같다.
+            풀린것 = 결제대기.pop(날짜순번[current_date], 0.0)
+            cash += 풀린것
 
             opens_today = {
                 symbol: df.loc[current_date, "open"]
@@ -267,9 +306,10 @@ class BacktestEngine:
                     continue
                 if symbol not in opens_today:
                     continue
-                cash += self._close_position(
-                    positions[symbol], float(opens_today[symbol]), current_date, reason, closed_trades
-                )
+                cash += 입금(self._close_position(
+                    positions[symbol], float(opens_today[symbol]), current_date,
+                    reason, closed_trades
+                ), current_date)
                 del positions[symbol]
                 del pending_exits[symbol]
 
@@ -279,7 +319,7 @@ class BacktestEngine:
             # 밤사이 값이 변한 뒤에 옛 금액으로 사게 된다. 실거래에서도
             # 아침에 계좌를 보고 수량을 정한다.
             if pending_entries:
-                시가평가금액 = cash + sum(
+                시가평가금액 = cash + sum(결제대기.values()) + sum(
                     positions[s].quantity * 값(s, opens_today)
                     for s in positions
                 )
@@ -352,9 +392,9 @@ class BacktestEngine:
                         # 오늘은 정하기만 한다. 체결은 내일 아침이다.
                         pending_exits[symbol] = exit_reason
                     else:
-                        cash += self._close_position(
+                        cash += 입금(self._close_position(
                             position, price, current_date, exit_reason, closed_trades
-                        )
+                        ), current_date)
                         del positions[symbol]
 
             # 2) 이 시점 평가금액 → 오늘 손익률 계산
@@ -405,7 +445,10 @@ class BacktestEngine:
                 )
 
             마지막종가.update({ㅅ: float(ㄱ) for ㅅ, ㄱ in closes_today.items()})
-            equity = cash + sum(
+            # 아직 결제 안 된 매도 대금도 내 돈이다. 못 쓸 뿐이다. 빼고 세면
+            # 파는 날마다 자산이 뚝 떨어졌다가 이틀 뒤 돌아온다.
+            잠긴돈 = sum(결제대기.values())
+            equity = cash + 잠긴돈 + sum(
                 positions[s].quantity * 값(s, closes_today)
                 for s in positions
             )
