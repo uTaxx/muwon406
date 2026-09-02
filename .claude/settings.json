@@ -22,7 +22,6 @@
       "mcp__n8n__list_n8n_connect_services",
       "mcp__n8n__get_workflow_sdk_reference",
       "mcp__n8n__get_workflow_best_practices",
-
       "mcp__n8n__update_workflow",
       "mcp__n8n__create_workflow_from_code",
       "mcp__n8n__publish_workflow",
@@ -37,7 +36,6 @@
       "mcp__n8n__rename_data_table",
       "mcp__n8n__rename_data_table_column",
       "mcp__n8n__delete_data_table_column",
-
       "mcp__github__get_me",
       "mcp__github__get_file_contents",
       "mcp__github__get_commit",
@@ -56,7 +54,6 @@
       "mcp__github__search_issues",
       "mcp__github__search_pull_requests",
       "mcp__github__search_repositories",
-
       "mcp__github__create_or_update_file",
       "mcp__github__push_files",
       "mcp__github__delete_file",
@@ -74,7 +71,6 @@
       "mcp__github__actions_run_trigger",
       "mcp__github__subscribe_pr_activity",
       "mcp__github__unsubscribe_pr_activity",
-
       "mcp__Google_Drive__get_file_metadata",
       "mcp__Google_Drive__get_file_permissions",
       "mcp__Google_Drive__read_file_content",
@@ -85,7 +81,6 @@
       "mcp__Google_Drive__update_file",
       "mcp__Google_Drive__copy_file",
       "mcp__Google_Drive__share_file",
-
       "mcp__Claude_Code_Remote__list_repos",
       "mcp__Claude_Code_Remote__list_sessions",
       "mcp__Claude_Code_Remote__list_environments",
@@ -97,7 +92,6 @@
       "mcp__Claude_Code_Remote__create_trigger",
       "mcp__Claude_Code_Remote__update_trigger",
       "mcp__Claude_Code_Remote__delete_trigger",
-
       "Bash(git fetch *)",
       "Bash(git add *)",
       "Bash(git commit *)",
@@ -109,6 +103,7 @@
       "Bash(git remote *)",
       "Bash(mkdir *)",
       "Bash(cp *)"
-    ]
+    ],
+    "defaultMode": "dontAsk"
   }
 }
