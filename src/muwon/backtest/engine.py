@@ -19,7 +19,7 @@ from muwon.backtest.costs import TransactionCosts
 from muwon.domain.interfaces import Strategy
 from muwon.domain.types import SignalType
 from muwon.indicators.technical import add_indicators
-from muwon.risk.exits import atr_series, evaluate_exit, 보유상한
+from muwon.risk.exits import atr_series, evaluate_exit, 보유만료글, 보유상한
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -307,10 +307,13 @@ class BacktestEngine:
                 )
                 if stop.should_exit:
                     exit_reason = stop.reason
-                elif max_holding_days is not None and bars_since(
-                    trade_dates_by_symbol.get(symbol, []), position.entry_date, current_date
+                elif max_holding_days is not None and (
+                    들고있던일 := bars_since(
+                        trade_dates_by_symbol.get(symbol, []),
+                        position.entry_date, current_date,
+                    )
                 ) >= max_holding_days:
-                    exit_reason = f"보유 {max_holding_days}일 경과 청산"
+                    exit_reason = 보유만료글(max_holding_days, 들고있던일)
                 else:
                     for signal in signals_today.get(symbol, []):
                         if signal.signal_type == SignalType.SELL:

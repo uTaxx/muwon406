@@ -124,7 +124,7 @@ def test_보유기간을_날마다_다시_읽는다():
 
     assert 결과.num_trades == 1, "한 번 사고 한 번 팔아야 합니다"
     팔린것 = 결과.closed_trades[0]
-    assert "보유 1일 경과 청산" == 팔린것.exit_reason
+    assert 팔린것.exit_reason.startswith("보유 상한 1거래일")
     assert 팔린것.exit_date > 날들[12], "상한이 좁아진 뒤에 팔려야 합니다"
 
 
@@ -141,7 +141,7 @@ def test_기초설정의_보유기간이_전략의_값을_덮는다():
     ).run(시세, trade_from=날들[5])
 
     assert 결과.num_trades == 1
-    assert 결과.closed_trades[0].exit_reason == "보유 2일 경과 청산"
+    assert 결과.closed_trades[0].exit_reason.startswith("보유 상한 2거래일")
 
 
 def test_기초설정이_0이면_전략이_정한_대로_간다():
@@ -156,7 +156,7 @@ def test_기초설정이_0이면_전략이_정한_대로_간다():
     ).run(시세, trade_from=날들[5])
 
     assert 결과.num_trades == 1
-    assert 결과.closed_trades[0].exit_reason == "보유 3일 경과 청산"
+    assert 결과.closed_trades[0].exit_reason.startswith("보유 상한 3거래일")
 
 
 # ── 미래를 안 본다 ──────────────────────────────────────────────

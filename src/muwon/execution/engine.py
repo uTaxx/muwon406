@@ -33,7 +33,7 @@ from muwon.domain.types import OrderSide, SignalType
 from muwon.execution import state_repository
 from muwon.notify import notice_format as 모양
 from muwon.notify.telegram import TelegramNotifier
-from muwon.risk.exits import atr_series, evaluate_exit, 보유상한
+from muwon.risk.exits import atr_series, evaluate_exit, 보유만료글, 보유상한
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -452,10 +452,12 @@ class TradingEngine:
             )
             if stop.should_exit:
                 exit_reason = stop.reason
-            elif max_holding_days is not None and bars_since(
-                all_trade_dates.get(symbol, []), position.entry_date, trade_date
+            elif max_holding_days is not None and (
+                들고있던일 := bars_since(
+                    all_trade_dates.get(symbol, []), position.entry_date, trade_date
+                )
             ) >= max_holding_days:
-                exit_reason = f"보유 {max_holding_days}일 경과 청산"
+                exit_reason = 보유만료글(max_holding_days, 들고있던일)
             else:
                 for signal in latest_signals.get(symbol, []):
                     if signal.signal_type == SignalType.SELL:
