@@ -68,6 +68,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from muwon.analysis.market_data import load_histories
 from muwon.analysis.switching import 갈아타기전략, 굴리기
+from muwon.strategy.portfolio import as_portfolio_strategy
 from muwon.backtest.costs import TransactionCosts
 from muwon.data.price_cache import PriceCache
 from muwon.data.yahoo_client import YahooFinanceDataSource
@@ -180,6 +181,49 @@ def 전략별곡선(
               f"거래 {len(결과.closed_trades):5}건 ({time.time()-t:.0f}초)",
               file=sys.stderr)
     return pd.DataFrame(곡선들).sort_index(), 성적들
+
+
+class 준비캐시:
+    """전략 객체를 한 번만 준비해 두고 여러 계좌가 나눠 쓴다.
+
+    갈아타기 계좌는 굴릴 때마다 쓰이는 전략 전부를 다시 준비한다. 27개를
+    거치는 계좌 하나에 4분이 걸렸고, 무작위 대조군까지 더하면 몇 시간이 된다.
+    2026-09-02에 처음 계산할 때 그 시간에 걸려 중간에 끊겼다.
+
+    **나눠 써도 되는 까닭은 준비가 읽기 전용 표를 만들 뿐이기 때문이다.**
+    `prepare()`는 날짜별 신호 표를 만들고 `evaluate()`는 그 표를 조회만 한다.
+    계좌 쪽 상태(현금, 보유 종목)는 엔진이 들고 있지 전략이 들고 있지 않다.
+
+    **같은 시세로 만든 것만 나눠 쓸 수 있다.** 굴리는 구간이 달라지면 잘린
+    시세가 달라지므로 캐시를 새로 만들어야 한다."""
+
+    def __init__(self, 만들기):
+        self._만들기 = 만들기
+        self._준비됨: dict[str, object] = {}
+
+    def __call__(self, 키: str):
+        """`갈아타기전략`이 만들기 함수 자리에 그대로 넣는다."""
+        return self._만들기(키)
+
+    def 준비(self, 키: str, histories: dict[str, pd.DataFrame]):
+        if 키 not in self._준비됨:
+            속 = as_portfolio_strategy(self._만들기(키))
+            속.prepare(histories)
+            self._준비됨[키] = 속
+        return self._준비됨[키]
+
+
+class 캐시쓰는갈아타기(갈아타기전략):
+    """준비 결과를 캐시에서 꺼내 쓰는 것 말고는 `갈아타기전략`과 같다."""
+
+    def __init__(self, 날짜별키: dict[date, str], 캐시: 준비캐시, 처음키: str):
+        super().__init__(날짜별키, 캐시, 처음키)
+        self._캐시 = 캐시
+
+    def prepare(self, histories: dict[str, pd.DataFrame]) -> None:
+        쓸것 = {self._처음키} | set(self._날짜별키.values())
+        for 키 in 쓸것:
+            self._전략들[키] = self._캐시.준비(키, histories)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -414,6 +458,7 @@ def main() -> int:
     처음키 = 기준전략[0]
     낸것: dict[str, dict] = {}
     벌들: dict[str, dict] = {}
+    캐시 = 준비캐시(build_strategy)
 
     # **설정값 한 벌에서만 좋은 것은 그 벌에 맞춘 것이다.** 여러 벌을 같은
     # 자료 위에서 계산해서, 답이 벌마다 뒤집히는지 본다. 전략별 곡선은 벌과
@@ -428,7 +473,7 @@ def main() -> int:
         쓴전략 = sorted(set(표.values()))
         print(f"  {바뀐횟수}번 바꿨고 전략 {len(쓴전략)}개를 거쳤다", file=sys.stderr)
 
-        나온것 = 굴리기(histories, 갈아타기전략(표, build_strategy, 처음키), 시작, 끝,
+        나온것 = 굴리기(histories, 캐시쓰는갈아타기(표, 캐시, 처음키), 시작, 끝,
                     정책, costs=costs, **제약)
         if 나온것 is None:
             print("  갈아타기 계좌를 못 굴렸습니다.", file=sys.stderr)
@@ -442,7 +487,7 @@ def main() -> int:
         무작위들 = []
         for 씨 in range(인자.무작위횟수):
             ㅁ표 = 무작위고르기(전략키들, 표, 처음키, 씨)
-            ㅁ = 굴리기(histories, 갈아타기전략(ㅁ표, build_strategy, 처음키), 시작, 끝,
+            ㅁ = 굴리기(histories, 캐시쓰는갈아타기(ㅁ표, 캐시, 처음키), 시작, 끝,
                      정책, costs=costs, **제약)
             if ㅁ is None:
                 continue
@@ -473,6 +518,15 @@ def main() -> int:
         ㅁ정보 = 벌들[이름]["무작위 대조군"]
         print(f"  무작위 대조군: 최악의 중앙값 {ㅁ정보['최악의 중앙값']}% · "
               f"지표가 이긴 비율 {ㅁ정보['지표가 이긴 비율']}", file=sys.stderr)
+        # **벌 하나가 끝날 때마다 남긴다.** 마지막에 한 번만 저장하면 도중에
+        # 끊겼을 때 앞의 계산이 통째로 날아간다. 2026-09-02에 그렇게 40분을
+        # 버렸다.
+        if 인자.저장:
+            Path(인자.저장).write_text(
+                json.dumps({"벌": 벌들, "아직끝나지않음": True},
+                           ensure_ascii=False, indent=1),
+                encoding="utf-8",
+            )
 
     낸것["벌"] = 벌들
 
