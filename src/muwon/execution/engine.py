@@ -275,6 +275,8 @@ class TradingEngine:
         initial_cash: float = 10_000_000.0,
         orderable_provider: Callable[[str, float], int] | None = None,
         현재가공급자: Callable[[], dict[str, float]] | None = None,
+        섹터표: dict[str, str] | None = None,
+        섹터상한: int = 0,
     ):
         self._strategy = as_portfolio_strategy(strategy)
         self._risk_manager = risk_manager
@@ -300,6 +302,36 @@ class TradingEngine:
         #: 없으면 예전처럼 어제 종가로 잰다. 백테스트와 흉내 실행은
         #: 증권사가 없으니 물어볼 곳도 없다.
         self._현재가공급자 = 현재가공급자
+
+        #: 종목코드 → 섹터 이름. 섹터 상한을 걸려면 이것이 있어야 한다.
+        #:
+        #: ## 여기서도 세는 이유 (2026-09-02에 더함)
+        #:
+        #: 전에는 08:30 후보를 뽑을 때만 섹터 상한을 봤다. 그 계산은 후보
+        #: 목록을 0부터 세기 때문에 **이미 들고 있는 종목을 모른다.** 반도체를
+        #: 이미 두 종목 들고 있어도 그날 후보에 반도체 세 종목이 들어올 수
+        #: 있었고, 다 승인하면 반도체 다섯 종목이 된다. 분산한 줄 알았는데
+        #: 사실상 반도체 하나에 다섯 배로 건 것이다.
+        #:
+        #: 여기서는 보유 종목을 알고 있으므로 진짜 보유 한도로 셀 수 있다.
+        #: 화면의 설명문도 "동일 섹터에서 동시에 보유할 수 있는 최대 종목
+        #: 수"라고 적혀 있어서, 이쪽이 적힌 대로의 동작이다.
+        self._섹터표 = dict(섹터표 or {})
+        #: 0이면 제한 없음. 음수를 그대로 두면 첫 종목부터 상한에 걸려
+        #: 매수가 통째로 막힌다. 백테스트 엔진에서 실제로 겪은 자리다.
+        self._섹터상한 = max(0, int(섹터상한 or 0))
+
+    def _섹터센것(self, 보유심볼) -> dict[str, int]:
+        """섹터별로 몇 종목 들고 있나. 섹터를 모르는 종목은 세지 않는다.
+
+        모르는 종목을 빈 이름 하나로 묶으면 서로 관계없는 종목들이 한 섹터로
+        묶여서, 실제로는 분산돼 있는데 상한에 걸린다."""
+        센것: dict[str, int] = {}
+        for ㅅ in 보유심볼:
+            섹터 = self._섹터표.get(ㅅ, "")
+            if 섹터:
+                센것[섹터] = 센것.get(섹터, 0) + 1
+        return 센것
 
     def run_once(self, as_of: date | None = None) -> RunSummary:
         """as_of: '오늘'로 볼 날짜(기본은 한국시간 오늘). 테스트용 주입구다."""
@@ -473,8 +505,24 @@ class TradingEngine:
                 candidates.append((symbol, price, buy_signals[0]))
         candidates.sort(key=lambda c: c[2].score, reverse=True)
 
+        # 섹터별 보유 수는 **들고 있는 것부터 센다.** 사는 동안 늘어나므로
+        # 이 루프 안에서 같이 갱신한다.
+        섹터센것 = self._섹터센것(positions)
+
         for symbol, price, buy_signal in candidates:
             policy = self._risk_manager.get_policy()
+            섹터 = self._섹터표.get(symbol, "")
+            if self._섹터상한 and 섹터 and 섹터센것.get(섹터, 0) >= self._섹터상한:
+                # 조용히 건너뛰면 "승인했는데 왜 안 샀지"가 남는다.
+                사유 = (
+                    f"{섹터} 섹터를 이미 {섹터센것[섹터]}종목 들고 있습니다. "
+                    f"섹터당 보유 상한 {self._섹터상한}종목입니다"
+                )
+                summary.rejections.append(
+                    f"{_find_ticker(self._universe, symbol).name}({symbol}): {사유}"
+                )
+                summary.거부사유[symbol] = 사유
+                continue
             decision = self._risk_manager.check_new_position(
                 proposed_weight=policy.max_position_weight,
                 current_open_positions=len(positions),
@@ -533,6 +581,8 @@ class TradingEngine:
 
             order = self._order_executor.submit_order(symbol, OrderSide.BUY, quantity, price)
             cash -= cost
+            if 섹터:
+                섹터센것[섹터] = 섹터센것.get(섹터, 0) + 1
             positions[symbol] = PositionRow(
                 symbol=symbol,
                 quantity=order.quantity,
