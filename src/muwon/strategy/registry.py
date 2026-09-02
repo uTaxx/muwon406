@@ -103,6 +103,19 @@ class StrategyDefinition:
     #: 그래서 이걸 볼 때 무엇을 알고 있어야 하나. 조심할 점, 어떤 장에서
     #: 잘 맞는지. 없으면 빈 값으로 둔다. 억지로 채우면 안 읽힌다.
     쉬운참고: str = ""
+    #: 이 전략으로 산 종목의 익절선. 0이면 안 정한 것이고, 그때는 기초설정을
+    #: 따른다(기초설정도 0이면 익절을 안 건다).
+    #:
+    #: ## 왜 전략마다 두나 (2026-09-02)
+    #:
+    #: 익절은 오르는 구간에서 수익을 깎고 빠지는 구간에서 손실을 막는다.
+    #: 세 국면에 +10%를 걸어 재 보니 상승장에서는 다섯 규칙 중 넷이 나빠졌고
+    #: 하락장에서는 전부 좋아졌다. 전략마다 노리는 것이 다르므로 한 값을
+    #: 전부에 들이대는 것이 맞지 않는다.
+    #:
+    #: **보유기간과 같은 자리다.** 보유기간은 전략이 정하고 기초설정이 덮는
+    #: 구조가 이미 있었는데 익절만 기초설정 하나뿐이었다.
+    익절: float = 0.0
 
     @property
     def 화면이름(self) -> str:
@@ -620,7 +633,24 @@ def get_definition(key: str) -> StrategyDefinition:
 
 
 def build_strategy(key: str) -> Strategy:
-    return get_definition(key).factory()
+    """전략 객체를 만든다. **정의에 적힌 익절선을 객체에 붙여 준다.**
+
+    청산 기준을 읽는 쪽(`risk/exits.익절기준`)은 전략 객체 하나만 받는다.
+    보유기간은 원래 객체에 있는데 익절만 정의 쪽에 있으면, 부르는 자리마다
+    둘을 따로 찾아야 하고 한쪽을 빠뜨리면 조용히 안 걸린다."""
+    정의 = get_definition(key)
+    전략 = 정의.factory()
+    if 정의.익절 and getattr(전략, "take_profit_pct", 0.0) in (0.0, None):
+        try:
+            전략.take_profit_pct = 정의.익절
+        except AttributeError:
+            # 값을 못 붙이는 전략(frozen)은 조용히 넘어가면 안 된다.
+            # 익절을 정해 뒀는데 안 걸리는 상태가 된다.
+            raise ValueError(
+                f"{key}: 익절선을 붙일 수 없는 전략입니다. "
+                "전략 클래스에 take_profit_pct를 직접 두세요."
+            ) from None
+    return 전략
 
 
 def build_strategies(keys, combine: str = "OR", sell_keys=()):

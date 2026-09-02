@@ -19,7 +19,13 @@ from muwon.backtest.costs import TransactionCosts
 from muwon.domain.interfaces import Strategy
 from muwon.domain.types import SignalType
 from muwon.indicators.technical import add_indicators
-from muwon.risk.exits import atr_series, evaluate_exit, 보유만료글, 보유상한
+from muwon.risk.exits import (
+    atr_series,
+    evaluate_exit,
+    보유만료글,
+    보유상한,
+    익절기준,
+)
 from muwon.risk.manager import RiskManager
 from muwon.strategy.portfolio import (
     MarketContext,
@@ -36,6 +42,14 @@ class OpenPosition:
     entry_price: float
     entry_date: date
     entry_reason: str = ""
+    #: 이 종목을 산 전략. **청산은 이것을 따른다**(2026-09-02).
+    #:
+    #: 전에는 청산이 지금 걸린 전략을 봤다. 그래서 전략을 바꾸면 이미 들고
+    #: 있던 종목의 보유 기간과 익절선이 발밑에서 바뀌었다. 살 때 이미
+    #: "며칠 들고 언제 판다"가 정해져 있었으므로 그것을 따르는 것이 맞다.
+    #:
+    #: None이면 실행 내내 전략이 하나였다는 뜻이라 엔진의 전략을 쓴다.
+    전략: object | None = None
 
 
 @dataclass
@@ -215,28 +229,32 @@ class BacktestEngine:
                 if current_date in df.index
             }
 
+            ctx = MarketContext(
+                as_of=current_date,
+                histories=price_histories,
+                held=frozenset(positions),
+            )
             signals_today: dict[str, list] = {}
-            for signal in self._strategy.evaluate(
-                MarketContext(
-                    as_of=current_date,
-                    histories=price_histories,
-                    held=frozenset(positions),
-                )
-            ):
+            for signal in self._strategy.evaluate(ctx):
                 signals_today.setdefault(signal.symbol, []).append(signal)
+            # 산 전략이 지금 전략과 다를 때만 따로 계산한다. 하루에 한 번씩
+            # 캐시를 비운다. 안 비우면 어제 신호로 오늘 판다.
+            self._청산신호모음 = {}
 
-            # 며칠까지 들고 있을 것인가를 **날마다 다시 묻는다.** 두 가지 때문이다.
+            # 며칠까지 들고 있을 것인가는 **종목마다 다시 묻는다.**
             #
-            # 하나, 답은 `risk/exits.보유상한()`이 낸다. 전에는 여기서 전략의
-            # 값을 곧장 읽어서 기초설정의 보유기간을 통째로 무시했다. 실거래
-            # 엔진(execution/engine.py:409)은 보유상한()을 쓰므로, 기초설정에
-            # 보유기간을 넣어 두면 백테스트와 실거래가 서로 다른 규칙으로 돌고
-            # 아무것도 빨개지지 않았다.
+            # 답은 `risk/exits.보유상한()`이 낸다. 전에는 여기서 전략의 값을
+            # 곧장 읽어서 기초설정의 보유기간을 통째로 무시했다. 실거래
+            # 엔진도 보유상한()을 쓰므로, 기초설정에 보유기간을 넣어 두면
+            # 백테스트와 실거래가 서로 다른 규칙으로 돌고 아무것도 빨개지지
+            # 않았다.
             #
-            # 둘, 전략이 바뀌면 보유기간도 같이 바뀐다. 실거래에서 청산 판단은
-            # 살 때의 전략이 아니라 지금 설정된 전략을 본다. 실행 전에 한 번만
-            # 읽으면 도중에 전략이 바뀌는 경우를 재 볼 수가 없다.
-            max_holding_days = 보유상한(self._strategy, self._risk_manager.get_policy())
+            # 그리고 **산 전략에게 묻는다**(2026-09-02에 바꿈). 전에는 실행
+            # 중간에 전략이 바뀌면 이미 들고 있던 종목의 보유기간도 같이
+            # 바뀌었다. 실거래가 그렇게 돌고 있어서 그대로 흉내 낸 것인데,
+            # 살 때 이미 정해져 있던 것이 나중에 바뀌는 것이 잘못이었다.
+            # 양쪽을 같이 고쳤다. 그래서 이 값은 청산 루프 안에서 종목마다
+            # 구한다.
 
             # 0) 어제 정한 주문을 오늘 **시가**에 체결한다. 청산이 먼저다.
             # 판 돈으로 사야 하기 때문이다(실거래에서도 같은 순서).
@@ -296,14 +314,20 @@ class BacktestEngine:
                 position = positions[symbol]
                 exit_reason = None
 
+                # 청산은 **산 전략**을 따른다. 실행 내내 전략이 하나면
+                # 지금 전략과 같은 것이라 값이 달라지지 않는다.
+                산전략 = position.전략 or self._strategy
+                정책 = self._risk_manager.get_policy()
+                max_holding_days = 보유상한(산전략, 정책)
                 stop = evaluate_exit(
                     entry_price=position.entry_price,
                     entry_date=position.entry_date,
                     current_price=price,
                     as_of=current_date,
-                    policy=self._risk_manager.get_policy(),
+                    policy=정책,
                     atr=atr_by_symbol.get(symbol),
                     history=price_histories.get(symbol),
+                    익절=익절기준(산전략, 정책),
                 )
                 if stop.should_exit:
                     exit_reason = stop.reason
@@ -315,7 +339,10 @@ class BacktestEngine:
                 ) >= max_holding_days:
                     exit_reason = 보유만료글(max_holding_days, 들고있던일)
                 else:
-                    for signal in signals_today.get(symbol, []):
+                    # 매도 신호도 산 전략이 낸 것만 본다. 지금 전략의 신호를
+                    # 섞으면 한 종목에 두 전략이 걸려 왜 팔렸는지 설명이 안 된다.
+                    묶음 = self._청산신호(산전략, ctx, signals_today)
+                    for signal in 묶음.get(symbol, []):
                         if signal.signal_type == SignalType.SELL:
                             exit_reason = signal.reason
                             break
@@ -478,8 +505,30 @@ class BacktestEngine:
             entry_price=fill,
             entry_date=entry_date,
             entry_reason=reason,
+            전략=self._지금전략(),
         )
         return cost
+
+    def _지금전략(self):
+        """지금 신호를 내고 있는 속 전략.
+
+        갈아타기 시험에서는 껍데기 하나가 날마다 다른 전략에 넘긴다. 껍데기를
+        보유 종목에 적어 두면 날마다 답이 바뀌어서, 청산이 산 전략을 따르게
+        한 뜻이 사라진다."""
+        return getattr(self._strategy, "오늘전략", None) or self._strategy
+
+    def _청산신호(self, 산전략, ctx, 오늘신호: dict) -> dict:
+        """산 전략이 오늘 낸 신호. 지금 전략과 같으면 이미 계산한 것을 쓴다."""
+        if 산전략 is self._strategy or 산전략 is self._지금전략():
+            return 오늘신호
+        열쇠 = id(산전략)
+        묶음 = self._청산신호모음.get(열쇠)
+        if 묶음 is None:
+            묶음 = {}
+            for ㅅ in 산전략.evaluate(ctx):
+                묶음.setdefault(ㅅ.symbol, []).append(ㅅ)
+            self._청산신호모음[열쇠] = 묶음
+        return 묶음
 
     def _close_position(
         self,

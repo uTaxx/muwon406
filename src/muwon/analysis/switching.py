@@ -89,6 +89,15 @@ class 갈아타기전략(PortfolioStrategy):
         속 = self._전략들.get(self._오늘키)
         return getattr(속, "max_holding_days", None) if 속 else None
 
+    @property
+    def 오늘전략(self) -> PortfolioStrategy | None:
+        """지금 걸린 속 전략. 엔진이 **살 때** 이것을 보유 종목에 적어 둔다.
+
+        청산은 산 전략을 따른다(2026-09-02). 이 껍데기를 그대로 적어 두면
+        날마다 답이 바뀌어서, 전략을 바꾼 다음 날 옛 종목이 새 규칙으로
+        팔린다. 그것이 고치려던 문제다."""
+        return self._전략들.get(self._오늘키)
+
     def prepare(self, histories: dict[str, pd.DataFrame]) -> None:
         """쓰이는 전략을 전부 미리 준비한다.
 
