@@ -138,6 +138,8 @@ def main() -> int:
     ㅍ.add_argument("--노출고정", action="store_true",
                    help="한 종목 비중을 1/동시보유로 잡아 어느 칸이든 자금을 다 쓰게 한다")
     ㅍ.add_argument("--구간", default="전부", choices=["전부", "격변", "조용"])
+    ㅍ.add_argument("--이름", default="",
+                   help="쉼표로 구간 이름을 골라 돌린다. 중간에 죽었을 때 남은 것만 이어서 돌린다")
     ㅍ.add_argument("--값들", default="",
                    help="쉼표로. 동시보유면 `1,2,3,4,6`, 손절이면 `-0.05,-0.08,-0.12`")
     ㅍ.add_argument("--저장", default="", help="결과를 남길 JSON 경로")
@@ -148,6 +150,13 @@ def main() -> int:
     값들 = [int(ㄱ) if 인자.무엇 == "동시보유" else float(ㄱ) for ㄱ in 값들]
 
     고를것 = [ㄱ for ㄱ in 구간표 if 인자.구간 in ("전부", ㄱ[3])]
+    if 인자.이름:
+        찾는것 = [ㄱ.strip() for ㄱ in 인자.이름.split(",") if ㄱ.strip()]
+        모르는것 = [ㄱ for ㄱ in 찾는것 if ㄱ not in [ㄴ[0] for ㄴ in 구간표]]
+        if 모르는것:
+            # 조용히 0개를 돌리면 "빨리 끝났네"로 읽힌다.
+            raise SystemExit(f"그런 구간이 없습니다: {', '.join(모르는것)}")
+        고를것 = [ㄱ for ㄱ in 고를것 if ㄱ[0] in 찾는것]
     print(f"■ 손잡이: {인자.무엇} {값들}"
           f"{' · 노출 고정' if 인자.노출고정 else ' · 한 종목 15% 고정'}", file=sys.stderr)
     print(f"■ 구간 {len(고를것)}개 · 전략 {len(list_definitions())}개 "
@@ -182,12 +191,24 @@ def main() -> int:
                             "이름": 전략이름(키), "수익률": 수익, "거래수": 거래,
                             "최대낙폭": 낙폭})
             print(f"    ({time.time() - 시작때:.0f}초)", file=sys.stderr)
+            sys.stdout.flush()  # 파일로 넘길 때 버퍼에 갇히면 진행이 안 보인다
+        남기기(인자.저장, 모은것)   # 구간마다 남긴다. 중간에 죽어도 앞의 것은 건진다
 
-    if 인자.저장:
-        Path(인자.저장).write_text(
-            json.dumps(모은것, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"\n{len(모은것)}줄을 {인자.저장}에 남겼습니다.", file=sys.stderr)
+    남기기(인자.저장, 모은것)
     return 0
+
+
+def 남기기(경로: str, 모은것: list[dict]) -> None:
+    """구간이 끝날 때마다 부른다.
+
+    30분씩 도는 훑기가 중간에 죽은 적이 있다(2026-09-02). 끝에서 한 번만
+    남기면 그때까지 계산한 것이 통째로 사라진다.
+    """
+    if not 경로:
+        return
+    Path(경로).write_text(
+        json.dumps(모은것, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"  ({len(모은것)}줄을 {경로}에 남겼습니다)", file=sys.stderr)
 
 
 if __name__ == "__main__":
