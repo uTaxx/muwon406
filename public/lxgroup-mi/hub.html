@@ -376,6 +376,52 @@
   .admin-foot{margin-top:14px; padding-top:11px; border-top:1px solid var(--line); font-size:10.5px; color:var(--muted); line-height:1.65;}
   footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
   footer a{color:var(--green); text-decoration:none; font-weight:600;}
+
+  /* ── 시장지표 ─────────────────────────────────────────────
+     '올랐다'가 아니라 '우리에게 좋아졌다'로 읽히게 색을 쓴다. 도시가스가
+     오르면 글라스에는 나쁜 것이고 유가가 내리면 좋은 것인데, 매번 머리로
+     뒤집게 만들면 결국 아무도 안 본다. 판정은 서버가 하고 여기선 칠하기만 한다. */
+  .ind-good{color:#1F7A5A;}
+  .ind-bad{color:var(--danger);}
+  .ind-flat{color:var(--muted);}
+
+  .ind-asof{font-size:12px; color:var(--muted); margin:0 0 14px 36px;}
+  .ind-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+
+  .ind-card{border:1px solid var(--line); border-radius:12px; padding:14px 15px 12px; background:var(--card);}
+  .ind-card .nm{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin-bottom:9px;}
+  .ind-card .nm b{font-size:13.5px; font-weight:700; letter-spacing:-.02em;}
+  .ind-lead{font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-tint);
+            border-radius:999px; padding:2px 7px; white-space:nowrap;}
+  .ind-card .val{font-size:23px; font-weight:800; letter-spacing:-.03em; line-height:1.15;}
+  .ind-card .val span{font-size:12.5px; font-weight:600; color:var(--muted); margin-left:3px;}
+  .ind-card .chg{font-size:12.5px; font-weight:700; margin-top:5px;}
+  .ind-card .chg em{font-style:normal; font-weight:600; margin-left:5px;}
+  .ind-spark{display:block; width:100%; height:34px; margin:10px 0 7px;}
+  .ind-card .foot{font-size:11px; color:var(--muted); line-height:1.5;}
+  .ind-card .why{font-size:11.5px; color:var(--muted); line-height:1.55; margin-top:8px;
+                 padding-top:8px; border-top:1px solid var(--line);}
+
+  /* 계열사 고르는 띠 */
+  .ind-tabs{display:flex; gap:7px; flex-wrap:wrap; margin:0 0 14px 36px;}
+  .ind-tabs button{border:1px solid var(--line); background:var(--card); color:var(--muted);
+                   border-radius:999px; padding:6px 14px; font-size:12.5px; font-weight:700;
+                   cursor:pointer; font-family:inherit;}
+  .ind-tabs button.on{background:var(--green); border-color:var(--green); color:#fff;}
+  .ind-tabs button i{font-style:normal; font-size:11px; font-weight:700; margin-left:5px;
+                     opacity:.62;}
+  /* 아직 값이 하나도 없는 계열사는 눌러도 빈 화면이라 미리 흐리게 둔다 */
+  .ind-tabs button[data-empty]{opacity:.45;}
+
+  .ind-pend{display:flex; flex-wrap:wrap; gap:7px;}
+  .ind-pend span{border:1px dashed var(--line); border-radius:999px; padding:5px 11px;
+                 font-size:12px; color:var(--muted);}
+  @media (max-width:520px){
+    .ind-asof, .ind-tabs{margin-left:0;}
+    .ind-grid{grid-template-columns:1fr 1fr; gap:9px;}
+    .ind-card{padding:12px 12px 10px;}
+    .ind-card .val{font-size:20px;}
+  }
 </style>
 </head>
 <body>
@@ -440,6 +486,7 @@
     <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
     <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
     <button type="button" class="tab-btn" data-tab="knowledge">AI 학습<br>데이터</button>
+    <button type="button" class="tab-btn" data-tab="index">시장<br>지표</button>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
@@ -766,6 +813,30 @@
     </section>
   </div>
 
+  <!-- 탭 6: 시장지표 -->
+  <div id="tab-index" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span></div>
+      <div class="step-desc">환율·금리처럼 어느 계열사에나 함께 걸리는 지표입니다. 아래에서 계열사를 바꿔도 이 줄은 그대로 있습니다.</div>
+      <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+      <div class="ind-grid" id="indCommon"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏭</span><span class="step-title">계열사별 지표</span></div>
+      <div class="step-desc">그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다.</div>
+      <div class="ind-tabs" id="indAffTabs"></div>
+      <div class="ind-grid" id="indAff"></div>
+      <div class="empty-note" id="indAffEmpty" style="display:none;">이 계열사에 쌓인 값이 아직 없습니다.</div>
+    </section>
+
+    <section class="card" id="indPendCard" style="display:none;">
+      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
+      <div class="step-desc">무엇을 볼지는 정해뒀지만 아직 받아오지 않는 지표입니다. 출처별로 인증키를 넣으면 다음 수집부터 채워집니다.</div>
+      <div class="ind-pend" id="indPend"></div>
+    </section>
+  </div>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다. · <a id="excelLink" href="#" target="_blank" rel="noopener" style="display:none;">📊 엑셀 원본보기(관리자용)</a> · <a id="costLink" href="#" role="button">💰 비용관리(관리자용)</a></footer>
@@ -783,6 +854,7 @@
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
+  const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -986,7 +1058,140 @@
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
+    if (tabName === 'index'){ loadIndex(false); }
   }
+
+  /* ---------- 탭6: 시장지표 ----------
+     숫자와 좋아짐/나빠짐 판정은 전부 서버가 만든 것을 그대로 쓴다.
+     여기서 다시 계산하면 같은 값이 두 곳에서 갈라지고, 갈라진 뒤에는
+     어느 쪽이 맞는지 알 방법이 없다. 이 함수들은 그리기만 한다. */
+  let indData = null;
+  let indAff = null;      // 지금 고른 계열사
+  let indLoading = false;
+
+  function indNum(v, unit){
+    if (v === null || v === undefined) return '—';
+    const abs = Math.abs(v);
+    /* 억원·호처럼 큰 단위는 소수점이 의미 없고, 금리는 소수 둘째 자리가 핵심이다 */
+    const dec = abs >= 1000 ? 1 : abs >= 100 ? 1 : 2;
+    return Number(v).toLocaleString('ko-KR', { maximumFractionDigits: dec });
+  }
+
+  /* 스파크라인. 라이브러리를 붙일 만한 일이 아니라 폴리라인 하나로 그린다. */
+  function indSpark(points, cls){
+    if (!points || points.length < 2) return '';
+    const vs = points.map(p => p.v);
+    const lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    const W = 100, H = 30, pad = 3;
+    const span = (hi - lo) || 1;
+    const xy = points.map(function(p, i){
+      const x = (i / (points.length - 1)) * W;
+      const y = H - pad - ((p.v - lo) / span) * (H - pad * 2);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    const color = cls === 'ind-good' ? '#1F7A5A' : cls === 'ind-bad' ? '#F04452' : '#726A61';
+    return '<svg class="ind-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+           '<polyline points="' + xy + '" fill="none" stroke="' + color + '" stroke-width="1.6" ' +
+           'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  function indCard(x){
+    const cls = x.좋아짐 === true ? 'ind-good' : x.좋아짐 === false ? 'ind-bad' : 'ind-flat';
+    let chg = '<div class="chg ind-flat">전월 자료 없음</div>';
+    if (x.변화 !== null && x.변화 !== undefined){
+      const 화살 = x.변화 > 0 ? '▲' : x.변화 < 0 ? '▼' : '–';
+      const 말 = x.좋아짐 === true ? '좋아짐' : x.좋아짐 === false ? '나빠짐' : '';
+      chg = '<div class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(x.변화)) +
+            ' (' + (x.변화율 > 0 ? '+' : '') + x.변화율 + '%)' +
+            (말 ? '<em>' + 말 + '</em>' : '') + '</div>';
+    }
+    return '<div class="ind-card">' +
+      '<div class="nm"><b>' + escapeHtml(x.이름) + '</b>' +
+        (x.선행개월 > 0 ? '<span class="ind-lead">선행 ' + x.선행개월 + '개월</span>' : '') +
+      '</div>' +
+      '<div class="val">' + indNum(x.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' +
+      chg +
+      indSpark(x.흐름, cls) +
+      '<div class="foot">' + escapeHtml(x.최신일) + ' 기준 · ' + x.개수 + '개월치 · ' + escapeHtml(x.출처) + '</div>' +
+      (x.설명 ? '<div class="why">' + escapeHtml(x.설명) + '</div>' : '') +
+    '</div>';
+  }
+
+  function indDraw(){
+    if (!indData) return;
+    const 지표 = indData.지표 || [];
+
+    document.getElementById('indCommon').innerHTML =
+      지표.filter(x => x.소속.indexOf('공통') >= 0).map(indCard).join('') ||
+      '<div class="empty-note">공통 지표에 쌓인 값이 아직 없습니다.</div>';
+
+    /* 공통은 위에 따로 있으니 고르는 띠에서는 뺀다 */
+    const 계열사 = (indData.소속목록 || []).filter(s => s !== '공통');
+    const 개수 = {};
+    계열사.forEach(s => { 개수[s] = 지표.filter(x => x.소속.indexOf(s) >= 0).length; });
+
+    /* 처음 열 때는 값이 실제로 쌓인 계열사를 보여준다. 가나다순 첫 칸이
+       비어 있으면 화면이 비어 보여서, 지표가 하나도 없다고 오해한다. */
+    if (!indAff || 계열사.indexOf(indAff) < 0){
+      indAff = 계열사.find(s => 개수[s] > 0) || 계열사[0] || null;
+    }
+
+    document.getElementById('indAffTabs').innerHTML = 계열사.map(s =>
+      '<button type="button" data-aff="' + escapeHtml(s) + '"' +
+        (s === indAff ? ' class="on"' : '') +
+        (개수[s] ? '' : ' data-empty="1"') + '>' +
+        escapeHtml(s) + (개수[s] ? '<i>' + 개수[s] + '</i>' : '') + '</button>'
+    ).join('');
+
+    /* 둘 이상에 걸친 지표는 양쪽에 다 띄운다. 건설기성액은 하우시스와
+       글라스 둘 다에게 진짜로 중요해서, 한쪽에 숨기면 다른 쪽에서 놓친다. */
+    const 것들 = indAff ? 지표.filter(x => x.소속.indexOf(indAff) >= 0) : [];
+    document.getElementById('indAff').innerHTML = 것들.map(indCard).join('');
+    document.getElementById('indAffEmpty').style.display = 것들.length ? 'none' : 'block';
+
+    const 대기 = indData.아직없음 || [];
+    document.getElementById('indPendCard').style.display = 대기.length ? 'block' : 'none';
+    document.getElementById('indPend').innerHTML = 대기.map(x =>
+      '<span>' + escapeHtml(x.이름) + ' · ' + escapeHtml(x.출처) + '</span>'
+    ).join('');
+
+    document.getElementById('indAsOf').textContent =
+      indData.asOf + ' 기준 · 값이 있는 지표 ' + 지표.length + '개' +
+      (대기.length ? ' · 대기 ' + 대기.length + '개' : '');
+  }
+
+  function loadIndex(force){
+    if (indLoading) return;
+    if (indData && !force){ indDraw(); return; }
+    indLoading = true;
+    document.getElementById('indAsOf').textContent = '불러오는 중…';
+    fetch(INDEX_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS' })
+    })
+      .then(r => r.json())
+      .then(d => {
+        indLoading = false;
+        if (!d || d.ok === false){
+          document.getElementById('indAsOf').textContent = (d && d.error) || '지표를 불러오지 못했습니다.';
+          return;
+        }
+        indData = d;
+        indDraw();
+      })
+      .catch(() => {
+        indLoading = false;
+        document.getElementById('indAsOf').textContent = '지표를 불러오지 못했습니다. 탭을 다시 열어보세요.';
+      });
+  }
+
+  document.getElementById('indAffTabs').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-aff]');
+    if (!b) return;
+    indAff = b.dataset.aff;
+    indDraw();
+  });
 
   function maybeAutoLoadApply(){
     if (applyAutoLoaded) return;
