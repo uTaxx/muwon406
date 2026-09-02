@@ -50,13 +50,15 @@ import collections
 import json
 import sys
 import time
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from run_switch_check import 대상종목, 섹터표만들기
 
 from muwon.analysis.market_data import load_histories
 from muwon.analysis.switching import 굴리기
@@ -66,7 +68,6 @@ from muwon.data.universe import Ticker
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.settings.schema import RiskPolicy
 from muwon.strategy.registry import build_strategy, get_definition, list_definitions
-from run_switch_check import 대상종목, 섹터표만들기
 
 #: 한 해에 이만큼 거래가 없으면 그 해 숫자는 판단에 쓰지 않는다.
 표본최소기준 = 20
@@ -216,10 +217,11 @@ def main() -> int:
         take_profit_pct=0.0,
         daily_loss_limit_pct=-0.03,
     )
-    제약 = dict(
-        섹터표=섹터표만들기(), 섹터상한=인자.섹터당, 섹터상한셈="하루후보",
-        점수순=True, 결제일수=0, 예수금=인자.예수금,
-    )
+    제약 = {
+        "섹터표": 섹터표만들기(), "섹터상한": 인자.섹터당,
+        "섹터상한셈": "하루후보", "점수순": True, "결제일수": 0,
+        "예수금": 인자.예수금,
+    }
     전략키들 = [ㅈ.key for ㅈ in list_definitions()]
     슬리피지벌 = [float(x) for x in 인자.슬리피지벌.split(",")]
 
@@ -233,7 +235,7 @@ def main() -> int:
     낸것: dict = {
         "설명": "매매 대상 목록을 바꿔 가며 전략 27개를 계산한 것입니다. "
               "손익이 몇 종목에서 나왔는지를 함께 셉니다.",
-        "잰날": str(date.today()),
+        "잰날": str(datetime.now(UTC).date()),
         "기간": f"{시작} ~ {끝}",
         "설정": (f"비중 {인자.비중:.0%} · 동시보유 {인자.동시보유}종목 · "
                f"섹터당 {인자.섹터당}종목 · 손절 {인자.손절:.0%} · "

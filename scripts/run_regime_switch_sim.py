@@ -66,15 +66,16 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from run_switch_check import 대상종목, 섹터표만들기
+
 from muwon.analysis.market_data import load_histories
 from muwon.analysis.switching import 갈아타기전략, 굴리기
-from muwon.strategy.portfolio import as_portfolio_strategy
 from muwon.backtest.costs import TransactionCosts
 from muwon.data.price_cache import PriceCache
 from muwon.data.yahoo_client import YahooFinanceDataSource
 from muwon.settings.schema import RiskPolicy
+from muwon.strategy.portfolio import as_portfolio_strategy
 from muwon.strategy.registry import build_strategy, get_definition, list_definitions
-from run_switch_check import 대상종목, 섹터표만들기
 
 #: 견줄 상대. 지금 설정된 것과 연 단위 평가 1위다.
 기준전략 = ("gap_up_go", "volume_surge_3d")
@@ -428,10 +429,11 @@ def main() -> int:
         daily_loss_limit_pct=-0.03,
     )
     costs = TransactionCosts(slippage_pct=인자.슬리피지)
-    제약 = dict(
-        섹터표=섹터표만들기(), 섹터상한=인자.섹터당, 섹터상한셈="하루후보",
-        점수순=True, 결제일수=0, 예수금=인자.예수금,
-    )
+    제약 = {
+        "섹터표": 섹터표만들기(), "섹터상한": 인자.섹터당,
+        "섹터상한셈": "하루후보", "점수순": True, "결제일수": 0,
+        "예수금": 인자.예수금,
+    }
     전략키들 = [ㅈ.key for ㅈ in list_definitions()]
 
     source = YahooFinanceDataSource()
