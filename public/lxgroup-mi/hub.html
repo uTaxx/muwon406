@@ -396,6 +396,23 @@
   .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
   .ind-bhead span{font-size:11px; color:var(--muted);}
 
+  /* 기간 고르기 — 오른쪽 끝에 붙인다 */
+  .ind-pick{margin-left:auto; display:flex; gap:0; border:1px solid var(--line);
+            border-radius:8px; overflow:hidden; align-self:center;}
+  .ind-pick button{border:none; background:var(--card); color:var(--muted);
+                   padding:4px 10px; font-size:11.5px; font-weight:700;
+                   cursor:pointer; font-family:inherit; line-height:1.6;}
+  .ind-pick button + button{border-left:1px solid var(--line);}
+  .ind-pick button:hover:not(:disabled):not(.on){background:var(--bg); color:var(--text);}
+  .ind-pick button.on{background:var(--green); color:#fff;}
+  /* 한국은행이 일 단위로 안 주는 지표가 있다. 누를 수 있게 해놓고 빈 그래프를
+     보여주면 고장으로 읽힌다. */
+  .ind-pick button:disabled{opacity:.32; cursor:not-allowed;}
+
+  /* 고른 기간에 자료가 없는 지표는 목록에 남기되 흐리게 둔다. 아예 지우면
+     '이 지표가 어디 갔지'가 된다. */
+  .ind-leg.off{opacity:.5;}
+
   /* 목록이 곧 범례다. 왼쪽 색이 아래 그래프의 선 색이다. */
   .ind-leg{display:flex; align-items:flex-start; gap:9px; padding:9px 0;
            border-bottom:1px solid var(--line);}
@@ -452,6 +469,8 @@
   @media (max-width:520px){
     .ind-asof, .ind-tabs{margin-left:0;}
     .ind-block{padding:12px 13px 10px;}
+    .ind-pick{margin-left:0; width:100%; justify-content:stretch;}
+    .ind-pick button{flex:1;}
     /* 좁은 화면에선 값을 이름 아래로 내린다. 옆에 붙이면 이름이 두세
        줄로 접혀서 무슨 지표인지 읽기가 더 어려워진다. */
     .ind-leg{flex-wrap:wrap;}
@@ -1135,67 +1154,78 @@
      종류인데 다른 것'으로 읽혀서 이 화면에 맞다. 진한 쪽이 시트에서
      앞선 지표다. */
   const IND_COLORS = ['#3F0C0A', '#A32B26', '#C97367', '#E3A79E', '#F0C9C3', '#75241F'];
-  const IND_MONTHS = 13;
 
-  function indYM(d){ return String(d).slice(0, 7); }
+  /* 그래프마다 고를 수 있는 세 가지 기간. 어디까지 보여줄지는 서버가 이미
+     잘라서 보내므로 여기서는 자르지 않는다 — 자르기 시작하면 '전일 대비'를
+     화면이 다시 계산해야 하고, 그 순간 같은 숫자가 두 곳에서 나온다.
 
-  /* 한 그래프에 넣을지 말지는 단위가 정한다. 원(1,376)과 %(3)를 같은
-     축에 얹으면 %가 바닥에 눌려 사라진다. 그래서 단위별로 그래프를 쪼갠다.
+     묶는 단위가 기간마다 다르다. 일별은 날짜 그대로지만, 월별은 지표마다
+     기준일이 달라(환율 8-31, 기준금리 8-01) 연월로 묶어야 같은 줄에 선다. */
+  const IND_RANGES = [
+    { k: '일', 이름: '일별',   축: function(d){ return d.slice(0, 10); }, 눈: function(d){ return d.slice(5); } },
+    { k: '월', 이름: '월별',   축: function(d){ return d.slice(0, 7); },  눈: function(d){ return d.slice(0, 7); } },
+    { k: '연', 이름: '연도별', 축: function(d){ return d.slice(0, 4); },  눈: function(d){ return d.slice(0, 4); } }
+  ];
+  const IND_RANGE_기본 = '월';
+  let indRange = {};   // 그래프마다 지금 고른 기간
 
-     단위가 같아도 크기가 크게 다르면(원/달러 1,376 vs 원/위안 205) 여전히
-     한쪽이 직선이 되므로, 그때만 같은 달을 100으로 맞춘다. 크기가 비슷하면
-     (기준금리 2.5 vs 국고채 3.8) 지수로 바꾸지 않고 실제 값 그대로 그린다 —
-     환산은 읽는 사람에게 한 겹의 부담이라, 필요할 때만 쓴다. */
-  function indBuild(items){
-    const 달있음 = {};
-    items.forEach(function(x){ (x.흐름 || []).forEach(function(p){ 달있음[indYM(p.d)] = 1; }); });
-    const 창 = Object.keys(달있음).sort().slice(-IND_MONTHS);
+  function indBuild(items, R){
+    const 쓸것 = items.filter(function(x){ return x.범위 && x.범위[R.k]; });
+    if (!쓸것.length) return null;
+
+    const 있는칸 = {};
+    쓸것.forEach(function(x){ (x.범위[R.k].흐름 || []).forEach(function(p){ 있는칸[R.축(p.d)] = 1; }); });
+    const 창 = Object.keys(있는칸).sort();
     if (창.length < 2) return null;
 
-    const 값맵 = items.map(function(x){
+    const 값맵 = 쓸것.map(function(x){
       const m = {};
-      (x.흐름 || []).forEach(function(p){ m[indYM(p.d)] = p.v; });
+      (x.범위[R.k].흐름 || []).forEach(function(p){ m[R.축(p.d)] = p.v; });
       return m;
     });
 
-    /* 크기가 비슷한지: 지표마다 창 안의 대표값(중앙값)을 견준다 */
-    let 여럿 = items.length > 1;
+    /* 크기가 비슷하면 실제 값 그대로, 크게 다르면 100으로 맞춘다.
+       1,376원짜리 환율과 3%짜리 금리를 같은 축에 그대로 얹으면 금리가
+       바닥에 눌려 사라진다. */
+    let 여럿 = 쓸것.length > 1;
     if (여럿){
       const 대표 = 값맵.map(function(m){
-        const vs = 창.map(function(ym){ return m[ym]; })
+        const vs = 창.map(function(c){ return m[c]; })
                     .filter(function(v){ return v !== undefined; })
                     .map(Math.abs).sort(function(a, b){ return a - b; });
         return vs.length ? vs[Math.floor(vs.length / 2)] : 0;
       }).filter(function(v){ return v > 0; });
-      if (대표.length === items.length){
+      if (대표.length === 쓸것.length){
         const 큰 = Math.max.apply(null, 대표), 작은 = Math.min.apply(null, 대표);
-        if (큰 / 작은 <= 3) 여럿 = false;   // 실제 값 그대로 그려도 다 보인다
+        if (큰 / 작은 <= 3) 여럿 = false;
       }
     }
 
-    /* 기준달은 모든 지표에 값이 있는 첫 달로 잡는다. 지표마다 제 첫 값을
-       100으로 삼으면 출발선이 제각각이라 견주는 뜻이 사라진다. */
-    let 기준달 = null;
+    /* 기준칸은 모든 지표에 값이 있는 첫 칸. 지표마다 제 첫 값을 100으로 삼으면
+       출발선이 제각각이라 견주는 뜻이 사라진다. */
+    let 기준칸 = null;
     if (여럿){
-      for (let k = 0; k < 창.length; k++){
-        const ym = 창[k];
-        if (값맵.every(function(m){ return m[ym] !== undefined; })){ 기준달 = ym; break; }
+      for (let i = 0; i < 창.length; i++){
+        const c = 창[i];
+        if (값맵.every(function(m){ return m[c] !== undefined; })){ 기준칸 = c; break; }
       }
     }
 
-    const 선들 = items.map(function(x, i){
+    const 선들 = 쓸것.map(function(x, i){
       const m = 값맵[i];
-      const 기준 = (여럿 && 기준달 !== null) ? m[기준달] : null;
+      const 기준 = (여럿 && 기준칸 !== null) ? m[기준칸] : null;
       let 첫값 = null;
       const pts = [];
-      창.forEach(function(ym, j){
-        const v = m[ym];
+      창.forEach(function(c, j){
+        const v = m[c];
         if (v === undefined) return;
         if (첫값 === null) 첫값 = v;
         const b = 기준 !== null ? 기준 : 첫값;
-        pts.push({ j: j, y: 여럿 ? (b ? (v / b) * 100 : 100) : v, v: v, ym: ym });
+        pts.push({ j: j, y: 여럿 ? (b ? (v / b) * 100 : 100) : v, v: v });
       });
-      return { 지표: x, 색: IND_COLORS[i % IND_COLORS.length], pts: pts };
+      /* 색은 그래프에 몇 번째로 그려지느냐가 아니라 목록에서 몇 번째냐로 정한다.
+         기간을 바꿔 한 지표가 빠져도 남은 선의 색이 따라 바뀌면 안 된다. */
+      return { 지표: x, 색: IND_COLORS[items.indexOf(x) % IND_COLORS.length], pts: pts };
     }).filter(function(s){ return s.pts.length >= 2; });
 
     if (!선들.length) return null;
@@ -1209,7 +1239,8 @@
     const 폭 = (hi - lo) || Math.abs(hi) || 1;
     lo -= 폭 * 0.1; hi += 폭 * 0.1;
 
-    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준달: 기준달 };
+    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준칸: 기준칸, R: R,
+             단위: (쓸것[0] || {}).단위 || '' };
   }
 
   function indPlot(g){
@@ -1226,8 +1257,8 @@
     }
     g.선들.forEach(function(s, i){
       const pts = s.pts.map(function(p){ return X(p.j).toFixed(1) + ',' + Y(p.y).toFixed(1); }).join(' ');
-      /* 옅은 색일수록 조금 굵게 긋는다. 같은 굵기로 그으면 옅은 선이
-         먼저 묻혀서, 색 순서가 곧 중요도 순서처럼 보이게 된다. */
+      /* 옅은 색일수록 조금 굵게 긋는다. 같은 굵기로 그으면 옅은 선이 먼저
+         묻혀서, 색 순서가 곧 중요도 순서처럼 보이게 된다. */
       const 굵기 = (1.6 + i * 0.18).toFixed(2);
       out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="' + 굵기 + '" ' +
              'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
@@ -1238,21 +1269,40 @@
     return out + '</svg>';
   }
 
-  function indChgHtml(x){
-    const cls = x.좋아짐 === true ? 'ind-good' : x.좋아짐 === false ? 'ind-bad' : 'ind-flat';
-    if (x.변화 === null || x.변화 === undefined) return '<span class="chg ind-flat">전월 자료 없음</span>';
-    const 화살 = x.변화 > 0 ? '▲' : x.변화 < 0 ? '▼' : '–';
-    const 말 = x.좋아짐 === true ? '좋아짐' : x.좋아짐 === false ? '나빠짐' : '';
-    return '<span class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(x.변화)) +
-           ' (' + (x.변화율 > 0 ? '+' : '') + x.변화율 + '%)' +
+  function indChgHtml(b){
+    if (!b) return '';
+    const cls = b.좋아짐 === true ? 'ind-good' : b.좋아짐 === false ? 'ind-bad' : 'ind-flat';
+    if (b.변화 === null || b.변화 === undefined) return '<span class="chg ind-flat">' + escapeHtml(b.라벨) + ' 자료 없음</span>';
+    const 화살 = b.변화 > 0 ? '▲' : b.변화 < 0 ? '▼' : '–';
+    const 말 = b.좋아짐 === true ? '좋아짐' : b.좋아짐 === false ? '나빠짐' : '';
+    return '<span class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(b.변화)) +
+           ' (' + (b.변화율 > 0 ? '+' : '') + b.변화율 + '%)' +
            (말 ? '<em>' + 말 + '</em>' : '') + '</span>';
   }
 
-  function indBlock(그룹명, items){
-    const g = indBuild(items);
+  function indBlock(그룹명, items, 열쇠){
+    /* 어떤 기간을 고를 수 있는지는 지표가 정한다. 기준금리는 한국은행이
+       일 단위로 내주지 않아서 일별이 아예 없다 — 누를 수 있게 해놓고 빈
+       그래프를 보여주면 고장으로 읽힌다. */
+    const 가능 = IND_RANGES.filter(function(R){
+      return items.some(function(x){ return x.범위 && x.범위[R.k]; });
+    });
+    if (!가능.length) return '';
+    let 지금 = indRange[열쇠] || IND_RANGE_기본;
+    if (!가능.some(function(R){ return R.k === 지금; })) 지금 = 가능[가능.length - 1].k;
+    const R = IND_RANGES.filter(function(x){ return x.k === 지금; })[0];
+
+    const 고르개 = '<div class="ind-pick">' + IND_RANGES.map(function(x){
+      const 됨 = 가능.some(function(y){ return y.k === x.k; });
+      return '<button type="button" data-range="' + x.k + '"' +
+        (x.k === 지금 ? ' class="on"' : '') +
+        (됨 ? '' : ' disabled title="이 지표는 이 기간 자료가 없습니다"') +
+        '>' + x.이름 + '</button>';
+    }).join('') + '</div>';
 
     const 목록 = items.map(function(x, i){
-      return '<div class="ind-leg">' +
+      const b = x.범위 && x.범위[R.k];
+      return '<div class="ind-leg' + (b ? '' : ' off') + '">' +
         '<i style="background:' + IND_COLORS[i % IND_COLORS.length] + '"></i>' +
         '<div class="ind-leg-b">' +
           '<div class="ind-leg-t"><b>' + escapeHtml(x.이름) + '</b>' +
@@ -1261,20 +1311,18 @@
           (x.설명 ? '<div class="ind-leg-w">' + escapeHtml(x.설명) + '</div>' : '') +
         '</div>' +
         '<div class="ind-leg-v">' +
-          '<div class="val">' + indNum(x.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' +
-          indChgHtml(x) +
+          (b ? '<div class="val">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' + indChgHtml(b)
+             : '<span class="chg ind-flat">' + escapeHtml(R.이름) + ' 자료 없음</span>') +
         '</div>' +
       '</div>';
     }).join('');
 
+    const g = indBuild(items, R);
     let 그래프 = '';
     if (g){
       /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
          원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다. */
-      const 눈금 = function(v){
-        return g.여럿 ? String(Math.round(v)) : indNum(v) + (items[0].단위 || '');
-      };
-      /* 기준선이 그래프 어느 높이에 있는지 */
+      const 눈금 = function(v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
       const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
       그래프 =
         '<div class="ind-chart">' + indPlot(g) +
@@ -1283,44 +1331,49 @@
           (g.여럿 && 기준높이 > 6 && 기준높이 < 94
             ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
         '</div>' +
-        '<div class="ind-xax"><span>' + escapeHtml(g.창[0]) + '</span>' +
-          '<span>' + escapeHtml(g.창[g.창.length - 1]) + '</span></div>' +
+        '<div class="ind-xax"><span>' + escapeHtml(R.눈(g.창[0])) + '</span>' +
+          '<span>' + escapeHtml(R.눈(g.창[g.창.length - 1])) + '</span></div>' +
         (g.여럿
-          ? '<div class="ind-note">단위가 서로 달라 <b>' + escapeHtml(g.기준달 || g.창[0]) +
+          ? '<div class="ind-note">단위가 서로 달라 <b>' + escapeHtml(R.눈(g.기준칸 || g.창[0])) +
             ' = 100</b>으로 맞춰 움직인 폭만 견줍니다. 실제 값은 바로 위에 있습니다.</div>'
           : '');
     }
 
     const 출처 = items.map(function(x){ return x.출처; })
                      .filter(function(v, i, a){ return v && a.indexOf(v) === i; }).join(' · ');
-    const 최신 = items.map(function(x){ return x.최신일; }).sort().pop();
+    const 최신 = items.map(function(x){ return ((x.범위 && x.범위[R.k]) || {}).최신일; })
+                     .filter(Boolean).sort().pop();
 
-    return '<div class="ind-block">' +
-      '<div class="ind-bhead"><b>' + escapeHtml(그룹명) + '</b>' +
-        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) + '</span></div>' +
+    return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '">' +
+      '<div class="ind-bhead">' +
+        '<b>' + escapeHtml(그룹명) + '</b>' +
+        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) + '</span>' +
+        고르개 +
+      '</div>' +
       목록 + 그래프 +
     '</div>';
   }
 
   /* 차례는 시트의 정렬값을 따른다 — 화면에서 순서를 또 정하지 않는다.
      그룹으로 묶은 다음 단위로 한 번 더 쪼갠다. 같은 '환율·금리'라도
-     원짜리와 %짜리는 한 그래프에 못 얹는다. */
+     원짜리와 %짜리는 한 그래프에 못 얹는다.
+
+     열쇠에 세로막대를 쓰는 이유는 그룹 이름에 띄어쓰기가 들어가기 때문이다
+     ('국내 B2C · 리모델링'). 띄어쓰기로 나누면 이름이 잘린다. */
   function indBlocks(지표들){
     const 순서 = [], 통 = {}, 그룹단위 = {};
     지표들.forEach(function(x){
       const 그룹 = x.그룹 || '기타';
-      const k = 그룹 + '\u0000' + (x.단위 || '');
-      if (!통[k]){ 통[k] = []; 순서.push(k); }
-      통[k].push(x);
-      (그룹단위[그룹] = 그룹단위[그룹] || {})[x.단위 || ''] = 1;
+      const 단위 = x.단위 || '';
+      const k = 그룹 + '|' + 단위;
+      if (!통[k]){ 통[k] = { 그룹: 그룹, 단위: 단위, 것들: [] }; 순서.push(k); }
+      통[k].것들.push(x);
+      (그룹단위[그룹] = 그룹단위[그룹] || {})[단위] = 1;
     });
     return 순서.map(function(k){
-      const 조각 = k.split('\u0000');
-      const 그룹 = 조각[0], 단위 = 조각[1];
-      /* 한 그룹이 단위별로 갈렸을 때만 제목에 단위를 붙인다. 안 갈렸으면
-         군더더기다. */
-      const 여러단위 = Object.keys(그룹단위[그룹]).length > 1;
-      return indBlock(여러단위 && 단위 ? 그룹 + ' · ' + 단위 : 그룹, 통[k]);
+      const t = 통[k];
+      const 여러단위 = Object.keys(그룹단위[t.그룹]).length > 1;
+      return indBlock(여러단위 && t.단위 ? t.그룹 + ' · ' + t.단위 : t.그룹, t.것들, k);
     }).join('');
   }
 
@@ -1398,6 +1451,19 @@
     if (!b) return;
     indAff = b.dataset.aff;
     indDraw();
+  });
+
+  /* 기간 고르기. 그래프마다 따로 기억한다 — 환율은 일별로 보면서 건설수주는
+     연도별로 두고 싶은 것이 자연스럽다. */
+  ['indCommon', 'indAff'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(e){
+      const b = e.target.closest('button[data-range]');
+      if (!b || b.disabled) return;
+      const 통 = b.closest('.ind-block');
+      if (!통) return;
+      indRange[통.dataset.blk] = b.dataset.range;
+      indDraw();
+    });
   });
 
   function maybeAutoLoadApply(){
