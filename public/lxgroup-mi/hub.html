@@ -400,11 +400,13 @@
   .ind-leg{display:flex; align-items:flex-start; gap:9px; padding:9px 0;
            border-bottom:1px solid var(--line);}
   .ind-leg:last-of-type{border-bottom:none;}
-  .ind-leg > i{flex:none; width:9px; height:9px; border-radius:3px; margin-top:5px;}
+  /* 표식은 점이 아니라 선 조각이다. 아래 그래프의 선과 짝지으라는
+     뜻이 점보다 훨씬 빨리 읽힌다. */
+  .ind-leg > i{flex:none; width:16px; height:3px; border-radius:2px; margin-top:8px;}
   .ind-leg-b{flex:1 1 190px; min-width:0;}
   .ind-leg-t{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
   .ind-leg-t b{font-size:13px; font-weight:700; letter-spacing:-.02em;}
-  .ind-leg-w{font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:3px;}
+  .ind-leg-w{font-size:11px; color:var(--muted); line-height:1.5; margin-top:3px; opacity:.85;}
   .ind-leg-v{flex:none; text-align:right; padding-left:6px;}
   .ind-leg-v .val{font-size:19px; font-weight:800; letter-spacing:-.03em; line-height:1.2;}
   .ind-leg-v .val span{font-size:11.5px; font-weight:600; color:var(--muted); margin-left:2px;}
@@ -414,7 +416,10 @@
   .ind-lead{font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-tint);
             border-radius:999px; padding:2px 7px; white-space:nowrap;}
 
-  .ind-chart{position:relative; height:168px; margin:12px 0 0;}
+  /* 아래 실선은 그래프의 바닥이다. 눈이 걸칠 데가 없으면 선들이
+     공중에 떠 보인다. */
+  .ind-chart{position:relative; height:200px; margin:14px 0 0;
+             border-bottom:1px solid var(--line);}
   .ind-svg{display:block; width:100%; height:100%;}
   /* 눈금은 왼쪽에 둔다. 오른쪽 끝은 가장 최근 값이 찍히는 자리라
      거기에 글자를 얹으면 제일 봐야 할 곳을 가린다. */
@@ -422,7 +427,9 @@
          background:var(--card); padding:0 3px; border-radius:3px; pointer-events:none;}
   .ind-y.hi{top:0;}
   .ind-y.lo{bottom:0;}
-  .ind-y.base{left:auto; right:0; transform:translateY(-50%); font-size:10px; opacity:.8;}
+  /* 기준선 표시는 선 '위로' 올린다. 가운데 맞추면 100 언저리에서 끝나는
+     선을 덮는다. */
+  .ind-y.base{left:auto; right:0; transform:translateY(-115%); font-size:10px; opacity:.75;}
   .ind-xax{display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:4px;}
   .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
             padding-top:8px; border-top:1px solid var(--line);}
@@ -451,11 +458,11 @@
     /* 이름은 색 점 옆에 그대로 두고, 값만 아래로 내린다. 이름까지 내리면
        점만 덩그러니 한 줄을 차지한다. */
     .ind-leg-b{flex:1 1 0;}
-    .ind-leg-v{flex:1 1 100%; text-align:left; padding-left:18px; margin-top:4px;
+    .ind-leg-v{flex:1 1 100%; text-align:left; padding-left:25px; margin-top:4px;
                display:flex; align-items:baseline; gap:8px;}
     .ind-leg-v .val{font-size:17px;}
     .ind-leg-v .chg{margin-top:0;}
-    .ind-chart{height:150px;}
+    .ind-chart{height:176px;}
   }
 </style>
 </head>
@@ -1122,11 +1129,23 @@
      국고채가 '아무 일도 없었다'로 보인다. 그래서 지표가 둘 이상이면
      같은 달을 100으로 맞춰 변화폭만 견준다. 실제 값은 그래프 바로 위
      목록에 그대로 있으니 잃는 것은 없다. */
-  const IND_COLORS = ['#A32B26', '#2E5E8C', '#B8862B', '#1F7A5A', '#6B4A8C', '#8C5A2B'];
+  /* 색을 여러 개 쓰지 않고 대시보드 붉은색 하나의 농담으로 구분한다.
+     빨강·파랑·노랑을 섞으면 선마다 다른 뜻이 있는 것처럼 보이는데,
+     실제로는 그냥 다른 지표일 뿐이다. 같은 색의 진하기 차이는 '같은
+     종류인데 다른 것'으로 읽혀서 이 화면에 맞다. 진한 쪽이 시트에서
+     앞선 지표다. */
+  const IND_COLORS = ['#3F0C0A', '#A32B26', '#C97367', '#E3A79E', '#F0C9C3', '#75241F'];
   const IND_MONTHS = 13;
 
   function indYM(d){ return String(d).slice(0, 7); }
 
+  /* 한 그래프에 넣을지 말지는 단위가 정한다. 원(1,376)과 %(3)를 같은
+     축에 얹으면 %가 바닥에 눌려 사라진다. 그래서 단위별로 그래프를 쪼갠다.
+
+     단위가 같아도 크기가 크게 다르면(원/달러 1,376 vs 원/위안 205) 여전히
+     한쪽이 직선이 되므로, 그때만 같은 달을 100으로 맞춘다. 크기가 비슷하면
+     (기준금리 2.5 vs 국고채 3.8) 지수로 바꾸지 않고 실제 값 그대로 그린다 —
+     환산은 읽는 사람에게 한 겹의 부담이라, 필요할 때만 쓴다. */
   function indBuild(items){
     const 달있음 = {};
     items.forEach(function(x){ (x.흐름 || []).forEach(function(p){ 달있음[indYM(p.d)] = 1; }); });
@@ -1139,7 +1158,20 @@
       return m;
     });
 
-    const 여럿 = items.length > 1;
+    /* 크기가 비슷한지: 지표마다 창 안의 대표값(중앙값)을 견준다 */
+    let 여럿 = items.length > 1;
+    if (여럿){
+      const 대표 = 값맵.map(function(m){
+        const vs = 창.map(function(ym){ return m[ym]; })
+                    .filter(function(v){ return v !== undefined; })
+                    .map(Math.abs).sort(function(a, b){ return a - b; });
+        return vs.length ? vs[Math.floor(vs.length / 2)] : 0;
+      }).filter(function(v){ return v > 0; });
+      if (대표.length === items.length){
+        const 큰 = Math.max.apply(null, 대표), 작은 = Math.min.apply(null, 대표);
+        if (큰 / 작은 <= 3) 여럿 = false;   // 실제 값 그대로 그려도 다 보인다
+      }
+    }
 
     /* 기준달은 모든 지표에 값이 있는 첫 달로 잡는다. 지표마다 제 첫 값을
        100으로 삼으면 출발선이 제각각이라 견주는 뜻이 사라진다. */
@@ -1181,7 +1213,7 @@
   }
 
   function indPlot(g){
-    const W = 600, H = 168, PAD = 12;
+    const W = 600, H = 200, PAD = 14;
     const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
     const Y = function(v){ return H - PAD - ((v - g.lo) / (g.hi - g.lo)) * (H - PAD * 2); };
 
@@ -1190,15 +1222,18 @@
       /* 기준선은 아주 옅게. 기준금리처럼 한동안 값이 안 변하는 지표는 선이
          100에 딱 붙어 있는데, 기준선이 진하면 그 지표가 통째로 사라진다. */
       out += '<line x1="0" y1="' + Y(100).toFixed(1) + '" x2="' + W + '" y2="' + Y(100).toFixed(1) +
-             '" stroke="#EBE1D6" stroke-width="1" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
+             '" stroke="#D6C6B5" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>';
     }
-    g.선들.forEach(function(s){
+    g.선들.forEach(function(s, i){
       const pts = s.pts.map(function(p){ return X(p.j).toFixed(1) + ',' + Y(p.y).toFixed(1); }).join(' ');
-      out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="1.9" ' +
+      /* 옅은 색일수록 조금 굵게 긋는다. 같은 굵기로 그으면 옅은 선이
+         먼저 묻혀서, 색 순서가 곧 중요도 순서처럼 보이게 된다. */
+      const 굵기 = (1.6 + i * 0.18).toFixed(2);
+      out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="' + 굵기 + '" ' +
              'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
       const 끝 = s.pts[s.pts.length - 1];
       out += '<circle cx="' + X(끝.j).toFixed(1) + '" cy="' + Y(끝.y).toFixed(1) +
-             '" r="2.4" fill="' + s.색 + '"/>';
+             '" r="2.6" fill="' + s.색 + '"/>';
     });
     return out + '</svg>';
   }
@@ -1267,16 +1302,26 @@
     '</div>';
   }
 
-  /* 그룹 차례는 시트의 정렬값을 따른다. 그룹 안에서 가장 앞선 지표가
-     앞서면 그 그룹이 앞이다 — 화면에서 순서를 또 정하지 않는다. */
+  /* 차례는 시트의 정렬값을 따른다 — 화면에서 순서를 또 정하지 않는다.
+     그룹으로 묶은 다음 단위로 한 번 더 쪼갠다. 같은 '환율·금리'라도
+     원짜리와 %짜리는 한 그래프에 못 얹는다. */
   function indBlocks(지표들){
-    const 순서 = [], 통 = {};
+    const 순서 = [], 통 = {}, 그룹단위 = {};
     지표들.forEach(function(x){
-      const k = x.그룹 || '기타';
+      const 그룹 = x.그룹 || '기타';
+      const k = 그룹 + '\u0000' + (x.단위 || '');
       if (!통[k]){ 통[k] = []; 순서.push(k); }
       통[k].push(x);
+      (그룹단위[그룹] = 그룹단위[그룹] || {})[x.단위 || ''] = 1;
     });
-    return 순서.map(function(k){ return indBlock(k, 통[k]); }).join('');
+    return 순서.map(function(k){
+      const 조각 = k.split('\u0000');
+      const 그룹 = 조각[0], 단위 = 조각[1];
+      /* 한 그룹이 단위별로 갈렸을 때만 제목에 단위를 붙인다. 안 갈렸으면
+         군더더기다. */
+      const 여러단위 = Object.keys(그룹단위[그룹]).length > 1;
+      return indBlock(여러단위 && 단위 ? 그룹 + ' · ' + 단위 : 그룹, 통[k]);
+    }).join('');
   }
 
   function indDraw(){
