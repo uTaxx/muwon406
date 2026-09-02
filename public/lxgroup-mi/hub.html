@@ -386,21 +386,47 @@
   .ind-flat{color:var(--muted);}
 
   .ind-asof{font-size:12px; color:var(--muted); margin:0 0 14px 36px;}
-  .ind-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+  /* 한 열로 세운다. 두 열로 나누면 같은 그룹의 지표가 좌우로 흩어져
+     서로 견줄 수가 없다. */
+  .ind-grid{display:flex; flex-direction:column; gap:14px;}
 
-  .ind-card{border:1px solid var(--line); border-radius:12px; padding:14px 15px 12px; background:var(--card);}
-  .ind-card .nm{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin-bottom:9px;}
-  .ind-card .nm b{font-size:13.5px; font-weight:700; letter-spacing:-.02em;}
+  .ind-block{border:1px solid var(--line); border-radius:12px; padding:14px 16px 12px; background:var(--card);}
+  .ind-bhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+             padding-bottom:9px; margin-bottom:4px; border-bottom:1px solid var(--line);}
+  .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
+  .ind-bhead span{font-size:11px; color:var(--muted);}
+
+  /* 목록이 곧 범례다. 왼쪽 색이 아래 그래프의 선 색이다. */
+  .ind-leg{display:flex; align-items:flex-start; gap:9px; padding:9px 0;
+           border-bottom:1px solid var(--line);}
+  .ind-leg:last-of-type{border-bottom:none;}
+  .ind-leg > i{flex:none; width:9px; height:9px; border-radius:3px; margin-top:5px;}
+  .ind-leg-b{flex:1 1 190px; min-width:0;}
+  .ind-leg-t{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
+  .ind-leg-t b{font-size:13px; font-weight:700; letter-spacing:-.02em;}
+  .ind-leg-w{font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:3px;}
+  .ind-leg-v{flex:none; text-align:right; padding-left:6px;}
+  .ind-leg-v .val{font-size:19px; font-weight:800; letter-spacing:-.03em; line-height:1.2;}
+  .ind-leg-v .val span{font-size:11.5px; font-weight:600; color:var(--muted); margin-left:2px;}
+  .ind-leg-v .chg{display:block; font-size:12px; font-weight:700; margin-top:2px; white-space:nowrap;}
+  .ind-leg-v .chg em{font-style:normal; font-weight:600; margin-left:4px;}
+
   .ind-lead{font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-tint);
             border-radius:999px; padding:2px 7px; white-space:nowrap;}
-  .ind-card .val{font-size:23px; font-weight:800; letter-spacing:-.03em; line-height:1.15;}
-  .ind-card .val span{font-size:12.5px; font-weight:600; color:var(--muted); margin-left:3px;}
-  .ind-card .chg{font-size:12.5px; font-weight:700; margin-top:5px;}
-  .ind-card .chg em{font-style:normal; font-weight:600; margin-left:5px;}
-  .ind-spark{display:block; width:100%; height:34px; margin:10px 0 7px;}
-  .ind-card .foot{font-size:11px; color:var(--muted); line-height:1.5;}
-  .ind-card .why{font-size:11.5px; color:var(--muted); line-height:1.55; margin-top:8px;
-                 padding-top:8px; border-top:1px solid var(--line);}
+
+  .ind-chart{position:relative; height:168px; margin:12px 0 0;}
+  .ind-svg{display:block; width:100%; height:100%;}
+  /* 눈금은 왼쪽에 둔다. 오른쪽 끝은 가장 최근 값이 찍히는 자리라
+     거기에 글자를 얹으면 제일 봐야 할 곳을 가린다. */
+  .ind-y{position:absolute; left:0; font-size:10.5px; color:var(--muted); font-weight:600;
+         background:var(--card); padding:0 3px; border-radius:3px; pointer-events:none;}
+  .ind-y.hi{top:0;}
+  .ind-y.lo{bottom:0;}
+  .ind-y.base{left:auto; right:0; transform:translateY(-50%); font-size:10px; opacity:.8;}
+  .ind-xax{display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:4px;}
+  .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
+            padding-top:8px; border-top:1px solid var(--line);}
+  .ind-note b{color:var(--text); font-weight:700;}
 
   /* 계열사 고르는 띠 */
   .ind-tabs{display:flex; gap:7px; flex-wrap:wrap; margin:0 0 14px 36px;}
@@ -418,9 +444,18 @@
                  font-size:12px; color:var(--muted);}
   @media (max-width:520px){
     .ind-asof, .ind-tabs{margin-left:0;}
-    .ind-grid{grid-template-columns:1fr 1fr; gap:9px;}
-    .ind-card{padding:12px 12px 10px;}
-    .ind-card .val{font-size:20px;}
+    .ind-block{padding:12px 13px 10px;}
+    /* 좁은 화면에선 값을 이름 아래로 내린다. 옆에 붙이면 이름이 두세
+       줄로 접혀서 무슨 지표인지 읽기가 더 어려워진다. */
+    .ind-leg{flex-wrap:wrap;}
+    /* 이름은 색 점 옆에 그대로 두고, 값만 아래로 내린다. 이름까지 내리면
+       점만 덩그러니 한 줄을 차지한다. */
+    .ind-leg-b{flex:1 1 0;}
+    .ind-leg-v{flex:1 1 100%; text-align:left; padding-left:18px; margin-top:4px;
+               display:flex; align-items:baseline; gap:8px;}
+    .ind-leg-v .val{font-size:17px;}
+    .ind-leg-v .chg{margin-top:0;}
+    .ind-chart{height:150px;}
   }
 </style>
 </head>
@@ -1077,44 +1112,171 @@
     return Number(v).toLocaleString('ko-KR', { maximumFractionDigits: dec });
   }
 
-  /* 스파크라인. 라이브러리를 붙일 만한 일이 아니라 폴리라인 하나로 그린다. */
-  function indSpark(points, cls){
-    if (!points || points.length < 2) return '';
-    const vs = points.map(p => p.v);
-    const lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
-    const W = 100, H = 30, pad = 3;
-    const span = (hi - lo) || 1;
-    const xy = points.map(function(p, i){
-      const x = (i / (points.length - 1)) * W;
-      const y = H - pad - ((p.v - lo) / span) * (H - pad * 2);
-      return x.toFixed(1) + ',' + y.toFixed(1);
-    }).join(' ');
-    const color = cls === 'ind-good' ? '#1F7A5A' : cls === 'ind-bad' ? '#F04452' : '#726A61';
-    return '<svg class="ind-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-           '<polyline points="' + xy + '" fill="none" stroke="' + color + '" stroke-width="1.6" ' +
-           'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  /* ── 그래프 ────────────────────────────────────────────────
+     같은 그룹의 지표는 한 그래프에 겹친다. 환율과 금리를 따로 보면
+     "환율이 올랐다"와 "금리가 올랐다"를 각각 알 뿐, 둘 중 무엇이 더
+     크게 움직였는지는 못 본다.
+
+     겹치려면 눈금을 맞춰야 한다. 1,376원짜리 환율과 3%짜리 금리를 같은
+     축에 그대로 그리면 금리는 바닥에 붙은 직선이 되어, 1년 새 58% 오른
+     국고채가 '아무 일도 없었다'로 보인다. 그래서 지표가 둘 이상이면
+     같은 달을 100으로 맞춰 변화폭만 견준다. 실제 값은 그래프 바로 위
+     목록에 그대로 있으니 잃는 것은 없다. */
+  const IND_COLORS = ['#A32B26', '#2E5E8C', '#B8862B', '#1F7A5A', '#6B4A8C', '#8C5A2B'];
+  const IND_MONTHS = 13;
+
+  function indYM(d){ return String(d).slice(0, 7); }
+
+  function indBuild(items){
+    const 달있음 = {};
+    items.forEach(function(x){ (x.흐름 || []).forEach(function(p){ 달있음[indYM(p.d)] = 1; }); });
+    const 창 = Object.keys(달있음).sort().slice(-IND_MONTHS);
+    if (창.length < 2) return null;
+
+    const 값맵 = items.map(function(x){
+      const m = {};
+      (x.흐름 || []).forEach(function(p){ m[indYM(p.d)] = p.v; });
+      return m;
+    });
+
+    const 여럿 = items.length > 1;
+
+    /* 기준달은 모든 지표에 값이 있는 첫 달로 잡는다. 지표마다 제 첫 값을
+       100으로 삼으면 출발선이 제각각이라 견주는 뜻이 사라진다. */
+    let 기준달 = null;
+    if (여럿){
+      for (let k = 0; k < 창.length; k++){
+        const ym = 창[k];
+        if (값맵.every(function(m){ return m[ym] !== undefined; })){ 기준달 = ym; break; }
+      }
+    }
+
+    const 선들 = items.map(function(x, i){
+      const m = 값맵[i];
+      const 기준 = (여럿 && 기준달 !== null) ? m[기준달] : null;
+      let 첫값 = null;
+      const pts = [];
+      창.forEach(function(ym, j){
+        const v = m[ym];
+        if (v === undefined) return;
+        if (첫값 === null) 첫값 = v;
+        const b = 기준 !== null ? 기준 : 첫값;
+        pts.push({ j: j, y: 여럿 ? (b ? (v / b) * 100 : 100) : v, v: v, ym: ym });
+      });
+      return { 지표: x, 색: IND_COLORS[i % IND_COLORS.length], pts: pts };
+    }).filter(function(s){ return s.pts.length >= 2; });
+
+    if (!선들.length) return null;
+
+    let lo = Infinity, hi = -Infinity;
+    선들.forEach(function(s){ s.pts.forEach(function(p){
+      if (p.y < lo) lo = p.y;
+      if (p.y > hi) hi = p.y;
+    }); });
+    if (여럿){ lo = Math.min(lo, 100); hi = Math.max(hi, 100); }
+    const 폭 = (hi - lo) || Math.abs(hi) || 1;
+    lo -= 폭 * 0.1; hi += 폭 * 0.1;
+
+    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준달: 기준달 };
   }
 
-  function indCard(x){
-    const cls = x.좋아짐 === true ? 'ind-good' : x.좋아짐 === false ? 'ind-bad' : 'ind-flat';
-    let chg = '<div class="chg ind-flat">전월 자료 없음</div>';
-    if (x.변화 !== null && x.변화 !== undefined){
-      const 화살 = x.변화 > 0 ? '▲' : x.변화 < 0 ? '▼' : '–';
-      const 말 = x.좋아짐 === true ? '좋아짐' : x.좋아짐 === false ? '나빠짐' : '';
-      chg = '<div class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(x.변화)) +
-            ' (' + (x.변화율 > 0 ? '+' : '') + x.변화율 + '%)' +
-            (말 ? '<em>' + 말 + '</em>' : '') + '</div>';
+  function indPlot(g){
+    const W = 600, H = 168, PAD = 12;
+    const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
+    const Y = function(v){ return H - PAD - ((v - g.lo) / (g.hi - g.lo)) * (H - PAD * 2); };
+
+    let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
+    if (g.여럿){
+      /* 기준선은 아주 옅게. 기준금리처럼 한동안 값이 안 변하는 지표는 선이
+         100에 딱 붙어 있는데, 기준선이 진하면 그 지표가 통째로 사라진다. */
+      out += '<line x1="0" y1="' + Y(100).toFixed(1) + '" x2="' + W + '" y2="' + Y(100).toFixed(1) +
+             '" stroke="#EBE1D6" stroke-width="1" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>';
     }
-    return '<div class="ind-card">' +
-      '<div class="nm"><b>' + escapeHtml(x.이름) + '</b>' +
-        (x.선행개월 > 0 ? '<span class="ind-lead">선행 ' + x.선행개월 + '개월</span>' : '') +
-      '</div>' +
-      '<div class="val">' + indNum(x.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' +
-      chg +
-      indSpark(x.흐름, cls) +
-      '<div class="foot">' + escapeHtml(x.최신일) + ' 기준 · ' + x.개수 + '개월치 · ' + escapeHtml(x.출처) + '</div>' +
-      (x.설명 ? '<div class="why">' + escapeHtml(x.설명) + '</div>' : '') +
+    g.선들.forEach(function(s){
+      const pts = s.pts.map(function(p){ return X(p.j).toFixed(1) + ',' + Y(p.y).toFixed(1); }).join(' ');
+      out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="1.9" ' +
+             'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+      const 끝 = s.pts[s.pts.length - 1];
+      out += '<circle cx="' + X(끝.j).toFixed(1) + '" cy="' + Y(끝.y).toFixed(1) +
+             '" r="2.4" fill="' + s.색 + '"/>';
+    });
+    return out + '</svg>';
+  }
+
+  function indChgHtml(x){
+    const cls = x.좋아짐 === true ? 'ind-good' : x.좋아짐 === false ? 'ind-bad' : 'ind-flat';
+    if (x.변화 === null || x.변화 === undefined) return '<span class="chg ind-flat">전월 자료 없음</span>';
+    const 화살 = x.변화 > 0 ? '▲' : x.변화 < 0 ? '▼' : '–';
+    const 말 = x.좋아짐 === true ? '좋아짐' : x.좋아짐 === false ? '나빠짐' : '';
+    return '<span class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(x.변화)) +
+           ' (' + (x.변화율 > 0 ? '+' : '') + x.변화율 + '%)' +
+           (말 ? '<em>' + 말 + '</em>' : '') + '</span>';
+  }
+
+  function indBlock(그룹명, items){
+    const g = indBuild(items);
+
+    const 목록 = items.map(function(x, i){
+      return '<div class="ind-leg">' +
+        '<i style="background:' + IND_COLORS[i % IND_COLORS.length] + '"></i>' +
+        '<div class="ind-leg-b">' +
+          '<div class="ind-leg-t"><b>' + escapeHtml(x.이름) + '</b>' +
+            (x.선행개월 > 0 ? '<span class="ind-lead">선행 ' + x.선행개월 + '개월</span>' : '') +
+          '</div>' +
+          (x.설명 ? '<div class="ind-leg-w">' + escapeHtml(x.설명) + '</div>' : '') +
+        '</div>' +
+        '<div class="ind-leg-v">' +
+          '<div class="val">' + indNum(x.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' +
+          indChgHtml(x) +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    let 그래프 = '';
+    if (g){
+      /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
+         원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다. */
+      const 눈금 = function(v){
+        return g.여럿 ? String(Math.round(v)) : indNum(v) + (items[0].단위 || '');
+      };
+      /* 기준선이 그래프 어느 높이에 있는지 */
+      const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
+      그래프 =
+        '<div class="ind-chart">' + indPlot(g) +
+          '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
+          '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
+          (g.여럿 && 기준높이 > 6 && 기준높이 < 94
+            ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
+        '</div>' +
+        '<div class="ind-xax"><span>' + escapeHtml(g.창[0]) + '</span>' +
+          '<span>' + escapeHtml(g.창[g.창.length - 1]) + '</span></div>' +
+        (g.여럿
+          ? '<div class="ind-note">단위가 서로 달라 <b>' + escapeHtml(g.기준달 || g.창[0]) +
+            ' = 100</b>으로 맞춰 움직인 폭만 견줍니다. 실제 값은 바로 위에 있습니다.</div>'
+          : '');
+    }
+
+    const 출처 = items.map(function(x){ return x.출처; })
+                     .filter(function(v, i, a){ return v && a.indexOf(v) === i; }).join(' · ');
+    const 최신 = items.map(function(x){ return x.최신일; }).sort().pop();
+
+    return '<div class="ind-block">' +
+      '<div class="ind-bhead"><b>' + escapeHtml(그룹명) + '</b>' +
+        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) + '</span></div>' +
+      목록 + 그래프 +
     '</div>';
+  }
+
+  /* 그룹 차례는 시트의 정렬값을 따른다. 그룹 안에서 가장 앞선 지표가
+     앞서면 그 그룹이 앞이다 — 화면에서 순서를 또 정하지 않는다. */
+  function indBlocks(지표들){
+    const 순서 = [], 통 = {};
+    지표들.forEach(function(x){
+      const k = x.그룹 || '기타';
+      if (!통[k]){ 통[k] = []; 순서.push(k); }
+      통[k].push(x);
+    });
+    return 순서.map(function(k){ return indBlock(k, 통[k]); }).join('');
   }
 
   function indDraw(){
@@ -1122,7 +1284,7 @@
     const 지표 = indData.지표 || [];
 
     document.getElementById('indCommon').innerHTML =
-      지표.filter(x => x.소속.indexOf('공통') >= 0).map(indCard).join('') ||
+      indBlocks(지표.filter(x => x.소속.indexOf('공통') >= 0)) ||
       '<div class="empty-note">공통 지표에 쌓인 값이 아직 없습니다.</div>';
 
     /* 공통은 위에 따로 있으니 고르는 띠에서는 뺀다 */
@@ -1146,7 +1308,7 @@
     /* 둘 이상에 걸친 지표는 양쪽에 다 띄운다. 건설기성액은 하우시스와
        글라스 둘 다에게 진짜로 중요해서, 한쪽에 숨기면 다른 쪽에서 놓친다. */
     const 것들 = indAff ? 지표.filter(x => x.소속.indexOf(indAff) >= 0) : [];
-    document.getElementById('indAff').innerHTML = 것들.map(indCard).join('');
+    document.getElementById('indAff').innerHTML = indBlocks(것들);
     document.getElementById('indAffEmpty').style.display = 것들.length ? 'none' : 'block';
 
     const 대기 = indData.아직없음 || [];
