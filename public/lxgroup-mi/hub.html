@@ -585,6 +585,19 @@
             white-space:nowrap; font-variant-numeric:tabular-nums;}
   .comp-sub b{color:var(--text); font-weight:800;}
 
+  /* 적자는 사실이지 판정이 아니다. 그래서 좋다/나쁘다 색(초록·빨강)이 아니라
+     '여기 마이너스가 있다'만 말하는 한 가지 색으로 쓴다. 마이너스 부호 하나는
+     숫자가 빽빽한 줄에서 너무 쉽게 지나치므로 말로도 같이 적는다. */
+  .comp-sub b.neg, .ind-leg-v .val.neg{color:#B3453F;}
+  .comp-loss-tag{display:inline-block; margin-left:6px; padding:0 5px; border-radius:8px;
+    background:rgba(179,69,63,0.12); color:#B3453F; font-size:10px; font-weight:800;}
+  /* 그래프에서 0선 아래는 적자 구역이다. 띠가 있다는 것 자체가 '이 그림 어딘가에
+     적자가 있다'는 말이고, 거기 내려간 막대가 적자다. */
+  /* 0선 오른쪽 끝, 선 바로 아래. 왼쪽에 두면 아래 눈금 글자와 겹쳐 둘 다
+     못 읽는다('적자'와 '-6,000억원'이 한 자리에서 만난다). */
+  .comp-loss{position:absolute; right:0; font-size:10px; font-weight:800; color:#B3453F;
+             opacity:.85; padding:1px 3px; pointer-events:none;}
+
   /* 매출과 영업이익은 자릿수가 열 배 넘게 차이 난다. 한 축에 겹치면 영업이익이
      바닥에 붙고, 좌우 두 축으로 나누면 두 선이 만나는 자리가 아무 뜻도 없는데
      뜻이 있는 것처럼 보인다. 그래서 위아래 두 칸으로 나누고 x축만 함께 쓴다.
@@ -3182,11 +3195,17 @@
     const o = compLatest(줄, '영업이익', R);
     const r = compLatest(줄, '영업이익률', R);
     if (!o && !r) return '';
+    /* 적자는 붉게 적고 「적자」라고 말로도 적는다. 마이너스 부호 하나는 숫자가
+       빽빽한 줄에서 너무 쉽게 지나친다. 좋다/나쁘다는 판정이 아니라 사실이다. */
+    const 진 = !!(o && o.v < 0);
     const 조각 = [];
-    if (o) 조각.push('영업이익 <b>' + escapeHtml(indNum(o.v, compUnit(줄, '영업이익'))) + '</b>' +
+    if (o) 조각.push('영업이익 <b' + (진 ? ' class="neg"' : '') + '>' +
+                     escapeHtml(indNum(o.v, compUnit(줄, '영업이익'))) + '</b>' +
                      escapeHtml(compUnit(줄, '영업이익')));
-    if (r) 조각.push('이익률 <b>' + escapeHtml(indNum(r.v, '%')) + '</b>%');
-    return '<div class="comp-sub">' + 조각.join(' · ') + '</div>';
+    if (r) 조각.push('이익률 <b' + (r.v < 0 ? ' class="neg"' : '') + '>' +
+                     escapeHtml(indNum(r.v, '%')) + '</b>%');
+    return '<div class="comp-sub">' + 조각.join(' · ') +
+           (진 ? '<span class="comp-loss-tag">적자</span>' : '') + '</div>';
   }
 
   /* 그래프 한 칸. 위아래로 두 칸을 그리므로 각 칸이 제 눈금과 제 커서를 갖는다.
@@ -3206,13 +3225,24 @@
         '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
         '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
         (영선 ? '<span class="comp-zero" style="top:' + 영높이.toFixed(1) + '%;"></span>' +
-                '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' : '') +
+                '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' +
+                '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>' : '') +
         (g.여럿 && 기준높이 > 6 && 기준높이 < 94
           ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
         '<span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
   function R눈(g, 칸){ return g.R && g.R.눈 ? g.R.눈(칸) : String(칸 || ''); }
+
+  /* 앞 두 자리만 남기고 바깥쪽으로 올린다(64,200 → 66,000, -418 → -420).
+     막대 눈금을 어림수로 두면 축이 축으로 읽힌다. 한 자리까지 뭉개면
+     64,200이 100,000이 되어 그림의 3분의 1이 빈 하늘이 된다. */
+  function 어림(v){
+    if (!isFinite(v) || v === 0) return 0;
+    const s = v < 0 ? -1 : 1, a = Math.abs(v);
+    const 자리 = Math.pow(10, Math.max(Math.floor(Math.log10(a)) - 1, -2));
+    return s * Math.ceil(a / 자리) * 자리;
+  }
 
   function 점맵(선){
     const m = {};
@@ -3254,7 +3284,23 @@
       }
     });
     if (hi === lo) hi = lo + 1;
-    hi += (hi - lo) * 0.06;
+
+    /* ── 적자를 어떻게 보여줄 것인가 ────────────────────────────
+       매출 눈금 위에서 -217억은 머리카락 굵기다. 막대만으로는 적자인지 이익이
+       0에 가까운 건지 분간이 안 된다. 그래서 0선 아래로 **적자 구역**을 깔아
+       띠로 만든다. 띠가 있다는 것 자체가 '이 그림 어딘가에 적자가 있다'는 말이고,
+       거기 내려간 막대가 적자다.
+
+       띠의 깊이는 자료가 아니라 자리다 — 막대 자체는 실제 값 그대로 그리고,
+       띠만 눈에 보일 만큼(그림 높이의 8% 남짓) 잡아 준다. 위쪽 여백을 6% 두는
+       것과 같은 종류의 여백이다. 적자를 크게 보고 싶으면 「영업이익」만 골라
+       보면 된다 — 그때는 눈금이 이익 하나짜리라 적자가 그림의 절반을 차지한다. */
+    const 적자 = lo < 0;
+    /* 눈금은 어림수로 맞춘다. '-5,545.9억원' 같은 수가 축에 적히면 그게 누가
+       실제로 낸 손실인 줄 읽는다. 어림수는 한눈에 '이건 축이지 값이 아니다'로
+       읽힌다. */
+    hi = 어림(hi * 1.02);
+    lo = 적자 ? -어림(-Math.min(lo * 1.02, -(hi - lo) * 0.08)) : 0;
 
     const W = 600, H = 200, PAD = 8;
     const Y = function (v){ return H - PAD - ((v - lo) / (hi - lo)) * (H - PAD * 2); };
@@ -3264,12 +3310,18 @@
 
     const 네모 = function (x, w, v, 색, 진하기){
       const y = Y(Math.max(v, 0));
-      const h = Math.max(Math.abs(바닥 - Y(v)), 0.8);
+      /* 아주 얇은 막대는 아예 안 보인다. 적자는 특히 안 보이면 안 되므로
+         조금 더 두껍게 바닥을 깐다. */
+      const h = Math.max(Math.abs(바닥 - Y(v)), v < 0 ? 1.8 : 0.8);
       return '<rect x="' + x.toFixed(2) + '" y="' + y.toFixed(2) + '" width="' + w.toFixed(2) +
              '" height="' + h.toFixed(2) + '" fill="' + 색 + '" fill-opacity="' + 진하기 + '"/>';
     };
 
     let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
+    if (적자){
+      out += '<rect x="0" y="' + 바닥.toFixed(1) + '" width="' + W + '" height="' +
+             Math.max(H - PAD - 바닥, 0).toFixed(1) + '" fill="#B3453F" fill-opacity="0.07"/>';
+    }
     for (let j = 0; j < N; j++){
       회사들.forEach(function (c, i){
         const x = 칸 * j + (칸 - 묶) / 2 + i * 막;
@@ -3279,20 +3331,32 @@
         if (w !== undefined) out += 네모(x + 막 * 0.25, 막 * 0.50, w, c.색, 0.95);
       });
     }
-    if (lo < 0){
+    if (적자){
       out += '<line x1="0" y1="' + 바닥.toFixed(1) + '" x2="' + W + '" y2="' + 바닥.toFixed(1) +
-             '" stroke="#8C7B6B" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+             '" stroke="#B3453F" stroke-width="1" stroke-opacity="0.55" vector-effect="non-scaling-stroke"/>';
     }
     out += '</svg>';
 
     const 눈금 = function (v){ return indNum(v) + (몸.단위 || ''); };
+    const 영높이 = ((hi - 0) / (hi - lo)) * 100;
     return '<div class="ind-chart comp-bars" data-bars="1" data-g="' + escapeHtml(그래프열쇠) + '">' + out +
         '<span class="ind-y hi">' + escapeHtml(눈금(hi)) + '</span>' +
         '<span class="ind-y lo">' + escapeHtml(눈금(lo)) + '</span>' +
-        (lo < 0 ? '<span class="ind-y base" style="top:' +
-          (((hi - 0) / (hi - lo)) * 100).toFixed(1) + '%;">0</span>' : '') +
+        (적자
+          ? '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' +
+            '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>'
+          : '') +
         '<span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
+  }
+
+  /* 이 그림에 적자가 있는지. 안내 글과 요약 줄이 이것을 보고 말을 바꾼다. */
+  function compHasLoss(민){
+    return 민.some(function (p){
+      return p.g && p.g.선들.some(function (s){
+        return s.pts.some(function (q){ return q.v < 0; });
+      });
+    });
   }
 
   /* 막대는 칸의 '가운데'에 선다. 선 그래프는 칸의 '끝점'에 찍히므로 축 글자
@@ -3379,7 +3443,8 @@
         '</div>' +
         '<div class="ind-leg-v">' +
           (끝
-            ? '<div class="val">' + indNum(끝.v, 단위) + '<span>' + escapeHtml(단위) + '</span></div>' +
+            ? '<div class="val' + (끝.v < 0 ? ' neg' : '') + '">' + indNum(끝.v, 단위) +
+              '<span>' + escapeHtml(단위) + '</span></div>' +
               compChgHtml(x, 주지표, R) +
               (보기 === '함께' ? compSideHtml(x, R) : '')
             : '<span class="chg ind-flat">' + escapeHtml(R.이름) + ' 자료 없음</span>' +
@@ -3421,6 +3486,13 @@
                     '매출의 2~8%밖에 안 되어 보이지 않습니다. '
                   : '') +
                 '막대는 <b>0에서</b> 올라옵니다. 밑을 잘라 그리면 작은 차이가 큰 차이처럼 보입니다.' +
+                (compHasLoss(민)
+                  ? ' <b>적자</b>는 0선 아래 붉은 구역으로 내려갑니다.' +
+                    (민.length > 1
+                      ? ' 매출 눈금에서는 적자 막대가 아주 얇게 보이니, 크게 보려면 위에서 ' +
+                        '<b>영업이익</b>만 골라 보세요 — 그때는 눈금이 이익 하나짜리라 적자가 제 크기로 보입니다.'
+                      : '')
+                  : '') +
               '</div>'
             : '<div class="ind-note">이 기간에는 막대로 그릴 값이 없습니다.</div>');
       } else {
