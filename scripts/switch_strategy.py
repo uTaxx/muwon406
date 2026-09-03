@@ -230,13 +230,18 @@ def main() -> int:
             한국오늘 = datetime.now(timezone(timedelta(hours=9))).date()
             결과 = approval.누르기(
                 session, 제안일=한국오늘, 오늘=한국오늘,
-                이전전략=지금.active_key, 새전략=키,
+                이전전략=지금, 새전략=키,
                 아는전략들=[d.key for d in list_definitions()],
                 사유=args.reason, 승인경로="대화",
             )
             session.commit()
-        print(f"예약했습니다: {지금.active_key} → {키}. 다음 거래일 08:20에 반영됩니다.")
-        print(f"  상태: {결과}")
+        if not 결과.된것 or 결과.줄 is None:
+            # 같은 것을 두 번 예약하면 두 번째는 취소로 읽힌다. 그것까지 초록불로
+            # 끝내면 "예약된 줄 알았는데 내일 아무 일도 없는" 날이 된다.
+            print(f"예약하지 못했습니다: {결과.말}")
+            return 1
+        print(f"예약했습니다: {지금} → {키}. 다음 거래일 08:20에 반영됩니다.")
+        print(f"  {결과.말}")
         print("  그 전까지 텔레그램의 같은 버튼을 누르면 취소됩니다.")
         return 0
     if not args.apply:
