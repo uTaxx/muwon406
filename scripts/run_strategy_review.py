@@ -215,6 +215,34 @@ def 추적시트줄(줄) -> list[str]:
     ]
 
 
+def 승인되짚기남기기(sheet_id: str, histories, 끝) -> None:
+    """승인한 종목과 거절한 종목이 그 뒤 어떻게 됐는지를 시트에 남긴다.
+
+    **검토가 할 일을 다 한 뒤에 한다.** 이 실행의 본래 일은 전략 검토이고,
+    되짚기 표 때문에 그것이 늦거나 실패하면 안 된다. 실패해도 삼키고 왜 못
+    했는지만 찍는다.
+
+    시세는 검토가 이미 받아 둔 것을 쓴다. 다시 받지 않는다."""
+    if not sheet_id:
+        return
+    try:
+        from muwon.analysis.approval_review import 결정, 요약글, 재기, 줄들만들기
+        from muwon.analysis.approval_review import 머리 as 되짚기머리
+        from muwon.cloud.approval import 지난결정
+        from muwon.cloud.sheet_log import append
+
+        줄들 = 지난결정(sheet_id)
+        if not 줄들:
+            print("되짚을 승인 결정이 아직 없습니다.", file=sys.stderr)
+            return
+        것들 = 재기([결정(**ㄱ) for ㄱ in 줄들], histories)
+        올린수 = append(sheet_id, "승인되짚기", 되짚기머리, 줄들만들기(것들, 끝))
+        print(f"시트 '승인되짚기'에 {올린수}줄 올렸습니다.", file=sys.stderr)
+        print(f"  {요약글(것들)}", file=sys.stderr)
+    except Exception as 탈:  # noqa: BLE001 (되짚기 표가 검토를 막으면 안 된다)
+        print(f"승인 되짚기는 못 남겼습니다: {type(탈).__name__}: {탈}", file=sys.stderr)
+
+
 def 막는까닭(session, 오늘, 최소운용일: int) -> str:
     """이 구간 밖에서 정해지는 이유. 있으면 후보를 아예 안 낸다."""
     지난 = 승인.지난거래일수(승인.마지막반영(session), 오늘)
@@ -475,6 +503,8 @@ def main() -> int:
                 print(f"시트 '{추적탭}'에 {올린수}줄 올렸습니다.", file=sys.stderr)
         except Exception as 탈:  # noqa: BLE001 (시트가 막혀도 알림은 가야 한다)
             print(f"시트 기록 실패: {type(탈).__name__}: {탈}", file=sys.stderr)
+
+    승인되짚기남기기(sheet_id, histories, 끝)
 
     cfg = service.get_telegram_config()
     if not cfg.bot_token or not cfg.chat_id:

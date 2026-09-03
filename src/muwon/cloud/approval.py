@@ -551,6 +551,49 @@ def approve_in_sheet(sheet_id: str, 날짜: date, 종목들, svc=None
     return set_decisions(sheet_id, 날짜, dict.fromkeys(종목들, "Y"), svc=svc)
 
 
+def 지난결정(sheet_id: str, 최소날짜: date | None = None, svc=None) -> list[dict]:
+    """시트에 쌓인 승인·거절 결정을 전부 읽는다.
+
+    `read_today`는 하루치만 본다. 되짚기는 지난 것을 다 봐야 하므로 따로 둔다.
+
+    **승인 칸이 빈 줄은 거절로 읽지 않고 뺀다.** 안 누른 것과 거절한 것은
+    다른 판단이다. 빈 것을 거절로 세면 "거절한 종목이 이만큼 올랐다"가
+    실제로는 "쳐다보지도 않은 종목"의 이야기가 된다."""
+    from muwon.cloud.sheet_log import _service
+
+    svc = svc or _service().spreadsheets()
+    칸 = svc.values().get(
+        spreadsheetId=sheet_id, range="승인대기!A1:J5000"
+    ).execute(num_retries=3)
+    나온것 = []
+    for 줄 in 칸.get("values", [])[1:]:
+        칸값 = (list(줄) + [""] * len(승인머리))[: len(승인머리)]
+        적힌것 = str(칸값[8]).strip().upper()
+        if not 적힌것:
+            continue
+        try:
+            날 = date.fromisoformat(str(칸값[1]).strip())
+        except ValueError:
+            continue
+        if 최소날짜 is not None and 날 < 최소날짜:
+            continue
+        코드 = str(칸값[2]).strip()
+        if not 코드:
+            continue
+        try:
+            예상가 = float(str(칸값[7]).replace(",", "").strip() or 0)
+        except ValueError:
+            예상가 = 0.0
+        나온것.append({
+            "날짜": 날,
+            "종목코드": 코드,
+            "종목명": str(칸값[3]).strip(),
+            "승인": 적힌것 in 승인표시,
+            "예상가": 예상가,
+        })
+    return 나온것
+
+
 def read_today(sheet_id: str, 날짜: date, svc=None):
     """오늘 후보 (종목코드, 이름) 목록과 지금까지의 결정.
 
