@@ -1478,20 +1478,25 @@
      그래프는 '어디쯤에서 꺾였나'를 보여주고, 표는 '그게 정확히 얼마였나'를
      보여준다. 둘은 서로를 대신하지 못해서 따로 켜고 끈다.
 
-     최신이 맨 위다. 대시보드에서 제일 먼저 찾는 숫자가 최신값이라, 표를
-     열자마자 눈에 들어와야 한다. 엑셀로 내려받아도 같은 차례다 — 화면과
-     파일이 다르면 어느 쪽이 맞는지 매번 확인하게 된다. */
+     **차례는 그래프를 따른다.** 그래프가 왼쪽에서 오른쪽으로 옛것에서 최신으로
+     가므로, 표도 위에서 아래로 옛것에서 최신으로 간다. 한 블록 안에서 둘의
+     방향이 반대면 같은 자료를 볼 때마다 머리로 뒤집어야 한다.
+
+     대신 표를 열면 맨 아래로 내려 둔다(indDraw). 스물넉 달을 옛것부터 보여주면
+     첫 화면이 두 해 전이라 아무 쓸모가 없다.
+
+     엑셀로 내려받아도 같은 차례다 — 화면과 파일이 다르면 어느 쪽이 맞는지 매번
+     확인하게 된다. 시계열을 옛것부터 두는 것은 엑셀에서 그래프를 그릴 때도
+     맞는 차례다. */
   function indTableRows(g){
     const 맵들 = g.선들.map(function(s){
       const m = {};
       s.pts.forEach(function(p){ m[p.j] = p.v; });
       return m;
     });
-    const rows = [];
-    for (let j = g.창.length - 1; j >= 0; j--){
-      rows.push({ 칸: g.창[j], 값: 맵들.map(function(m){ return m[j]; }) });
-    }
-    return rows;
+    return g.창.map(function(칸, j){
+      return { 칸: 칸, 값: 맵들.map(function(m){ return m[j]; }) };
+    });
   }
 
   function indTableHtml(g){
@@ -1512,7 +1517,7 @@
     });
     return h + '</tbody></table></div>' +
       '<div class="ind-xls"><button type="button" data-xls="1">엑셀 내려받기</button>' +
-      '<span>지금 보고 있는 기간·통화 그대로 받습니다. 최신이 맨 위입니다.</span></div>';
+      '<span>지금 보고 있는 기간·통화 그대로 받습니다. 그래프와 같이 옛것이 위입니다.</span></div>';
   }
 
   /* ── 엑셀 파일 만들기 ──────────────────────────────────────
@@ -1869,6 +1874,12 @@
 
     const 것들 = indTabItems(지표, indTab);
     document.getElementById('indBody').innerHTML = indBlocks(것들);
+    /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
+       아무 쓸모가 없으므로, 열자마자 맨 아래(최신)로 내려 둔다. 위로 밀면
+       과거로 가는 것이 그래프를 왼쪽으로 훑는 것과 같은 몸짓이다. */
+    document.querySelectorAll('#indBody .ind-tbl-wrap').forEach(function(w){
+      w.scrollTop = w.scrollHeight;
+    });
     const 빈칸 = document.getElementById('indEmpty');
     빈칸.style.display = 것들.length ? 'none' : 'block';
     빈칸.textContent = 공통인가
