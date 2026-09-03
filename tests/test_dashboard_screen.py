@@ -523,11 +523,40 @@ def test_판단지침_목록을_파이썬에서_뽑아_둔다():
         assert 표[ㄱ.열쇠]["갈래"] == ㄱ.갈래
 
 
+def test_상한_판단지침_목록도_파이썬에서_뽑아_둔다():
+    """보유 상한 시스템의 지침 스물여섯 개다. 연 단위 목록과 파일을 따로
+    둔다. 저기는 연 단위 성적에서, 여기는 구간 성적에서 값을 꺼내므로 한
+    목록에 섞으면 화면에서 고를 때 서로 다른 자료를 보는 지침이 나란히
+    선다."""
+    import json
+
+    from muwon.analysis import window_judgment
+
+    뽑아둔것 = json.loads(
+        (뿌리 / "dashboard" / "자료" / "상한판단지침.json").read_text(encoding="utf-8")
+    )
+    표 = {ㄱ["열쇠"]: ㄱ for ㄱ in 뽑아둔것}
+    for ㄱ in window_judgment.지침들:
+        assert ㄱ.열쇠 in 표, f"{ㄱ.열쇠}: 화면 자료에 없습니다"
+        assert 표[ㄱ.열쇠]["이름"] == ㄱ.이름
+        assert 표[ㄱ.열쇠]["갈래"] == ㄱ.갈래
+
+    # 기본값 셋을 화면이 또 적어 두면, 파이썬에서 기본값을 바꿨을 때
+    # 화면만 옛 값을 가리킨다.
+    기본 = {ㄱ["열쇠"]: ㄱ["기본순위"] for ㄱ in 뽑아둔것 if ㄱ["기본순위"]}
+    assert 기본 == dict(
+        zip(window_judgment.기본기준.열쇠들, (1, 2, 3), strict=True)
+    )
+
+
 def test_화면이_지침_목록을_손으로_안_적는다():
     """열쇠말이 app.js에 박히면 파이썬 목록과 언젠가 어긋난다."""
+    from muwon.analysis import window_judgment
     from muwon.analysis.judgment import 순위지침들
 
     for ㄱ in 순위지침들:
+        assert ㄱ.열쇠 not in 글, f"{ㄱ.열쇠}: app.js에 박혀 있습니다"
+    for ㄱ in window_judgment.순위지침들:
         assert ㄱ.열쇠 not in 글, f"{ㄱ.열쇠}: app.js에 박혀 있습니다"
     assert '한개("판단지침.json", [])' in 글
 
