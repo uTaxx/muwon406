@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from dataclasses import replace
@@ -76,8 +77,25 @@ def 인자읽기() -> argparse.Namespace:
     ㄱ.add_argument("--전략", default="", help="쉼표로. 비우면 등록된 전부")
     ㄱ.add_argument("--예수금", type=float, default=5_000_000.0)
     ㄱ.add_argument("--나온곳", default="docs/자료/상한훑기.json")
+    ㄱ.add_argument("--sheet-id", default=os.environ.get("MUWON_SHEET_ID", ""))
+    ㄱ.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     ㄱ.add_argument("--no-cache", action="store_true")
     return ㄱ.parse_args()
+
+
+def 시트찾기(인자) -> str:
+    """시트 아이디. 없으면 드라이브 폴더에서 찾고, 그것도 없으면 빈 글자다.
+
+    설정 서비스에는 이 값이 없다. 다른 스크립트도 전부 인자나 환경변수로
+    받는다."""
+    if 인자.sheet_id:
+        return 인자.sheet_id
+    if not 인자.folder_id:
+        return ""
+    from muwon.cloud.sector_sheet import DEFAULT_TITLE, find_or_create
+
+    시트, _ = find_or_create(인자.folder_id, DEFAULT_TITLE)
+    return 시트
 
 
 def 매매대상고르기(인자, session_factory, sheet_id: str):
@@ -205,7 +223,7 @@ def main() -> int:
     # 스위치 둘은 켠 채로 실행한다. 여기서 묻는 것은 "오늘 주문을 낼
     # 것인가"가 아니라 "이 전략을 굴렸으면 어땠나"라 그 값과 상관이 없다.
     정책 = 검증용정책(설정.get_risk_policy())
-    sheet_id = 설정.get("google.sheet_id", "") or ""
+    sheet_id = 시트찾기(인자)
     session_factory = make_session_factory(bootstrap_settings.database_url)
     매매대상, 대상이름 = 매매대상고르기(인자, session_factory, sheet_id)
 

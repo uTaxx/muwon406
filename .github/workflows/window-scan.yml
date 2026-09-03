@@ -84,6 +84,10 @@ jobs:
       # $(...)가 섞인 값이 명령으로 실행된다. env로 넘기고 따옴표로 감싼다.
       - name: 상한별 측정
         env:
+          # 시트 종목으로 재려면 구글 시트를 읽어야 한다. 이 값이 없으면
+          # 스크립트가 "시트를 못 찾아 잴 수 없습니다"로 끝난다.
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
           IN_UNIVERSE: ${{ github.event.inputs.universe || 'sheet' }}
           IN_CAPS: ${{ github.event.inputs.caps }}
           IN_SLIPPAGE: ${{ github.event.inputs.slippage || '0,0.001,0.002' }}
