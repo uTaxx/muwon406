@@ -117,7 +117,8 @@ def 매매대상고르기(인자, session_factory, sheet_id: str):
 
     내용 = 섹터시트읽기(sheet_id)
     목록 = [
-        Ticker(code=ㅈ.코드, name=ㅈ.이름)
+        Ticker(symbol=ㅈ.symbol, name=ㅈ.name, market=ㅈ.market,
+               yahoo_symbol=ㅈ.yahoo_symbol)
         for ㅅ in 내용.섹터 if ㅅ.활성 for ㅈ in ㅅ.활성종목
     ]
     return 목록, "실거래 시트"
