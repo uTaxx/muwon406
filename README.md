@@ -11,7 +11,7 @@ LX홀딩스 경영전략팀용 뉴스·공시 모니터링 대시보드입니다
 
 | 파일 | 역할 |
 |---|---|
-| `public/lxgroup-mi/hub.html` | 본체. 전체 기사 조회 / 키워드 신청·변경 / 특정 키워드 검색 / 실리코시스 리스크 / AI 학습 데이터 6개 탭과 관리자용 비용 화면 |
+| `public/lxgroup-mi/hub.html` | 본체. 전체 기사 조회 / 특정 키워드 검색 / 실리코시스 리스크 / 시장지표 4개 탭, 머리말에 놓인 설정 두 가지(키워드 신청·변경, AI 학습 데이터), 관리자용 비용 화면 |
 | `public/lxgroup-mi/manual.html` | 사용설명서 |
 | `public/lxgroup-mi/index.html`<br>`public/lxgroup-mi/articles.html` | 통합 전 옛 주소로 들어와도 열리도록 hub.html로 넘겨주는 스텁 |
 | `public/index.html` | 사이트 첫 화면 → hub.html |

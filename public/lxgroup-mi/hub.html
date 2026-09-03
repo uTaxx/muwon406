@@ -23,8 +23,13 @@
   .badge{display:inline-block; background:rgba(255,255,255,0.22); color:#fff; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.02em; margin-bottom:14px; position:relative;}
   .cover h1{color:#fff; font-size:22px; font-weight:700; margin:0 0 8px; position:relative; line-height:1.4;}
   .cover p{color:rgba(255,255,255,0.92); font-size:14px; margin:0; max-width:520px; position:relative;}
-  .excel-link{display:none; align-items:center; gap:6px; margin-top:14px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none; width:fit-content; position:relative;}
+  .excel-link{display:none; align-items:center; gap:6px; background:rgba(255,255,255,0.16); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; text-decoration:none; width:fit-content; position:relative;}
   .excel-link:hover{background:rgba(255,255,255,0.26);}
+  /* 설정에 해당하는 것들(키워드 신청/변경, AI 학습 데이터, 매뉴얼)은 탭이 아니라 머리말에 둔다. */
+  .cover-acts{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; position:relative;}
+  .cover .cover-btn{flex:none; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.28); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; line-height:1.2; cursor:pointer; box-shadow:none; white-space:nowrap;}
+  .cover .cover-btn:hover{background:rgba(255,255,255,0.26);}
+  .cover .cover-btn.active{background:#fff; border-color:#fff; color:var(--green-dark);}
   main{max-width:680px; margin:-24px auto 0; padding:0 16px 90px; position:relative;}
   section.card{background:var(--card); border-radius:var(--radius); padding:24px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
   .step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
@@ -583,8 +588,12 @@
 <div class="cover">
   <span class="badge">LX Group MI · 사내 전용</span>
   <h1>LX Group MI</h1>
-  <p>전체 기사 조회, 키워드 신청/변경, 특정 키워드 검색을 한 화면에서 이용하세요.</p>
-  <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
+  <p>전체 기사 조회, 특정 키워드 검색, 시장지표를 한 화면에서 이용하세요. 설정은 아래 버튼에서 바꿉니다.</p>
+  <div class="cover-acts">
+    <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
+    <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
+    <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
+  </div>
 </div>
 
 <main>
@@ -601,10 +610,8 @@
 
   <div class="tab-nav">
     <button type="button" class="tab-btn active" data-tab="search">전체 기사<br>조회</button>
-    <button type="button" class="tab-btn" data-tab="apply">키워드<br>신청/변경</button>
     <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
     <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
-    <button type="button" class="tab-btn" data-tab="knowledge">AI 학습<br>데이터</button>
     <button type="button" class="tab-btn" data-tab="index">시장<br>지표</button>
   </div>
 
@@ -1165,7 +1172,7 @@
   let applyAutoLoaded = false;
 
   function showTab(tabName){
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
@@ -3613,7 +3620,7 @@
   addCompanyRow('', '');
 
   document.addEventListener('DOMContentLoaded', function(){
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => showTab(btn.dataset.tab));
     });
 
@@ -3733,7 +3740,7 @@
     document.getElementById('changeCodeLabel').textContent = initialCode;
 
     const tabFromUrl = urlParams.get('tab');
-    const initialTab = ['search','apply','adhoc','risk','knowledge'].includes(tabFromUrl) ? tabFromUrl : 'search';
+    const initialTab = ['search','apply','adhoc','risk','knowledge','index'].includes(tabFromUrl) ? tabFromUrl : 'search';
     showTab(initialTab);
 
     loadArticles();
