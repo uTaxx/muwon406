@@ -555,6 +555,14 @@
   .ind-nav .tab-btn[data-empty]{opacity:.5;}
   .ind-nav .tab-btn.active[data-empty]{opacity:1;}
 
+  /* 기사 그룹 고르는 탭. 계열사 하위 탭과 같은 모양이라야 '같은 층의 선택'으로
+     읽힌다. 그룹은 이름이 길고 개수도 제각각이라 칸을 고르게 나누지 않고
+     글자 길이대로 둔다. */
+  .grp-nav{flex-wrap:wrap;}
+  .grp-nav .tab-btn{flex:0 1 auto; padding:9px 13px; font-size:12.5px;}
+  .grp-nav .tab-btn i{font-style:normal; font-size:10.5px; font-weight:700;
+                      margin-left:5px; opacity:.62;}
+
   .ind-pend{display:flex; flex-wrap:wrap; gap:7px;}
   .ind-pend span{border:1px dashed var(--line); border-radius:999px; padding:5px 11px;
                  font-size:12px; color:var(--muted);}
@@ -668,16 +676,16 @@
 
   <!-- 탭 1: 전체 기사 조회 -->
   <div id="tab-search" class="tab-panel">
+    <!-- 그룹은 드롭박스가 아니라 맨 위에 늘어놓는다. 접혀 있으면 어떤 그룹이
+         있는지, 어디에 몇 건이 있는지를 열어 봐야만 알 수 있다. -->
+    <div class="tab-nav grp-nav" id="grpTabs"></div>
+
     <section class="card" id="resultsSection">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">검색 · 필터</span></div>
       <div class="filter-row">
         <div>
           <label>검색어</label>
           <input type="text" id="searchInput" placeholder="제목 또는 키워드">
-        </div>
-        <div>
-          <label>그룹</label>
-          <select id="groupSelect"><option value="">전체</option></select>
         </div>
       </div>
 
@@ -2142,12 +2150,6 @@
   }
 
   /* ---------- 탭1: 기사 검색 ---------- */
-  function renderGroupOptions(){
-    const groups = [...new Set(allArticles.map(a => a.group).filter(Boolean))];
-    const sel = document.getElementById('groupSelect');
-    sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
-  }
-
   /* 관리자 비밀번호 — 기사 삭제가 쓴다. 확인은 화면이 아니라 웹훅에서 하므로,
      이 페이지 소스를 읽어도 비밀번호 없이는 아무것도 지울 수 없다.
      비밀번호는 이 탭이 열려 있는 동안만 sessionStorage 에 남는다(창을 닫으면 사라짐). */
@@ -2693,9 +2695,15 @@
     return true;
   }
 
-  function applyFilters(){
+  /* 그룹은 맨 위 탭으로 고른다. '' 은 전체. */
+  let grpTab = '';
+  function artGroup(a){ return String(a.group || '').trim() || '기타'; }
+
+  /* 그룹을 뺀 나머지 조건. 그룹 탭에 붙일 건수를 '이 탭을 누르면 몇 건이
+     나오는가'로 만들려면 그룹만 빼고 나머지를 통과한 것을 세어야 한다.
+     그래서 거르기를 두 걸음으로 나눈다. */
+  function passExceptGroup(){
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
-    const g = document.getElementById('groupSelect').value;
     const collectedFrom = document.getElementById('filterCollectedFrom').value;
     const collectedTo = document.getElementById('filterCollectedTo').value;
     const pubFrom = document.getElementById('filterPubFrom').value;
@@ -2709,8 +2717,7 @@
     const impActive = !(minImp === 1 && maxImp === 5);
     const relActive = !(minRel === 1 && maxRel === 5);
     const urgActive = !(minUrg === 1 && maxUrg === 5);
-    filtered = allArticles.filter(a => {
-      if (g && a.group !== g) return false;
+    return function(a){
       if (!passDateFilter(a.collectedAt, collectedFrom, collectedTo)) return false;
       if (!passDateFilter(a.pubDate, pubFrom, pubTo)) return false;
       if (impActive){ const v = getScoreNum(a.importance); if (v < minImp || v > maxImp) return false; }
@@ -2719,7 +2726,51 @@
       if (!q) return true;
       const hay = (a.title + ' ' + a.matched + ' ' + a.group).toLowerCase();
       return hay.includes(q);
+    };
+  }
+
+  /* 탭 줄은 **전체 기사** 기준으로 만들고, 건수만 지금 조건에 맞춰 센다.
+     조건에 걸려 0건이 된 그룹까지 탭에서 사라지면 그룹이 매번 나타났다
+     사라져 어디를 누르던 중이었는지 알 수 없게 된다. */
+  function renderGroupTabs(통과){
+    const 통 = document.getElementById('grpTabs');
+    if (!통) return;
+
+    const 있는그룹 = [];
+    const 봤나 = {};
+    allArticles.forEach(function(a){
+      const g = artGroup(a);
+      if (!봤나[g]){ 봤나[g] = 1; 있는그룹.push(g); }
     });
+    /* 이름순으로 두되 '기타'는 맨 뒤로. 그룹이 없는 기사를 담는 칸이라
+       가나다순으로 앞에 서면 진짜 그룹인 것처럼 읽힌다. */
+    있는그룹.sort(function(x, y){
+      if (x === '기타') return 1;
+      if (y === '기타') return -1;
+      return x.localeCompare(y, 'ko');
+    });
+
+    /* 고른 그룹이 사라졌으면(다 지웠다든지) 조용히 전체로 돌아간다 */
+    if (grpTab && !봤나[grpTab]) grpTab = '';
+
+    const 셈 = {};
+    통과.forEach(function(a){ const g = artGroup(a); 셈[g] = (셈[g] || 0) + 1; });
+
+    const 단추 = function(값, 이름, n){
+      return '<button type="button" class="tab-btn' + (grpTab === 값 ? ' active' : '') +
+        '" data-grp="' + escapeHtml(값) + '">' + escapeHtml(이름) +
+        '<i>' + n + '</i></button>';
+    };
+    통.innerHTML = 있는그룹.length
+      ? 단추('', '전체', 통과.length) +
+        있는그룹.map(function(g){ return 단추(g, getGroupEmoji(g) + ' ' + g, 셈[g] || 0); }).join('')
+      : '';
+  }
+
+  function applyFilters(){
+    const 통과 = allArticles.filter(passExceptGroup());
+    renderGroupTabs(통과);
+    filtered = grpTab ? 통과.filter(function(a){ return artGroup(a) === grpTab; }) : 통과;
     filtered = sortByDateDesc(filtered);
     shown = 0;
     renderList(true);
@@ -3048,7 +3099,6 @@
         allArticles = allArticles.filter(function(a){ return !gone.has(artKey(a)); });
         picked.clear();
         picking = false;
-        renderGroupOptions();
         applyFilters();
         renderRiskDashboard();
         renderHome();
@@ -3136,7 +3186,6 @@
 
         allArticles = data.articles;
         document.getElementById('resultsSection').style.display = 'block';
-        renderGroupOptions();
         applyFilters();
         renderRiskDashboard();
         renderHome();
@@ -3634,7 +3683,12 @@
       document.getElementById('changeCodeLabel').textContent = sharedCode();
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
-    document.getElementById('groupSelect').addEventListener('change', applyFilters);
+    document.getElementById('grpTabs').addEventListener('click', function(e){
+      const b = e.target.closest('button[data-grp]');
+      if (!b) return;
+      grpTab = b.dataset.grp;
+      applyFilters();
+    });
     ['filterCollectedFrom','filterCollectedTo','filterPubFrom','filterPubTo'].forEach(function(id){
       document.getElementById(id).addEventListener('change', applyFilters);
     });
