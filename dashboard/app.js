@@ -234,6 +234,7 @@
   let 기준이름표 = [];
   let 기간표 = [];
   let 종목표 = [];
+  let 지침표 = [];
 
   async function 자료읽기() {
     const 한개 = async (이름) => {
@@ -242,10 +243,10 @@
         return 답.ok ? await 답.json() : [];
       } catch { return []; }
     };
-    [용어들, 전략표, 기준이름표, 기간표, 종목표] = await Promise.all([
+    [용어들, 전략표, 기준이름표, 기간표, 종목표, 지침표] = await Promise.all([
       한개("용어사전.json"), 한개("전략설명.json"),
       한개("기준설명.json"), 한개("기간설명.json"),
-      한개("종목이름.json"),
+      한개("종목이름.json"), 한개("판단지침.json"),
     ]);
   }
 
@@ -806,7 +807,120 @@
     거래대금문턱: Number(기준기본("min_turnover_eok")),
     하루손실한도: Math.abs(Number(기준기본("daily_loss_limit_pct"))),
     승인필요: String(기준기본("require_approval")) === "true",
+    일순위: 기준기본("rank_1st"),
+    이순위: 기준기본("rank_2nd"),
+    삼순위: 기준기본("rank_3rd"),
   });
+
+  /* ── 판단 지침 ────────────────────────────────────────
+     전략을 견줄 때 무엇을 먼저 보나. 목록의 원본은 파이썬의
+     analysis/judgment.py 이고, 여기 오는 것은 export_dashboard_data.py 가
+     옮겨 적은 것이다. 화면에 목록을 또 적으면 지침을 더할 때마다 두 곳을
+     고쳐야 하고, 한쪽만 고치면 **저장은 되는데 순위는 안 바뀐다.**
+
+     이 설정은 주문을 내지 않는다. 순위를 매기는 순서만 정한다. */
+
+  const 지침칸들 = ["일순위", "이순위", "삼순위"];
+  const 지침열쇠 = { 일순위: "rank_1st", 이순위: "rank_2nd", 삼순위: "rank_3rd" };
+
+  const 순위지침 = () => (Array.isArray(지침표) ? 지침표 : [])
+    .filter((ㄱ) => ㄱ && ㄱ.갈래 === "순위");
+  const 확인지침 = () => (Array.isArray(지침표) ? 지침표 : [])
+    .filter((ㄱ) => ㄱ && ㄱ.갈래 === "확인");
+  const 지침찾기 = (열쇠) => (Array.isArray(지침표) ? 지침표 : [])
+    .find((ㄱ) => ㄱ && ㄱ.열쇠 === String(열쇠 == null ? "" : 열쇠).trim());
+
+  //: 조사를 글자로 박지 않는다. 지침 이름이 설정에서 오므로 무엇이 올지
+  //: 모른다. "누적 수익률으로"가 나오는 자리다. 파이썬의 muwon/text.py와
+  //: 같은 규칙이고, tests/test_dashboard_screen.py가 둘을 묶어 둔다.
+  const 받침 = (글) => {
+    const 끝 = String(글 || "").trim().slice(-1);
+    const ㅋ = 끝.charCodeAt(0);
+    if (!(ㅋ >= 0xac00 && ㅋ <= 0xd7a3)) return null;
+    return (ㅋ - 0xac00) % 28;
+  };
+  const 을를 = (글) => (받침(글) ? "을" : "를");
+  const 으로로 = (글) => {
+    const ㅂ = 받침(글);
+    return (ㅂ === null || ㅂ === 0 || ㅂ === 8) ? "로" : "으로";
+  };
+
+  function 지침요약글(열쇠들) {
+    const 것들 = [];
+    열쇠들.forEach((ㅋ) => {
+      const ㄱ = 지침찾기(ㅋ);
+      if (ㄱ && 것들.indexOf(ㄱ) < 0) 것들.push(ㄱ);
+    });
+    if (!것들.length) return "판단 지침이 설정되지 않았습니다.";
+    if (것들.length === 1) return `${것들[0].이름}${으로로(것들[0].이름)} 순위를 매깁니다.`;
+    let 글 = `${것들[0].이름}${을를(것들[0].이름)} 먼저 보고, 비슷하면 ${것들[1].이름}`;
+    let 끝 = 것들[1].이름;
+    if (것들.length > 2) { 글 += `, 그다음 ${것들[2].이름}`; 끝 = 것들[2].이름; }
+    return 글 + `${으로로(끝)} 순서를 정합니다.`;
+  }
+
+  function 지침목록그리기() {
+    const 것들 = 순위지침();
+    지침칸들.forEach((id) => {
+      const 골 = $(id);
+      if (!골) return;
+      const 앞 = 골.value;
+      골.innerHTML = 것들
+        .map((ㄱ) => `<option value="${안전(ㄱ.열쇠)}">${안전(ㄱ.이름)}</option>`)
+        .join("");
+      if (앞) 골.value = 앞;
+    });
+
+    // 비기는 폭. 2순위·3순위가 언제 쓰이는지를 숫자로 보여 준다.
+    // 이 값을 화면에 손으로 적지 않는다. 파이썬이 실제로 쓰는 값이다.
+    $("지침폭").innerHTML = 것들.length
+      ? '<div class="표싸개"><table><thead><tr><th>지침</th><th>같다고 보는 차이</th>'
+        + '</tr></thead><tbody>'
+        + 것들.map((ㄱ) => '<tr><td>' + 안전(ㄱ.이름) + '</td><td>'
+          + (Number(ㄱ.비긴폭) > 0
+            ?안전(String(ㄱ.비긴폭) + (ㄱ.단위 || "") + " 이하")
+            : "없음 (값이 다르면 순위가 갈립니다)")
+          + '</td></tr>').join("")
+        + '</tbody></table></div>'
+      : '<p class="곁말">지침 목록을 읽지 못했습니다.</p>';
+
+    $("확인지침").innerHTML = 확인지침()
+      .map((ㄱ) => '<p class="설명" style="margin:8px 0"><b>' + 안전(ㄱ.이름)
+        + '</b><br>' + 안전(ㄱ.설명) + '</p>').join("")
+      || '<p class="곁말">지침 목록을 읽지 못했습니다.</p>';
+  }
+
+  function 지침설명갱신() {
+    const 고른것 = 지침칸들.map((id) => ($(id) ? $(id).value : ""));
+    지침칸들.forEach((id, i) => {
+      const ㄱ = 지침찾기(고른것[i]);
+      $(id + "설명").textContent = ㄱ ? ㄱ.설명 : "";
+    });
+
+    // 셋이 서로 달라야 뒤 자리가 일을 한다. 같은 것을 두 자리에 넣으면
+    // 뒤 자리는 아무 일도 안 하는데, 화면만 보고는 그 사실을 알 수 없다.
+    const 겹침 = new Set(고른것.filter(Boolean)).size !== 고른것.filter(Boolean).length;
+    $("지침요약").innerHTML = 겹침
+      ? '<div class="곁말">같은 지침이 두 자리에 있습니다. 뒤 순위는 판정에 '
+        + '사용되지 않으므로 서로 다르게 선택해 주세요.</div>'
+      : '<div class="곁말">' + 안전(지침요약글(고른것)) + '</div>';
+    return !겹침;
+  }
+
+  function 지침채우기(자료, 진짜) {
+    지침목록그리기();
+    지침칸들.forEach((id) => {
+      const 골 = $(id);
+      if (!골) return;
+      // n8n 연결이 이 칸을 아직 안 보내면 파이썬이 뽑아 둔 기본값으로 채운다.
+      // 화면에 숫자나 열쇠를 손으로 적어 두지 않는다.
+      const 값 = String(자료[id] || 기준기본(지침열쇠[id]) || "");
+      if (값 && 골.querySelector(`option[value="${값}"]`)) 골.value = 값;
+      골.disabled = !진짜;
+    });
+    $("지침저장").disabled = !진짜;
+    지침설명갱신();
+  }
 
   async function 기준불러오기() {
     try {
@@ -969,6 +1083,9 @@
           + '실제 주문에 직접 영향을 주므로 워크플로에서만 처리합니다. 아래에서 다른 '
           + '전략을 선택하면 해당 전략의 규칙만 표시되며, 설정은 저장되지 않습니다.</div>'
         : ""));
+
+    // 판단 지침. 이 탭의 맨 위에 있으므로 여기서 같이 채운다.
+    지침채우기(자료, 진짜);
 
     // 매수 기초
     $("비중").value = 자료.비중 ?? "";
@@ -1166,6 +1283,49 @@
       if (!됐나) ㅇ.target.checked = 칸 === "매도" ? 기준값.매도켜짐 !== false
                                                 : Boolean(기준값.매매켜짐);
     });
+  });
+
+  지침칸들.forEach((id) => {
+    const 골 = $(id);
+    if (골) 골.addEventListener("change", 지침설명갱신);
+  });
+
+  $("지침저장").addEventListener("click", async () => {
+    if (!지침설명갱신()) {
+      알림("기준알림", "경고", "판단 지침을 저장하지 못했습니다.",
+           "1순위·2순위·3순위를 서로 다르게 선택해 주세요.");
+      return;
+    }
+    const 바꿀것 = {};
+    지침칸들.forEach((id) => { 바꿀것[id] = $(id).value; });
+    // 화면에만 있는 지침을 저장하면 파이썬이 모르는 값이 시트에 들어간다.
+    // 그러면 저장은 되는데 순위는 기본값으로 돌아간다.
+    const 모르는것 = Object.values(바꿀것).filter((ㅋ) => !지침찾기(ㅋ));
+    if (모르는것.length) {
+      알림("기준알림", "경고", "판단 지침을 저장하지 못했습니다.",
+           `목록에 없는 값입니다: ${안전(모르는것.join(", "))}`);
+      return;
+    }
+    $("지침저장").disabled = true;
+    try {
+      const 답 = await n8n부르기("기준저장", { 바꿀것 });
+      const 못한칸 = Array.isArray(답 && 답.못한칸) ? 답.못한칸 : [];
+      못한칸.forEach((칸) => { delete 바꿀것[칸]; });
+      Object.assign(기준값, 바꿀것);
+      알림("기준알림", 못한칸.length ? "경고" : null,
+           못한칸.length ? "판단 지침이 저장되지 않았습니다." : "",
+           못한칸.length
+             ? "n8n 연결이 이 항목을 아직 처리하지 못합니다. 구글 시트 설정 탭의 "
+               + "rank_1st · rank_2nd · rank_3rd 행에서 직접 변경할 수 있습니다."
+             : "");
+      $("지침때").textContent = 못한칸.length
+        ? `${지금()} 저장되지 않음`
+        : `${지금()} 저장 · 다음 검토부터 적용`;
+    } catch (e) {
+      알림("기준알림", "경고", "판단 지침을 저장하지 못했습니다.", 안전(e.message));
+    } finally {
+      $("지침저장").disabled = false;
+    }
   });
 
   $("기준저장").addEventListener("click", async () => {

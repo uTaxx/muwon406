@@ -47,6 +47,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from muwon.analysis import shadow as 그림자
 from muwon.analysis.experiment import WARMUP_DAYS
+from muwon.analysis.judgment import 기본기준, 판단기준
+from muwon.analysis.judgment import 시트에서 as 시트지침
 from muwon.analysis.market_data import load_histories
 from muwon.analysis.period_check import (
     검증용정책,
@@ -136,7 +138,8 @@ def 대상종목(sheet_id: str):
     return 목록
 
 
-def 구간순위내기(정의, histories, 끝, 정책, 지금키: str) -> tuple[구간순위, list[str]]:
+def 구간순위내기(정의, histories, 끝, 정책, 지금키: str,
+            판단: 판단기준 | None = None) -> tuple[구간순위, list[str]]:
     """한 구간에 등록된 전략을 전부 계산한다. (순위, 못 실행한 것).
 
     **하나가 터져도 나머지는 봐야 한다.** 전략 하나의 파라미터가 이상해서
@@ -154,7 +157,11 @@ def 구간순위내기(정의, histories, 끝, 정책, 지금키: str) -> tuple[
             못돌린것.append(f"{ㅈ.key} (시세 부족)")
             continue
         줄들.append(전략줄(키=ㅈ.key, 이름=ㅈ.화면이름, 성적=성적))
-    return 구간순위(구간=정의.이름, 줄들=줄들, 지금키=지금키), 못돌린것
+    return (
+        구간순위(구간=정의.이름, 줄들=줄들, 지금키=지금키,
+                기준=판단 or 기본기준),
+        못돌린것,
+    )
 
 
 def 뒤재기만들기(histories, 정책):
@@ -336,17 +343,31 @@ def main() -> int:
     sheet_id = 인자.sheet_id
     if not sheet_id and 인자.folder_id:
         sheet_id, _ = find_or_create(인자.folder_id, DEFAULT_TITLE)
+    시트설정 = None
     if sheet_id:
-        정책제공, 설명, _ = build_policy_provider(service, sheet_id)
+        정책제공, 설명, 시트설정 = build_policy_provider(service, sheet_id)
         정책 = 정책제공()
         print(설명, file=sys.stderr)
     else:
         정책 = service.get_risk_policy()
         print("시트를 못 찾아 DB 기준으로 돕니다.", file=sys.stderr)
+
+    # 순위를 어떤 순서로 낼지. 시트가 성하지 않으면 기본값으로 돌아가는데,
+    # **되돌아갔다는 사실을 반드시 찍는다.** 조용히 기본값으로 돌면 화면에
+    # 적힌 지침과 실제로 매긴 순위가 다른 날이 생긴다.
+    판단 = 시트지침(시트설정)
+    print(f"■ 판단 지침  {판단.설명글()}")
+    적힌것 = 판단기준(
+        일순위=str((시트설정.가져오기("rank_1st") if 시트설정 else "") or 판단.일순위),
+        이순위=str((시트설정.가져오기("rank_2nd") if 시트설정 else "") or 판단.이순위),
+        삼순위=str((시트설정.가져오기("rank_3rd") if 시트설정 else "") or 판단.삼순위),
+    )
+    if 적힌것.열쇠들 != 판단.열쇠들:
+        print(f"   ⚠ 시트의 지침을 쓸 수 없어 기본값으로 돕니다: {적힌것.탈}")
     정책 = 검증용정책(정책)
 
     유니버스 = 대상종목(sheet_id)
-    기준 = 기준글(정책, len(유니버스), "섹터시트")
+    기준 = 기준글(정책, len(유니버스), "섹터시트") + f" · 순위 {판단.설명글()}"
     print(f"■ 대상 {len(유니버스)}종목 · 현재 전략 {전략이름(지금키)}")
 
     끝 = 잰때.date()
@@ -380,14 +401,20 @@ def main() -> int:
     후보들: list[변경후보] = []
     순위들: dict = {}
     for 정의 in 정의들:
-        순위, 못돌린것 = 구간순위내기(정의, histories, 끝, 정책, 지금키)
+        순위, 못돌린것 = 구간순위내기(정의, histories, 끝, 정책, 지금키, 판단)
         후보 = 후보내기(순위, 우위배수=인자.우위배수, 막혔나=막힘)
         후보들.append(후보)
         순위들[정의.이름] = 순위
         print(f"■ {정의.이름} · 계산된 전략 {len(순위.차례)}개")
+        일순위 = next(iter(판단.지침들), None)
         for i, ㄱ in enumerate(순위.차례[:5], 1):
             표 = "◀ 지금" if ㄱ.키 == 지금키 else ""
-            print(f"   {i}. {ㄱ.이름:28} {ㄱ.수익률:>+8.2f}%  {ㄱ.거래수:>4}건 {표}")
+            # 순위를 매긴 값을 같이 찍는다. 수익률만 찍으면 아래 줄이 위
+            # 줄보다 수익률이 높은 표가 나오고, 그 표를 읽을 방법이 없다.
+            ㅈ = 일순위.값(ㄱ.성적) if 일순위 else None
+            앞 = " 계산 못 함" if ㅈ is None else f"{ㅈ:>+8.2f}{일순위.단위}"
+            print(f"   {i}. {ㄱ.이름:28} {앞}  수익률 {ㄱ.수익률:>+8.2f}%  "
+                  f"{ㄱ.거래수:>4}건 {표}")
         if 못돌린것:
             print(f"   계산하지 못한 전략: {', '.join(못돌린것)}")
         print(f"   {후보글(후보)}\n")

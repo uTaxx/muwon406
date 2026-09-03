@@ -26,6 +26,7 @@ import json
 import sys
 from pathlib import Path
 
+from muwon.analysis.judgment import 순위지침들, 확인지침들
 from muwon.analysis.period_check import 기간들
 from muwon.dashboard.glossary import TERMS
 from muwon.dashboard.strategy_rules import describe
@@ -207,9 +208,22 @@ def 종목이름() -> list[dict]:
     return [{"코드": 코드, "이름": 이름} for 코드, 이름 in sorted(이름표.items())]
 
 
+def 판단지침() -> list[dict]:
+    """전략을 견줄 때 무엇을 먼저 보나. 화면의 1~3순위 목록이 이것을 읽는다.
+
+    원본은 `analysis/judgment.py` 하나다. 화면에 목록을 또 적으면 지침을
+    더할 때마다 두 곳을 고쳐야 하고, 한쪽만 고치면 화면에서 고른 값이
+    파이썬에는 없는 값이 된다. 그러면 저장은 되는데 순위는 안 바뀐다."""
+    return [
+        {"열쇠": ㄱ.열쇠, "이름": ㄱ.이름, "설명": ㄱ.설명,
+         "갈래": ㄱ.갈래, "단위": ㄱ.단위, "비긴폭": ㄱ.비긴폭}
+        for ㄱ in 순위지침들 + 확인지침들
+    ]
+
+
 자료들 = {"용어사전.json": 용어사전, "전략설명.json": 전략설명,
          "기준설명.json": 기준이름, "기간설명.json": 기간설명,
-         "종목이름.json": 종목이름}
+         "종목이름.json": 종목이름, "판단지침.json": 판단지침}
 
 
 def 글로(값) -> str:

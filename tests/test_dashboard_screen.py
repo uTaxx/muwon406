@@ -494,3 +494,89 @@ def test_탭_아이콘이_있다():
     이름 없는 아이콘이 되기도 한다. 파일 대신 글자로 넣어 요청을 없앤다."""
     assert 'rel="icon"' in 쪽
     assert "data:image/svg+xml" in 쪽, "아이콘을 파일로 두면 요청이 한 번 더 납니다"
+
+
+# ── 판단 지침 (2026-09-03) ──────────────────────────────────────
+#
+# 화면에서 고른 것이 아무 일도 안 하는 상태가 제일 나쁘다. 목록의 원본은
+# 파이썬이고 화면은 그것을 읽기만 해야 한다. 화면에 목록을 또 적으면 지침을
+# 더할 때마다 두 곳을 고쳐야 하고, 한쪽만 고치면 저장은 되는데 순위는
+# 안 바뀐다.
+
+
+def test_판단지침_목록을_파이썬에서_뽑아_둔다():
+    import json
+
+    from muwon.analysis.judgment import 순위지침들, 확인지침들
+
+    뽑아둔것 = json.loads(
+        (뿌리 / "dashboard" / "자료" / "판단지침.json").read_text(encoding="utf-8")
+    )
+    표 = {ㄱ["열쇠"]: ㄱ for ㄱ in 뽑아둔것}
+    for ㄱ in 순위지침들 + 확인지침들:
+        assert ㄱ.열쇠 in 표, f"{ㄱ.열쇠}: 화면 자료에 없습니다"
+        assert 표[ㄱ.열쇠]["이름"] == ㄱ.이름
+        assert 표[ㄱ.열쇠]["갈래"] == ㄱ.갈래
+
+
+def test_화면이_지침_목록을_손으로_안_적는다():
+    """열쇠말이 app.js에 박히면 파이썬 목록과 언젠가 어긋난다."""
+    from muwon.analysis.judgment import 순위지침들
+
+    for ㄱ in 순위지침들:
+        assert ㄱ.열쇠 not in 글, f"{ㄱ.열쇠}: app.js에 박혀 있습니다"
+    assert '한개("판단지침.json")' in 글
+
+
+def test_지침_칸이_전략_탭_맨_위에_있다():
+    """아래의 모든 순위가 이 순서로 매겨진다. 밑에 두면 표를 다 본 뒤에야
+    무슨 기준으로 세운 표인지 알게 된다."""
+    지침자리 = 쪽.index('id="일순위"')
+    매수자리 = 쪽.index("🟢 매수")
+    assert 지침자리 < 매수자리
+    for 칸 in ("일순위", "이순위", "삼순위"):
+        assert f'<select id="{칸}">' in 쪽
+        assert f'id="{칸}설명"' in 쪽
+
+
+def test_지침_저장은_세_칸만_보낸다():
+    """기준 저장 단추와 섞으면 지침 하나를 바꾸려고 화면 끝까지 내려가야 하고,
+    그 김에 다른 칸까지 같이 저장된다."""
+    자리 = 글.index('$("지침저장").addEventListener')
+    토막 = 글[자리:글.index('$("기준저장").addEventListener')]
+    assert "지침칸들.forEach" in 토막
+    assert 'n8n부르기("기준저장"' in 토막
+    for 칸 in ("손절", "익절", "비중", "동시보유"):
+        assert f'$("{칸}").value' not in 토막, f"{칸}이 지침 저장에 섞였습니다"
+
+
+def test_저장하지_못하면_그렇게_적는다():
+    """n8n 연결이 이 칸을 아직 모르면 못한칸으로 돌아온다. 그때 저장됐다고
+    적으면 화면과 시트가 다른 값을 말하게 된다."""
+    자리 = 글.index('$("지침저장").addEventListener')
+    토막 = 글[자리:글.index('$("기준저장").addEventListener')]
+    assert "못한칸" in 토막
+    assert "저장되지 않음" in 토막
+
+
+def test_화면의_조사_규칙이_파이썬과_같다():
+    """지침 이름이 설정에서 온다. "누적 수익률으로"가 나오는 자리다."""
+    import re as _re
+
+    from muwon.analysis.judgment import 순위지침들
+    from muwon.text import 으로로, 을를
+
+    받침표 = {}
+    for ㄱ in 순위지침들:
+        받침표[ㄱ.이름] = (을를(ㄱ.이름), 으로로(ㄱ.이름))
+
+    # app.js의 규칙: 받침이 없거나 ㄹ(8)이면 "로", 나머지는 "으로".
+    토막 = 글[글.index("const 받침 = "):글.index("function 지침요약글")]
+    assert "0xac00" in 토막 and "% 28" in 토막
+    assert _re.search(r"ㅂ === 0 \|\| ㅂ === 8", 토막), 토막
+    # 파이썬 쪽이 실제로 그 규칙과 같은 답을 내는지 확인한다.
+    for 이름, (을, 으로) in 받침표.items():
+        끝 = 이름[-1]
+        받침 = (ord(끝) - 0xAC00) % 28 if 0xAC00 <= ord(끝) <= 0xD7A3 else None
+        assert 을 == ("을" if 받침 else "를"), 이름
+        assert 으로 == ("로" if 받침 in (None, 0, 8) else "으로"), 이름
