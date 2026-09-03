@@ -59,7 +59,7 @@ from muwon.strategy.trend import (
     MacdCrossParams,
     MacdCrossStrategy,
 )
-from muwon.strategy.us_sector import USSectorFollowStrategy
+from muwon.strategy.us_sector import USSectorFollowStrategy, USSectorGateStrategy
 
 CATEGORY_TREND = "추세추종"
 CATEGORY_REVERSION = "평균회귀"
@@ -637,6 +637,26 @@ REGISTRY: list[StrategyDefinition] = [
         ),
         쉬운참고=(
             "미국 시세는 하루 늦게 봅니다. 미국 시세를 못 받는 날은 아무것도 사지 않습니다."
+        ),
+    ),
+    StrategyDefinition(
+        key="volume_surge_3d_us60_2",
+        짧은이름="거래량 급증 3일 + 미국 섹터",
+        display_name="거래량 급증 초단타 (3배, 3일 보유) + 미국 섹터 필터 (60일 상위 2)",
+        description="거래량 급증 3일의 매수 신호 중 미국 섹터 ETF 60일 상대강도 상위 2개(60일선 위)에 속한 섹터 종목만 매수. 매도는 거래량 급증 3일 규칙 그대로.",
+        factory=lambda: USSectorGateStrategy(
+            VolumeSurgeStrategy(VolumeSurgeParams(volume_surge_ratio=3.0, holding_days=3),
+                                name="volume_surge_3d"),
+            원래키="volume_surge_3d", N=60, k=2, 지연=1, name="volume_surge_3d_us60_2",
+        ),
+        category=CATEGORY_BREAKOUT,
+        status="backtested",
+        쉬운설명=(
+            "사고팔린 양이 훨씬 크게 늘어난 날 사는 규칙은 그대로 두고, 그중에서 미국에서 "
+            "요즘 잘 오르는 업종에 속한 회사만 삽니다. 파는 규칙은 원래 전략 그대로입니다."
+        ),
+        쉬운참고=(
+            "미국 업종 흐름은 하루 늦게 봅니다. 미국 시세를 못 받는 날은 아무것도 사지 않습니다."
         ),
     ),
 ]
