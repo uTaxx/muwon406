@@ -132,6 +132,7 @@
       <button class="탭" role="tab" data-탭="기준"  aria-selected="false">전략 및 설정</button>
       <button class="탭" role="tab" data-탭="검증"  aria-selected="false">백테스트</button>
       <button class="탭" role="tab" data-탭="검토"  aria-selected="false">전략 검토</button>
+      <button class="탭" role="tab" data-탭="시장"  aria-selected="false">시장 트렌드</button>
       <button class="탭" role="tab" data-탭="도움말" aria-selected="false">용어 안내</button>
     </div>
 
@@ -797,6 +798,58 @@
     </section>
 
     <!-- 탭 7 · 용어 ──────────────────────────────────── -->
+    <!-- 탭 7 · 시장 트렌드 ─────────────────────────────
+         섹터가 최근에 어떻게 움직였나. 08:30 매수 후보 산출이 섹터별 지수를
+         이미 만들고 있어서, 그 숫자를 시트에 남기고 여기서 그린다. -->
+    <section id="쪽-시장" role="tabpanel" class="숨김">
+      <div id="시장알림"></div>
+
+      <h2>섹터별 등락률</h2>
+      <p class="h2곁말">매매 대상 섹터의 지수를 동일가중으로 만들어 구간별
+        등락률을 계산합니다. 같은 기간의 코스피를 함께 표시합니다. 시장 전체가
+        하락한 구간에서는 섹터 등락률만으로 판단할 수 없기 때문입니다.
+        <b>이 값은 매수 판단에 사용하지 않습니다.</b> 섹터 강도로 종목을
+        거르는 방식은 별도로 검증했고 근거를 확인하지 못했습니다.</p>
+
+      <div class="칸들">
+        <div class="칸">
+          <label for="시장회차">산출 일자</label>
+          <select id="시장회차" aria-label="언제 계산한 것을 볼 것인가"></select>
+          <div class="곁말">평일 08:30 매수 후보 산출 시점에 계산합니다.</div>
+        </div>
+        <div class="칸">
+          <label for="시장구간">구간</label>
+          <select id="시장구간" aria-label="어느 구간의 등락률을 볼 것인가"></select>
+          <div class="곁말">거래일 기준입니다. 휴장일은 세지 않습니다.</div>
+        </div>
+      </div>
+      <div class="줄">
+        <button id="시장다시">🔄 새로고침</button>
+      </div>
+      <div id="시장요약" class="칸 넓게"></div>
+      <div id="시장그림"></div>
+
+      <h2>구간별 수치</h2>
+      <p class="h2곁말">구간은 <b>거래일</b> 기준입니다. 다른 탭의 1주·1개월은
+        달력 기준이므로 이 표의 값과 다릅니다. 시세가 부족해 계산하지 못한
+        구간은 빈칸으로 표시하며, 0%로 채우지 않습니다.</p>
+      <div class="표싸개">
+        <table>
+          <thead><tr>
+            <th>섹터</th><th>종목 수</th><th>5거래일</th><th>20거래일</th>
+            <th>60거래일</th><th>상대강도</th><th>20일선</th>
+          </tr></thead>
+          <tbody id="시장몸"></tbody>
+        </table>
+      </div>
+      <p class="설명"><b>상대강도</b>는 60거래일 등락률에서 같은 기간 코스피
+        등락률을 뺀 값입니다. 양수이면 시장보다 더 올랐다는 의미입니다.
+        <b>20일선</b>은 섹터 지수의 마지막 값이 20거래일 이동평균 위에 있는지를
+        나타냅니다. 이미 상승한 뒤에 위로 올라오는 값이므로 매수 시점을
+        의미하지 않습니다.</p>
+      <div class="때" id="시장때"></div>
+    </section>
+
     <section id="쪽-도움말" role="tabpanel" class="숨김">
       <h2>용어 안내</h2>
       <p class="h2곁말">

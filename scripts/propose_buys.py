@@ -406,7 +406,29 @@ def main() -> int:
             print("텔레그램으로 알렸습니다(버튼 포함).", file=sys.stderr)
     except Exception as e:  # noqa: BLE001 (알림 실패가 후보 목록을 지우면 안 된다)
         print(f"텔레그램 전송 실패: {type(e).__name__}: {e}", file=sys.stderr)
+
+    섹터트렌드남기기(sheet_id, 섹터시세, 이름표, 시장, 오늘)
     return 0
+
+
+def 섹터트렌드남기기(sheet_id: str, 섹터시세, 이름표, 시장, 오늘) -> None:
+    """화면 '시장 트렌드' 탭이 읽을 줄을 시트에 남긴다.
+
+    **후보를 다 올리고 알림까지 보낸 뒤에 한다.** 이 실행의 본래 일은 매수
+    후보를 내는 것이고, 보여 주기용 표 때문에 그것이 늦거나 실패하면 안 된다.
+    그래서 실패해도 여기서 삼키고 왜 못 했는지만 찍는다.
+
+    섹터 시세는 위에서 이미 받아 두었다. 다시 받지 않는다."""
+    try:
+        from muwon.analysis.sector_trend import 머리 as 섹터머리
+        from muwon.analysis.sector_trend import 요약글, 재기, 줄들만들기
+
+        움직임들 = 재기(섹터시세, 이름표, 시장)
+        올린수 = append(sheet_id, "섹터트렌드", 섹터머리, 줄들만들기(움직임들, 오늘))
+        print(f"섹터트렌드 탭에 {올린수}줄 올렸습니다.", file=sys.stderr)
+        print(f"  {요약글(움직임들)}", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 (보여 주기용 표가 매수 후보를 막으면 안 된다)
+        print(f"섹터 트렌드는 못 남겼습니다: {type(e).__name__}: {e}", file=sys.stderr)
 
 
 def 기초설정글(설정, service, 섹터당: int) -> str:
