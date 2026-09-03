@@ -376,6 +376,113 @@
   .admin-foot{margin-top:14px; padding-top:11px; border-top:1px solid var(--line); font-size:10.5px; color:var(--muted); line-height:1.65;}
   footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
   footer a{color:var(--green); text-decoration:none; font-weight:600;}
+
+  /* ── 시장지표 ─────────────────────────────────────────────
+     '올랐다'가 아니라 '우리에게 좋아졌다'로 읽히게 색을 쓴다. 도시가스가
+     오르면 글라스에는 나쁜 것이고 유가가 내리면 좋은 것인데, 매번 머리로
+     뒤집게 만들면 결국 아무도 안 본다. 판정은 서버가 하고 여기선 칠하기만 한다. */
+  .ind-good{color:#1F7A5A;}
+  .ind-bad{color:var(--danger);}
+  .ind-flat{color:var(--muted);}
+
+  .ind-asof{font-size:12px; color:var(--muted); margin:0 0 14px 36px;}
+  /* 한 열로 세운다. 두 열로 나누면 같은 그룹의 지표가 좌우로 흩어져
+     서로 견줄 수가 없다. */
+  .ind-grid{display:flex; flex-direction:column; gap:14px;}
+
+  .ind-block{border:1px solid var(--line); border-radius:12px; padding:14px 16px 12px; background:var(--card);}
+  .ind-bhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+             padding-bottom:9px; margin-bottom:4px; border-bottom:1px solid var(--line);}
+  .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
+  .ind-bhead span{font-size:11px; color:var(--muted);}
+
+  /* 기간 고르기 — 오른쪽 끝에 붙인다 */
+  .ind-pick{margin-left:auto; display:flex; gap:0; border:1px solid var(--line);
+            border-radius:8px; overflow:hidden; align-self:center;}
+  .ind-pick button{border:none; background:var(--card); color:var(--muted);
+                   padding:4px 10px; font-size:11.5px; font-weight:700;
+                   cursor:pointer; font-family:inherit; line-height:1.6;}
+  .ind-pick button + button{border-left:1px solid var(--line);}
+  .ind-pick button:hover:not(:disabled):not(.on){background:var(--bg); color:var(--text);}
+  .ind-pick button.on{background:var(--green); color:#fff;}
+  /* 한국은행이 일 단위로 안 주는 지표가 있다. 누를 수 있게 해놓고 빈 그래프를
+     보여주면 고장으로 읽힌다. */
+  .ind-pick button:disabled{opacity:.32; cursor:not-allowed;}
+
+  /* 고른 기간에 자료가 없는 지표는 목록에 남기되 흐리게 둔다. 아예 지우면
+     '이 지표가 어디 갔지'가 된다. */
+  .ind-leg.off{opacity:.5;}
+
+  /* 목록이 곧 범례다. 왼쪽 색이 아래 그래프의 선 색이다. */
+  .ind-leg{display:flex; align-items:flex-start; gap:9px; padding:9px 0;
+           border-bottom:1px solid var(--line);}
+  .ind-leg:last-of-type{border-bottom:none;}
+  /* 표식은 점이 아니라 선 조각이다. 아래 그래프의 선과 짝지으라는
+     뜻이 점보다 훨씬 빨리 읽힌다. */
+  .ind-leg > i{flex:none; width:16px; height:3px; border-radius:2px; margin-top:8px;}
+  .ind-leg-b{flex:1 1 190px; min-width:0;}
+  .ind-leg-t{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
+  .ind-leg-t b{font-size:13px; font-weight:700; letter-spacing:-.02em;}
+  .ind-leg-w{font-size:11px; color:var(--muted); line-height:1.5; margin-top:3px; opacity:.85;}
+  .ind-leg-v{flex:none; text-align:right; padding-left:6px;}
+  .ind-leg-v .val{font-size:19px; font-weight:800; letter-spacing:-.03em; line-height:1.2;}
+  .ind-leg-v .val span{font-size:11.5px; font-weight:600; color:var(--muted); margin-left:2px;}
+  .ind-leg-v .chg{display:block; font-size:12px; font-weight:700; margin-top:2px; white-space:nowrap;}
+  .ind-leg-v .chg em{font-style:normal; font-weight:600; margin-left:4px;}
+
+  .ind-lead{font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-tint);
+            border-radius:999px; padding:2px 7px; white-space:nowrap;}
+
+  /* 아래 실선은 그래프의 바닥이다. 눈이 걸칠 데가 없으면 선들이
+     공중에 떠 보인다. */
+  .ind-chart{position:relative; height:200px; margin:14px 0 0;
+             border-bottom:1px solid var(--line);}
+  .ind-svg{display:block; width:100%; height:100%;}
+  /* 눈금은 왼쪽에 둔다. 오른쪽 끝은 가장 최근 값이 찍히는 자리라
+     거기에 글자를 얹으면 제일 봐야 할 곳을 가린다. */
+  .ind-y{position:absolute; left:0; font-size:10.5px; color:var(--muted); font-weight:600;
+         background:var(--card); padding:0 3px; border-radius:3px; pointer-events:none;}
+  .ind-y.hi{top:0;}
+  .ind-y.lo{bottom:0;}
+  /* 기준선 표시는 선 '위로' 올린다. 가운데 맞추면 100 언저리에서 끝나는
+     선을 덮는다. */
+  .ind-y.base{left:auto; right:0; transform:translateY(-115%); font-size:10px; opacity:.75;}
+  .ind-xax{display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:4px;}
+  .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
+            padding-top:8px; border-top:1px solid var(--line);}
+  .ind-note b{color:var(--text); font-weight:700;}
+
+  /* 계열사 고르는 띠 */
+  .ind-tabs{display:flex; gap:7px; flex-wrap:wrap; margin:0 0 14px 36px;}
+  .ind-tabs button{border:1px solid var(--line); background:var(--card); color:var(--muted);
+                   border-radius:999px; padding:6px 14px; font-size:12.5px; font-weight:700;
+                   cursor:pointer; font-family:inherit;}
+  .ind-tabs button.on{background:var(--green); border-color:var(--green); color:#fff;}
+  .ind-tabs button i{font-style:normal; font-size:11px; font-weight:700; margin-left:5px;
+                     opacity:.62;}
+  /* 아직 값이 하나도 없는 계열사는 눌러도 빈 화면이라 미리 흐리게 둔다 */
+  .ind-tabs button[data-empty]{opacity:.45;}
+
+  .ind-pend{display:flex; flex-wrap:wrap; gap:7px;}
+  .ind-pend span{border:1px dashed var(--line); border-radius:999px; padding:5px 11px;
+                 font-size:12px; color:var(--muted);}
+  @media (max-width:520px){
+    .ind-asof, .ind-tabs{margin-left:0;}
+    .ind-block{padding:12px 13px 10px;}
+    .ind-pick{margin-left:0; width:100%; justify-content:stretch;}
+    .ind-pick button{flex:1;}
+    /* 좁은 화면에선 값을 이름 아래로 내린다. 옆에 붙이면 이름이 두세
+       줄로 접혀서 무슨 지표인지 읽기가 더 어려워진다. */
+    .ind-leg{flex-wrap:wrap;}
+    /* 이름은 색 점 옆에 그대로 두고, 값만 아래로 내린다. 이름까지 내리면
+       점만 덩그러니 한 줄을 차지한다. */
+    .ind-leg-b{flex:1 1 0;}
+    .ind-leg-v{flex:1 1 100%; text-align:left; padding-left:25px; margin-top:4px;
+               display:flex; align-items:baseline; gap:8px;}
+    .ind-leg-v .val{font-size:17px;}
+    .ind-leg-v .chg{margin-top:0;}
+    .ind-chart{height:176px;}
+  }
 </style>
 </head>
 <body>
@@ -440,6 +547,7 @@
     <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
     <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
     <button type="button" class="tab-btn" data-tab="knowledge">AI 학습<br>데이터</button>
+    <button type="button" class="tab-btn" data-tab="index">시장<br>지표</button>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
@@ -766,6 +874,30 @@
     </section>
   </div>
 
+  <!-- 탭 6: 시장지표 -->
+  <div id="tab-index" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span></div>
+      <div class="step-desc">환율·금리처럼 어느 계열사에나 함께 걸리는 지표입니다. 아래에서 계열사를 바꿔도 이 줄은 그대로 있습니다.</div>
+      <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+      <div class="ind-grid" id="indCommon"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏭</span><span class="step-title">계열사별 지표</span></div>
+      <div class="step-desc">그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다.</div>
+      <div class="ind-tabs" id="indAffTabs"></div>
+      <div class="ind-grid" id="indAff"></div>
+      <div class="empty-note" id="indAffEmpty" style="display:none;">이 계열사에 쌓인 값이 아직 없습니다.</div>
+    </section>
+
+    <section class="card" id="indPendCard" style="display:none;">
+      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
+      <div class="step-desc">무엇을 볼지는 정해뒀지만 아직 받아오지 않는 지표입니다. 출처별로 인증키를 넣으면 다음 수집부터 채워집니다.</div>
+      <div class="ind-pend" id="indPend"></div>
+    </section>
+  </div>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다. · <a id="excelLink" href="#" target="_blank" rel="noopener" style="display:none;">📊 엑셀 원본보기(관리자용)</a> · <a id="costLink" href="#" role="button">💰 비용관리(관리자용)</a></footer>
@@ -783,6 +915,7 @@
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
+  const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -986,7 +1119,352 @@
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
+    if (tabName === 'index'){ loadIndex(false); }
   }
+
+  /* ---------- 탭6: 시장지표 ----------
+     숫자와 좋아짐/나빠짐 판정은 전부 서버가 만든 것을 그대로 쓴다.
+     여기서 다시 계산하면 같은 값이 두 곳에서 갈라지고, 갈라진 뒤에는
+     어느 쪽이 맞는지 알 방법이 없다. 이 함수들은 그리기만 한다. */
+  let indData = null;
+  let indAff = null;      // 지금 고른 계열사
+  let indLoading = false;
+
+  function indNum(v, unit){
+    if (v === null || v === undefined) return '—';
+    const abs = Math.abs(v);
+    /* 억원·호처럼 큰 단위는 소수점이 의미 없고, 금리는 소수 둘째 자리가 핵심이다 */
+    const dec = abs >= 1000 ? 1 : abs >= 100 ? 1 : 2;
+    return Number(v).toLocaleString('ko-KR', { maximumFractionDigits: dec });
+  }
+
+  /* ── 그래프 ────────────────────────────────────────────────
+     같은 그룹의 지표는 한 그래프에 겹친다. 환율과 금리를 따로 보면
+     "환율이 올랐다"와 "금리가 올랐다"를 각각 알 뿐, 둘 중 무엇이 더
+     크게 움직였는지는 못 본다.
+
+     겹치려면 눈금을 맞춰야 한다. 1,376원짜리 환율과 3%짜리 금리를 같은
+     축에 그대로 그리면 금리는 바닥에 붙은 직선이 되어, 1년 새 58% 오른
+     국고채가 '아무 일도 없었다'로 보인다. 그래서 지표가 둘 이상이면
+     같은 달을 100으로 맞춰 변화폭만 견준다. 실제 값은 그래프 바로 위
+     목록에 그대로 있으니 잃는 것은 없다. */
+  /* 색을 여러 개 쓰지 않고 대시보드 붉은색 하나의 농담으로 구분한다.
+     빨강·파랑·노랑을 섞으면 선마다 다른 뜻이 있는 것처럼 보이는데,
+     실제로는 그냥 다른 지표일 뿐이다. 같은 색의 진하기 차이는 '같은
+     종류인데 다른 것'으로 읽혀서 이 화면에 맞다. 진한 쪽이 시트에서
+     앞선 지표다. */
+  const IND_COLORS = ['#3F0C0A', '#A32B26', '#C97367', '#E3A79E', '#F0C9C3', '#75241F'];
+
+  /* 그래프마다 고를 수 있는 세 가지 기간. 어디까지 보여줄지는 서버가 이미
+     잘라서 보내므로 여기서는 자르지 않는다 — 자르기 시작하면 '전일 대비'를
+     화면이 다시 계산해야 하고, 그 순간 같은 숫자가 두 곳에서 나온다.
+
+     묶는 단위가 기간마다 다르다. 일별은 날짜 그대로지만, 월별은 지표마다
+     기준일이 달라(환율 8-31, 기준금리 8-01) 연월로 묶어야 같은 줄에 선다. */
+  const IND_RANGES = [
+    { k: '일', 이름: '일별',   축: function(d){ return d.slice(0, 10); }, 눈: function(d){ return d.slice(5); } },
+    { k: '월', 이름: '월별',   축: function(d){ return d.slice(0, 7); },  눈: function(d){ return d.slice(0, 7); } },
+    { k: '연', 이름: '연도별', 축: function(d){ return d.slice(0, 4); },  눈: function(d){ return d.slice(0, 4); } }
+  ];
+  const IND_RANGE_기본 = '월';
+  let indRange = {};   // 그래프마다 지금 고른 기간
+
+  function indBuild(items, R){
+    const 쓸것 = items.filter(function(x){ return x.범위 && x.범위[R.k]; });
+    if (!쓸것.length) return null;
+
+    const 있는칸 = {};
+    쓸것.forEach(function(x){ (x.범위[R.k].흐름 || []).forEach(function(p){ 있는칸[R.축(p.d)] = 1; }); });
+    const 창 = Object.keys(있는칸).sort();
+    if (창.length < 2) return null;
+
+    const 값맵 = 쓸것.map(function(x){
+      const m = {};
+      (x.범위[R.k].흐름 || []).forEach(function(p){ m[R.축(p.d)] = p.v; });
+      return m;
+    });
+
+    /* 크기가 비슷하면 실제 값 그대로, 크게 다르면 100으로 맞춘다.
+       1,376원짜리 환율과 3%짜리 금리를 같은 축에 그대로 얹으면 금리가
+       바닥에 눌려 사라진다. */
+    let 여럿 = 쓸것.length > 1;
+    if (여럿){
+      const 대표 = 값맵.map(function(m){
+        const vs = 창.map(function(c){ return m[c]; })
+                    .filter(function(v){ return v !== undefined; })
+                    .map(Math.abs).sort(function(a, b){ return a - b; });
+        return vs.length ? vs[Math.floor(vs.length / 2)] : 0;
+      }).filter(function(v){ return v > 0; });
+      if (대표.length === 쓸것.length){
+        const 큰 = Math.max.apply(null, 대표), 작은 = Math.min.apply(null, 대표);
+        if (큰 / 작은 <= 3) 여럿 = false;
+      }
+    }
+
+    /* 기준칸은 모든 지표에 값이 있는 첫 칸. 지표마다 제 첫 값을 100으로 삼으면
+       출발선이 제각각이라 견주는 뜻이 사라진다. */
+    let 기준칸 = null;
+    if (여럿){
+      for (let i = 0; i < 창.length; i++){
+        const c = 창[i];
+        if (값맵.every(function(m){ return m[c] !== undefined; })){ 기준칸 = c; break; }
+      }
+    }
+
+    const 선들 = 쓸것.map(function(x, i){
+      const m = 값맵[i];
+      const 기준 = (여럿 && 기준칸 !== null) ? m[기준칸] : null;
+      let 첫값 = null;
+      const pts = [];
+      창.forEach(function(c, j){
+        const v = m[c];
+        if (v === undefined) return;
+        if (첫값 === null) 첫값 = v;
+        const b = 기준 !== null ? 기준 : 첫값;
+        pts.push({ j: j, y: 여럿 ? (b ? (v / b) * 100 : 100) : v, v: v });
+      });
+      /* 색은 그래프에 몇 번째로 그려지느냐가 아니라 목록에서 몇 번째냐로 정한다.
+         기간을 바꿔 한 지표가 빠져도 남은 선의 색이 따라 바뀌면 안 된다. */
+      return { 지표: x, 색: IND_COLORS[items.indexOf(x) % IND_COLORS.length], pts: pts };
+    }).filter(function(s){ return s.pts.length >= 2; });
+
+    if (!선들.length) return null;
+
+    let lo = Infinity, hi = -Infinity;
+    선들.forEach(function(s){ s.pts.forEach(function(p){
+      if (p.y < lo) lo = p.y;
+      if (p.y > hi) hi = p.y;
+    }); });
+    if (여럿){ lo = Math.min(lo, 100); hi = Math.max(hi, 100); }
+    const 폭 = (hi - lo) || Math.abs(hi) || 1;
+    lo -= 폭 * 0.1; hi += 폭 * 0.1;
+
+    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준칸: 기준칸, R: R,
+             단위: (쓸것[0] || {}).단위 || '' };
+  }
+
+  function indPlot(g){
+    const W = 600, H = 200, PAD = 14;
+    const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
+    const Y = function(v){ return H - PAD - ((v - g.lo) / (g.hi - g.lo)) * (H - PAD * 2); };
+
+    let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
+    if (g.여럿){
+      /* 기준선은 아주 옅게. 기준금리처럼 한동안 값이 안 변하는 지표는 선이
+         100에 딱 붙어 있는데, 기준선이 진하면 그 지표가 통째로 사라진다. */
+      out += '<line x1="0" y1="' + Y(100).toFixed(1) + '" x2="' + W + '" y2="' + Y(100).toFixed(1) +
+             '" stroke="#D6C6B5" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>';
+    }
+    g.선들.forEach(function(s, i){
+      const pts = s.pts.map(function(p){ return X(p.j).toFixed(1) + ',' + Y(p.y).toFixed(1); }).join(' ');
+      /* 옅은 색일수록 조금 굵게 긋는다. 같은 굵기로 그으면 옅은 선이 먼저
+         묻혀서, 색 순서가 곧 중요도 순서처럼 보이게 된다. */
+      const 굵기 = (1.6 + i * 0.18).toFixed(2);
+      out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="' + 굵기 + '" ' +
+             'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+      const 끝 = s.pts[s.pts.length - 1];
+      out += '<circle cx="' + X(끝.j).toFixed(1) + '" cy="' + Y(끝.y).toFixed(1) +
+             '" r="2.6" fill="' + s.색 + '"/>';
+    });
+    return out + '</svg>';
+  }
+
+  function indChgHtml(b){
+    if (!b) return '';
+    const cls = b.좋아짐 === true ? 'ind-good' : b.좋아짐 === false ? 'ind-bad' : 'ind-flat';
+    if (b.변화 === null || b.변화 === undefined) return '<span class="chg ind-flat">' + escapeHtml(b.라벨) + ' 자료 없음</span>';
+    const 화살 = b.변화 > 0 ? '▲' : b.변화 < 0 ? '▼' : '–';
+    const 말 = b.좋아짐 === true ? '좋아짐' : b.좋아짐 === false ? '나빠짐' : '';
+    return '<span class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(b.변화)) +
+           ' (' + (b.변화율 > 0 ? '+' : '') + b.변화율 + '%)' +
+           (말 ? '<em>' + 말 + '</em>' : '') + '</span>';
+  }
+
+  function indBlock(그룹명, items, 열쇠){
+    /* 어떤 기간을 고를 수 있는지는 지표가 정한다. 기준금리는 한국은행이
+       일 단위로 내주지 않아서 일별이 아예 없다 — 누를 수 있게 해놓고 빈
+       그래프를 보여주면 고장으로 읽힌다. */
+    const 가능 = IND_RANGES.filter(function(R){
+      return items.some(function(x){ return x.범위 && x.범위[R.k]; });
+    });
+    if (!가능.length) return '';
+    let 지금 = indRange[열쇠] || IND_RANGE_기본;
+    if (!가능.some(function(R){ return R.k === 지금; })) 지금 = 가능[가능.length - 1].k;
+    const R = IND_RANGES.filter(function(x){ return x.k === 지금; })[0];
+
+    const 고르개 = '<div class="ind-pick">' + IND_RANGES.map(function(x){
+      const 됨 = 가능.some(function(y){ return y.k === x.k; });
+      return '<button type="button" data-range="' + x.k + '"' +
+        (x.k === 지금 ? ' class="on"' : '') +
+        (됨 ? '' : ' disabled title="이 지표는 이 기간 자료가 없습니다"') +
+        '>' + x.이름 + '</button>';
+    }).join('') + '</div>';
+
+    const 목록 = items.map(function(x, i){
+      const b = x.범위 && x.범위[R.k];
+      return '<div class="ind-leg' + (b ? '' : ' off') + '">' +
+        '<i style="background:' + IND_COLORS[i % IND_COLORS.length] + '"></i>' +
+        '<div class="ind-leg-b">' +
+          '<div class="ind-leg-t"><b>' + escapeHtml(x.이름) + '</b>' +
+            (x.선행개월 > 0 ? '<span class="ind-lead">선행 ' + x.선행개월 + '개월</span>' : '') +
+          '</div>' +
+          (x.설명 ? '<div class="ind-leg-w">' + escapeHtml(x.설명) + '</div>' : '') +
+        '</div>' +
+        '<div class="ind-leg-v">' +
+          (b ? '<div class="val">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' + indChgHtml(b)
+             : '<span class="chg ind-flat">' + escapeHtml(R.이름) + ' 자료 없음</span>') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    const g = indBuild(items, R);
+    let 그래프 = '';
+    if (g){
+      /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
+         원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다. */
+      const 눈금 = function(v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
+      const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
+      그래프 =
+        '<div class="ind-chart">' + indPlot(g) +
+          '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
+          '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
+          (g.여럿 && 기준높이 > 6 && 기준높이 < 94
+            ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
+        '</div>' +
+        '<div class="ind-xax"><span>' + escapeHtml(R.눈(g.창[0])) + '</span>' +
+          '<span>' + escapeHtml(R.눈(g.창[g.창.length - 1])) + '</span></div>' +
+        (g.여럿
+          ? '<div class="ind-note">단위가 서로 달라 <b>' + escapeHtml(R.눈(g.기준칸 || g.창[0])) +
+            ' = 100</b>으로 맞춰 움직인 폭만 견줍니다. 실제 값은 바로 위에 있습니다.</div>'
+          : '');
+    }
+
+    const 출처 = items.map(function(x){ return x.출처; })
+                     .filter(function(v, i, a){ return v && a.indexOf(v) === i; }).join(' · ');
+    const 최신 = items.map(function(x){ return ((x.범위 && x.범위[R.k]) || {}).최신일; })
+                     .filter(Boolean).sort().pop();
+
+    return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '">' +
+      '<div class="ind-bhead">' +
+        '<b>' + escapeHtml(그룹명) + '</b>' +
+        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) + '</span>' +
+        고르개 +
+      '</div>' +
+      목록 + 그래프 +
+    '</div>';
+  }
+
+  /* 차례는 시트의 정렬값을 따른다 — 화면에서 순서를 또 정하지 않는다.
+     그룹으로 묶은 다음 단위로 한 번 더 쪼갠다. 같은 '환율·금리'라도
+     원짜리와 %짜리는 한 그래프에 못 얹는다.
+
+     열쇠에 세로막대를 쓰는 이유는 그룹 이름에 띄어쓰기가 들어가기 때문이다
+     ('국내 B2C · 리모델링'). 띄어쓰기로 나누면 이름이 잘린다. */
+  function indBlocks(지표들){
+    const 순서 = [], 통 = {}, 그룹단위 = {};
+    지표들.forEach(function(x){
+      const 그룹 = x.그룹 || '기타';
+      const 단위 = x.단위 || '';
+      const k = 그룹 + '|' + 단위;
+      if (!통[k]){ 통[k] = { 그룹: 그룹, 단위: 단위, 것들: [] }; 순서.push(k); }
+      통[k].것들.push(x);
+      (그룹단위[그룹] = 그룹단위[그룹] || {})[단위] = 1;
+    });
+    return 순서.map(function(k){
+      const t = 통[k];
+      const 여러단위 = Object.keys(그룹단위[t.그룹]).length > 1;
+      return indBlock(여러단위 && t.단위 ? t.그룹 + ' · ' + t.단위 : t.그룹, t.것들, k);
+    }).join('');
+  }
+
+  function indDraw(){
+    if (!indData) return;
+    const 지표 = indData.지표 || [];
+
+    document.getElementById('indCommon').innerHTML =
+      indBlocks(지표.filter(x => x.소속.indexOf('공통') >= 0)) ||
+      '<div class="empty-note">공통 지표에 쌓인 값이 아직 없습니다.</div>';
+
+    /* 공통은 위에 따로 있으니 고르는 띠에서는 뺀다 */
+    const 계열사 = (indData.소속목록 || []).filter(s => s !== '공통');
+    const 개수 = {};
+    계열사.forEach(s => { 개수[s] = 지표.filter(x => x.소속.indexOf(s) >= 0).length; });
+
+    /* 처음 열 때는 값이 실제로 쌓인 계열사를 보여준다. 가나다순 첫 칸이
+       비어 있으면 화면이 비어 보여서, 지표가 하나도 없다고 오해한다. */
+    if (!indAff || 계열사.indexOf(indAff) < 0){
+      indAff = 계열사.find(s => 개수[s] > 0) || 계열사[0] || null;
+    }
+
+    document.getElementById('indAffTabs').innerHTML = 계열사.map(s =>
+      '<button type="button" data-aff="' + escapeHtml(s) + '"' +
+        (s === indAff ? ' class="on"' : '') +
+        (개수[s] ? '' : ' data-empty="1"') + '>' +
+        escapeHtml(s) + (개수[s] ? '<i>' + 개수[s] + '</i>' : '') + '</button>'
+    ).join('');
+
+    /* 둘 이상에 걸친 지표는 양쪽에 다 띄운다. 건설기성액은 하우시스와
+       글라스 둘 다에게 진짜로 중요해서, 한쪽에 숨기면 다른 쪽에서 놓친다. */
+    const 것들 = indAff ? 지표.filter(x => x.소속.indexOf(indAff) >= 0) : [];
+    document.getElementById('indAff').innerHTML = indBlocks(것들);
+    document.getElementById('indAffEmpty').style.display = 것들.length ? 'none' : 'block';
+
+    const 대기 = indData.아직없음 || [];
+    document.getElementById('indPendCard').style.display = 대기.length ? 'block' : 'none';
+    document.getElementById('indPend').innerHTML = 대기.map(x =>
+      '<span>' + escapeHtml(x.이름) + ' · ' + escapeHtml(x.출처) + '</span>'
+    ).join('');
+
+    document.getElementById('indAsOf').textContent =
+      indData.asOf + ' 기준 · 값이 있는 지표 ' + 지표.length + '개' +
+      (대기.length ? ' · 대기 ' + 대기.length + '개' : '');
+  }
+
+  function loadIndex(force){
+    if (indLoading) return;
+    if (indData && !force){ indDraw(); return; }
+    indLoading = true;
+    document.getElementById('indAsOf').textContent = '불러오는 중…';
+    fetch(INDEX_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS' })
+    })
+      .then(r => r.json())
+      .then(d => {
+        indLoading = false;
+        if (!d || d.ok === false){
+          document.getElementById('indAsOf').textContent = (d && d.error) || '지표를 불러오지 못했습니다.';
+          return;
+        }
+        indData = d;
+        indDraw();
+      })
+      .catch(() => {
+        indLoading = false;
+        document.getElementById('indAsOf').textContent = '지표를 불러오지 못했습니다. 탭을 다시 열어보세요.';
+      });
+  }
+
+  document.getElementById('indAffTabs').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-aff]');
+    if (!b) return;
+    indAff = b.dataset.aff;
+    indDraw();
+  });
+
+  /* 기간 고르기. 그래프마다 따로 기억한다 — 환율은 일별로 보면서 건설수주는
+     연도별로 두고 싶은 것이 자연스럽다. */
+  ['indCommon', 'indAff'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(e){
+      const b = e.target.closest('button[data-range]');
+      if (!b || b.disabled) return;
+      const 통 = b.closest('.ind-block');
+      if (!통) return;
+      indRange[통.dataset.blk] = b.dataset.range;
+      indDraw();
+    });
+  });
 
   function maybeAutoLoadApply(){
     if (applyAutoLoaded) return;
@@ -2223,12 +2701,18 @@
     resultBox.innerHTML = '<div class="empty-note">새 기사를 찾고 있습니다. 잠시만 기다려주세요...</div>';
     showLoading('새 기사를 찾고 있습니다', '최대 1~2분 소요됩니다.', true);
 
+    /* 수집은 1~2분이 걸린다. 그동안 브라우저는 연결을 붙들고 있는데, 중간에
+       끊기면 아무 답도 못 받는다. 무한정 기다리게 두지 않고 3분에서 끊는다. */
+    const 중단 = new AbortController();
+    const 시계 = setTimeout(function(){ 중단.abort(); }, 180000);
+
     fetch(INSTANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code }),
+      signal: 중단.signal
     })
-      .then(function(res){ return res.json(); })
+      .then(function(res){ clearTimeout(시계); return res.json(); })
       .then(function(data){
         hideLoading();
         btn.disabled = false;
@@ -2250,10 +2734,21 @@
           renderInstantArticles(data.articles);
       })
       .catch(function(err){
+        clearTimeout(시계);
         hideLoading();
         btn.disabled = false;
         btn.textContent = '⚡ 지금 조회하기';
-        resultBox.innerHTML = '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+
+        /* 수집은 서버에서 끝까지 돌고 화면만 답을 못 받는 경우가 있다. 그때
+           'Failed to fetch'만 띄우면 수집이 실패한 줄 알고 다시 누르게 되는데,
+           실제로는 이미 발송까지 끝난 뒤라 같은 일을 한 번 더 시키는 셈이다. */
+        const 끊김 = err.name === 'AbortError' || /fetch|network|load failed/i.test(err.message || '');
+        resultBox.innerHTML = 끊김
+          ? '<div class="empty-note">✕ 결과를 화면으로 받아오지 못했습니다.<br><br>' +
+            '<b>수집 자체는 끝났을 수 있습니다.</b> 텔레그램과 메일을 먼저 확인해 보세요. ' +
+            '새로 들어온 기사는 <b>전체 기사 조회</b> 탭에서도 보입니다.<br>' +
+            '거기에도 없으면 그때 다시 눌러주세요.</div>'
+          : '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
       });
   }
 
