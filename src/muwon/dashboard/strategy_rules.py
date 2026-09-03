@@ -393,8 +393,35 @@ def _us_sector_rules(p, strategy) -> Rules:
         ],
     )
 
+
+def _us_sector_gate_rules(p, strategy) -> Rules:
+    """설계안 §50. 기존 전략의 매수 신호를 미국 섹터 신호로 거른다."""
+    원래 = describe(getattr(strategy, "원래전략", strategy))
+    짝 = ", ".join(f"{k} {v}" for k, v in 섹터짝.items())
+    산다 = [
+        (f"먼저 미국 섹터 ETF의 **{p.N}일** 수익률에서 S&P 500의 {p.N}일 수익률을 뺀 값(상대강도)이 "
+         f"상위 **{p.k}개**이면서 자기 60일 이동평균 위인 섹터를 강한 섹터로 봅니다."),
+        "그다음 아래 원래 전략이 낸 매수 신호 중 **강한 섹터에 속한 종목만** 삽니다. 나머지 신호는 버립니다.",
+        *[f"(원래 전략) {줄}" for 줄 in 원래.산다],
+    ]
+    if p.지연 > 0:
+        산다.append(f"미국 시세는 **{p.지연}거래일** 미뤄서 봅니다.")
+    else:
+        산다.append("미국 시세는 전날 종가까지 봅니다. 08:30에 후보를 뽑을 때는 그 값이 이미 나와 있습니다.")
+    return Rules(
+        산다=산다,
+        판다=원래.판다 or ["원래 전략의 파는 규칙 그대로입니다. 미국 신호는 파는 데 관여하지 않습니다."],
+        참고=[
+            "미국 신호는 어느 종목을 살까에만 관여합니다. 매도, 보유 상한, 손절은 원래 전략과 공통 규칙 그대로입니다.",
+            f"섹터 짝은 이렇습니다. {짝}. 원자재 ETF와 화장품 섹터 종목은 이 전략이 사지 않습니다.",
+            "미국 시세를 못 받는 날은 매수를 전부 막습니다. 국내 신호만으로 사면 미국을 보고 산 것이 아닌데 그렇게 기록되기 때문입니다.",
+            *원래.참고,
+        ],
+    )
+
 _BUILDERS = {
     "USSectorParams": _us_sector_rules,
+    "USSectorGateParams": _us_sector_gate_rules,
     "VolumeSurgeParams": _volume_surge_rules,
     "BollingerBreakoutParams": _bollinger_breakout_rules,
     "PriceChannelParams": _price_channel_rules,
