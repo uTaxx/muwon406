@@ -205,42 +205,7 @@
   .case-amt{font-size:11px; font-weight:600; color:var(--muted); margin-top:2px; white-space:nowrap;}
   .case-amt-note{font-size:10.5px; color:var(--muted); line-height:1.6; margin-top:9px;}
 
-  /* Claude API 비용 */
-  .cost-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;}
-  .cost-cell{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 12px; min-width:0;}
-  .cost-cell.wide{grid-column:1 / -1;}
-  .cost-l{font-size:11px; color:var(--muted); line-height:1.4;}
-  .cost-n{font-size:19px; font-weight:700; color:var(--text); margin-top:4px; font-variant-numeric:tabular-nums;}
-  .cost-n.hot{color:var(--green);}
-  .cost-sub{font-size:11px; color:var(--muted); font-weight:600; margin-top:2px;}
-  .cost-krw{font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;}
-  .cost-sec{font-size:12px; font-weight:700; color:var(--text); margin-top:18px; margin-bottom:8px;}
-  .cost-table{width:100%; border-collapse:collapse;}
-  .cost-table td{font-size:12.5px; color:var(--text); padding:8px 0; border-bottom:1px solid var(--line);}
-  .cost-table td.r{text-align:right; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
-  .cost-table td.m{color:var(--muted); font-size:11.5px; text-align:right; white-space:nowrap; padding-left:8px;}
-  .cost-table tr:last-child td{border-bottom:none;}
-  .cost-bars{display:flex; align-items:stretch; gap:5px; height:76px; margin-top:8px;}
-  .cost-bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0;}
-  .cost-bar-wrap{width:100%; flex:1; display:flex; align-items:flex-end;}
-  .cost-bar{width:100%; background:var(--green-tint); border:1px solid var(--green); border-radius:3px 3px 0 0; min-height:2px;}
-  .cost-bar.peak{background:var(--green);}
-  .cost-bar-d{font-size:9.5px; color:var(--muted); white-space:nowrap;}
-  .cost-share{display:flex; height:9px; border-radius:5px; overflow:hidden; border:1px solid var(--line); margin-top:8px; margin-bottom:9px;}
-  .cost-share i{display:block; height:100%;}
-  .cost-p0{background:var(--green);} .cost-p1{background:#C4746F;}
-  .cost-p2{background:#D8A79E;} .cost-p3{background:#E5CBBF;} .cost-p4{background:var(--green-tint);}
-  .cost-dot{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:baseline;}
-  .cost-log{margin-top:8px;}
-  .cost-log-row{display:flex; gap:10px; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--line);}
-  .cost-log-row:last-child{border-bottom:none;}
-  .cost-log-main{flex:1; min-width:0;}
-  .cost-log-t{font-size:12.5px; color:var(--text); font-weight:600;}
-  .cost-log-d{font-size:11px; color:var(--muted); margin-top:2px; word-break:break-word;}
-  .cost-log-c{font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
-  .cost-more{margin-top:10px; font-size:11.5px; color:var(--green); font-weight:700; background:none; border:none; padding:0; cursor:pointer;}
-  .cost-bar-cap{font-size:10px; color:var(--muted); margin-top:5px;}
-  .cost-note{font-size:10.5px; color:var(--muted); line-height:1.65; margin-top:14px; padding-top:11px; border-top:1px solid var(--line);}
+  .kn-copy{margin-top:10px; font-size:11.5px; color:var(--green); font-weight:700; background:none; border:none; padding:0; cursor:pointer;}
   .case-summary{font-size:12.5px; color:#4A453F; line-height:1.75; margin-top:13px;}
   .case-src{font-size:11.5px; margin-top:9px;}
   .case-src a{color:var(--green-dark); word-break:break-all;}
@@ -360,25 +325,6 @@
   .small-btn.instant-btn:disabled{opacity:.6; cursor:not-allowed;}
   .instant-hint{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.6;}
 
-  .admin-overlay{
-    position:fixed; inset:0; z-index:9998; padding:20px 14px;
-    background:rgba(32,29,27,0.5); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
-    display:none; align-items:flex-start; justify-content:center; overflow-y:auto;
-  }
-  .admin-overlay.show{display:flex;}
-  .admin-panel{
-    background:var(--card); border-radius:16px; width:100%; max-width:560px;
-    box-shadow:0 14px 44px rgba(0,0,0,0.24); padding:20px; margin:auto 0;
-  }
-  .admin-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
-  .admin-head .step-title{flex:1;}
-  .admin-close{background:none; border:none; color:var(--muted); font-size:20px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:8px;}
-  .admin-close:hover{background:var(--bg); color:var(--text);}
-  .admin-lock{padding:8px 0 4px;}
-  .admin-lock label{display:block; font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:6px;}
-  .admin-err{display:none; font-size:12.5px; color:var(--danger); font-weight:600; margin-top:8px;}
-  .admin-err.show{display:block;}
-  .admin-foot{margin-top:14px; padding-top:11px; border-top:1px solid var(--line); font-size:10.5px; color:var(--muted); line-height:1.65;}
   footer{text-align:center; color:var(--muted); font-size:12px; padding:24px 20px;}
   footer a{color:var(--green); text-decoration:none; font-weight:600;}
 
@@ -558,32 +504,6 @@
   </div>
 </div>
 
-<div class="admin-overlay" id="adminOverlay" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
-  <div class="admin-panel">
-    <div class="admin-head">
-      <span class="step-num">💰</span>
-      <span class="step-title" id="adminTitle">Claude API 비용</span>
-      <button type="button" class="admin-close" id="adminCloseBtn" aria-label="닫기">✕</button>
-    </div>
-
-    <div id="adminLock" class="admin-lock">
-      <div class="step-desc" style="margin-left:0;">관리자 전용 화면입니다. 비밀번호를 입력하세요.</div>
-      <label for="adminPw">비밀번호</label>
-      <input type="password" id="adminPw" autocomplete="current-password" placeholder="관리자 비밀번호">
-      <div class="admin-err" id="adminErr"></div>
-      <button type="button" class="submit-btn" id="adminUnlockBtn">확인</button>
-    </div>
-
-    <div id="adminContent" style="display:none;">
-      <div class="step-desc" style="margin-left:0;">기사 수집·평가와 소송 사건 조사에 쓰인 AI 호출 비용을 매 호출마다 누적 기록합니다.</div>
-      <div id="costBody"><div class="empty-note">불러오는 중…</div></div>
-      <div class="admin-foot">
-        비밀번호는 설정 시트의 <b>비용조회 PW</b> 칸에서 바꿀 수 있습니다.
-        확인은 서버(n8n 웹훅)에서 하므로, 비밀번호 없이는 이 페이지를 열어도 집계값을 받아올 수 없습니다.
-      </div>
-    </div>
-  </div>
-</div>
 
 <div class="cover">
   <span class="badge">LX Group MI · 사내 전용</span>
@@ -932,7 +852,7 @@
       <div class="kn-box" id="knCurrent">불러오는 중…</div>
       <div class="kn-meta">
         <span id="knLen"></span>
-        <button type="button" class="cost-more" id="knCopyBtn" style="display:none;">위 입력칸으로 복사</button>
+        <button type="button" class="kn-copy" id="knCopyBtn" style="display:none;">위 입력칸으로 복사</button>
       </div>
 
       <div class="kn-warn">이 내용은 매 수집 때마다 AI 프롬프트 앞에 붙습니다. 길수록 판단 근거는 늘지만 호출 비용도 함께 늘어납니다 — 위에 표시된 회당·월 비용이 이 내용 때문에 추가로 드는 몫입니다(토큰 수는 어림치라 실제와 다를 수 있습니다). 비워두면 배경 지식 없이 기사 제목과 그룹 목적만으로 평가합니다.</div>
@@ -961,7 +881,7 @@
 
 </main>
 
-<footer>LX Group MI 사내 전용 도구입니다. · <a id="excelLink" href="#" target="_blank" rel="noopener" style="display:none;">📊 엑셀 원본보기(관리자용)</a> · <a id="costLink" href="#" role="button">💰 비용관리(관리자용)</a></footer>
+<footer>LX Group MI 사내 전용 도구입니다.</footer>
 
 <script>
   // n8n 웹훅 주소
@@ -975,7 +895,6 @@
   const CASE_STATUS_URL  = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-case-status';
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
-  const COST_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-api-cost';
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const PAGE_SIZE = 50;
 
@@ -2088,134 +2007,9 @@
     sel.innerHTML = '<option value="">전체</option>' + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
   }
 
-  /* ---------- Claude API 비용 누적 ---------- */
-  let costLoaded = false;
-  /* 원화 환산은 참고용 개략치. 실제 청구는 USD 기준이라 환율에 따라 달라진다. */
-  const USD_KRW = 1380;
-
-  function fmtUsd4(v){
-    const n = Number(v);
-    if (!isFinite(n)) return '—';
-    if (n === 0) return '$0';
-    if (n < 0.01) return '$' + n.toFixed(4);
-    if (n < 100) return '$' + n.toFixed(2);
-    return '$' + Math.round(n).toLocaleString();
-  }
-  function fmtKrw(v){
-    const n = Number(v) * USD_KRW;
-    if (!isFinite(n) || n === 0) return '';
-    return '약 ' + Math.round(n).toLocaleString() + '원';
-  }
-
-  function renderCost(d){
-    const box = document.getElementById('costBody');
-    if (!d || d.ok !== true){
-      box.innerHTML = '<div class="empty-note">비용 기록을 불러오지 못했습니다.</div>';
-      return;
-    }
-    if (!d.calls){
-      box.innerHTML = '<div class="empty-note">아직 기록된 API 호출이 없습니다.<br>다음 수집부터 자동으로 쌓입니다.</div>';
-      return;
-    }
-
-    const daily = Array.isArray(d.daily) ? d.daily : [];
-    const maxCost = daily.reduce(function(m, x){ return Math.max(m, Number(x.cost) || 0); }, 0);
-    const recent = daily.slice(-14);
-
-    /* 막대가 많아지면 날짜 라벨이 겹쳐서, 일(日)만 남기고 촘촘할 땐 하나 걸러 표시한다 */
-    const labelStep = recent.length > 8 ? 2 : 1;
-    const bars = recent.length > 1
-      ? '<div class="cost-sec">최근 ' + recent.length + '일 추이</div>' +
-        '<div class="cost-bars">' + recent.map(function(x, i){
-          const h = maxCost > 0 ? Math.round((Number(x.cost) / maxCost) * 100) : 0;
-          const isPeak = maxCost > 0 && Number(x.cost) === maxCost;
-          const isLast = i === recent.length - 1;
-          const showLabel = isLast || (recent.length - 1 - i) % labelStep === 0;
-          return '<div class="cost-bar-col">' +
-            '<div class="cost-bar-wrap"><div class="cost-bar' + (isPeak ? ' peak' : '') +
-              '" style="height:' + Math.max(h, 2) + '%;" title="' + escapeHtml(x.day) + ' · ' + fmtUsd4(x.cost) + '"></div></div>' +
-            '<div class="cost-bar-d">' + (showLabel ? escapeHtml(String(x.day).slice(8)) : '') + '</div>' +
-          '</div>';
-        }).join('') + '</div>' +
-        '<div class="cost-bar-cap">' + escapeHtml(String(recent[0].day)) + ' ~ ' +
-          escapeHtml(String(recent[recent.length - 1].day)) + ' · 막대에 올리면 그날 금액이 보입니다</div>'
-      : '';
-
-    /* 어떤 동작에서 나온 비용인지 — 정기 수집 / 즉시 조회 / 키워드 검색 / 소송 사건 조사 */
-    const purposes = Array.isArray(d.byPurpose) ? d.byPurpose : [];
-    const purposeSum = purposes.reduce(function(a, p){ return a + (Number(p.cost) || 0); }, 0);
-    const shareBar = purposes.length > 1 && purposeSum > 0
-      ? '<div class="cost-share">' + purposes.map(function(p, i){
-          const w = (Number(p.cost) || 0) / purposeSum * 100;
-          return '<i class="cost-p' + Math.min(i, 4) + '" style="width:' + w.toFixed(2) + '%;" title="' +
-            escapeHtml(p.purpose) + ' ' + w.toFixed(0) + '%"></i>';
-        }).join('') + '</div>'
-      : '';
-    const purposeTable = purposes.length
-      ? '<div class="cost-sec">동작별 비용</div>' + shareBar +
-        '<table class="cost-table"><tbody>' +
-        purposes.map(function(p, i){
-          const share = purposeSum > 0 ? Math.round((Number(p.cost) || 0) / purposeSum * 100) : 0;
-          return '<tr><td><span class="cost-dot cost-p' + Math.min(i, 4) + '"></span>' +
-              escapeHtml(p.purpose) +
-              '<div class="cost-log-d">' + p.calls + '회 · 전체의 ' + share + '%' +
-              (p.cost30 > 0 ? ' · 최근 30일 ' + fmtUsd4(p.cost30) : '') + '</div></td>' +
-            '<td class="r">' + fmtUsd4(p.cost) + '</td></tr>';
-        }).join('') + '</tbody></table>'
-      : '';
-
-    /* 최근 사용 내역 — 언제 어떤 동작이 얼마를 썼는지 그대로 */
-    const log = Array.isArray(d.recent) ? d.recent : [];
-    const shown = costLogAll ? log : log.slice(0, 6);
-    const logBlock = log.length
-      ? '<div class="cost-sec">최근 사용 내역</div><div class="cost-log">' +
-        shown.map(function(r){
-          return '<div class="cost-log-row"><div class="cost-log-main">' +
-            '<div class="cost-log-t">' + escapeHtml(r.purpose || '기타') + '</div>' +
-            '<div class="cost-log-d">' + escapeHtml(r.at || '') +
-              (r.detail ? ' · ' + escapeHtml(r.detail) : '') +
-              (r.searches ? ' · 웹 검색 ' + r.searches + '회' : '') + '</div>' +
-            '</div><div class="cost-log-c">' + fmtUsd4(r.cost) + '</div></div>';
-        }).join('') + '</div>' +
-        (log.length > 6
-          ? '<button class="cost-more" type="button" onclick="toggleCostLog()">' +
-              (costLogAll ? '접기' : '전체 ' + log.length + '건 보기') + '</button>'
-          : '')
-      : '';
-
-    box.innerHTML =
-      '<div class="cost-grid">' +
-        '<div class="cost-cell"><div class="cost-l">오늘</div><div class="cost-n' + (d.today > 0 ? ' hot' : '') + '">' + fmtUsd4(d.today) + '</div>' +
-          '<div class="cost-sub">' + (d.todayCalls || 0) + '회 호출</div></div>' +
-        '<div class="cost-cell"><div class="cost-l">일평균</div><div class="cost-n">' + fmtUsd4(d.avgPerDay) + '</div>' +
-          '<div class="cost-sub">운영 ' + (d.activeDays || 0) + '일 기준</div></div>' +
-        '<div class="cost-cell"><div class="cost-l">최근 7일</div><div class="cost-n">' + fmtUsd4(d.last7) + '</div></div>' +
-        '<div class="cost-cell"><div class="cost-l">최근 30일</div><div class="cost-n">' + fmtUsd4(d.last30) + '</div></div>' +
-        '<div class="cost-cell wide"><div class="cost-l">누적 합계 · ' + escapeHtml(d.firstDay || '') + ' ~ ' + escapeHtml(d.lastDay || '') + '</div>' +
-          '<div class="cost-n hot">' + fmtUsd4(d.total) + '</div>' +
-          '<div class="cost-krw">' + fmtKrw(d.total) + ' · 총 ' + (d.calls || 0) + '회 호출</div></div>' +
-      '</div>' +
-      bars +
-      purposeTable +
-      logBlock +
-      '<div class="cost-note">토큰 ' + Number(d.inputTokens || 0).toLocaleString() + ' 입력 / ' +
-        Number(d.outputTokens || 0).toLocaleString() + ' 출력' +
-        (d.webSearches ? ' · 웹 검색 ' + d.webSearches + '회' : '') + '<br>' +
-        '호출마다 응답의 usage를 그대로 읽어 공개 단가로 계산한 값입니다. 캐시 생성은 입력 단가의 1.25배, 캐시 읽기는 0.1배, 웹 검색은 1,000회당 $10로 반영했습니다. ' +
-        '정기 수집은 하루치 기사 전체를 한 번의 호출로 평가하므로, 그룹별(예: 실리코시스) 비용은 따로 갈리지 않고 상세의 그룹별 건수로만 확인할 수 있습니다.<br>' +
-        '할인 계약이 있으면 실제 청구액은 이보다 낮을 수 있고, 원화는 ' + USD_KRW.toLocaleString() + '원 기준 참고치입니다.</div>';
-  }
-
-  let costLogAll = false;
-  let costData = null;
-  function toggleCostLog(){
-    costLogAll = !costLogAll;
-    if (costData) renderCost(costData);
-  }
-
-  /* 비용 조회는 관리자 전용이다. 비밀번호 확인은 화면이 아니라 웹훅에서 하므로,
-     이 페이지 소스를 읽어도 비밀번호 없이는 집계값을 받아올 수 없다.
-     비밀번호는 이 탭이 열려 있는 동안만 sessionStorage에 남는다(창을 닫으면 사라짐). */
+  /* 관리자 비밀번호 — 기사 삭제가 쓴다. 확인은 화면이 아니라 웹훅에서 하므로,
+     이 페이지 소스를 읽어도 비밀번호 없이는 아무것도 지울 수 없다.
+     비밀번호는 이 탭이 열려 있는 동안만 sessionStorage 에 남는다(창을 닫으면 사라짐). */
   const ADMIN_PW_KEY = 'lxmi.adminPw';
 
   function savedAdminPw(){
@@ -2226,94 +2020,6 @@
   }
   function clearAdminPw(){
     try { sessionStorage.removeItem(ADMIN_PW_KEY); } catch (e) {}
-  }
-
-  /* resolve({state:'ok'|'auth'|'error'}) — 던지지 않고 상태로만 알린다 */
-  function loadCost(pw){
-    return fetch(COST_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS', pw: pw })
-    })
-      .then(function(res){
-        return res.json()
-          .catch(function(){ return null; })
-          .then(function(d){ return { status: res.status, data: d }; });
-      })
-      .then(function(r){
-        if (r.status === 401 || (r.data && r.data.error === 'auth')) return { state: 'auth' };
-        if (!r.data || r.data.ok !== true) return { state: 'error' };
-        costLoaded = true;
-        costData = r.data;
-        renderCost(r.data);
-        return { state: 'ok' };
-      })
-      .catch(function(){ return { state: 'error' }; });
-  }
-
-  function showAdminLock(msg){
-    document.getElementById('adminLock').style.display = 'block';
-    document.getElementById('adminContent').style.display = 'none';
-    const err = document.getElementById('adminErr');
-    if (msg){ err.textContent = msg; err.classList.add('show'); }
-    else { err.textContent = ''; err.classList.remove('show'); }
-  }
-
-  function showAdminContent(){
-    document.getElementById('adminLock').style.display = 'none';
-    document.getElementById('adminContent').style.display = 'block';
-  }
-
-  function openAdminPanel(){
-    document.getElementById('adminOverlay').classList.add('show');
-    const pw = savedAdminPw();
-    if (!pw){
-      showAdminLock('');
-      document.getElementById('adminPw').value = '';
-      setTimeout(function(){ document.getElementById('adminPw').focus(); }, 50);
-      return;
-    }
-    /* 이번 세션에서 이미 확인된 비밀번호가 있으면 바로 연다 */
-    showAdminContent();
-    document.getElementById('costBody').innerHTML = '<div class="empty-note">불러오는 중…</div>';
-    loadCost(pw).then(function(r){
-      if (r.state === 'auth'){
-        clearAdminPw();
-        showAdminLock('저장된 비밀번호가 더 이상 맞지 않습니다. 다시 입력해 주세요.');
-        document.getElementById('adminPw').value = '';
-      } else if (r.state === 'error'){
-        document.getElementById('costBody').innerHTML =
-          '<div class="empty-note">비용 기록을 불러오지 못했습니다.<br>잠시 후 다시 시도해 주세요.</div>';
-      }
-    });
-  }
-
-  function closeAdminPanel(){
-    document.getElementById('adminOverlay').classList.remove('show');
-  }
-
-  function unlockAdmin(){
-    const input = document.getElementById('adminPw');
-    const btn = document.getElementById('adminUnlockBtn');
-    const pw = input.value.trim();
-    if (!pw){ showAdminLock('비밀번호를 입력해 주세요.'); input.focus(); return; }
-
-    btn.disabled = true;
-    btn.textContent = '확인 중…';
-    loadCost(pw).then(function(r){
-      btn.disabled = false;
-      btn.textContent = '확인';
-      if (r.state === 'ok'){
-        saveAdminPw(pw);
-        input.value = '';
-        showAdminContent();
-      } else if (r.state === 'auth'){
-        showAdminLock('비밀번호가 올바르지 않습니다.');
-        input.select();
-      } else {
-        showAdminLock('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
-      }
-    });
   }
 
   /* ---------- 소송 사건 원장 · 책임 배분 ---------- */
@@ -3003,7 +2709,7 @@
 
     let pw = savedAdminPw();
     if (!pw){
-      pw = prompt('삭제는 관리자만 할 수 있습니다.\n비용관리와 같은 비밀번호를 입력해주세요.');
+      pw = prompt('삭제는 관리자만 할 수 있습니다.\n관리자 비밀번호를 입력해주세요.');
       if (!pw) return;
     }
 
@@ -3119,19 +2825,10 @@
           box.className = 'status show err';
           box.textContent = '✕ ' + (data.error || '조회 중 오류가 발생했습니다.');
           document.getElementById('resultsSection').style.display = 'none';
-          document.getElementById('excelLink').style.display = 'none';
           return;
         }
 
         localStorage.setItem('lxgroup_mi_code', code);
-
-        const excelLink = document.getElementById('excelLink');
-        if (data.sheetDownloadUrl){
-          excelLink.href = data.sheetDownloadUrl;
-          excelLink.style.display = 'inline';
-        } else {
-          excelLink.style.display = 'none';
-        }
 
         allArticles = data.articles;
         document.getElementById('resultsSection').style.display = 'block';
@@ -3693,7 +3390,6 @@
 
     document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
 
-    /* 관리자 전용 비용 화면 */
     document.getElementById('knSubmitBtn').addEventListener('click', submitKnowledge);
     document.getElementById('knInput').addEventListener('input', function(){
       document.getElementById('knCount').textContent = this.value.length.toLocaleString() + '자';
@@ -3707,23 +3403,6 @@
       input.scrollTop = 0;
     });
 
-    document.getElementById('costLink').addEventListener('click', function(e){
-      e.preventDefault();
-      openAdminPanel();
-    });
-    document.getElementById('adminCloseBtn').addEventListener('click', closeAdminPanel);
-    document.getElementById('adminUnlockBtn').addEventListener('click', unlockAdmin);
-    document.getElementById('adminPw').addEventListener('keydown', function(e){
-      if (e.key === 'Enter'){ e.preventDefault(); unlockAdmin(); }
-    });
-    document.getElementById('adminOverlay').addEventListener('click', function(e){
-      if (e.target === this) closeAdminPanel();
-    });
-    document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape' && document.getElementById('adminOverlay').classList.contains('show')){
-        closeAdminPanel();
-      }
-    });
     ['srcGoogle','srcNaver','srcGoogleEn'].forEach(function(id){
       const cb = document.getElementById(id);
       const wrap = cb.closest('.source-check');
