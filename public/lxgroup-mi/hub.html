@@ -396,9 +396,10 @@
   .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
   .ind-bhead span{font-size:11px; color:var(--muted);}
 
-  /* 기간 고르기 — 오른쪽 끝에 붙인다 */
+  /* 기간 고르기 — 오른쪽 끝에 붙인다. 달러 지표는 앞에 돈 고르개가 하나 더 붙는다. */
   .ind-pick{margin-left:auto; display:flex; gap:0; border:1px solid var(--line);
             border-radius:8px; overflow:hidden; align-self:center;}
+  .ind-pick + .ind-pick{margin-left:6px;}
   .ind-pick button{border:none; background:var(--card); color:var(--muted);
                    padding:4px 10px; font-size:11.5px; font-weight:700;
                    cursor:pointer; font-family:inherit; line-height:1.6;}
@@ -470,6 +471,7 @@
     .ind-asof, .ind-tabs{margin-left:0;}
     .ind-block{padding:12px 13px 10px;}
     .ind-pick{margin-left:0; width:100%; justify-content:stretch;}
+    .ind-pick + .ind-pick{margin-left:0; margin-top:5px;}
     .ind-pick button{flex:1;}
     /* 좁은 화면에선 값을 이름 아래로 내린다. 옆에 붙이면 이름이 두세
        줄로 접혀서 무슨 지표인지 읽기가 더 어려워진다. */
@@ -1162,12 +1164,74 @@
      묶는 단위가 기간마다 다르다. 일별은 날짜 그대로지만, 월별은 지표마다
      기준일이 달라(환율 8-31, 기준금리 8-01) 연월로 묶어야 같은 줄에 선다. */
   const IND_RANGES = [
-    { k: '일', 이름: '일별',   축: function(d){ return d.slice(0, 10); }, 눈: function(d){ return d.slice(5); } },
-    { k: '월', 이름: '월별',   축: function(d){ return d.slice(0, 7); },  눈: function(d){ return d.slice(0, 7); } },
-    { k: '연', 이름: '연도별', 축: function(d){ return d.slice(0, 4); },  눈: function(d){ return d.slice(0, 4); } }
+    { k: '일', 이름: '일별',   환산: '그날',  축: function(d){ return d.slice(0, 10); }, 눈: function(d){ return d.slice(5); } },
+    { k: '월', 이름: '월별',   환산: '그 달', 축: function(d){ return d.slice(0, 7); },  눈: function(d){ return d.slice(0, 7); } },
+    { k: '연', 이름: '연도별', 환산: '그 해', 축: function(d){ return d.slice(0, 4); },  눈: function(d){ return d.slice(0, 4); } }
   ];
   const IND_RANGE_기본 = '월';
   let indRange = {};   // 그래프마다 지금 고른 기간
+  let indCur = {};     // 그래프마다 지금 고른 돈($ 또는 원)
+
+  /* ── 달러를 원화로 ─────────────────────────────────────────
+     유연탄·니켈처럼 달러로 매기는 원자재는 달러값만 봐서는 실제로 얼마를
+     더 내는지 알 수 없다. 달러로 내렸는데 환율이 더 올라 원화로는 오른
+     달이 실제로 있다.
+
+     환율은 화면이 따로 들고 있지 않고 **지표 목록에 이미 들어 있는
+     원/달러 환율을 그대로 쓴다.** 화면에 환율을 하나 더 두면 그래프에
+     그려지는 환율과 계산에 쓰는 환율이 언젠가 갈라진다. */
+  function indFxMap(R){
+    const fx = ((indData && indData.지표) || []).filter(function(x){ return x.id === 'FX_USDKRW'; })[0];
+    const r = fx && fx.범위 && fx.범위[R.k];
+    if (!r || !(r.흐름 || []).length) return null;
+    /* 기준일이 서로 다르다 — 환율 월값은 8-31, 원자재 월값은 8-01이다.
+       그래서 날짜가 아니라 그 기간의 칸(연월·연도)으로 짝을 맞춘다. */
+    const m = {};
+    r.흐름.forEach(function(p){ m[R.축(p.d)] = p.v; });
+    return m;
+  }
+
+  function indToKrw(x, R, 환){
+    const r = x.범위 && x.범위[R.k];
+    if (!r) return x;
+
+    const 흐름 = [];
+    (r.흐름 || []).forEach(function(p){
+      const e = 환[R.축(p.d)];
+      if (e === undefined || e === null) return;   // 그 기간 환율이 없으면 그 점은 못 그린다
+      흐름.push({ d: p.d, v: Math.round(p.v * e) });
+    });
+
+    /* 최신값과 이전값은 각자 제 기간의 환율로 바꾼다. 둘 다 오늘 환율로
+       바꾸면 환율이 움직인 몫이 통째로 사라져서, 원화로 봐도 달러와
+       똑같은 변화율이 나온다. */
+    const 최신환 = 환[R.축(String(r.최신일 || ''))];
+    const 이전환 = 환[R.축(String(r.이전일 || ''))];
+    const 최신값 = (r.최신값 != null && 최신환 != null) ? Math.round(r.최신값 * 최신환) : null;
+    const 이전값 = (r.이전값 != null && 이전환 != null) ? Math.round(r.이전값 * 이전환) : null;
+
+    let 변화 = null, 변화율 = null, 좋아짐 = r.좋아짐;
+    if (최신값 !== null && 이전값 !== null){
+      변화 = 최신값 - 이전값;
+      변화율 = 이전값 ? Math.round((변화 / 이전값) * 1000) / 10 : null;
+      /* 방향이 뒤집힐 수 있다. 그대로 두면 화살표는 위인데 글자는
+         '좋아짐'인 줄이 나온다. */
+      if (r.좋아짐 !== null && r.좋아짐 !== undefined && r.변화 != null &&
+          변화 !== 0 && r.변화 !== 0 && (변화 > 0) !== (r.변화 > 0)) 좋아짐 = !r.좋아짐;
+    }
+
+    const 새범위 = {};
+    Object.keys(x.범위 || {}).forEach(function(k){ 새범위[k] = x.범위[k]; });
+    새범위[R.k] = { 흐름: 흐름, 라벨: r.라벨, 최신값: 최신값, 최신일: r.최신일,
+                    이전값: 이전값, 이전일: r.이전일, 변화: 변화, 변화율: 변화율,
+                    좋아짐: 좋아짐, 개수: 흐름.length };
+
+    const 새것 = {};
+    Object.keys(x).forEach(function(k){ 새것[k] = x[k]; });
+    새것.범위 = 새범위;
+    새것.단위 = String(x.단위 || '').replace(/^\$/, '원');   // $/t → 원/t
+    return 새것;
+  }
 
   function indBuild(items, R){
     const 쓸것 = items.filter(function(x){ return x.범위 && x.범위[R.k]; });
@@ -1292,6 +1356,27 @@
     if (!가능.some(function(R){ return R.k === 지금; })) 지금 = 가능[가능.length - 1].k;
     const R = IND_RANGES.filter(function(x){ return x.k === 지금; })[0];
 
+    /* 달러로 매기는 원자재는 원화로도 볼 수 있다. 한 그래프 안이 전부
+       달러일 때만 붙인다 — 섞여 있으면 반만 바꾼 그래프가 된다.
+       'M$'(미국 건설지출)처럼 달러로 읽는 것이 자연스러운 지표는
+       단위가 $로 시작하지 않아 여기 걸리지 않는다. */
+    const 달러 = items.length > 0 && items.every(function(x){ return /^\$/.test(String(x.단위 || '')); });
+    const 환 = 달러 ? indFxMap(R) : null;
+    const 원화 = !!(달러 && 환 && indCur[열쇠] === '원');
+    if (원화){
+      items = items.map(function(x){ return indToKrw(x, R, 환); });
+      그룹명 = 그룹명.replace(' · $', ' · 원');
+    }
+
+    const 돈고르개 = 달러
+      ? '<div class="ind-pick">' +
+          '<button type="button" data-cur="$"' + (원화 ? '' : ' class="on"') + '>달러</button>' +
+          '<button type="button" data-cur="원"' + (원화 ? ' class="on"' : '') +
+            (환 ? '' : ' disabled title="이 기간의 원/달러 환율이 없어 원화로 바꿀 수 없습니다"') +
+            '>원화</button>' +
+        '</div>'
+      : '';
+
     const 고르개 = '<div class="ind-pick">' + IND_RANGES.map(function(x){
       const 됨 = 가능.some(function(y){ return y.k === x.k; });
       return '<button type="button" data-range="' + x.k + '"' +
@@ -1334,7 +1419,10 @@
         '<div class="ind-xax"><span>' + escapeHtml(R.눈(g.창[0])) + '</span>' +
           '<span>' + escapeHtml(R.눈(g.창[g.창.length - 1])) + '</span></div>' +
         (g.여럿
-          ? '<div class="ind-note">단위가 서로 달라 <b>' + escapeHtml(R.눈(g.기준칸 || g.창[0])) +
+          /* 한 그래프 안은 이미 같은 단위다(단위가 다르면 그래프가 갈라진다).
+             갈리는 것은 값의 크기다 — 유연탄 136과 니켈 18,043을 한 축에
+             그대로 얹으면 유연탄이 바닥에 붙은 직선이 된다. */
+          ? '<div class="ind-note">값의 크기가 서로 달라 <b>' + escapeHtml(R.눈(g.기준칸 || g.창[0])) +
             ' = 100</b>으로 맞춰 움직인 폭만 견줍니다. 실제 값은 바로 위에 있습니다.</div>'
           : '');
     }
@@ -1347,8 +1435,9 @@
     return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(그룹명) + '</b>' +
-        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) + '</span>' +
-        고르개 +
+        '<span>' + escapeHtml(최신 || '') + ' 기준 · ' + escapeHtml(출처) +
+          (원화 ? ' · ' + R.환산 + ' 환율로 환산' : '') + '</span>' +
+        돈고르개 + 고르개 +
       '</div>' +
       목록 + 그래프 +
     '</div>';
@@ -1457,11 +1546,12 @@
      연도별로 두고 싶은 것이 자연스럽다. */
   ['indCommon', 'indAff'].forEach(function(id){
     document.getElementById(id).addEventListener('click', function(e){
-      const b = e.target.closest('button[data-range]');
+      const b = e.target.closest('button[data-range], button[data-cur]');
       if (!b || b.disabled) return;
       const 통 = b.closest('.ind-block');
       if (!통) return;
-      indRange[통.dataset.blk] = b.dataset.range;
+      if (b.dataset.range) indRange[통.dataset.blk] = b.dataset.range;
+      else indCur[통.dataset.blk] = b.dataset.cur;
       indDraw();
     });
   });
