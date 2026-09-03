@@ -424,9 +424,9 @@ def 비교총평(정의: 기간정의, 줄들, 지금키: str = "", 기준=None)
                 f"{ㅅ.metrics.total_return_pct:+.2f}%입니다."
             )
 
-    얕은것 = min(차례, key=lambda ㄱ: -ㄱ[1].metrics.max_drawdown_pct)
+    낙폭작은것 = min(차례, key=lambda ㄱ: -ㄱ[1].metrics.max_drawdown_pct)
     말.append(
-        f"최대낙폭이 가장 작은 전략은 {얕은것[1].metrics.max_drawdown_pct:.2f}%입니다."
+        f"최대낙폭이 가장 작은 전략은 {낙폭작은것[1].metrics.max_drawdown_pct:.2f}%입니다."
     )
     말.append(
         "이 순위의 1위를 그대로 선택하는 것은 권장하지 않습니다. 특정 기간의 "
