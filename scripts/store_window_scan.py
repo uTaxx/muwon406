@@ -42,6 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from muwon.analysis import window_judgment as ㅈ
 from muwon.analysis import window_perf as ㅇ
 from muwon.analysis import window_store as ㅅ
+from muwon.analysis.window_report import 요약찍기
 from muwon.config import bootstrap_settings
 from muwon.db.session import make_session_factory
 from muwon.settings.service import build_settings_service
@@ -54,6 +55,8 @@ def 인자읽기() -> argparse.Namespace:
     ㄱ.add_argument("--파일", default="window-scan.json")
     ㄱ.add_argument("--미리보기", action="store_true",
                   help="DB를 고치지 않고 무엇이 들어갈지만 출력한다")
+    ㄱ.add_argument("--표찍기", action="store_true",
+                  help="쌓기 전에 요약 표를 로그에 찍는다")
     ㄱ.add_argument("--sheet-id", default=os.environ.get("MUWON_SHEET_ID", ""))
     ㄱ.add_argument("--folder-id", default=os.environ.get("GDRIVE_FOLDER_ID", ""))
     return ㄱ.parse_args()
@@ -149,6 +152,11 @@ def main() -> int:
     print(f"■ {경로}: {len(잰것들)}줄")
     print(f"■ 잰날 {잰날} · 매매대상 {대상열쇠} · 상한 {상한들} · 슬리피지 {슬리피지들}")
     print(f"■ 판단 기준 {' → '.join(기준.열쇠들)}")
+
+    # 재는 워크플로가 요약을 찍기 전 판이면 결과를 볼 길이 여기뿐이다.
+    # 아티팩트를 내려받는 주소가 막힌 자리에서도 이 표는 로그로 남는다.
+    if 인자.표찍기:
+        요약찍기(내용.get("줄") or [], 상한들, 슬리피지들)
 
     if 인자.미리보기:
         print("■ 미리보기입니다. DB를 고치지 않았습니다.")

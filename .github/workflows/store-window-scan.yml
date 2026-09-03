@@ -87,7 +87,7 @@ jobs:
           if [ "$MUWON_DRY_RUN" = "true" ]; then
             ARGS="--미리보기"
           fi
-          python scripts/store_window_scan.py --파일 window-scan.json $ARGS
+          python scripts/store_window_scan.py --파일 window-scan.json --표찍기 $ARGS
 
       # 쌓기가 실패했으면 올리지 않는다. 반쯤 들어간 DB를 올리면 다음
       # 실행이 그 상태를 정상으로 읽는다.
