@@ -590,6 +590,12 @@
      뜻이 있는 것처럼 보인다. 그래서 위아래 두 칸으로 나누고 x축만 함께 쓴다.
      두 칸이 되었으니 칸 하나는 좀 낮춘다 — 안 그러면 한 블록이 화면을 넘긴다. */
   .comp-pair .ind-chart{height:150px;}
+  /* 모양 고르개는 그래프를 펼쳤을 때만, 그래프 바로 위 오른쪽에 붙는다.
+     머리줄에 고르개를 셋씩 늘어놓으면 정작 부문 이름이 밀린다. */
+  .comp-shape{display:flex; justify-content:flex-end; margin-top:12px;}
+  .comp-shape .ind-pick{margin-left:0;}
+  /* 막대는 선보다 조금 높게 — 회사가 여럿이면 한 칸에 막대가 서넛씩 선다. */
+  .ind-chart.comp-bars{height:220px;}
   .comp-cap{font-size:11px; font-weight:700; color:var(--text); margin-top:12px;}
   .comp-cap em{font-style:normal; font-weight:600; color:var(--muted);}
   /* 적자가 섞이면 지수로 못 바꾼다. 대신 0 선을 그어 어디부터가 손실인지 보인다. */
@@ -626,6 +632,9 @@
     .comp-sub{flex:1 1 100%; margin-top:2px; white-space:normal;}
     .ind-chart{height:176px;}
     .comp-pair .ind-chart{height:132px;}
+    .ind-chart.comp-bars{height:190px;}
+    .comp-shape .ind-pick{width:auto;}
+    .comp-shape .ind-pick button{padding:4px 14px;}
   }
 </style>
 </head>
@@ -2143,8 +2152,14 @@
 
       const 폭 = 판.clientWidth;
       const 마지막 = g.창.length - 1;
-      const j = 마지막 > 0 ? Math.max(0, Math.min(마지막, Math.round((x / 폭) * 마지막))) : 0;
-      const 자리 = 마지막 > 0 ? (j / 마지막) * 폭 : 폭 / 2;
+      /* 막대는 칸의 '가운데'에 서고 선은 칸의 '끝점'에 찍힌다. 같은 셈으로
+         집으면 막대에서 안내선이 반 칸씩 어긋나 옆 기간 값을 보여준다. */
+      const 띠 = 판.dataset.bars === '1';
+      const j = 띠
+        ? Math.max(0, Math.min(마지막, Math.floor((x / 폭) * g.창.length)))
+        : (마지막 > 0 ? Math.max(0, Math.min(마지막, Math.round((x / 폭) * 마지막))) : 0);
+      const 자리 = 띠 ? ((j + 0.5) / g.창.length) * 폭
+                      : (마지막 > 0 ? (j / 마지막) * 폭 : 폭 / 2);
 
       const 선 = 판.querySelector('.ind-guide');
       선.style.left = 자리.toFixed(1) + 'px';
@@ -2916,20 +2931,33 @@
      같은 화면을 두 벌로 만들면 한쪽만 고쳐지는 날이 반드시 온다.
 
      ── 매출과 영업이익을 같이 보여주는 법 ──────────────────────
-     둘을 한 그래프에 겹치지 않는다. 매출 2조 5천억과 영업이익 500억은 자릿수가
-     쉰 배 차이라 한 축에 얹으면 영업이익이 바닥에 붙은 직선이 되고, 축을 좌우
-     둘로 나누면 두 선이 만나는 자리가 아무 뜻도 없는데 뜻이 있는 것처럼 보인다.
+     둘을 **꺾은선 한 판에** 겹치지 않는다. 매출 2조 5천억과 영업이익 500억은
+     자릿수가 쉰 배 차이라 한 축에 얹으면 영업이익이 바닥에 붙은 직선이 되고,
+     축을 좌우 둘로 나누면 두 선이 만나는 자리가 아무 뜻도 없는데 뜻이 있는 것처럼
+     보인다.
 
-     그래서 **숫자 요약은 한 줄에 같이**(매출액 크게, 그 아래 영업이익·이익률),
-     **그래프는 위아래 두 칸**으로 나누고 x축(기간)만 함께 쓴다. 같은 자리가
-     같은 기간이라 위아래를 눈으로 훑으면 '매출은 늘었는데 이익은 줄었다'가
-     바로 보인다. 표와 엑셀은 두 지표를 나란한 열로 묶어 한 장에 담는다. */
+     그래서 그래프 모양을 두 가지로 둔다.
+
+     **막대**(기본) — 한 막대가 곧 한 회사의 한 기간이다. 옅은 큰 막대가 매출액,
+     그 안에 진하게 겹친 막대가 영업이익이다. 나란히 세우지 않고 안에 겹치는
+     이유는, 이익이 매출의 2~8%라 옆에 세우면 막대가 보이지 않을 만큼 납작해지기
+     때문이다. 겹쳐도 뜻이 어긋나지 않는다 — 영업이익은 매출에서 나온 몫이라
+     '이 매출 중 이만큼이 남았다'로 읽힌다. 회사는 기간마다 옆으로 붙어 서므로
+     덩치와 남긴 몫을 한 판에서 견준다.
+
+     **선** — 오래 이어진 흐름을 볼 때. 이때는 위아래 두 칸(매출/영업이익)으로
+     나누고 x축만 함께 쓴다. 같은 자리가 같은 기간이라 세로로 훑으면 '매출은
+     늘었는데 이익은 줄었다'가 바로 보인다.
+
+     숫자 요약은 모양과 상관없이 한 줄에 같이 적는다(매출액 크게, 그 아래
+     영업이익·이익률). 표와 엑셀은 두 지표를 나란한 열로 묶어 한 장에 담는다. */
 
   let compData = null;
   let compLoading = false;
   let compTab = '';            // 지금 고른 계열사
   let compView = {};           // 블록마다 고른 보기(함께·매출액·영업이익·이익률)
   let compRange = {};          // 블록마다 고른 기간(연도별·분기별)
+  let compShape = {};          // 블록마다 고른 그래프 모양(막대·선)
   let compOpen = {};           // 블록마다 그래프가 펼쳐졌는지
   let compTable = {};          // 블록마다 표가 펼쳐졌는지
   let compGraph = {};          // 커서·표·엑셀이 값을 꺼내 쓰는 그래프
@@ -3009,7 +3037,7 @@
 
   /* indPlot·indTableHtml 이 아는 모양 그대로 만든다.
      선들[].지표 는 {이름, 단위} 만 있으면 되고, R 은 축 글자와 엑셀 이름에 쓰인다. */
-  function compBuild(골, 지표, R, 창){
+  function compBuild(골, 지표, R, 창, 민낯){
     const 쓸것 = [];
     골.forEach(function (c){
       const m = {};
@@ -3029,7 +3057,10 @@
        값에 0 이하가 섞이면 지수로 안 바꾼다. 적자가 난 해를 100 기준으로 나누면
        -180 같은 수가 나오는데, 이건 '적자가 깊어졌다'가 아니라 그냥 읽을 수
        없는 숫자다. 그럴 때는 실제 값 그대로 두고 0 선을 그어 준다. */
-    let 여럿 = 지표 !== '영업이익률' && 쓸것.length > 1;
+    /* 막대는 0에서 올라오는 그림이라 지수로 바꾸면 안 된다. '2021 = 100' 짜리
+       막대는 높이가 아무 뜻도 없고, 매출 막대 안에 이익 막대를 겹칠 수도 없다.
+       그래서 막대용으로 부를 때는 민낯(실제 값)만 만든다. */
+    let 여럿 = !민낯 && 지표 !== '영업이익률' && 쓸것.length > 1;
     if (여럿 && 쓸것.some(function (c){
       return 창.some(function (k){ return c.m[k] !== undefined && c.m[k] <= 0; });
     })) 여럿 = false;
@@ -3183,6 +3214,98 @@
   }
   function R눈(g, 칸){ return g.R && g.R.눈 ? g.R.눈(칸) : String(칸 || ''); }
 
+  function 점맵(선){
+    const m = {};
+    선.pts.forEach(function (p){ m[p.j] = p.v; });
+    return m;
+  }
+
+  /* ── 막대 ──────────────────────────────────────────────────
+     한 막대가 한 회사의 한 기간이다. 옅은 큰 막대가 매출액, 그 안에 진하게 겹친
+     막대가 영업이익. 이익을 옆에 나란히 세우지 않는 이유는 그것이 매출의
+     2~8%라 옆에 두면 보이지 않을 만큼 납작해지기 때문이다. 안에 겹쳐도 뜻이
+     어긋나지 않는다 — 영업이익은 매출에서 남은 몫이다.
+
+     막대는 반드시 0에서 올라온다. 밑을 잘라 차이를 부풀리면 2%와 8%가 두 배쯤
+     차이 나는 것처럼 보인다. 적자는 0선 아래로 내려간다. */
+  function compBars(민, 그래프열쇠){
+    const 몸 = 민[0] && 민[0].g;
+    if (!몸) return '';
+    const 속 = (민[1] && 민[1].g) || null;
+    const 창 = 몸.창, N = 창.length;
+
+    /* 회사 차례는 몸통(매출) 기준이고, 속(이익)은 이름으로 짝짓는다 —
+       매출은 있는데 이익이 없는 회사가 있어 차례로 짝지으면 어긋난다. */
+    const 회사들 = 몸.선들.map(function (s){
+      return { 이름: s.지표.이름, 색: s.색, 값: 점맵(s) };
+    });
+    const 속맵 = {};
+    if (속) 속.선들.forEach(function (s){ 속맵[s.지표.이름] = 점맵(s); });
+
+    let hi = 0, lo = 0;
+    회사들.forEach(function (c){
+      const 안 = 속맵[c.이름] || {};
+      for (let j = 0; j < N; j++){
+        [c.값[j], 안[j]].forEach(function (v){
+          if (v === undefined) return;
+          if (v > hi) hi = v;
+          if (v < lo) lo = v;
+        });
+      }
+    });
+    if (hi === lo) hi = lo + 1;
+    hi += (hi - lo) * 0.06;
+
+    const W = 600, H = 200, PAD = 8;
+    const Y = function (v){ return H - PAD - ((v - lo) / (hi - lo)) * (H - PAD * 2); };
+    const C = 회사들.length || 1;
+    const 칸 = W / N, 묶 = 칸 * 0.76, 막 = 묶 / C;
+    const 바닥 = Y(0);
+
+    const 네모 = function (x, w, v, 색, 진하기){
+      const y = Y(Math.max(v, 0));
+      const h = Math.max(Math.abs(바닥 - Y(v)), 0.8);
+      return '<rect x="' + x.toFixed(2) + '" y="' + y.toFixed(2) + '" width="' + w.toFixed(2) +
+             '" height="' + h.toFixed(2) + '" fill="' + 색 + '" fill-opacity="' + 진하기 + '"/>';
+    };
+
+    let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
+    for (let j = 0; j < N; j++){
+      회사들.forEach(function (c, i){
+        const x = 칸 * j + (칸 - 묶) / 2 + i * 막;
+        const v = c.값[j];
+        if (v !== undefined) out += 네모(x + 막 * 0.06, 막 * 0.88, v, c.색, 속 ? 0.28 : 0.85);
+        const w = (속맵[c.이름] || {})[j];
+        if (w !== undefined) out += 네모(x + 막 * 0.25, 막 * 0.50, w, c.색, 0.95);
+      });
+    }
+    if (lo < 0){
+      out += '<line x1="0" y1="' + 바닥.toFixed(1) + '" x2="' + W + '" y2="' + 바닥.toFixed(1) +
+             '" stroke="#8C7B6B" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+    }
+    out += '</svg>';
+
+    const 눈금 = function (v){ return indNum(v) + (몸.단위 || ''); };
+    return '<div class="ind-chart comp-bars" data-bars="1" data-g="' + escapeHtml(그래프열쇠) + '">' + out +
+        '<span class="ind-y hi">' + escapeHtml(눈금(hi)) + '</span>' +
+        '<span class="ind-y lo">' + escapeHtml(눈금(lo)) + '</span>' +
+        (lo < 0 ? '<span class="ind-y base" style="top:' +
+          (((hi - 0) / (hi - lo)) * 100).toFixed(1) + '%;">0</span>' : '') +
+        '<span class="ind-guide"></span><div class="ind-tip"></div>' +
+      '</div>';
+  }
+
+  /* 막대는 칸의 '가운데'에 선다. 선 그래프는 칸의 '끝점'에 찍히므로 축 글자
+     자리가 다르다. 같은 함수로 그리면 눈금이 막대에서 반 칸씩 어긋난다. */
+  function compAxisBars(g){
+    const N = g.창.length;
+    const 뽑기 = N <= ((window.innerWidth || 1024) < 560 ? 5 : 8) ? 창수열(N) : indTicks(N);
+    return '<div class="ind-xax">' + 뽑기.map(function (j){
+      const 자리 = ((j + 0.5) / N) * 100;
+      return '<span style="left:' + 자리.toFixed(2) + '%;">' + escapeHtml(R눈(g, g.창[j])) + '</span>';
+    }).join('') + '</div>';
+  }
+
   function compAxis(g){
     const 마지막 = g.창.length - 1;
     return '<div class="ind-xax">' + indTicks(g.창.length).map(function (j){
@@ -3265,23 +3388,52 @@
       '</div>';
     }).join('');
 
-    /* 매출과 영업이익은 위아래 두 칸으로 나누고 x축만 함께 쓴다. 축은 마지막
-       칸 아래에 한 번만 그린다 — 같은 눈금을 두 번 적으면 서로 다른 축처럼
-       보인다. */
+    /* 막대가 기본이다 — 매출과 이익, 그리고 회사끼리를 한 판에서 견주는 데는
+       막대가 낫다. 선은 오래 이어진 흐름을 볼 때 고른다. 지표를 하나만 볼
+       때는 흐름이 곧 볼거리이므로 선을 기본으로 둔다. */
+    const 모양 = compShape[열쇠] || (보기 === '함께' ? '막대' : '선');
+
     let 그래프 = '';
     if (펼침){
       const 있는 = 짝들.filter(function (p){ return p.g; });
-      if (있는.length){
-        그래프 = '<div class="comp-pair">' +
+      const 모양고르개 = '<div class="comp-shape"><div class="ind-pick">' +
+        ['막대', '선'].map(function (s){
+          return '<button type="button" data-shape="' + s + '"' +
+                 (모양 === s ? ' class="on"' : '') + '>' + s + '</button>';
+        }).join('') + '</div></div>';
+
+      if (!있는.length){
+        그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다. ' +
+                 '기간을 바꾸거나 수집이 더 쌓이면 그려집니다.</div>';
+      } else if (모양 === '막대'){
+        /* 막대는 실제 값이어야 한다(지수 막대는 높이가 아무 뜻도 없다).
+           그래서 지표들을 민낯으로 한 번 더 만든다. */
+        const 민 = 지표들.map(function (k){
+          return { 꼬리: k, g: compBuild(골, k, R, 창, true) };
+        }).filter(function (p){ return p.g; });
+        그래프 = 모양고르개 +
+          (민.length
+            ? compBars(민, 열쇠) + compAxisBars(민[0].g) +
+              '<div class="ind-note">' +
+                (민.length > 1
+                  ? '옅은 막대가 <b>매출액</b>, 그 안에 진하게 겹친 막대가 <b>영업이익</b>입니다. ' +
+                    '영업이익은 매출에서 남은 몫이라 안에 겹쳐 그립니다 — 옆에 나란히 세우면 ' +
+                    '매출의 2~8%밖에 안 되어 보이지 않습니다. '
+                  : '') +
+                '막대는 <b>0에서</b> 올라옵니다. 밑을 잘라 그리면 작은 차이가 큰 차이처럼 보입니다.' +
+              '</div>'
+            : '<div class="ind-note">이 기간에는 막대로 그릴 값이 없습니다.</div>');
+      } else {
+        /* 선일 때는 매출과 영업이익을 위아래 두 칸으로 나누고 x축만 함께 쓴다.
+           축은 마지막 칸 아래에 한 번만 그린다 — 같은 눈금을 두 번 적으면
+           서로 다른 축처럼 보인다. */
+        그래프 = 모양고르개 + '<div class="comp-pair">' +
           있는.map(function (p){
             return compChart(p.g, p.열쇠, 있는.length > 1 ? p.꼬리 : '');
           }).join('') +
           compAxis(있는[있는.length - 1].g) +
           compNote(있는) +
         '</div>';
-      } else {
-        그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다. ' +
-                 '기간을 바꾸거나 수집이 더 쌓이면 그려집니다.</div>';
       }
     }
 
@@ -3420,7 +3572,7 @@
   });
 
   document.getElementById('compBody').addEventListener('click', function (e){
-    const b = e.target.closest('button[data-range], button[data-metric], button[data-view], button[data-xls]');
+    const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
     if (!통) return;
@@ -3431,7 +3583,10 @@
     if (b.dataset.xls){ compXlsx(통, k); return; }
 
     if (b.dataset.range) compRange[k] = b.dataset.range;
-    else if (b.dataset.metric) compView[k] = b.dataset.metric;
+    else if (b.dataset.shape) compShape[k] = b.dataset.shape;
+    /* 보기를 바꾸면 모양은 그 보기의 기본으로 되돌린다. '매출·이익'은 막대가,
+       지표 하나는 선이 낫다 — 앞서 고른 모양이 따라다니면 매번 다시 누르게 된다. */
+    else if (b.dataset.metric){ compView[k] = b.dataset.metric; delete compShape[k]; }
     else if (b.dataset.view === 'graph') compOpen[k] = !(compOpen[k] === true);
     else compTable[k] = !(compTable[k] === true);
     compDraw();
