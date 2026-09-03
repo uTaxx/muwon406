@@ -88,6 +88,89 @@
   .tab-btn.active{background:var(--green); border-color:var(--green); color:#fff;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
+  /* 상황판이 붙어 탭이 다섯이 됐다. 좁은 화면에서는 그대로 두면 '실리코시스'가
+     칸을 넘겨 글자가 잘린다. */
+  @media (max-width:560px){
+    .side .tab-nav{gap:4px;}
+    .side .tab-btn{padding:10px 3px; font-size:11.5px; letter-spacing:-0.02em;}
+  }
+
+  /* ── 종합 상황판 ────────────────────────────────────────
+     탭을 하나씩 눌러 봐야 무슨 일이 있었는지 아는 것이 이 화면의 가장 큰
+     불편이었다. 기능이 늘수록 심해진다. 그래서 첫 화면은 각 탭에서 제일
+     먼저 봐야 할 것만 뽑아 한 판에 놓는다. */
+  .kpi-row{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:14px;}
+  .kpi{background:var(--card); border-radius:var(--radius); padding:15px 15px 13px; min-width:0;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05); border-left:4px solid var(--line);}
+  .kpi-l{font-size:11.5px; color:var(--muted); font-weight:600;}
+  .kpi-n{font-size:25px; font-weight:700; margin-top:5px; line-height:1.15; font-variant-numeric:tabular-nums;}
+  .kpi-n span{font-size:13px; font-weight:600; color:var(--muted); margin-left:3px;}
+  .kpi-s{font-size:11.5px; color:var(--muted); margin-top:3px;}
+  .kpi.on{border-left-color:var(--green);}
+  .kpi.hot{border-left-color:var(--danger);} .kpi.hot .kpi-n{color:var(--danger);}
+  .kpi.calm{border-left-color:#1F7A5A;}
+
+  .home-grid{display:grid; grid-template-columns:minmax(0,1fr); gap:14px;}
+  .home-grid section.card{margin-bottom:0;}
+  .go-btn{margin-left:auto; background:none; border:none; color:var(--green);
+    font-size:12px; font-weight:700; cursor:pointer; padding:3px 6px; border-radius:7px; white-space:nowrap;}
+  .go-btn:hover{background:var(--green-tint);}
+
+  .hf{display:flex; gap:10px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line);}
+  .hf:last-child{border-bottom:none;}
+  .hf-b{flex:1; min-width:0;}
+  .hf-t{font-size:13px; font-weight:600; color:var(--text); text-decoration:none;}
+  .hf-t:hover{color:var(--green);}
+  .hf-m{font-size:11px; color:var(--muted); margin-top:3px;}
+  .hf-d{font-size:11px; color:var(--muted); white-space:nowrap;}
+
+  .hg-row{margin-top:10px;}
+  .hg-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12.5px;}
+  .hg-top b{font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hg-top i{font-style:normal; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .hg-bar{height:7px; border-radius:4px; background:var(--green-tint); margin-top:4px; overflow:hidden;}
+  .hg-bar i{display:block; height:100%; background:var(--green); border-radius:4px;}
+
+  .hr-row{display:flex; gap:10px; margin:10px 0 12px;}
+  .hr-c{flex:1; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 11px; text-align:center; min-width:0;}
+  .hr-n{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .hr-n.hot{color:var(--danger);}
+  .hr-l{font-size:11px; color:var(--muted); margin-top:2px;}
+
+  .hi{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:10px;}
+  .hi-c{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 11px; min-width:0;}
+  .hi-l{font-size:11px; color:var(--muted); line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hi-v{font-size:16.5px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums;}
+  .hi-v span{font-size:11px; font-weight:600; color:var(--muted); margin-left:2px;}
+  .hi-c .chg{display:block; font-size:11.5px; font-weight:700; margin-top:2px; white-space:nowrap;}
+  .hi-c .chg em{font-style:normal; font-weight:600; margin-left:4px;}
+
+  /* ── 넓은 화면 ──────────────────────────────────────────
+     이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
+     에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
+     넓어지면 차림표를 왼쪽에 세워 늘 보이게 하고 본문을 두 칸으로 흘린다.
+     좁은 화면에서 바뀌는 것은 없다 — 아래 규칙은 전부 1024px 위에서만 산다. */
+  @media (min-width:1024px){
+    .cover{padding:32px 32px 46px;}
+    main{max-width:1320px; padding:0 24px 90px; display:grid;
+      grid-template-columns:216px minmax(0,1fr); gap:20px; align-items:start;}
+    .side{position:sticky; top:16px;}
+    .side section.card{padding:18px 16px; margin-bottom:12px;}
+    .side .step-desc{margin:4px 0 12px 0; font-size:12px;}
+    .side .tab-nav{flex-direction:column; gap:6px; margin-bottom:0;}
+    .side .tab-btn{text-align:left; padding:12px 14px; font-size:13px;}
+    .side .tab-btn br{display:none;}
+    /* 216px 짜리 칸에서 입력칸과 단추를 나란히 두면 식별코드가 잘려 안 보인다 */
+    .side .code-row{flex-direction:column; align-items:stretch;}
+    .panes{min-width:0;}
+    .kpi-row{grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px;}
+    .home-grid{grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start;}
+    .home-wide{grid-column:1 / -1;}
+    .hi{grid-template-columns:repeat(4,minmax(0,1fr));}
+    /* 지표 카드도 두 칸으로. 지표가 스무 개를 넘어가면서 한 줄로는 끝이 안 보인다. */
+    #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start;}
+    #indBody .ind-block{margin-bottom:0;}
+  }
 
   .kn-box{background:var(--bg); border:1px solid var(--line); border-radius:12px;
     padding:14px 15px; margin-top:10px; white-space:pre-wrap; word-break:break-word;
@@ -508,7 +591,7 @@
 <div class="cover">
   <span class="badge">LX Group MI · 사내 전용</span>
   <h1>LX Group MI</h1>
-  <p>전체 기사 조회, 특정 키워드 검색, 시장지표를 한 화면에서 이용하세요. 설정은 아래 버튼에서 바꿉니다.</p>
+  <p>종합 상황판에서 오늘의 상황을 한눈에 보고, 왼쪽 차림표에서 기사·키워드 검색·리스크·시장지표로 들어갑니다. 설정은 아래 버튼에서 바꿉니다.</p>
   <div class="cover-acts">
     <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
     <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
@@ -518,25 +601,65 @@
 
 <main>
 
-  <section class="card">
-    <div class="step-head"><span class="step-num">•</span><span class="step-title">식별코드</span></div>
-    <div class="step-desc">신청 시 사용한 식별코드입니다. 아래 모든 기능에 공통으로 사용됩니다.</div>
-    <div class="code-row">
-      <input type="text" id="sharedCode" placeholder="예: LXHOLDINGS" style="text-transform:uppercase;">
-      <button type="button" class="small-btn" id="sharedLoadBtn">조회</button>
-    </div>
-    <div class="status" id="sharedStatusBox"></div>
-  </section>
+  <div class="side">
+    <section class="card">
+      <div class="step-head"><span class="step-num">•</span><span class="step-title">식별코드</span></div>
+      <div class="step-desc">신청 시 사용한 식별코드입니다. 모든 기능에 공통으로 사용됩니다.</div>
+      <div class="code-row">
+        <input type="text" id="sharedCode" placeholder="예: LXHOLDINGS" style="text-transform:uppercase;">
+        <button type="button" class="small-btn" id="sharedLoadBtn">조회</button>
+      </div>
+      <div class="status" id="sharedStatusBox"></div>
+    </section>
 
-  <div class="tab-nav">
-    <button type="button" class="tab-btn active" data-tab="search">전체 기사<br>조회</button>
-    <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br>검색</button>
-    <button type="button" class="tab-btn" data-tab="risk">실리코시스<br>리스크</button>
-    <button type="button" class="tab-btn" data-tab="index">시장<br>지표</button>
+    <!-- 좁은 화면에서는 가로 탭, 넓은 화면에서는 왼쪽에 세워 둔 차림표가 된다.
+         br 뒤의 빈칸은 일부러 둔 것이다 — 넓은 화면에서 br 을 숨기면
+         그 빈칸이 낱말 사이를 벌려 '전체 기사 조회'로 읽힌다. -->
+    <div class="tab-nav">
+      <button type="button" class="tab-btn active" data-tab="home">종합<br> 상황판</button>
+      <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
+      <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
+      <button type="button" class="tab-btn" data-tab="risk">실리코시스<br> 리스크</button>
+      <button type="button" class="tab-btn" data-tab="index">시장<br> 지표</button>
+    </div>
+  </div>
+
+  <div class="panes">
+
+  <!-- 탭 0: 종합 상황판 -->
+  <div id="tab-home" class="tab-panel active">
+    <div class="kpi-row" id="homeKpi"></div>
+
+    <div class="home-grid">
+      <section class="card home-wide">
+        <div class="step-head"><span class="step-num">📰</span><span class="step-title">최근 기사</span>
+          <button type="button" class="go-btn" data-goto="search">전체 기사 조회 →</button></div>
+        <div id="homeFeed"><div class="empty-note">불러오는 중…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="step-head"><span class="step-num">🗂</span><span class="step-title">그룹별 수집 현황</span></div>
+        <div class="step-desc" id="homeGroupsDesc">최근 7일에 들어온 기사입니다.</div>
+        <div id="homeGroups"></div>
+      </section>
+
+      <section class="card">
+        <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
+          <button type="button" class="go-btn" data-goto="risk">자세히 →</button></div>
+        <div id="homeRisk"></div>
+      </section>
+
+      <section class="card home-wide">
+        <div class="step-head"><span class="step-num">📊</span><span class="step-title">시장지표 한눈에</span>
+          <button type="button" class="go-btn" data-goto="index">자세히 →</button></div>
+        <div class="step-desc" id="homeIndDesc">불러오는 중…</div>
+        <div id="homeInd"></div>
+      </section>
+    </div>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
-  <div id="tab-search" class="tab-panel active">
+  <div id="tab-search" class="tab-panel">
     <section class="card" id="resultsSection">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">검색 · 필터</span></div>
       <div class="filter-row">
@@ -879,6 +1002,8 @@
     </section>
   </div>
 
+  </div>
+
 </main>
 
 <footer>LX Group MI 사내 전용 도구입니다.</footer>
@@ -1096,6 +1221,9 @@
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     history.replaceState(null, '', url);
+    /* 상황판은 시장지표까지 같이 보여주므로 여기서 한 번 부른다.
+       loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
+    if (tabName === 'home'){ renderHome(); loadIndex(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
@@ -1823,6 +1951,8 @@
     document.getElementById('indAsOf').textContent =
       indData.asOf + ' 기준 · 이 탭 ' + 것들.length + '개 · 전체 ' + 지표.length + '개' +
       (대기.length ? ' · 대기 ' + 대기.length + '개' : '');
+
+    homeInd();   // 상황판이 열려 있는 채로 지표가 도착할 수 있다
   }
 
   function loadIndex(force){
@@ -2652,6 +2782,168 @@
     updateSelUI();
   }
 
+  /* ---------- 종합 상황판 ----------
+     탭을 하나씩 눌러 봐야 무슨 일이 있었는지 알 수 있던 것이 이 화면의 가장 큰
+     불편이었다. 그래서 각 탭에서 제일 먼저 봐야 할 것만 뽑아 한 판에 놓는다.
+
+     **여기서 새로 부르는 웹훅은 시장지표 하나뿐이다.** 기사도 실리코시스도
+     이미 받아 둔 allArticles 로 만든다 — 첫 화면이 웹훅 넷을 기다리게 되면
+     결국 느려서 아무도 안 본다. */
+
+  function homeDay(전){
+    const t = new Date();
+    const d = new Date(t.getFullYear(), t.getMonth(), t.getDate() - (전 || 0));
+    const p = function(n){ return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function homeKpi(){
+    const 이레 = homeDay(6);    // 오늘까지 7일
+    const 서른 = homeDay(29);
+
+    /* '오늘 몇 건'으로 세면 아침 수집이 돌기 전에 열었을 때 0이 뜬다. 0은
+       고장으로 읽히므로, 마지막으로 수집이 돌아간 날을 찾아 날짜와 같이 보여준다. */
+    const 수집일 = allArticles.map(function(a){ return extractDateOnly(a.collectedAt); })
+      .filter(Boolean).sort();
+    const 마지막 = 수집일.length ? 수집일[수집일.length - 1] : '';
+    const 마지막건 = 수집일.filter(function(d){ return d === 마지막; }).length;
+
+    const 이번주 = allArticles.filter(function(a){ return extractDateOnly(a.collectedAt) >= 이레; });
+    const 중요 = 이번주.filter(function(a){ return getScoreNum(a.importance) >= 4; });
+    const 리스크 = allArticles.filter(isRiskArticle).filter(function(a){
+      const k = riskDateKey(a);
+      return k && k >= 서른;
+    });
+
+    const 칸 = function(꼴, 라벨, 수, 단위, 밑){
+      return '<div class="kpi ' + 꼴 + '"><div class="kpi-l">' + escapeHtml(라벨) + '</div>' +
+        '<div class="kpi-n">' + 수.toLocaleString() + '<span>' + 단위 + '</span></div>' +
+        '<div class="kpi-s">' + escapeHtml(밑) + '</div></div>';
+    };
+
+    document.getElementById('homeKpi').innerHTML =
+      칸('on', '마지막 수집', 마지막건, '건',
+         마지막 ? 마지막 + ' 기준' : '아직 수집된 기사가 없습니다') +
+      칸('', '최근 7일', 이번주.length, '건',
+         '하루 평균 ' + Math.round(이번주.length / 7) + '건') +
+      칸(중요.length ? 'hot' : 'calm', '중요도 4↑ · 7일', 중요.length, '건',
+         중요.length ? '먼저 읽어야 할 기사입니다' : '눈에 띄는 기사가 없습니다') +
+      칸(리스크.length ? 'hot' : 'calm', '실리코시스 · 30일', 리스크.length, '건',
+         리스크.length ? '리스크 탭에서 확인하세요' : '최근 30일 보도가 없습니다');
+  }
+
+  function homeFeed(){
+    const 통 = document.getElementById('homeFeed');
+    const 것들 = sortByDateDesc(allArticles).slice(0, 8);
+    if (!것들.length){ 통.innerHTML = '<div class="empty-note">아직 수집된 기사가 없습니다.</div>'; return; }
+    통.innerHTML = 것들.map(function(a){
+      const 별 = getStars(a.importance);
+      const 말 = String(a.reason || '');
+      return '<div class="hf"><div class="hf-b">' +
+          '<a class="hf-t" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">' +
+            getDirectionIcon(a.direction) + escapeHtml(a.title) + '</a>' +
+          (별 ? ' <span class="stars">' + 별 + '</span>' : '') +
+          '<div class="hf-m">' + getGroupEmoji(a.group) + ' ' + escapeHtml(a.group || '기타') +
+            (말 ? ' · ' + escapeHtml(말.length > 70 ? 말.slice(0, 70) + '…' : 말) : '') +
+          '</div>' +
+        '</div><div class="hf-d">' + escapeHtml(articleDateKey(a)) + '</div></div>';
+    }).join('');
+  }
+
+  function homeGroups(){
+    const 이레 = homeDay(6);
+    let 대상 = allArticles.filter(function(a){ return extractDateOnly(a.collectedAt) >= 이레; });
+    let 말 = '최근 7일에 들어온 기사입니다.';
+    if (!대상.length){ 대상 = allArticles; 말 = '최근 7일에 들어온 기사가 없어 전체를 보여줍니다.'; }
+    document.getElementById('homeGroupsDesc').textContent = 말;
+
+    const 셈 = {};
+    대상.forEach(function(a){ const g = a.group || '기타'; 셈[g] = (셈[g] || 0) + 1; });
+    const 줄 = Object.keys(셈).map(function(g){ return { g: g, n: 셈[g] }; })
+      .sort(function(x, y){ return y.n - x.n; }).slice(0, 8);
+    const 최대 = 줄.length ? 줄[0].n : 1;
+
+    document.getElementById('homeGroups').innerHTML = 줄.length
+      ? 줄.map(function(r){
+          return '<div class="hg-row"><div class="hg-top">' +
+            '<b>' + getGroupEmoji(r.g) + ' ' + escapeHtml(r.g) + '</b><i>' + r.n + '건</i>' +
+            '</div><div class="hg-bar"><i style="width:' + Math.round(r.n / 최대 * 100) + '%"></i></div></div>';
+        }).join('')
+      : '<div class="empty-note">아직 수집된 기사가 없습니다.</div>';
+  }
+
+  function homeRisk(){
+    const 서른 = homeDay(29);
+    const 전부 = allArticles.filter(isRiskArticle);
+    const 최근 = 전부.filter(function(a){ const k = riskDateKey(a); return k && k >= 서른; });
+    const 중요 = 전부.filter(function(a){ return getScoreNum(a.importance) >= 4; });
+
+    /* 머리기사는 반드시 최근 30일 안에서 고른다. 전체에서 고르면 몇 해 전
+       기사가 '지금 볼 것'으로 올라온다 — 리스크 탭에서 겪은 것과 같은 함정이다. */
+    let 머리 = null;
+    최근.forEach(function(a){
+      if (!머리 || getScoreNum(a.importance) > getScoreNum(머리.importance)) 머리 = a;
+    });
+
+    const 칸 = function(n, l, 뜨겁나){
+      return '<div class="hr-c"><div class="hr-n' + (뜨겁나 ? ' hot' : '') + '">' + n + '</div>' +
+        '<div class="hr-l">' + l + '</div></div>';
+    };
+
+    document.getElementById('homeRisk').innerHTML =
+      '<div class="hr-row">' + 칸(전부.length, '누적 기사', false) +
+        칸(최근.length, '최근 30일', 최근.length > 0) +
+        칸(중요.length, '중요도 4↑', 중요.length > 0) + '</div>' +
+      (머리 && getScoreNum(머리.importance) >= 3
+        ? '<div class="hf"><div class="hf-b">' +
+            '<a class="hf-t" href="' + escapeHtml(머리.link) + '" target="_blank" rel="noopener">' +
+              getDirectionIcon(머리.direction) + escapeHtml(머리.title) + '</a>' +
+            '<div class="hf-m">' + escapeHtml(riskDateKey(머리) || '') +
+              (머리.reason ? ' · ' + escapeHtml(머리.reason) : '') + '</div>' +
+          '</div></div>'
+        : '<div class="empty-note">최근 30일 안에 눈여겨볼 보도가 없습니다.</div>');
+  }
+
+  function homeInd(){
+    const 말 = document.getElementById('homeIndDesc');
+    const 통 = document.getElementById('homeInd');
+    if (!indData){
+      말.textContent = indLoading ? '불러오는 중…' : '시장지표를 불러오지 못했습니다.';
+      통.innerHTML = '';
+      return;
+    }
+
+    /* 공통 지표만 올린다. 계열사 것까지 다 올리면 스무 칸이 넘어 '한눈에'가
+       아니게 된다 — 계열사는 시장지표 탭에서 본다. */
+    const 것들 = indTabItems(indData.지표 || [], '공통');
+    const 칸들 = [];
+    것들.forEach(function(x){
+      if (칸들.length >= 8) return;
+      const b = (x.범위 && (x.범위['월'] || x.범위['일'] || x.범위['연'])) || null;
+      if (!b || b.최신값 === null || b.최신값 === undefined) return;
+      칸들.push('<div class="hi-c">' +
+        '<div class="hi-l">' + escapeHtml(x.이름) + '</div>' +
+        '<div class="hi-v">' + indNum(b.최신값, x.단위) +
+          '<span>' + escapeHtml(x.단위 || '') + '</span></div>' +
+        indChgHtml(b) + '</div>');
+    });
+
+    말.textContent = (indData.asOf ? indData.asOf + ' 기준 · ' : '') +
+      '공통 지표 ' + 것들.length + '개 중 값이 있는 ' + 칸들.length + '개';
+    통.innerHTML = 칸들.length
+      ? '<div class="hi">' + 칸들.join('') + '</div>'
+      : '<div class="empty-note">아직 값이 쌓인 공통 지표가 없습니다.</div>';
+  }
+
+  function renderHome(){
+    if (!document.getElementById('homeKpi')) return;
+    homeKpi();
+    homeFeed();
+    homeGroups();
+    homeRisk();
+    homeInd();
+  }
+
   /* ---------- 선택삭제 ----------
      기사 한 건은 '링크 + 수집일시'로 집는다. 같은 링크가 여러 번 저장된 경우가
      있어서 링크만으로는 고르지 않은 행까지 지워진다.
@@ -2748,6 +3040,7 @@
         renderGroupOptions();
         applyFilters();
         renderRiskDashboard();
+        renderHome();
 
         const missed = keys.length - (r.data.deleted || 0);
         alert(r.data.deleted + '건을 지웠습니다.' +
@@ -2835,6 +3128,7 @@
         renderGroupOptions();
         applyFilters();
         renderRiskDashboard();
+        renderHome();
       })
       .catch(err => {
         hideLoading();
@@ -3390,6 +3684,11 @@
 
     document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
 
+    document.getElementById('tab-home').addEventListener('click', function(e){
+      const b = e.target.closest('button[data-goto]');
+      if (b) showTab(b.dataset.goto);
+    });
+
     document.getElementById('knSubmitBtn').addEventListener('click', submitKnowledge);
     document.getElementById('knInput').addEventListener('input', function(){
       document.getElementById('knCount').textContent = this.value.length.toLocaleString() + '자';
@@ -3419,7 +3718,7 @@
     document.getElementById('changeCodeLabel').textContent = initialCode;
 
     const tabFromUrl = urlParams.get('tab');
-    const initialTab = ['search','apply','adhoc','risk','knowledge','index'].includes(tabFromUrl) ? tabFromUrl : 'search';
+    const initialTab = ['home','search','apply','adhoc','risk','knowledge','index'].includes(tabFromUrl) ? tabFromUrl : 'home';
     showTab(initialTab);
 
     loadArticles();
