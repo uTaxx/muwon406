@@ -3583,7 +3583,14 @@
       '<b>연도별·분기별</b>을 바꿔 볼 수 있고, 그래프는 매출과 영업이익을 <b>위아래 두 칸</b>으로 나눠 ' +
       '기간만 함께 씁니다 — 자릿수가 크게 달라 한 축에 겹치면 이익이 바닥에 붙습니다.';
 
-    const 것들 = 실적.filter(function (x){ return (x.계열사 || []).indexOf(compTab) >= 0; });
+    /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
+       부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만
+       있고 속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로
+       막아 둔다 — 빈 블록은 어느 쪽 잘못이든 읽는 사람에게는 고장이다. */
+    const 것들 = 실적.filter(function (x){
+      return (x.계열사 || []).indexOf(compTab) >= 0 &&
+             ((x.해 || []).length || (x.분기 || []).length);
+    });
     document.getElementById('compBody').innerHTML = compBlocks(것들);
     document.querySelectorAll('#compBody .ind-tbl-wrap').forEach(function (w){
       w.scrollTop = w.scrollHeight;
