@@ -1715,7 +1715,10 @@
     const cls = b.좋아짐 === true ? 'ind-good' : b.좋아짐 === false ? 'ind-bad' : 'ind-flat';
     if (b.변화 === null || b.변화 === undefined) return '<span class="chg ind-flat">' + escapeHtml(b.라벨) + ' 자료 없음</span>';
     const 화살 = b.변화 > 0 ? '▲' : b.변화 < 0 ? '▼' : '–';
-    const 말 = b.좋아짐 === true ? '좋아짐' : b.좋아짐 === false ? '나빠짐' : '';
+    /* 화면에 쓰는 말은 긍정/부정이다. '좋아짐/나빠짐'은 지표 자체가 좋아졌다는
+       뜻으로 읽혀서, 유가가 내린 것을 '좋아짐'이라 하면 한 번 더 생각하게 된다.
+       판정을 담은 칸 이름(좋아짐)은 서버가 보내는 그대로 두고 말만 바꾼다. */
+    const 말 = b.좋아짐 === true ? '긍정' : b.좋아짐 === false ? '부정' : '';
     return '<span class="chg ' + cls + '">' + 화살 + ' ' + indNum(Math.abs(b.변화)) +
            ' (' + (b.변화율 > 0 ? '+' : '') + b.변화율 + '%)' +
            (말 ? '<em>' + 말 + '</em>' : '') + '</span>';
