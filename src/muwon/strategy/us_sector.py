@@ -61,6 +61,16 @@ class USSectorParams:
     보유상한: int = 20
 
 
+@dataclass(frozen=True)
+class USSectorGateParams:
+    """기존 전략 위에 미국 섹터 신호를 얹은 것(설계안 §50)의 설정."""
+
+    원래키: str
+    N: int = 60
+    k: int = 2
+    지연: int = 0
+
+
 #: (심볼, 시작, 끝) → trade_date·close가 있는 DataFrame. 테스트는 가짜를 넣는다.
 시세가져오기 = Callable[[str, date, date], pd.DataFrame]
 
@@ -189,3 +199,69 @@ class USSectorFollowStrategy(PortfolioStrategy):
                     reason=f"미국 {섹터짝[섹터]} 강함, {self._N}일 {수익:+.1%}",
                 ))
         return 신호
+
+
+class USSectorGateStrategy(PortfolioStrategy):
+    """기존 전략의 매수 신호 중 미국이 강하다고 본 섹터의 종목만 통과시킨다.
+
+    설계안 §50이다. 매도는 원래 전략 규칙 그대로다. 미국 신호는 "어느 종목을
+    살까"에만 관여한다. 미국 시세를 못 받으면 매수 신호를 전부 막고 경고를
+    남긴다. 보유 상한과 익절선은 원래 전략 것을 그대로 쓴다.
+    """
+
+    def __init__(
+        self, 원래, 원래키: str, N: int = 60, k: int = 2, 지연: int = 0,
+        name: str = "us_gate",
+        가져오기: 시세가져오기 | None = None,
+        섹터표: dict[str, str] | None = None,
+    ):
+        from muwon.strategy.portfolio import as_portfolio_strategy
+
+        원본 = 원래
+        self._원래 = as_portfolio_strategy(원래)
+        self._원래키 = 원래키
+        self.name = name
+        self.max_holding_days = getattr(원본, "max_holding_days", None)
+        self.take_profit_pct = float(getattr(원본, "take_profit_pct", 0.0) or 0.0)
+        self._N, self._k, self._지연 = N, k, 지연
+        self._가져오기 = 가져오기 or 야후에서가져오기
+        self._섹터표 = 섹터표 if 섹터표 is not None else 섹터표만들기()
+        self._강한섹터: pd.Series = pd.Series(dtype=object)
+        self.미국시세없음 = False
+
+    @property
+    def params(self) -> USSectorGateParams:
+        return USSectorGateParams(원래키=self._원래키, N=self._N, k=self._k, 지연=self._지연)
+
+    @property
+    def 원래전략(self):
+        return self._원래
+
+    def prepare(self, histories: dict[str, pd.DataFrame]) -> None:
+        self._원래.prepare(histories)
+        섹터종목 = [심 for 심 in histories if self._섹터표.get(심) in 섹터짝]
+        if not 섹터종목:
+            self._강한섹터 = pd.Series(dtype=object)
+            return
+        국내날들 = pd.DatetimeIndex(sorted({
+            pd.Timestamp(d) for df in histories.values() for d in df["trade_date"]
+        }))
+        시작 = 국내날들[0].date() - timedelta(days=예열날수)
+        끝 = 국내날들[-1].date()
+        try:
+            미국 = {심볼: self._가져오기(심볼, 시작, 끝) for 심볼 in [기준지수, *섹터짝.values()]}
+            빈것 = [심 for 심, df in 미국.items() if df is None or len(df) == 0]
+            if 빈것:
+                raise ValueError(f"시세가 비었습니다: {', '.join(빈것)}")
+            self._강한섹터 = 강한섹터계산(미국, 국내날들, self._N, self._k, self._지연)
+            self.미국시세없음 = False
+        except Exception as 탈:  # noqa: BLE001 (못 받으면 안 사는 쪽으로 간다)
+            logger.warning(f"{self.name}: 미국 섹터 시세를 못 받아 매수 신호를 전부 막습니다 ({탈})")
+            self._강한섹터 = pd.Series(dtype=object)
+            self.미국시세없음 = True
+
+    def evaluate(self, ctx: MarketContext) -> list[Signal]:
+        신호 = self._원래.evaluate(ctx)
+        강한 = self._강한섹터.get(pd.Timestamp(ctx.as_of)) or frozenset()
+        return [s for s in 신호
+                if s.signal_type != SignalType.BUY or self._섹터표.get(s.symbol) in 강한]

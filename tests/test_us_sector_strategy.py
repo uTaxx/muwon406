@@ -7,9 +7,14 @@ from datetime import timedelta
 import pandas as pd
 
 from muwon.domain.types import SignalType
-from muwon.strategy.portfolio import MarketContext
+from muwon.strategy.portfolio import MarketContext, PortfolioStrategy
 from muwon.strategy.registry import build_strategy, get_definition
-from muwon.strategy.us_sector import USSectorFollowStrategy, 기준지수, 섹터짝
+from muwon.strategy.us_sector import (
+    USSectorFollowStrategy,
+    USSectorGateStrategy,
+    기준지수,
+    섹터짝,
+)
 
 날들 = pd.bdate_range("2024-01-01", periods=160)
 
@@ -117,3 +122,52 @@ def test_등록되어_있고_네트워크_없이_만들_수_있다():
     assert isinstance(전략, USSectorFollowStrategy)
     assert 전략.max_holding_days == 20
     assert 정의.쉬운설명 and "미국" in 정의.쉬운설명
+
+
+class _다사는전략(PortfolioStrategy):
+    """시험용. 모든 종목에 매일 매수, 들고 있으면 매도 신호."""
+
+    name = "다사기"
+    max_holding_days = 3
+    take_profit_pct = 0.0
+
+    def prepare(self, histories):
+        pass
+
+    def evaluate(self, ctx):
+        from muwon.domain.types import Signal
+        나온것 = []
+        for 심볼 in ctx.histories:
+            if 심볼 in ctx.held:
+                나온것.append(Signal(심볼, ctx.as_of, SignalType.SELL, self.name, reason="시험"))
+            else:
+                나온것.append(Signal(심볼, ctx.as_of, SignalType.BUY, self.name, score=1.0))
+        return 나온것
+
+
+def test_문은_강한_섹터의_매수만_통과시키고_매도는_그대로_둔다():
+    전략 = USSectorGateStrategy(_다사는전략(), "다사기", N=60, k=1, 지연=1,
+                               가져오기=가짜미국("SEMI"), 섹터표=섹터표)
+    시세 = {"A": _오르는(), "B": _오르는(), "X": _오르는()}
+    전략.prepare(시세)
+    신호 = 전략.evaluate(MarketContext(as_of=날들[-1].date(), histories=시세, held=frozenset({"B"})))
+    산것 = {s.symbol for s in 신호 if s.signal_type == SignalType.BUY}
+    판것 = {s.symbol for s in 신호 if s.signal_type == SignalType.SELL}
+    assert 산것 == {"A"}, f"반도체(A)만 통과해야 하는데 {산것}"
+    assert 판것 == {"B"}, "매도 신호는 섹터와 무관하게 그대로 나가야 한다"
+
+
+def test_문은_원래_전략의_보유_상한을_그대로_쓴다():
+    전략 = USSectorGateStrategy(_다사는전략(), "다사기", 가져오기=가짜미국("SEMI"), 섹터표=섹터표)
+    assert 전략.max_holding_days == 3
+
+
+def test_문도_미국_시세를_못_받으면_매수를_전부_막는다():
+    def 터지는(심볼, 시작, 끝):
+        raise ConnectionError("막힘")
+    전략 = USSectorGateStrategy(_다사는전략(), "다사기", 가져오기=터지는, 섹터표=섹터표)
+    시세 = {"A": _오르는()}
+    전략.prepare(시세)
+    assert 전략.미국시세없음 is True
+    신호 = 전략.evaluate(MarketContext(as_of=날들[-1].date(), histories=시세))
+    assert not [s for s in 신호 if s.signal_type == SignalType.BUY]

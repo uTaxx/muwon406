@@ -117,6 +117,8 @@ def main() -> int:
     ㅍ.add_argument("--조각", default="1/1")
     ㅍ.add_argument("--씨앗", default="1,2,3")
     ㅍ.add_argument("--미국지연", type=int, default=1)
+    ㅍ.add_argument("--설정", default="", help="'N:k'를 쉼표로. 예 20:2,60:3. 비우면 N60 두 벌")
+    ㅍ.add_argument("--슬리피지", type=float, default=0.0)
     ㅍ.add_argument("--비중", type=float, default=0.15)
     ㅍ.add_argument("--동시보유", type=int, default=6)
     ㅍ.add_argument("--섹터당", type=int, default=3)
@@ -144,14 +146,16 @@ def main() -> int:
           for 심볼 in [기준지수, *섹터짝.values()]}
     국내날들 = pd.DatetimeIndex(sorted({pd.Timestamp(d) for df in histories.values()
                                        for d in df["trade_date"]}))
-    신호들 = {f"N{N} k{k}": 미국강한섹터(미국, 국내날들, N, k, 인자.미국지연) for N, k in 설정벌}
+    고른설정 = ([tuple(int(x) for x in 항.split(":")) for 항 in 인자.설정.split(",") if 항.strip()]
+             or 설정벌)
+    신호들 = {f"N{N} k{k}": 미국강한섹터(미국, 국내날들, N, k, 인자.미국지연) for N, k in 고른설정}
     print(f"매매 대상 {len(histories)}종목(시트 사본 {읽은날}) · {시작} ~ {끝} · "
           f"전략 {len(전략키들)}개 (조각 {인자.조각})", file=sys.stderr)
 
     낸것: dict = {
         "설명": "기존 전략의 매수 신호를 미국 섹터 신호로 거른 것입니다. 매도는 원래 규칙 그대로입니다.",
         "잰날": str(datetime.now(UTC).date()),
-        "기간": f"{시작} ~ {끝}", "섹터짝": 섹터짝, "미국지연": 인자.미국지연,
+        "기간": f"{시작} ~ {끝}", "섹터짝": 섹터짝, "미국지연": 인자.미국지연, "슬리피지": 인자.슬리피지,
         "매매대상": f"실거래 시트 사본 {읽은날} 기준 {len(histories)}종목",
         "설정": (f"비중 {인자.비중:.0%} · 동시보유 {인자.동시보유}종목 · 섹터당 {인자.섹터당}종목 · "
                f"손절 {인자.손절:.0%} · 예수금 {인자.예수금:,.0f}원 · 다음 날 시가 체결 · 슬리피지 0"),
@@ -162,7 +166,7 @@ def main() -> int:
     }
     시작때 = time.time()
     for 키 in 전략키들:
-        그냥 = 한번(histories, build_strategy(키), 시작, 끝, 정책, 제약, "없음")
+        그냥 = 한번(histories, build_strategy(키), 시작, 끝, 정책, 제약, "없음", 인자.슬리피지)
         if 그냥 is None:
             print(f"■ {전략이름(키)} 못 돌림", file=sys.stderr)
             continue
@@ -171,11 +175,11 @@ def main() -> int:
         벌들: dict = {}
         for 벌이름, 강한 in 신호들.items():
             문 = 한번(histories, 미국섹터문(build_strategy(키), 섹터표, 강한, f"{키}+미국문"),
-                    시작, 끝, 정책, 제약, "없음")
+                    시작, 끝, 정책, 제약, "없음", 인자.슬리피지)
             밀린것 = [r for 씨 in 씨앗들
                    if (r := 한번(histories, 미국섹터문(build_strategy(키), 섹터표,
                                                  밀어놓기(강한, 씨), f"{키}+밀어놓기"),
-                               시작, 끝, 정책, 제약, "없음"))]
+                               시작, 끝, 정책, 제약, "없음", 인자.슬리피지))]
             최악들 = [m["요약"]["최악"] for m in 밀린것 if m["요약"]["최악"] is not None]
             벌들[벌이름] = {
                 "미국문": 문,
