@@ -59,6 +59,7 @@ from muwon.strategy.trend import (
     MacdCrossParams,
     MacdCrossStrategy,
 )
+from muwon.strategy.us_sector import USSectorFollowStrategy
 
 CATEGORY_TREND = "추세추종"
 CATEGORY_REVERSION = "평균회귀"
@@ -619,6 +620,23 @@ REGISTRY: list[StrategyDefinition] = [
         쉬운참고=(
             "어느 관점을 얼마나 볼지 설정에서 바꿀 수 있어서 코드를 고치지 않고 시험해 볼 "
             "수 있습니다."
+        ),
+    ),
+    StrategyDefinition(
+        key="us_sector_follow_60_2",
+        짧은이름="미국 섹터 따라가기",
+        display_name="미국 섹터 따라가기 (60일 상대강도 상위 2, 20일 보유)",
+        description="미국 섹터 ETF의 60일 상대강도 상위 2개 중 60일선 위인 섹터의 국내 종목을 20일선 위·60일 수익률 플러스일 때 매수. 섹터 약해지거나 20일선 아래면 매도.",
+        factory=lambda: USSectorFollowStrategy(N=60, k=2, 지연=1, 보유상한=20,
+                                               name="us_sector_follow_60_2"),
+        category=CATEGORY_HYBRID,
+        status="backtested",
+        쉬운설명=(
+            "미국에서 요즘 잘 오르는 업종을 먼저 보고, 우리나라의 같은 업종 회사 중 "
+            "값이 오르고 있는 것을 삽니다."
+        ),
+        쉬운참고=(
+            "미국 시세는 하루 늦게 봅니다. 미국 시세를 못 받는 날은 아무것도 사지 않습니다."
         ),
     ),
 ]
