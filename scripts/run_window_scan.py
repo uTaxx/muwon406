@@ -99,14 +99,19 @@ def 시트찾기(인자) -> str:
 
 
 def 매매대상고르기(인자, session_factory, sheet_id: str):
-    """무슨 종목으로 잴 것인가. (종목목록, 종류이름).
+    """무슨 종목으로 잴 것인가. (종목목록, 열쇠, 사람이 읽는 이름).
+
+    **열쇠와 이름을 따로 돌려주는 이유가 있다.** DB와 파일에는 열쇠를
+    적는다. "실거래 시트"라고 적어 두면 나중에 그 글자를 고치는 순간 앞서
+    쌓은 줄과 새로 쌓는 줄이 다른 측정으로 갈린다.
 
     **기본값이 시트다.** 실거래가 실제로 보는 목록이 그것이기 때문이다.
     시가총액 상위 목록으로 재면 나온 숫자가 실제 매매를 설명하지 못한다.
     설계안 §44에서 같은 전략이 목록 하나로 34%p 갈리는 것을 확인했다."""
     고른것 = (인자.유니버스 or "시트").strip()
     if 고른것 in ("시가총액", "market_cap"):
-        return active_universe(session_factory, list(UNIVERSE), kind=KIND_MARKET_CAP), "시가총액"
+        목록 = active_universe(session_factory, list(UNIVERSE), kind=KIND_MARKET_CAP)
+        return 목록, "market_cap", "시가총액"
     if 고른것 not in ("시트", "sheet"):
         raise ValueError(f"모르는 매매 대상입니다: {고른것} (시트 / 시가총액)")
     if not sheet_id:
@@ -121,12 +126,13 @@ def 매매대상고르기(인자, session_factory, sheet_id: str):
                yahoo_symbol=ㅈ.yahoo_symbol)
         for ㅅ in 내용.섹터 if ㅅ.활성 for ㅈ in ㅅ.활성종목
     ]
-    return 목록, "실거래 시트"
+    return 목록, "sheet", "실거래 시트"
 
 
 def 한번재기(
     전략키: str, 상한: int, 슬리피지: float, histories, 정책,
-    시작: date, 끝: date, 예수금: float, 매매대상이름: str, 잰날: date,
+    시작: date, 끝: date, 예수금: float, 매매대상: str, 잰날: date,
+    종목수: int = 0,
 ) -> ㅇ.잰것:
     """전략 하나를 상한 하나, 슬리피지 하나로 실행하고 값을 뽑는다.
 
@@ -161,11 +167,11 @@ def 한번재기(
                 낙폭 = min(낙폭, (ㄱ - 꼭지) / 꼭지 * 100)
 
     return ㅇ.잰것(
-        전략=전략키, 상한=상한, 슬리피지=슬리피지, 매매대상=매매대상이름,
+        전략=전략키, 상한=상한, 슬리피지=슬리피지, 매매대상=매매대상,
         시작일=시작, 끝일=끝, 잰날=잰날,
         구간=안겹친것, 겹친구간=겹친것,
         매매=ㅇ.매매재기(결과.closed_trades, 미청산수=len(결과.final_positions)),
-        누적수익률=누적, 최대낙폭=낙폭,
+        누적수익률=누적, 최대낙폭=낙폭, 종목수=종목수,
     )
 
 
@@ -193,7 +199,7 @@ def 줄로(ㄱ: ㅇ.잰것) -> dict:
         이름 = ㄱ.전략
     return {
         "전략": ㄱ.전략, "이름": 이름, "상한": ㄱ.상한, "슬리피지": ㄱ.슬리피지,
-        "매매대상": ㄱ.매매대상,
+        "매매대상": ㄱ.매매대상, "종목수": ㄱ.종목수,
         "시작일": ㄱ.시작일.isoformat(), "끝일": ㄱ.끝일.isoformat(),
         "구간": _구간칸(ㄱ.구간), "겹친구간": _구간칸(ㄱ.겹친구간),
         "매매": {
@@ -323,7 +329,7 @@ def main() -> int:
     정책 = 검증용정책(설정.get_risk_policy())
     sheet_id = 시트찾기(인자)
     session_factory = make_session_factory(bootstrap_settings.database_url)
-    매매대상, 대상이름 = 매매대상고르기(인자, session_factory, sheet_id)
+    매매대상, 대상열쇠, 대상이름 = 매매대상고르기(인자, session_factory, sheet_id)
 
     print(f"■ 전략 {len(전략들)}개 · 상한 {상한들} · 슬리피지 {슬리피지들}")
     print(f"■ 매매 대상 {len(매매대상)}종목 ({대상이름}) · {시작} ~ {끝}")
@@ -347,7 +353,7 @@ def main() -> int:
             for 슬립 in 슬리피지들:
                 try:
                     ㄱ = 한번재기(키, 상한, 슬립, histories, 정책, 시작, 끝,
-                               인자.예수금, 대상이름, 잰날)
+                               인자.예수금, 대상열쇠, 잰날, len(매매대상))
                 except Exception as 탈:  # noqa: BLE001
                     # 하나가 죽었다고 나머지를 버리지 않는다. 대신 조용히
                     # 넘기지 않고 못한 것으로 남겨 마지막에 출력한다.
@@ -369,6 +375,8 @@ def main() -> int:
         "잰날": 잰날.isoformat(),
         "기간": f"{시작} ~ {끝}",
         "매매대상": f"{대상이름} {len(매매대상)}종목",
+        "매매대상열쇠": 대상열쇠,
+        "종목수": len(매매대상),
         "설정": (f"비중 {정책.max_position_weight * 100:.0f}% · "
                f"동시보유 {정책.max_concurrent_positions}종목 · "
                f"손절 {정책.stop_loss_pct * 100:.0f}% · "

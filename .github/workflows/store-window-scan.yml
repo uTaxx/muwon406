@@ -1,0 +1,100 @@
+name: 측정 결과 DB에 쌓기
+
+# 보유 상한별 측정이 남긴 결과 파일을 상태 DB에 넣는다.
+# 설계안은 docs/단기매매_재설계.md §14다.
+#
+# ## 왜 재는 것과 따로 두나
+#
+# 측정은 30분에서 한 시간 걸린다. 상태 DB는 구글드라이브의 파일 하나라
+# 고치는 워크플로를 전부 state-write로 묶어 겹치지 않게 한다. 측정을 그
+# 자물쇠 안에서 돌리면 한 시간 동안 장중 손절 감시와 매수 후보 산출이
+# 전부 기다린다.
+#
+# 그래서 재는 쪽은 자물쇠 없이 오래 돌며 파일만 남기고, 이 워크플로가
+# 그 파일을 몇 초 만에 넣는다. 자물쇠는 이쪽만 잡는다.
+#
+# ## 주문은 나가지 않는다
+#
+# 이미 계산된 값을 옮겨 적을 뿐이다. 다만 상태 DB를 고치므로 자물쇠가
+# 필요하다.
+#
+# ## 식별자는 영문으로 둔다
+#
+# GitHub Actions 표현식 파서가 한글 식별자를 못 읽는다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "결과를 가져올 '보유 상한별 측정' 실행 번호"
+        required: true
+      dry_run:
+        description: "true면 DB를 고치지 않고 무엇이 들어갈지만 출력합니다"
+        type: boolean
+        default: false
+
+concurrency:
+  # 상태 DB가 드라이브의 파일 하나라 겹치면 나중 것이 앞 것을 통째로 덮는다.
+  group: state-write
+  cancel-in-progress: false
+
+jobs:
+  store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -e ".[dev,cloud]"
+
+      - name: 측정 결과 내려받기
+        uses: actions/download-artifact@v4
+        with:
+          name: window-scan
+          run-id: ${{ github.event.inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 구글드라이브에서 상태 DB 내려받기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          python scripts/gdrive_sync.py download \
+            --folder-id "$GDRIVE_FOLDER_ID" --filename muwon.db --out ./muwon.db
+
+      - name: .env 구성
+        env:
+          MASTER_KEY: ${{ secrets.MUWON_MASTER_KEY }}
+        run: |
+          echo "DATABASE_URL=sqlite:///./muwon.db" >> .env
+          echo "MUWON_MASTER_KEY=$MASTER_KEY" >> .env
+
+      # 입력값을 run: 안에 그대로 넣지 않는다. 셸 글자 안으로 치환돼서
+      # $(...)가 섞인 값이 명령으로 실행된다. env로 넘기고 따옴표로 감싼다.
+      - name: DB에 쌓기
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          MUWON_DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          # 셸 변수 이름에 한글을 쓰면 bash가 command not found로 죽는다.
+          ARGS=""
+          if [ "$MUWON_DRY_RUN" = "true" ]; then
+            ARGS="--미리보기"
+          fi
+          python scripts/store_window_scan.py --파일 window-scan.json $ARGS
+
+      # 쌓기가 실패했으면 올리지 않는다. 반쯤 들어간 DB를 올리면 다음
+      # 실행이 그 상태를 정상으로 읽는다.
+      - name: 상태 DB 구글드라이브에 올리기
+        if: success() && github.event.inputs.dry_run != 'true'
+        env:
+          GDRIVE_SA_KEY_JSON: ${{ secrets.GDRIVE_SA_KEY_JSON }}
+        run: |
+          python scripts/gdrive_sync.py upload \
+            --folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" --filename muwon.db --path ./muwon.db
