@@ -89,11 +89,15 @@ from muwon.domain.types import Signal, SignalType
 from muwon.settings.schema import RiskPolicy
 from muwon.strategy.portfolio import MarketContext, PortfolioStrategy
 
-#: 국내 섹터 코드 → 미국 섹터 ETF. 내가 고른 짝이다. 다른 ETF면 답이 달라질 수 있다.
-섹터짝 = {
-    "SEMI": "SOXX", "BATT": "LIT", "BIO": "XBI", "AUTO": "CARZ",
-    "DEF": "ITA", "POWER": "GRID", "ROBO": "BOTZ",
+#: 국내 섹터 코드 → 미국 섹터 ETF. 내가 고른 짝이다. 다른 ETF면 답이 달라질 수 있어서
+#: 두 벌을 두고 둘 다 돌린다.
+섹터짝벌 = {
+    "기본": {"SEMI": "SOXX", "BATT": "LIT", "BIO": "XBI", "AUTO": "CARZ",
+           "DEF": "ITA", "POWER": "GRID", "ROBO": "BOTZ"},
+    "대안": {"SEMI": "SMH", "BATT": "BATT", "BIO": "IBB", "AUTO": "DRIV",
+           "DEF": "PPA", "POWER": "PAVE", "ROBO": "ROBO"},
 }
+섹터짝 = 섹터짝벌["기본"]   # main()에서 --짝으로 바꾼다
 기준지수 = "SPY"
 
 #: 설정 네 벌. (N일, 상위 k개)
@@ -115,22 +119,29 @@ def 미국강한섹터(
 
     기준 = 정렬(기준지수)
     기준수익 = 기준.pct_change(N)
-    상대, 추세 = {}, {}
+    시장나쁨 = 기준 < 기준.rolling(20).mean()
+    상대, 추세, 흐름나쁨 = {}, {}, {}
     for 코드, 심볼 in 섹터짝.items():
         s = 정렬(심볼)
         상대[코드] = s.pct_change(N) - 기준수익
         추세[코드] = s > s.rolling(추세창).mean()
+        흐름나쁨[코드] = s < s.rolling(20).mean()   # 매도 판단용. 짧은 흐름이 꺾였나
     상대표 = pd.DataFrame(상대)
     추세표 = pd.DataFrame(추세)
+    흐름표 = pd.DataFrame(흐름나쁨)
 
     나온것 = {}
     for d in 국내날들:
         줄 = 상대표.loc[d].dropna()
         if 줄.empty:
-            나온것[d] = frozenset()
+            나온것[d] = {"강한": frozenset(), "약한": frozenset(), "시장나쁨": False}
             continue
         상위 = 줄.sort_values(ascending=False).index[:k]
-        나온것[d] = frozenset(c for c in 상위 if bool(추세표.at[d, c]))
+        나온것[d] = {
+            "강한": frozenset(c for c in 상위 if bool(추세표.at[d, c])),
+            "약한": frozenset(c for c in 섹터짝 if bool(흐름표.at[d, c])),
+            "시장나쁨": bool(시장나쁨.at[d]),
+        }
     return pd.Series(나온것)
 
 
@@ -145,9 +156,10 @@ class 미국섹터따라가기(PortfolioStrategy):
     """강한 미국 섹터의 국내 종목을, 그 종목의 추세와 모멘텀을 보고 산다."""
 
     def __init__(self, 섹터표: dict[str, str], 강한섹터: pd.Series | None, N: int,
-                 국내필터: bool, 보유상한: int, 이름: str):
+                 국내필터: bool, 보유상한: int, 이름: str, 매도기준: str = "국내"):
         self._섹터표 = 섹터표
         self._강한섹터 = 강한섹터        # None이면 모든 섹터를 강하다고 본다(국내만)
+        self._매도기준 = 매도기준        # 국내 / 미국 / 둘다
         self._N = N
         self._국내필터 = 국내필터
         self.name = 이름
@@ -165,11 +177,23 @@ class 미국섹터따라가기(PortfolioStrategy):
             self._이평20[심볼] = s.rolling(20).mean()
             self._수익N[심볼] = s.pct_change(self._N)
 
-    def _강한가(self, 섹터: str, d) -> bool:
+    def _신호(self, d) -> dict | None:
         if self._강한섹터 is None:
+            return None
+        return self._강한섹터.get(d)
+
+    def _강한가(self, 섹터: str, d) -> bool:
+        신호 = self._신호(d)
+        if 신호 is None:
             return 섹터 in 섹터짝
-        집합 = self._강한섹터.get(d)
-        return bool(집합) and 섹터 in 집합
+        return 섹터 in 신호["강한"]
+
+    def _미국흐름나쁜가(self, 섹터: str, d) -> bool:
+        """섹터 ETF가 자기 20일선 아래거나 S&P 500이 20일선 아래면 흐름이 나쁘다."""
+        신호 = self._신호(d)
+        if 신호 is None:
+            return False
+        return 섹터 in 신호["약한"] or 신호["시장나쁨"]
 
     def evaluate(self, ctx: MarketContext) -> list[Signal]:
         d = pd.Timestamp(ctx.as_of)
@@ -187,8 +211,17 @@ class 미국섹터따라가기(PortfolioStrategy):
             추세좋음 = (종가 > 이평) and (수익 > 0)
             강함 = self._강한가(섹터, d)
             if 심볼 in ctx.held:
-                if not 강함 or 종가 < 이평:
-                    까닭 = "미국 섹터 약해짐" if not 강함 else "20일 이동평균 아래"
+                국내팔기 = (not 강함) or (종가 < 이평)
+                미국팔기 = self._미국흐름나쁜가(섹터, d)
+                # 국내만(미국 신호 없음)은 매도도 국내 기준이다. 미국 정보를 전혀
+                # 안 쓰는 것이 비교 상대의 뜻이라, 미국 매도 기준을 주면 팔 조건이
+                # 사라져서 비교가 안 된다.
+                기준 = self._매도기준 if self._강한섹터 is not None else "국내"
+                팔기 = {"국내": 국내팔기, "미국": 미국팔기,
+                      "둘다": 국내팔기 or 미국팔기}[기준]
+                if 팔기:
+                    까닭 = ("미국 흐름 나쁨" if 미국팔기 and 기준 != "국내"
+                          else "미국 섹터 약해짐" if not 강함 else "20일 이동평균 아래")
                     신호.append(Signal(심볼, ctx.as_of, SignalType.SELL, self.name, reason=까닭))
             elif 강함 and (추세좋음 or not self._국내필터):
                 신호.append(Signal(심볼, ctx.as_of, SignalType.BUY, self.name,
@@ -211,6 +244,9 @@ def main() -> int:
     ㅍ.add_argument("--끝", default="2026-09-02")
     ㅍ.add_argument("--미국지연", type=int, default=1, help="0이면 그날 미국 종가까지 쓴다(08:30 실행 가정)")
     ㅍ.add_argument("--보유상한", type=int, default=20)
+    ㅍ.add_argument("--짝", default="기본", choices=sorted(섹터짝벌), help="섹터 짝 벌")
+    ㅍ.add_argument("--매도기준", default="국내", choices=["국내", "미국", "둘다"],
+                   help="국내=20일선 아래로 내려오면 / 미국=섹터 ETF나 SPY가 20일선 아래면 / 둘다")
     ㅍ.add_argument("--씨앗", default="1,2,3")
     ㅍ.add_argument("--벌수", type=int, default=len(설정벌))
     ㅍ.add_argument("--벌", default="", help="쉼표로 고른 설정만. 예 'N20 k3,N60 k2'")
@@ -229,6 +265,8 @@ def main() -> int:
     인자 = ㅍ.parse_args()
 
     시작, 끝 = date.fromisoformat(인자.시작), date.fromisoformat(인자.끝)
+    global 섹터짝
+    섹터짝 = 섹터짝벌[인자.짝]
     정책 = RiskPolicy(max_position_weight=인자.비중, max_concurrent_positions=인자.동시보유,
                     stop_loss_pct=인자.손절, take_profit_pct=0.0, daily_loss_limit_pct=-0.03)
     섹터표 = 섹터표만들기()
@@ -261,14 +299,14 @@ def main() -> int:
     for 심볼 in histories:
         섹터별.setdefault(섹터표.get(심볼, "?"), []).append(심볼)
     print(f"매매 대상 {len(histories)}종목(시트 사본 {읽은날}) · {시작} ~ {끝} · "
-          f"미국 지연 {인자.미국지연}일 · 섹터별 종목 "
+          f"미국 지연 {인자.미국지연}일 · 짝 {인자.짝} · 매도 {인자.매도기준} · 섹터별 종목 "
           + ", ".join(f"{k} {len(v)}" for k, v in sorted(섹터별.items())), file=sys.stderr)
 
     낸것: dict = {
         "설명": "미국 섹터 ETF의 상대강도로 강한 섹터를 고르고, 그 섹터의 국내 종목을 추세와 모멘텀을 보고 사는 전략입니다.",
         "잰날": str(datetime.now(UTC).date()),
         "기간": f"{시작} ~ {끝}",
-        "섹터짝": 섹터짝, "기준지수": 기준지수,
+        "섹터짝": 섹터짝, "짝벌": 인자.짝, "매도기준": 인자.매도기준, "기준지수": 기준지수,
         "미국지연": 인자.미국지연, "보유상한": 인자.보유상한, "슬리피지": 인자.슬리피지,
         "매매대상": f"{인자.목록} ({읽은날}) {len(histories)}종목 (원자재 ETF 제외)",
         "종목빼기": 인자.종목빼기, "종목씨앗": 인자.종목씨앗,
@@ -285,7 +323,7 @@ def main() -> int:
         if 고른벌 and f"N{N} k{k}" not in 고른벌:
             continue
         강한 = 미국강한섹터(미국, 국내날들, N, k, 인자.미국지연)
-        강한날비율 = float(np.mean([len(v) > 0 for v in 강한.values])) * 100
+        강한날비율 = float(np.mean([len(v["강한"]) > 0 for v in 강한.values])) * 100
         만들기 = lambda 신호, 필터, 이름, N=N: 미국섹터따라가기(
             섹터표, 신호, N, 필터, 인자.보유상한, 이름)
         ㅂ = {"강한섹터있는날비율": round(강한날비율, 1)}
