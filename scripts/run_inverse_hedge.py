@@ -175,9 +175,10 @@ def 무작위나쁨(본보기: pd.Series, 씨앗: int) -> pd.Series:
     return pd.Series([d in 고른것 for d in 날들], index=본보기.index, dtype=bool)
 
 
-def 한번(histories, 전략, 시작, 끝, 정책, 제약, 인버스: str) -> dict | None:
+def 한번(histories, 전략, 시작, 끝, 정책, 제약, 인버스: str,
+       슬리피지: float = 0.0) -> dict | None:
     나온것 = 굴리기(histories, 전략, 시작, 끝, 정책,
-                costs=TransactionCosts(slippage_pct=0.0), **제약)
+                costs=TransactionCosts(slippage_pct=슬리피지), **제약)
     if 나온것 is None:
         return None
     결과, 지표 = 나온것

@@ -79,7 +79,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from run_inverse_hedge import 한번
-from run_switch_check import 섹터표만들기
+from run_switch_check import 대상종목, 섹터표만들기
 from run_universe_compare import 실거래종목
 
 from muwon.analysis.market_data import load_histories
@@ -213,11 +213,15 @@ def main() -> int:
     ㅍ.add_argument("--보유상한", type=int, default=20)
     ㅍ.add_argument("--씨앗", default="1,2,3")
     ㅍ.add_argument("--벌수", type=int, default=len(설정벌))
+    ㅍ.add_argument("--벌", default="", help="쉼표로 고른 설정만. 예 'N20 k3,N60 k2'")
+    ㅍ.add_argument("--슬리피지", type=float, default=0.0, help="편도. 0.001이면 0.1%%")
     ㅍ.add_argument("--비중", type=float, default=0.15)
     ㅍ.add_argument("--동시보유", type=int, default=6)
     ㅍ.add_argument("--섹터당", type=int, default=3)
     ㅍ.add_argument("--손절", type=float, default=-0.05)
     ㅍ.add_argument("--예수금", type=float, default=10_000_000.0)
+    ㅍ.add_argument("--목록", default="실거래", choices=["실거래", "섹터전체"],
+                   help="실거래=구글 시트 사본 63종목 / 섹터전체=섹터 초안 71종목")
     ㅍ.add_argument("--저장", default="")
     인자 = ㅍ.parse_args()
 
@@ -230,7 +234,10 @@ def main() -> int:
     씨앗들 = [int(x) for x in 인자.씨앗.split(",") if x]
 
     source, cache = YahooFinanceDataSource(), PriceCache(".cache/prices.sqlite")
-    종목들, 읽은날 = 실거래종목()
+    if 인자.목록 == "섹터전체":
+        종목들, 읽은날 = 대상종목(), "catalog.py"
+    else:
+        종목들, 읽은날 = 실거래종목()
     histories = load_histories(source, 종목들, 시작 - timedelta(days=400), 끝, cache=cache)
     미국 = {심볼: source.get_daily_ohlcv(심볼, 시작 - timedelta(days=400), 끝)
           for 심볼 in [기준지수, *섹터짝.values()]}
@@ -248,31 +255,34 @@ def main() -> int:
         "잰날": str(datetime.now(UTC).date()),
         "기간": f"{시작} ~ {끝}",
         "섹터짝": 섹터짝, "기준지수": 기준지수,
-        "미국지연": 인자.미국지연, "보유상한": 인자.보유상한,
-        "매매대상": f"실거래 시트 사본 {읽은날} 기준 {len(histories)}종목 (원자재 ETF 제외)",
+        "미국지연": 인자.미국지연, "보유상한": 인자.보유상한, "슬리피지": 인자.슬리피지,
+        "매매대상": f"{인자.목록} ({읽은날}) {len(histories)}종목 (원자재 ETF 제외)",
         "설정": (f"비중 {인자.비중:.0%} · 동시보유 {인자.동시보유}종목 · 섹터당 {인자.섹터당}종목 · "
-               f"손절 {인자.손절:.0%} · 예수금 {인자.예수금:,.0f}원 · 다음 날 시가 체결 · 슬리피지 0"),
+               f"손절 {인자.손절:.0%} · 예수금 {인자.예수금:,.0f}원 · 다음 날 시가 체결 · 슬리피지 {인자.슬리피지:.2%}"),
         "채점기준": ("1순위는 가장 나빴던 해(거래 20건 이상). 미국+국내가 국내만을 최악 해와 "
                  "최대낙폭 둘 다에서 이기고 밀어놓기 대조군 중앙값을 최악 해에서 이겨야 그 "
                  "설정에서 이긴 것. 네 벌 중 절반 넘게 이겨야 살펴볼것."),
         "벌": {},
     }
     시작때 = time.time()
+    고른벌 = {x.strip() for x in 인자.벌.split(",") if x.strip()}
     for N, k in 설정벌[:인자.벌수]:
+        if 고른벌 and f"N{N} k{k}" not in 고른벌:
+            continue
         강한 = 미국강한섹터(미국, 국내날들, N, k, 인자.미국지연)
         강한날비율 = float(np.mean([len(v) > 0 for v in 강한.values])) * 100
         만들기 = lambda 신호, 필터, 이름, N=N: 미국섹터따라가기(
             섹터표, 신호, N, 필터, 인자.보유상한, 이름)
         ㅂ = {"강한섹터있는날비율": round(강한날비율, 1)}
         ㅂ["미국+국내"] = 한번(histories, 만들기(강한, True, f"미국+국내 N{N} k{k}"),
-                          시작, 끝, 정책, 제약, "없음")
+                          시작, 끝, 정책, 제약, "없음", 인자.슬리피지)
         ㅂ["국내만"] = 한번(histories, 만들기(None, True, f"국내만 N{N}"),
-                        시작, 끝, 정책, 제약, "없음")
+                        시작, 끝, 정책, 제약, "없음", 인자.슬리피지)
         ㅂ["미국만"] = 한번(histories, 만들기(강한, False, f"미국만 N{N} k{k}"),
-                        시작, 끝, 정책, 제약, "없음")
+                        시작, 끝, 정책, 제약, "없음", 인자.슬리피지)
         밀린것 = [r for 씨 in 씨앗들
                if (r := 한번(histories, 만들기(밀어놓기(강한, 씨), True, f"밀어놓기 {씨}"),
-                           시작, 끝, 정책, 제약, "없음"))]
+                           시작, 끝, 정책, 제약, "없음", 인자.슬리피지))]
         최악들 = [m["요약"]["최악"] for m in 밀린것 if m["요약"]["최악"] is not None]
         ㅂ["밀어놓기중앙값"] = {
             "최악": round(statistics.median(최악들), 2) if 최악들 else None,
