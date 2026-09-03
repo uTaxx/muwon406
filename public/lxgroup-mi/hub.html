@@ -17,7 +17,10 @@
   *{box-sizing:border-box;}
   body{margin:0; background:var(--bg); color:var(--text); font-family:'Noto Sans KR', -apple-system, sans-serif; line-height:1.6;}
   #prefillNotice{display:none; background:#FFF3CD; color:#8A6D00; text-align:center; padding:10px; font-size:13px; font-weight:600; border-radius:10px; margin-bottom:12px;}
-  .cover{background:var(--green); padding:36px 20px 46px; position:relative; overflow:hidden;}
+  .cover{background:var(--green); padding:36px 0 46px; position:relative; overflow:hidden;}
+  /* 본문(main)의 max-width·padding 과 같은 값이어야 왼쪽 끝이 맞는다.
+     한쪽만 고치면 다시 어긋나므로 두 곳을 늘 같이 본다. */
+  .cover-in{max-width:680px; margin:0 auto; padding:0 16px; position:relative;}
   .cover::after{content:""; position:absolute; right:-40px; top:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.12);}
   .cover::before{content:""; position:absolute; right:60px; bottom:-60px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.10);}
   .badge{display:inline-block; background:rgba(255,255,255,0.22); color:#fff; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.02em; margin-bottom:14px; position:relative;}
@@ -151,7 +154,8 @@
      넓어지면 차림표를 왼쪽에 세워 늘 보이게 하고 본문을 두 칸으로 흘린다.
      좁은 화면에서 바뀌는 것은 없다 — 아래 규칙은 전부 1024px 위에서만 산다. */
   @media (min-width:1024px){
-    .cover{padding:32px 32px 46px;}
+    .cover{padding:32px 0 46px;}
+    .cover-in{max-width:1320px; padding:0 24px;}
     main{max-width:1320px; padding:0 24px 90px; display:grid;
       grid-template-columns:216px minmax(0,1fr); gap:20px; align-items:start;}
     .side{position:sticky; top:16px;}
@@ -589,13 +593,17 @@
 
 
 <div class="cover">
-  <span class="badge">LX Group MI · 사내 전용</span>
-  <h1>LX Group MI</h1>
-  <p>종합 상황판에서 오늘의 상황을 한눈에 보고, 왼쪽 차림표에서 기사·키워드 검색·리스크·시장지표로 들어갑니다. 설정은 아래 버튼에서 바꿉니다.</p>
-  <div class="cover-acts">
-    <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
-    <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
-    <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
+  <!-- 붉은 바탕은 화면 끝까지 가되, 글은 본문과 같은 상자 안에 넣는다.
+       그래야 제목의 왼쪽 끝과 아래 차림표의 왼쪽 끝이 같은 자리에 선다. -->
+  <div class="cover-in">
+    <span class="badge">LX Group MI · 사내 전용</span>
+    <h1>LX Group MI</h1>
+    <p>종합 상황판에서 오늘의 상황을 한눈에 보고, 왼쪽 차림표에서 기사·키워드 검색·리스크·시장지표로 들어갑니다. 설정은 아래 버튼에서 바꿉니다.</p>
+    <div class="cover-acts">
+      <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
+      <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
+    </div>
   </div>
 </div>
 
