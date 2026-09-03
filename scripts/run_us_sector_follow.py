@@ -222,6 +222,9 @@ def main() -> int:
     ㅍ.add_argument("--예수금", type=float, default=10_000_000.0)
     ㅍ.add_argument("--목록", default="실거래", choices=["실거래", "섹터전체"],
                    help="실거래=구글 시트 사본 63종목 / 섹터전체=섹터 초안 71종목")
+    ㅍ.add_argument("--종목빼기", type=float, default=0.0,
+                   help="섹터마다 이 비율만큼 종목을 무작위로 뺀다. 목록에 얼마나 민감한지 본다")
+    ㅍ.add_argument("--종목씨앗", type=int, default=0)
     ㅍ.add_argument("--저장", default="")
     인자 = ㅍ.parse_args()
 
@@ -239,6 +242,17 @@ def main() -> int:
     else:
         종목들, 읽은날 = 실거래종목()
     histories = load_histories(source, 종목들, 시작 - timedelta(days=400), 끝, cache=cache)
+    if 인자.종목빼기 > 0:
+        import random
+        rng = random.Random(인자.종목씨앗)
+        섹터모음: dict[str, list[str]] = {}
+        for 심볼 in histories:
+            섹터모음.setdefault(섹터표.get(심볼, '?'), []).append(심볼)
+        뺄것 = set()
+        for 목록 in 섹터모음.values():
+            뺄것 |= set(rng.sample(sorted(목록), round(len(목록) * 인자.종목빼기)))
+        histories = {k: v for k, v in histories.items() if k not in 뺄것}
+        print(f"종목 {len(뺄것)}개를 뺐습니다 (씨앗 {인자.종목씨앗})", file=sys.stderr)
     미국 = {심볼: source.get_daily_ohlcv(심볼, 시작 - timedelta(days=400), 끝)
           for 심볼 in [기준지수, *섹터짝.values()]}
     국내날들 = pd.DatetimeIndex(sorted({pd.Timestamp(d) for df in histories.values()
@@ -257,6 +271,7 @@ def main() -> int:
         "섹터짝": 섹터짝, "기준지수": 기준지수,
         "미국지연": 인자.미국지연, "보유상한": 인자.보유상한, "슬리피지": 인자.슬리피지,
         "매매대상": f"{인자.목록} ({읽은날}) {len(histories)}종목 (원자재 ETF 제외)",
+        "종목빼기": 인자.종목빼기, "종목씨앗": 인자.종목씨앗,
         "설정": (f"비중 {인자.비중:.0%} · 동시보유 {인자.동시보유}종목 · 섹터당 {인자.섹터당}종목 · "
                f"손절 {인자.손절:.0%} · 예수금 {인자.예수금:,.0f}원 · 다음 날 시가 체결 · 슬리피지 {인자.슬리피지:.2%}"),
         "채점기준": ("1순위는 가장 나빴던 해(거래 20건 이상). 미국+국내가 국내만을 최악 해와 "
