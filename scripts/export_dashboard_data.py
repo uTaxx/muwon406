@@ -232,12 +232,18 @@ def 상한판단지침() -> list[dict]:
 
     **기본값 셋을 같이 적는다.** 화면이 그 값을 또 적어 두면 파이썬에서
     기본값을 바꿨을 때 화면만 옛 값을 가리킨다."""
-    return [
-        {**_지침칸(ㄱ),
-         "기본순위": (window_judgment.기본기준.열쇠들.index(ㄱ.열쇠) + 1
-                  if ㄱ.열쇠 in window_judgment.기본기준.열쇠들 else 0)}
-        for ㄱ in window_judgment.지침들
-    ]
+    나온것 = []
+    for ㄱ in window_judgment.지침들:
+        칸, 뒤집기 = window_judgment.자료칸.get(ㄱ.열쇠, ("", False))
+        나온것.append({
+            **_지침칸(ㄱ),
+            # 화면이 상한측정.json의 어느 칸을 보고 줄을 세울지. 화면에
+            # 손으로 적으면 지침을 더할 때마다 두 곳을 고쳐야 한다.
+            "칸": 칸, "뒤집기": 뒤집기,
+            "기본순위": (window_judgment.기본기준.열쇠들.index(ㄱ.열쇠) + 1
+                     if ㄱ.열쇠 in window_judgment.기본기준.열쇠들 else 0),
+        })
+    return 나온것
 
 
 자료들 = {"용어사전.json": 용어사전, "전략설명.json": 전략설명,

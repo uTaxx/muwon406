@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 
+import pytest
+
 from muwon.analysis import window_judgment as ㅈ
 from muwon.analysis import window_perf as ㅇ
 from muwon.analysis.judgment import 순위갈래, 확인갈래
@@ -217,3 +219,44 @@ def test_연_단위_지침과_따로_둔다():
     assert judgment.기본기준.일순위 != ㅈ.기본기준.일순위
     # 갈래 이름은 같은 것을 쓴다. 화면이 둘을 같은 방식으로 그린다.
     assert ㅈ.순위지침들[0].갈래 == 순위갈래
+
+
+# ── 화면이 같은 값을 꺼내는 길 ──────────────────────────────────
+
+
+def test_화면이_보는_칸과_파이썬이_내는_값이_같다():
+    """화면은 파이썬 함수를 못 부른다. 파일에서 값을 꺼내 줄을 세우는데,
+    어느 칸이 어느 지침인지가 갈리면 화면이 엉뚱한 값으로 정렬한다. 그
+    어긋남은 아무것도 빨갛게 만들지 않는다."""
+    import importlib.util
+    from pathlib import Path
+
+    자리 = importlib.util.spec_from_file_location(
+        "export_window_data",
+        Path(__file__).resolve().parent.parent / "scripts" / "export_window_data.py")
+    뽑기 = importlib.util.module_from_spec(자리)
+    자리.loader.exec_module(뽑기)
+
+    잰것 = _잰것(연환산=13.5, 플러스=47.0, 하위10=-4.7, 표준편차=5.5,
+              만료=39.0, 손절=30.0, 매매수=282, 낙폭=-22.5)
+    칸자리 = {이름: i for i, 이름 in enumerate(뽑기.칸들)}
+    줄 = 뽑기.한줄(잰것)
+
+    for 지침 in ㅈ.순위지침들:
+        assert 지침.열쇠 in ㅈ.자료칸, f"{지침.열쇠}: 화면이 볼 칸이 없습니다"
+        칸, 뒤집기 = ㅈ.자료칸[지침.열쇠]
+        assert 칸 in 칸자리, f"{지침.열쇠}: '{칸}'이 뽑는 자료에 없습니다"
+
+        파일값 = 줄[칸자리[칸]]
+        화면값 = None if 파일값 is None else (-파일값 if 뒤집기 else 파일값)
+        파이썬값 = 지침.값(잰것)
+        assert 화면값 == pytest.approx(파이썬값, rel=1e-3, abs=1e-3), (
+            f"{지침.열쇠}: 화면 {화면값}, 파이썬 {파이썬값}"
+        )
+
+
+def test_확인_지침에는_칸을_안_준다():
+    """계산으로 줄을 못 세우는 것들이다. 칸을 주면 화면이 순위 자리에
+    넣을 수 있게 된다."""
+    for ㄱ in ㅈ.확인지침들:
+        assert ㄱ.열쇠 not in ㅈ.자료칸, ㄱ.열쇠

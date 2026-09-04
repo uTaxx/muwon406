@@ -347,6 +347,41 @@ def 줄세우기(잰것들, 기준값: 기준 | None = None) -> list:
     return sorted(잰것들, key=ㄱ준.정렬키)
 
 
+# ── 화면이 같은 값을 꺼내는 길 ──────────────────────────────────
+
+#: 지침마다 `상한측정.json`의 어느 칸을 보는지와, 부호를 뒤집는지.
+#:
+#: **왜 이것이 따로 필요한가.** 위 `값내기`는 파이썬 함수라 화면이 못
+#: 부른다. 화면은 파일에서 값을 꺼내 순위를 매겨야 하는데, 어느 칸이
+#: 어느 지침인지를 화면에 손으로 적으면 지침을 하나 더할 때마다 두 곳을
+#: 고쳐야 하고 한쪽만 고치면 화면이 엉뚱한 값으로 줄을 세운다.
+#:
+#: `tests/test_window_judgment.py`가 이 표와 `값내기`가 같은 값을 내는지
+#: 확인한다. 그래서 둘이 갈리면 시험이 빨개진다.
+자료칸: dict[str, tuple[str, bool]] = {
+    "window_cagr": ("연환산", False),
+    "window_geo": ("기하평균", False),
+    "window_mean": ("산술평균", False),
+    "window_median": ("중앙값", False),
+    "plus_ratio": ("플러스비율", False),
+    "p10": ("하위10", False),
+    "p25": ("하위25", False),
+    "worst_window": ("최악구간", False),
+    "window_std": ("구간흔들림", True),
+    "window_sortino": ("하락대비수익", False),
+    "win_rate": ("승률", False),
+    "profit_factor": ("손익비", False),
+    "expectancy": ("기대수익", False),
+    "trade_median": ("매매중앙값", False),
+    "expire_ratio": ("기간만료비율", True),
+    "stop_ratio": ("손절비율", True),
+    "trade_count": ("매매수", False),
+    "max_drawdown": ("최대낙폭", False),
+    "window_dd_median": ("구간낙폭중앙값", False),
+    "avg_hold": ("평균보유일수", False),
+}
+
+
 # ── 사람이 확인하는 것 ──────────────────────────────────────────
 
 #: 겹치지 않는 구간이 이만큼은 되어야 분포를 놓고 이야기할 수 있다.
