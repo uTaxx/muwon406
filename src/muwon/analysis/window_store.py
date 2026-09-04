@@ -38,7 +38,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from muwon.analysis import window_perf as ㅇ
@@ -57,6 +57,7 @@ def 쌓기(
 
     **날짜로 지우지 않는다.** 그날 잰 것을 통째로 지우면, 화면에서 조건
     하나만 골라 다시 재는 순간 같은 날 잰 나머지 조건이 전부 사라진다."""
+    _국면빈칸채우기(session)
     for ㄱ in 잰것들:
         session.execute(
             delete(WindowPerfRow).where(
@@ -72,6 +73,28 @@ def 쌓기(
         session.add(_줄로(ㄱ, 잰날=잰날, 매매대상=매매대상, 실거래=실거래))
     session.commit()
     return len(잰것들)
+
+
+def _국면빈칸채우기(session: Session) -> int:
+    """국면 칸이 비어 있는 옛 줄을 "전체"로 채운다.
+
+    **이걸 안 하면 같은 조건이 두 줄이 된다.** 국면을 나누기 전에 쌓은 줄은
+    이 칸이 NULL이다. SQL에서 NULL은 "전체"와 같지 않으므로 갈아 끼우는
+    조건에 안 걸리고, 새 줄이 그 옆에 하나 더 생긴다. 그러면 표에 같은
+    전략이 두 번 뜨고 순위도 두 자리를 차지한다.
+
+    실제로 그랬다. 국면을 붙인 첫 실행 뒤 전체 국면 표에 같은 전략이 두 번
+    나왔다.
+
+    한 번 채우고 나면 그다음부터는 아무것도 안 한다."""
+    바뀐것 = session.execute(
+        update(WindowPerfRow)
+        .where(WindowPerfRow.국면.is_(None))
+        .values(국면="전체")
+    ).rowcount
+    if 바뀐것:
+        session.commit()
+    return 바뀐것 or 0
 
 
 def _줄로(ㄱ: ㅇ.잰것, *, 잰날: date, 매매대상: str, 실거래: bool) -> WindowPerfRow:
