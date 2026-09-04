@@ -1076,15 +1076,38 @@ def test_그림이_안_잰_상한을_안_그린다():
 
 def test_국면을_고를_수_있다():
     assert 'id="찾기국면"' in 쪽
-    assert 'const 찾기국면들 = ["전체", "상승", "조정", "하락"]' in 글
+    assert "const 찾기국면들 = [" in 글
+    assert '{ 값: "전체"' in 글
 
 
 def test_화면이_고르는_국면이_파이썬과_같다():
     """화면에서 고른 국면이 자료에 없으면 표가 그냥 빈다."""
     from muwon.analysis import market_regime
 
-    for 이름 in market_regime.국면들:
-        assert f'"{이름}"' in 글, 이름
+    for 이름 in market_regime.세분국면들:
+        assert f'값: "{이름}"' in 글, 이름
+
+
+def test_화면이_전환_여섯을_다_고를_수_있다():
+    """셋만 두면 '다시 오르는 조정'과 '하락으로 이어지는 조정'이 한 칸에
+    섞인다. 그 둘을 가르려고 만든 것이라 여섯이 다 있어야 한다."""
+    from muwon.analysis import market_regime
+
+    assert len(market_regime.전환들) == 6
+    for 이름 in market_regime.전환들:
+        assert f'값: "{이름}"' in 글, 이름
+
+
+def test_전환을_고르면_오늘은_알_수_없다고_적는다():
+    """전환 이름표는 구간이 끝나야 정해진다. 지금이 어느 쪽인지 아는 것처럼
+    적으면 그것을 보고 오늘 살지 말지를 정하게 된다."""
+    assert "이 구간이 끝나야" in 글
+
+
+def test_국면을_셋으로만_잰_옛_자료를_빈_표로_그리지_않는다():
+    """빈 표는 '그 국면에 구간이 없었다'로 읽힌다. 실제로는 그렇게 안 나눠
+    잰 것이고, 다시 계산하면 나온다. 해야 할 일이 정반대다."""
+    assert "국면을 상승·조정·하락 셋으로만" in 글
 
 
 def test_지금_국면을_화면_맨_위에_적는다():
