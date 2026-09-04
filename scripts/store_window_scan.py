@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from dataclasses import replace
 from datetime import date, datetime
@@ -81,6 +82,12 @@ def 읽어들이기(내용: dict) -> tuple[list[ㅇ.잰것], str, date]:
     잰날 = date.fromisoformat(잰날글) if 잰날글 else datetime.now(한국).date()
 
     종목수 = int(내용.get("종목수") or 0)
+    if not 종목수:
+        # 종목 수를 따로 안 적던 판이다. 사람이 읽는 글에 "63종목"처럼
+        # 들어 있으므로 거기서 되짚는다. 못 찾으면 0으로 둔다. 0은
+        # "모른다"는 뜻이고, 아무 수나 채워 넣는 것보다 낫다.
+        찾은것 = re.search(r"(\d+)\s*종목", str(내용.get("매매대상") or ""))
+        종목수 = int(찾은것.group(1)) if 찾은것 else 0
     잰것들 = []
     for 줄 in 내용.get("줄") or []:
         ㄱ = ㅇ.잰것으로(줄)
