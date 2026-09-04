@@ -42,8 +42,16 @@ jobs:
   store:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 화면이 읽을 자료를 만들어 이 가지에 커밋한다. 줄이 천 개가 넘어서
+    # 사람이 손으로 옮겨 적을 수 없다.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 기본 설정은 얕은 복제라 커밋을 밀어 넣을 수 없다.
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -88,6 +96,33 @@ jobs:
             ARGS="--미리보기"
           fi
           python scripts/store_window_scan.py --파일 window-scan.json --표찍기 $ARGS
+
+      # 화면은 정적 파일이라 DB를 못 읽는다. 시트를 거치는 길도 있지만
+      # 이 자료는 줄이 천 개가 넘어서 시트에 맞지 않는다.
+      #
+      # 쌓기가 실패했으면 뽑지 않는다. 반쯤 들어간 DB로 만든 파일이
+      # 화면에 뜨면 그것을 진짜 측정으로 읽는다.
+      - name: 화면 자료 뽑기
+        if: success() && github.event.inputs.dry_run != 'true'
+        run: python scripts/export_window_data.py
+
+      - name: 화면 자료 커밋
+        if: success() && github.event.inputs.dry_run != 'true'
+        env:
+          IN_RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          # 셸 변수 이름에 한글을 쓰면 bash가 command not found로 죽는다.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard/자료/상한측정.json
+          # 안 바뀌었으면 빈 커밋을 남기지 않는다. 빈 커밋이 쌓이면
+          # 기록에서 실제로 자료가 바뀐 날을 찾을 수 없다.
+          if git diff --cached --quiet; then
+            echo "화면 자료가 그대로입니다. 커밋하지 않습니다."
+            exit 0
+          fi
+          git commit -m "상한별 측정 결과를 화면 자료로 뽑습니다 (실행 $IN_RUN_ID)"
+          git push origin HEAD:"$GITHUB_REF_NAME"
 
       # 쌓기가 실패했으면 올리지 않는다. 반쯤 들어간 DB를 올리면 다음
       # 실행이 그 상태를 정상으로 읽는다.
