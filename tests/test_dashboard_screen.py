@@ -18,6 +18,8 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 뿌리 = Path(__file__).resolve().parent.parent
 쪽 = (뿌리 / "dashboard" / "index.html").read_text(encoding="utf-8")
 글 = (뿌리 / "dashboard" / "app.js").read_text(encoding="utf-8")
@@ -1151,3 +1153,75 @@ def test_국면은_계산_열쇠에_안_들어간다():
     자리 = 글.index("const 찾기지금조건 =")
     덩이 = 글[자리:자리 + 300]
     assert "찾기국면" not in 덩이
+
+
+# ── 전략 찾기 탭의 순위 순서를 저장한다 (2026-09-04) ──────────────
+#
+# 전에는 브라우저 안에서만 바뀌었다. 새로 고치면 기본 순서로 돌아갔고,
+# 쌓이는 순위에도 아무 영향이 없었다.
+
+
+def test_찾기_순위_순서를_저장하는_자리가_있다():
+    assert 'id="찾기지침저장"' in 쪽
+    assert "function 찾기지침저장하기(" in 글
+    assert '$("찾기지침저장").addEventListener' in 글
+
+
+def test_찾기_순위를_시트에서_다시_읽는다():
+    """저장만 하고 안 읽으면 새로 고칠 때 기본값으로 돌아간다."""
+    assert "function 찾기지침불러오기(" in 글
+    assert "찾기지침불러오기()" in 글
+
+
+def test_찾기_순위가_연_단위_지침과_다른_칸에_저장된다():
+    """한 자리를 나눠 쓰면 한쪽 값이 다른 쪽 목록에 없는 이름이 되고,
+    그러면 저장은 되는데 순위는 기본값으로 돌아간다. 실제로 그랬다."""
+    from muwon.analysis import judgment, window_judgment
+
+    assert "구간일순위" in 글
+    assert "구간이순위" in 글
+    assert "구간삼순위" in 글
+    # 파이썬 두 목록이 정말 서로 다른 이름을 쓰는지 확인한다. 겹치면
+    # 자리를 나눌 이유가 없다.
+    연 = {judgment.기본기준.일순위, judgment.기본기준.이순위, judgment.기본기준.삼순위}
+    구간 = {ㄱ.열쇠 for ㄱ in window_judgment.순위지침들}
+    assert not (연 <= 구간), "연 단위 기본값이 구간 목록에 다 들어 있으면 나눌 필요가 없다"
+
+
+def test_찾기_순위를_저장할_때_모르는_값을_막는다():
+    """화면에만 있는 지침을 저장하면 파이썬이 모르는 값이 시트에 들어간다.
+    그러면 저장은 되는데 순위는 기본값으로 돌아간다."""
+    assert "목록에 없는 값입니다" in 글
+
+
+def test_찾기_순위_저장이_실패하면_그렇다고_적는다():
+    """조용히 성공한 척하지 않는다."""
+    assert "저장되지 않았습니다" in 글
+    assert "rank_window_1st" in 글
+
+
+# ── 화면 코드가 문법에 맞는가 (2026-09-04) ────────────────────────
+#
+# 2026-09-04에 주석을 닫는 자리를 하나 잘못 두어 app.js가 통째로 죽었다.
+# **ruff와 시험 2003건이 전부 초록불이었다.** 파이썬만 검사하고 있었기
+# 때문이다. 화면은 빈 채로 열렸고 탭이 하나도 안 눌렸다.
+#
+# 브라우저로 열어 보면 잡히지만 그것은 손으로 하는 일이라 빠뜨리기 쉽다.
+# 여기서 한 번 더 막는다.
+
+
+def test_화면_자바스크립트가_문법에_맞는다():
+    """문법이 틀리면 화면이 통째로 죽는다. 표 하나가 비는 것과 다르다."""
+    import shutil
+    import subprocess
+
+    노드 = shutil.which("node")
+    if not 노드:
+        pytest.skip("node가 없어 문법을 검사하지 못했습니다")
+
+    for 이름 in ("app.js",):
+        결과 = subprocess.run(
+            [노드, "--check", str(뿌리 / "dashboard" / 이름)],
+            capture_output=True, text=True, check=False,
+        )
+        assert 결과.returncode == 0, f"{이름}\n{결과.stderr}"
