@@ -173,13 +173,30 @@ def test_둘_다_0이면_익절을_안_건다():
     assert 익절기준(전략, RiskPolicy(take_profit_pct=0.0)) == 0.0
 
 
-def test_등록된_전략은_아직_익절선을_정하지_않았다():
-    """지금은 전부 0이다. 그래서 이 변경만으로는 동작이 달라지지 않는다.
-    누군가 값을 넣으면 이 시험이 그 사실을 알려 준다."""
+def test_익절선을_정한_전략이_어느_것인지_고정한다():
+    """2026-09-04까지는 하나도 없었다. 그날 익절선만 다른 여섯을 등록했다.
+
+    익절선은 실제 매매 규칙을 바꾼다. 목록을 여기에 적어 두면, 값이 늘거나
+    줄 때 그것이 의도한 변경인지 한 번 묻게 된다."""
     from muwon.strategy.registry import list_definitions
 
-    정한것 = [d.key for d in list_definitions() if d.익절]
-    assert 정한것 == [], f"익절선을 정한 전략이 생겼습니다: {정한것}"
+    정한것 = {d.key: d.익절 for d in list_definitions() if d.익절}
+    assert 정한것 == {
+        "volume_surge_3d_tp5": 0.05,
+        "volume_surge_3d_tp8": 0.08,
+        "volume_surge_3d_tp12": 0.12,
+        "gap_up_go_tp5": 0.05,
+        "gap_up_go_tp8": 0.08,
+        "gap_up_go_tp12": 0.12,
+    }, 정한것
+
+
+def test_익절선을_정한_전략의_대조군은_익절선이_없다():
+    """대조군에 익절선이 붙으면 무엇 때문에 달라졌는지 알 수 없다."""
+    from muwon.strategy.registry import get_definition
+
+    for 키 in ("volume_surge_3d", "gap_up_go"):
+        assert get_definition(키).익절 == 0.0, 키
 
 
 def test_정의에_적은_익절선이_전략_객체에_붙는다():
