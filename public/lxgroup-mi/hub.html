@@ -3604,8 +3604,17 @@
        있고 속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로
        막아 둔다 — 빈 블록은 어느 쪽 잘못이든 읽는 사람에게는 고장이다. */
     const 것들 = 실적.filter(function (x){
-      return (x.계열사 || []).indexOf(compTab) >= 0 &&
-             ((x.해 || []).length || (x.분기 || []).length);
+      if ((x.계열사 || []).indexOf(compTab) < 0) return false;
+      const 점들 = (x.해 || []).concat(x.분기 || []);
+      if (!점들.length) return false;
+      /* 부문 이름 자리에 기간이 들어앉는 일이 있다 — 자본변동표의 '당기말'이나
+         '제26(당)기' 같은 것이 부문표로 잘못 읽힌 것이다. 이름이 기간꼴이거나
+         매출액이 한 해도 없으면 부문이 아니다. 부문 실적인데 매출이 아예 없는
+         일은 없다. */
+      const 이름 = String(x.부문 || '').replace(/\s/g, '');
+      if (이름 && /^(당기|전기|당분기|전분기|당반기|전반기|기초|기말)(말|초)?$/.test(이름)) return false;
+      if (이름 && /^제?\s*\d+\s*\(?[당전]?\)?\s*기|^20\d\d년?$/.test(이름)) return false;
+      return 점들.some(function (p){ return p.매출액 !== null && p.매출액 !== undefined && p.매출액 !== ''; });
     });
     document.getElementById('compBody').innerHTML = compBlocks(것들);
     document.querySelectorAll('#compBody .ind-tbl-wrap').forEach(function (w){
