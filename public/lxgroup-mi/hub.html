@@ -597,6 +597,13 @@
      저마다 색이 있어야 하므로, 우리 것이라는 표는 블록 바깥에 둔다. */
   .ind-block.comp-us{border-left:3px solid var(--green); padding-left:14px;}
   .ind-block.comp-us .ind-bhead b{color:var(--green);}
+  /* 접힌 옛 부문을 펴는 단추. 목록의 한 줄처럼 보이되 눌리는 것으로 읽히게. */
+  .comp-old{display:block; width:100%; text-align:left; margin-top:2px;
+    padding:7px 8px; border:1px dashed var(--line); border-radius:9px;
+    background:transparent; color:var(--muted); font:inherit; font-size:11.5px;
+    font-weight:700; cursor:pointer;}
+  .comp-old:hover{border-color:var(--muted); color:var(--text);}
+  .comp-old span{display:block; margin-top:2px; font-weight:400; font-size:10.5px;}
   .comp-tag{display:inline-block; margin-left:6px; background:var(--green); color:#fff;
     font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; vertical-align:middle;}
 
@@ -2993,6 +3000,7 @@
   let compShape = {};          // 블록마다 고른 그래프 모양(막대·선)
   let compOpen = {};           // 블록마다 그래프가 펼쳐졌는지
   let compTable = {};          // 블록마다 표가 펼쳐졌는지
+  let compOld = {};            // 블록마다 옛 부문까지 펼쳐 보는지
   let compGraph = {};          // 커서·표·엑셀이 값을 꺼내 쓰는 그래프
 
   /* 우리 것은 붉게, 남의 것은 가라앉은 색으로. 규모 순이 아니라 '우리와 남'이
@@ -3438,12 +3446,34 @@
        한 블록이 한 회사이므로 붉은색은 여기서 쓰지 않는다 — 우리 회사인지는
        블록 제목의 「우리」 표로 알린다. 부문마다 붉으면 아무것도 도드라지지
        않는다. */
-    const 골 = 것들.map(function (x, i){
+    const 온골 = 것들.map(function (x, i){
       return { x: x, 이름: comp부문이름(x), 색: COMP_THEM[i % COMP_THEM.length] };
     });
 
+    /* 회사가 보고서마다 부문 이름을 바꾸면 옛 이름이 시트에 그대로 남는다.
+       현대리바트는 「빌트인」·「빌트인가구」·「빌트인가구제조및판매등」이 다 따로
+       서서 열세 줄이 되는데, 그중 여덟은 2021~2022에서 끊긴 이름이다. 접은
+       사업도 마찬가지다. 가장 최근 기간에 자료가 없는 부문은 접어 두고, 지우는
+       대신 「옛 부문 N개」로 한 번에 펼 수 있게 한다 — 옛 이름인지 정말 접은
+       사업인지는 화면이 가릴 수 없으므로 숨기되 없애지는 않는다.
+       색은 접기 전 차례로 매겨 두었다. 펴고 접을 때마다 색이 밀리면 안 된다. */
+    let 최근칸 = '';
+    온골.forEach(function (c){
+      const l = compLatest(c.x, '매출액', R);
+      if (l && l.칸 > 최근칸) 최근칸 = l.칸;
+    });
+    const 옛것 = 최근칸 ? 온골.filter(function (c){
+      const l = compLatest(c.x, '매출액', R);
+      return !l || l.칸 !== 최근칸;
+    }) : [];
+    const 옛펼침 = compOld[열쇠] === true;
+    const 골 = (옛것.length && !옛펼침)
+      ? 온골.filter(function (c){ return 옛것.indexOf(c) < 0; })
+      : 온골;
+    const 보인것들 = 골.map(function (c){ return c.x; });
+
     const 지표들 = 보기 === '함께' ? ['매출액', '영업이익'] : [보기];
-    const 창 = (펼침 || 표펼침) ? compWindow(것들, 지표들, R) : null;
+    const 창 = (펼침 || 표펼침) ? compWindow(보인것들, 지표들, R) : null;
     const 짝들 = (펼침 || 표펼침)
       ? 지표들.map(function (k){
           return { 꼬리: k, g: compBuild(골, k, R, 창), 열쇠: 열쇠 + '@' + k };
@@ -3547,14 +3577,25 @@
              (보기 === m.k ? ' class="on"' : '') + '>' + m.이름 + '</button>';
     }).join('') + '</div>';
 
-    const 최신 = 것들.map(function (x){ const l = compLatest(x, '매출액', R); return l ? l.칸 : ''; })
+    /* 접힌 것이 있으면 그 수를 알린다. 조용히 감추면 빠진 줄 안다. */
+    const 옛단추 = 옛것.length
+      ? '<button type="button" class="comp-old" data-old="1">' +
+          (옛펼침 ? '옛 부문 ' + 옛것.length + '개 접기'
+                  : '옛 부문 ' + 옛것.length + '개 더 보기') +
+          '<span>' + escapeHtml(최근칸 ? R.눈(최근칸) : '') + ' 자료가 없는 부문입니다 — ' +
+          '회사가 이름을 바꿨거나 접은 사업입니다</span>' +
+        '</button>'
+      : '';
+
+    const 최신 = 보인것들.map(function (x){ const l = compLatest(x, '매출액', R); return l ? l.칸 : ''; })
                     .filter(Boolean).sort().pop();
 
-    /* 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그 이름을 적는다. */
+    /* 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그 이름을 적는다.
+       셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를 아래 단추가 알린다. */
     const 우리냐 = 것들.some(function (x){ return x.우리편; });
-    const 부문말 = 것들.length > 1
-      ? '부문 ' + 것들.length + '개'
-      : comp부문이름(것들[0]);
+    const 부문말 = 골.length > 1
+      ? '부문 ' + 골.length + '개'
+      : comp부문이름((골[0] || {}).x || 것들[0]);
 
     return '<div class="ind-block' + (우리냐 ? ' comp-us' : '') + '" data-blk="' + escapeHtml(열쇠) + '">' +
       '<div class="ind-bhead">' +
@@ -3565,7 +3606,7 @@
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
       '</div>' +
-      목록 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
+      목록 + 옛단추 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
   }
 
@@ -3729,7 +3770,7 @@
   });
 
   document.getElementById('compBody').addEventListener('click', function (e){
-    const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls]');
+    const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls], button[data-old]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
     if (!통) return;
@@ -3739,7 +3780,8 @@
        스크롤이 맨 위로 튄다. */
     if (b.dataset.xls){ compXlsx(통, k); return; }
 
-    if (b.dataset.range) compRange[k] = b.dataset.range;
+    if (b.dataset.old) compOld[k] = !(compOld[k] === true);
+    else if (b.dataset.range) compRange[k] = b.dataset.range;
     else if (b.dataset.shape) compShape[k] = b.dataset.shape;
     /* 보기를 바꾸면 모양은 그 보기의 기본으로 되돌린다. '매출·이익'은 막대가,
        지표 하나는 선이 낫다 — 앞서 고른 모양이 따라다니면 매번 다시 누르게 된다. */
