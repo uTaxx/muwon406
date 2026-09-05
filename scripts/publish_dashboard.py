@@ -66,7 +66,20 @@ def _달리기(명령, 어디, 받을까=True) -> str:
 
 
 def 파일목록(저장소: Path) -> list[str]:
-    return [ㄱ for ㄱ in _달리기(["git", "ls-files"], 저장소).splitlines() if ㄱ]
+    """추적 중인 파일 이름. **`-z`로 받는다.**
+
+    `git ls-files`는 그냥 부르면 한글 이름을 `"\\355\\231\\224..."`처럼
+    이스케이프해 돌려준다. 이 저장소는 한글 파일이 많다
+    (`dashboard/자료/상한측정.json`, `docs/단기매매_재설계.md`).
+
+    이스케이프된 이름으로 지우면 그런 파일이 없으므로 **지우기가 조용히
+    실패한다.** `unlink(missing_ok=True)`라 예외도 안 난다. 이 저장소가
+    제일 비싸다고 적어 둔 실패 방식이다. `-z`는 이스케이프를 안 한다."""
+    글 = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=저장소,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return [ㄱ for ㄱ in 글.split("\0") if ㄱ]
 
 
 def main() -> int:
@@ -111,9 +124,20 @@ def main() -> int:
             print("::error::화면 저장소에 남겨야 하면 publish_dashboard.py의")
             print("::error::`전용파일`에 적으세요.")
             return 1
+        # **지웠는지 확인한다.** `missing_ok=True`는 이름이 틀려도 조용히
+        # 넘어간다. 이름이 이스케이프돼 있으면 아무것도 안 지우고 지웠다고
+        # 말하게 된다. 실제로 그랬다.
+        못지운것 = []
         for ㄱ in 지울것:
             (화면 / ㄱ).unlink(missing_ok=True)
-        print("  지웠습니다.")
+            if (화면 / ㄱ).exists():
+                못지운것.append(ㄱ)
+        if 못지운것:
+            print("::error::지우지 못한 파일이 있습니다:")
+            for ㄱ in 못지운것:
+                print(f"::error::  {ㄱ}")
+            return 1
+        print(f"  {len(지울것)}개를 지웠습니다.")
     else:
         print("■ 화면 저장소에만 있는 파일이 없습니다.")
 
