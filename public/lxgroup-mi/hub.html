@@ -13,6 +13,9 @@
     --green:#A32B26; --green-dark:#7A211D; --green-tint:#F1EBE5;
     --bg:#FAF7F4; --card:#FFFFFF; --line:#DED2C4;
     --text:#201D1B; --muted:#726A61; --danger:#F04452; --radius:14px;
+    /* 기간·보기 고르개의 '고른 것' 표시. 붉은색은 우리 계열사와 적자에만 쓴다 —
+       늘 켜져 있는 고르개까지 붉으면 정작 봐야 할 것이 안 도드라진다. */
+    --pick-on:#5F5952;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--bg); color:var(--text); font-family:'Noto Sans KR', -apple-system, sans-serif; line-height:1.6;}
@@ -460,7 +463,7 @@
                    cursor:pointer; font-family:inherit; line-height:1.6;}
   .ind-pick button + button{border-left:1px solid var(--line);}
   .ind-pick button:hover:not(:disabled):not(.on){background:var(--bg); color:var(--text);}
-  .ind-pick button.on{background:var(--green); color:#fff;}
+  .ind-pick button.on{background:var(--pick-on); color:#fff;}
   /* 한국은행이 일 단위로 안 주는 지표가 있다. 누를 수 있게 해놓고 빈 그래프를
      보여주면 고장으로 읽힌다. */
   .ind-pick button:disabled{opacity:.32; cursor:not-allowed;}
