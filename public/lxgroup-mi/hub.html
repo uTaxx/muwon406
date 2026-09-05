@@ -1683,7 +1683,7 @@
     });
     h += '</tr></thead><tbody>';
     indTableRows(g).forEach(function(r){
-      h += '<tr><td>' + escapeHtml(r.칸) + '</td>';
+      h += '<tr><td>' + escapeHtml(g.칸눈 ? g.칸눈(r.칸) : r.칸) + '</td>';
       r.값.forEach(function(v, i){
         h += v === undefined
           ? '<td class="none">—</td>'
@@ -2996,7 +2996,7 @@
   let compLoading = false;
   let compTab = '';            // 지금 고른 계열사
   let compView = {};           // 블록마다 고른 보기(함께·매출액·영업이익·이익률)
-  let compRange = {};          // 블록마다 고른 기간(연도별·분기별)
+  let compRange = {};          // 블록마다 고른 기간(연도별·누적)
   let compShape = {};          // 블록마다 고른 그래프 모양(막대·선)
   let compOpen = {};           // 블록마다 그래프가 펼쳐졌는지
   let compTable = {};          // 블록마다 표가 펼쳐졌는지
@@ -3011,11 +3011,18 @@
   /* 분기는 'YYYYQn' 한 가지 꼴로만 받는다. 글자 크기순 정렬이 곧 시간순이라
      날짜로 바꾸는 일이 없다. 축에는 '25.3Q'로 줄여 적는다 — 눈금이 예닐곱 개라
      '2025 3분기'로 적으면 서로 겹쳐 아무것도 안 읽힌다. */
+  /* 분기보고서·반기보고서의 부문표는 그 분기 한 철이 아니라 **연초부터의 누적**을
+     싣는다. 실제 자료로 확인했다 — 371개 표본에서 Q1은 그 해 연간의 0.245,
+     Q2는 0.498, Q3는 0.748 이었다. 정확히 1/4·2/4·3/4다.
+     값은 공시 그대로 맞으니 임의로 빼서 분기를 만들어내지 않고, 이름을 바로잡아
+     누적으로 읽게 한다. 전년 같은 시점의 누적과 견주는 것은 그대로 옳다. */
   const COMP_RANGES = [
     { k: '연', 이름: '연도별', 눈: function (c){ return c; } },
-    { k: '분', 이름: '분기별', 눈: function (c){
+    { k: '분', 이름: '누적', 눈: function (c){
         const m = /^(\d{4})Q([1-4])$/.exec(String(c || ''));
-        return m ? m[1].slice(2) + '.' + m[2] + 'Q' : String(c || '');
+        if (!m) return String(c || '');
+        const 달 = { '1': '3월', '2': '6월', '3': '9월', '4': '12월' }[m[2]];
+        return "'" + m[1].slice(2) + ' 1~' + 달;
       } }
   ];
 
@@ -3086,7 +3093,7 @@
         const v = compVal(s.값, 지표);
         if (v !== null) m[s.칸] = v;
       });
-      if (Object.keys(m).length) 쓸것.push({ x: c.x, 색: c.색, m: m });
+      if (Object.keys(m).length) 쓸것.push({ x: c.x, 이름: c.이름, 색: c.색, m: m });
     });
     if (!쓸것.length) return null;
     if (!창 || 창.length < 2) return null;
@@ -3157,7 +3164,7 @@
     lo -= 폭 * 0.1; hi += 폭 * 0.1;
 
     return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준칸: 기준칸,
-             R: R, 나라구분: true, 지표이름: 지표,
+             R: R, 나라구분: true, 지표이름: 지표, 칸눈: R.눈,
              단위: (선들[0] || {}).지표 ? 선들[0].지표.단위 : '' };
   }
 
@@ -3177,14 +3184,15 @@
     });
     const a = 산[0].g;
     return { 창: a.창, 선들: 선들, lo: a.lo, hi: a.hi, 여럿: false, 기준칸: null,
-             R: a.R, 나라구분: true, 지표이름: '매출·이익', 단위: '' };
+             R: a.R, 나라구분: true, 지표이름: '매출·이익', 칸눈: a.칸눈, 단위: '' };
   }
 
   /* 직전 기간 대비. 좋아짐/나빠짐 판정은 하지 않는다 — 남의 회사 매출이 늘어난
      것이 우리에게 좋은지 나쁜지는 화면이 정할 일이 아니다.
 
-     분기는 **전년 같은 분기**와 견준다. 건자재는 겨울에 덜 팔리고 봄에 더 팔려서
-     3분기를 2분기와 견주면 계절이 만든 차이를 실적이 움직인 것으로 읽게 된다. */
+     누적은 **전년 같은 시점의 누적**과 견준다. 건자재는 겨울에 덜 팔리고 봄에 더
+     팔려서, 올해 9월 누계를 올해 6월 누계와 견주면 계절이 만든 차이를 실적이
+     움직인 것으로 읽게 된다. */
   function compPrev(칸, R){
     if (R.k !== '분') return null;
     const m = /^(\d{4})Q([1-4])$/.exec(String(칸 || ''));
@@ -3685,7 +3693,9 @@
     document.getElementById('compHeadDesc').innerHTML =
       'DART 사업보고서·감사보고서의 부문별 매출·영업이익입니다. <b>회사마다 한 칸</b>이고, ' +
       '그 안에 그 회사의 <b>사업부문</b>이 섭니다. <b>우리 계열사는 왼쪽에 붉은 띠</b>가 붙습니다. ' +
-      '<b>연도별·분기별</b>을 바꿔 볼 수 있고, 그래프는 매출과 영업이익을 <b>위아래 두 칸</b>으로 나눠 ' +
+      '<b>연도별·누적</b>을 바꿔 볼 수 있습니다 — <b>「누적」은 분기 한 철이 아니라 연초부터의 누계</b>입니다. ' +
+      '분기·반기보고서의 부문표가 그렇게 실립니다(전년 같은 시점과 견주면 됩니다). ' +
+      '그래프는 매출과 영업이익을 <b>위아래 두 칸</b>으로 나눠 ' +
       '기간만 함께 씁니다 — 자릿수가 크게 달라 한 축에 겹치면 이익이 바닥에 붙습니다.';
 
     /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
@@ -3725,7 +3735,7 @@
     document.getElementById('compAsOf').textContent =
       (compData.asOf ? compData.asOf + ' 기준 · ' : '') +
       '이 탭 회사 ' + 이탭회사.length + '곳 · 부문 ' + 것들.length + '개' +
-      (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '') +
+      (것들.length && !분기있음 ? ' · 누적 자료는 아직 없음' : '') +
       (compData.짝없는부문 && compData.짝없는부문.length
         ? ' · 짝 못 찾은 부문 ' + compData.짝없는부문.length + '개'
         : '');
@@ -3802,7 +3812,7 @@
       return s.지표.이름 + (s.지표.단위 ? ' (' + s.지표.단위 + ')' : '');
     }));
     const 줄들 = indTableRows(g).map(function (r){
-      return [r.칸].concat(r.값.map(function (v){
+      return [g.칸눈 ? g.칸눈(r.칸) : r.칸].concat(r.값.map(function (v){
         return (v === undefined || v === null) ? '' : v;
       }));
     });
