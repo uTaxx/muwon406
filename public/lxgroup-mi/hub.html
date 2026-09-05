@@ -2235,7 +2235,10 @@
       if (!줄){ 지우기(판); return; }
 
       const 상자 = 판.querySelector('.ind-tip');
-      상자.innerHTML = '<b>' + escapeHtml(g.R.눈(g.창[j])) + '</b>' + 줄;
+      /* 칸 이름은 g 가 제 것을 들고 있으면 그것을 먼저 쓴다 — 경쟁사는 회사마다
+         분기를 누계로 싣는지 그 석 달치로 싣는지가 달라 이름이 갈린다. */
+      const 칸이름 = g.칸눈 ? g.칸눈(g.창[j]) : (g.R && g.R.눈 ? g.R.눈(g.창[j]) : String(g.창[j] || ''));
+      상자.innerHTML = '<b>' + escapeHtml(칸이름) + '</b>' + 줄;
       상자.style.display = 'block';
       /* 오른쪽 끝에서는 상자를 왼쪽으로 넘긴다 — 안 그러면 카드 밖으로 나가
          잘린다. */
@@ -3029,20 +3032,43 @@
   /* 분기는 'YYYYQn' 한 가지 꼴로만 받는다. 글자 크기순 정렬이 곧 시간순이라
      날짜로 바꾸는 일이 없다. 축에는 '25.3Q'로 줄여 적는다 — 눈금이 예닐곱 개라
      '2025 3분기'로 적으면 서로 겹쳐 아무것도 안 읽힌다. */
-  /* 분기보고서·반기보고서의 부문표는 그 분기 한 철이 아니라 **연초부터의 누적**을
-     싣는다. 실제 자료로 확인했다 — 371개 표본에서 Q1은 그 해 연간의 0.245,
-     Q2는 0.498, Q3는 0.748 이었다. 정확히 1/4·2/4·3/4다.
-     값은 공시 그대로 맞으니 임의로 빼서 분기를 만들어내지 않고, 이름을 바로잡아
-     누적으로 읽게 한다. 전년 같은 시점의 누적과 견주는 것은 그대로 옳다. */
+  /* 분기 칸을 **연초부터의 누적**으로 싣는 회사가 있고 **그 석 달치만** 싣는
+     회사가 있다. 회사마다 다르므로 미리 정하지 않고, 서버가 회사마다
+     (분기값 ÷ 그 해 연간)을 재어 `분기꼴`로 알려준다 — '누계'·'분기'·''(못 가림).
+     화면은 그 말대로 이름만 붙인다. 값은 공시 그대로이니 임의로 빼서 분기를
+     만들어내지 않는다. 못 가린 회사에는 「2025Q2」를 그대로 적는다 —
+     근거 없이 「누적」이라 적으면 없는 사실을 지어내는 것이다. */
   const COMP_RANGES = [
     { k: '연', 이름: '연도별', 눈: function (c){ return c; } },
-    { k: '분', 이름: '누적', 눈: function (c){
-        const m = /^(\d{4})Q([1-4])$/.exec(String(c || ''));
-        if (!m) return String(c || '');
+    { k: '분', 이름: '분기', 눈: function (c){ return String(c || ''); } }
+  ];
+
+  /* 한 회사의 줄들에서 분기꼴을 꺼낸다. 같은 회사의 부문끼리는 늘 같은 값이다. */
+  function comp꼴(줄들){
+    for (let i = 0; i < (줄들 || []).length; i++){
+      const t = String((줄들[i] || {}).분기꼴 || '');
+      if (t) return t;
+    }
+    return '';
+  }
+  /* 기간 고르개에 적을 말. 누계면 「누적」, 그 분기면 「분기별」,
+     못 가렸으면 「분기」 — 아는 만큼만 적는다. */
+  function comp꼴이름(꼴){
+    return 꼴 === '누계' ? '누적' : (꼴 === '분기' ? '분기별' : '분기');
+  }
+  /* 칸 이름. 누계는 '25 1~6월, 그 분기는 '25 2Q, 못 가렸으면 2025Q2 그대로. */
+  function comp칸눈(꼴){
+    return function (c){
+      const m = /^(\d{4})Q([1-4])$/.exec(String(c || ''));
+      if (!m) return String(c || '');
+      if (꼴 === '누계'){
         const 달 = { '1': '3월', '2': '6월', '3': '9월', '4': '12월' }[m[2]];
         return "'" + m[1].slice(2) + ' 1~' + 달;
-      } }
-  ];
+      }
+      if (꼴 === '분기') return "'" + m[1].slice(2) + ' ' + m[2] + 'Q';
+      return String(c || '');
+    };
+  }
 
   const COMP_VIEWS = [
     { k: '함께',       이름: '매출·이익' },
@@ -3202,7 +3228,8 @@
     });
     const a = 산[0].g;
     return { 창: a.창, 선들: 선들, lo: a.lo, hi: a.hi, 여럿: false, 기준칸: null,
-             R: a.R, 나라구분: true, 지표이름: '매출·이익', 칸눈: a.칸눈, 단위: '' };
+             R: a.R, 나라구분: true, 지표이름: '매출·이익', 칸눈: a.칸눈,
+             기간이름: a.기간이름, 단위: '' };
   }
 
   /* 직전 기간 대비. 좋아짐/나빠짐 판정은 하지 않는다 — 남의 회사 매출이 늘어난
@@ -3217,7 +3244,8 @@
     return m ? (Number(m[1]) - 1) + 'Q' + m[2] : null;
   }
 
-  function compChgHtml(줄, 지표, R){
+  function compChgHtml(줄, 지표, R, 칸눈){
+    const 눈 = 칸눈 || R.눈;
     const 것들 = compSeq(줄, R).filter(function (s){ return compVal(s.값, 지표) !== null; });
     if (!것들.length) return '<span class="chg ind-flat">자료 없음</span>';
     const 끝 = 것들[것들.length - 1];
@@ -3225,7 +3253,7 @@
     let 전 = null;
     if (짝) 전 = 것들.filter(function (s){ return s.칸 === 짝; })[0] || null;
     if (!전 && 것들.length > 1) 전 = 것들[것들.length - 2];
-    if (!전) return '<span class="chg ind-flat">' + escapeHtml(R.눈(끝.칸)) + ' 한 번뿐</span>';
+    if (!전) return '<span class="chg ind-flat">' + escapeHtml(눈(끝.칸)) + ' 한 번뿐</span>';
 
     const 끝값 = compVal(끝.값, 지표), 전값 = compVal(전.값, 지표);
     const 차 = 끝값 - 전값;
@@ -3233,7 +3261,7 @@
     const 화살 = 차 > 0 ? '▲' : 차 < 0 ? '▼' : '–';
     return '<span class="chg ind-flat">' + 화살 + ' ' + indNum(Math.abs(차)) +
            (율 === null ? '' : ' (' + (율 > 0 ? '+' : '') + 율 + '%)') +
-           '<em>' + escapeHtml(R.눈(전.칸)) + ' 대비</em></span>';
+           '<em>' + escapeHtml(눈(전.칸)) + ' 대비</em></span>';
   }
 
   function compLatest(줄, 지표, R){
@@ -3286,7 +3314,12 @@
         '<span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
-  function R눈(g, 칸){ return g.R && g.R.눈 ? g.R.눈(칸) : String(칸 || ''); }
+  /* g 가 제 칸 이름표를 들고 있으면 그것이 먼저다 — 회사마다 분기를 누계로
+     싣는지 그 석 달치로 싣는지가 달라 이름이 갈린다. */
+  function R눈(g, 칸){
+    if (g && g.칸눈) return g.칸눈(칸);
+    return g && g.R && g.R.눈 ? g.R.눈(칸) : String(칸 || '');
+  }
 
   /* 앞 두 자리만 남기고 바깥쪽으로 올린다(64,200 → 66,000, -418 → -420).
      막대 눈금을 어림수로 두면 축이 축으로 읽힌다. 한 자리까지 뭉개면
@@ -3458,6 +3491,12 @@
     if (!기간가능.some(function (R){ return R.k === 기간; })) 기간 = 기간가능[0].k;
     const R = compR(기간);
 
+    /* 분기가 누계인지 그 석 달치인지는 회사마다 다르다. 이 블록이 한 회사이므로
+       여기서 한 번 가려 두고, 칸 이름·고르개·표·엑셀이 모두 그것을 쓴다. */
+    const 꼴 = comp꼴(줄들);
+    const 기간말 = R.k === '분' ? comp꼴이름(꼴) : R.이름;
+    const 칸눈 = R.k === '분' ? comp칸눈(꼴) : R.눈;
+
     const 보기 = compView[열쇠] || '함께';
     const 펼침 = compOpen[열쇠] === true;
     const 표펼침 = compTable[열쇠] === true;
@@ -3502,7 +3541,9 @@
     const 창 = (펼침 || 표펼침) ? compWindow(보인것들, 지표들, R) : null;
     const 짝들 = (펼침 || 표펼침)
       ? 지표들.map(function (k){
-          return { 꼬리: k, g: compBuild(골, k, R, 창), 열쇠: 열쇠 + '@' + k };
+          const g = compBuild(골, k, R, 창);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
         })
       : [];
     /* 표·엑셀·커서가 꺼내 쓸 자리에 넣어 둔다. 열쇠 하나에는 붙인 것(표용),
@@ -3526,9 +3567,9 @@
           (끝
             ? '<div class="val' + (끝.v < 0 ? ' neg' : '') + '">' + indNum(끝.v, 단위) +
               '<span>' + escapeHtml(단위) + '</span></div>' +
-              compChgHtml(x, 주지표, R) +
+              compChgHtml(x, 주지표, R, 칸눈) +
               (보기 === '함께' ? compSideHtml(x, R) : '')
-            : '<span class="chg ind-flat">' + escapeHtml(R.이름) + ' 자료 없음</span>' +
+            : '<span class="chg ind-flat">' + escapeHtml(기간말) + ' 자료 없음</span>' +
               (보기 === '함께' ? compSideHtml(x, R) : '')) +
         '</div>' +
       '</div>';
@@ -3555,7 +3596,9 @@
         /* 막대는 실제 값이어야 한다(지수 막대는 높이가 아무 뜻도 없다).
            그래서 지표들을 민낯으로 한 번 더 만든다. */
         const 민 = 지표들.map(function (k){
-          return { 꼬리: k, g: compBuild(골, k, R, 창, true) };
+          const g = compBuild(골, k, R, 창, true);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g };
         }).filter(function (p){ return p.g; });
         그래프 = 모양고르개 +
           (민.length
@@ -3590,12 +3633,15 @@
       }
     }
 
+    /* 분기 단추의 이름은 회사마다 다르다 — 누계면 「누적」, 그 석 달치면
+       「분기별」, 아직 못 가렸으면 그냥 「분기」. */
     const 기간고르개 = '<div class="ind-pick">' + COMP_RANGES.map(function (x){
       const 됨 = 기간가능.some(function (y){ return y.k === x.k; });
+      const 말 = x.k === '분' ? comp꼴이름(꼴) : x.이름;
       return '<button type="button" data-range="' + x.k + '"' +
         (x.k === 기간 ? ' class="on"' : '') +
-        (됨 ? '' : ' disabled title="이 부문은 아직 ' + x.이름 + ' 자료가 없습니다"') +
-        '>' + x.이름 + '</button>';
+        (됨 ? '' : ' disabled title="이 회사는 아직 ' + 말 + ' 자료가 없습니다"') +
+        '>' + 말 + '</button>';
     }).join('') + '</div>';
 
     const 고르개 = '<div class="ind-pick">' + COMP_VIEWS.map(function (m){
@@ -3608,7 +3654,7 @@
       ? '<button type="button" class="comp-old" data-old="1">' +
           (옛펼침 ? '옛 부문 ' + 옛것.length + '개 접기'
                   : '옛 부문 ' + 옛것.length + '개 더 보기') +
-          '<span>' + escapeHtml(최근칸 ? R.눈(최근칸) : '') + ' 자료가 없는 부문입니다 — ' +
+          '<span>' + escapeHtml(최근칸 ? 칸눈(최근칸) : '') + ' 자료가 없는 부문입니다 — ' +
           '회사가 이름을 바꿨거나 접은 사업입니다</span>' +
         '</button>'
       : '';
@@ -3627,7 +3673,7 @@
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
         (우리냐 ? '<span class="comp-tag">우리</span>' : '') +
-        '<span>' + escapeHtml(최신 ? R.눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
+        '<span>' + escapeHtml(최신 ? 칸눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
         기간고르개 + 고르개 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
@@ -3711,8 +3757,10 @@
     document.getElementById('compHeadDesc').innerHTML =
       'DART 사업보고서·감사보고서의 부문별 매출·영업이익입니다. <b>회사마다 한 칸</b>이고, ' +
       '그 안에 그 회사의 <b>사업부문</b>이 섭니다. <b>우리 계열사는 왼쪽에 붉은 띠</b>가 붙습니다. ' +
-      '<b>연도별·누적</b>을 바꿔 볼 수 있습니다 — <b>「누적」은 분기 한 철이 아니라 연초부터의 누계</b>입니다. ' +
-      '분기·반기보고서의 부문표가 그렇게 실립니다(전년 같은 시점과 견주면 됩니다). ' +
+      '<b>연도별</b>과 <b>분기</b>를 바꿔 볼 수 있습니다. 분기 단추의 이름은 <b>회사마다 다릅니다</b> — ' +
+      '<b>「누적」</b>이면 분기 한 철이 아니라 연초부터의 누계이니 <b>전년 같은 시점의 누계</b>와 견주시고, ' +
+      '<b>「분기별」</b>이면 그 석 달치입니다. 아직 가리지 못한 회사는 그냥 <b>「분기」</b>라 적고 ' +
+      '칸도 <code>2025Q2</code> 그대로 둡니다 — 근거 없이 이름 붙이지 않습니다. ' +
       '그래프는 매출과 영업이익을 <b>위아래 두 칸</b>으로 나눠 ' +
       '기간만 함께 씁니다 — 자릿수가 크게 달라 한 축에 겹치면 이익이 바닥에 붙습니다.';
 
@@ -3753,7 +3801,7 @@
     document.getElementById('compAsOf').textContent =
       (compData.asOf ? compData.asOf + ' 기준 · ' : '') +
       '이 탭 회사 ' + 이탭회사.length + '곳 · 부문 ' + 것들.length + '개' +
-      (것들.length && !분기있음 ? ' · 누적 자료는 아직 없음' : '') +
+      (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '') +
       (compData.짝없는부문 && compData.짝없는부문.length
         ? ' · 짝 못 찾은 부문 ' + compData.짝없는부문.length + '개'
         : '');
@@ -3824,7 +3872,7 @@
     if (!g) return;
     const 부문 = (통.querySelector('.ind-bhead b') || {}).textContent || '경쟁사';
     const 보기 = compView[열쇠] || '함께';
-    const 기간 = compR(compRange[열쇠] || '연').이름;
+    const 기간 = g.기간이름 || compR(compRange[열쇠] || '연').이름;
 
     const 머리 = ['기간'].concat(g.선들.map(function (s){
       return s.지표.이름 + (s.지표.단위 ? ' (' + s.지표.단위 + ')' : '');
