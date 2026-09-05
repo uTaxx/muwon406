@@ -1194,6 +1194,21 @@
     return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  /* 예외 메시지를 사람 말로 옮긴다. err.message 를 그대로 띄우면
+     「Unexpected token 'b', "boom" is not valid JSON」 같은 것이 화면에 뜬다.
+     읽는 사람은 그걸 보고 자기가 뭘 잘못했나 싶어진다 — 무엇이 잘못됐고
+     무엇을 하면 되는지만 적고, 원문은 콘솔로 보낸다. */
+  function 말썽(err, 하던일){
+    const m = String((err && err.message) || err || '');
+    try { console.error((하던일 || '요청') + ' 실패:', err); } catch (e) {}
+    if (err && err.name === 'AbortError') return '너무 오래 걸려 멈췄습니다. 잠시 뒤 다시 눌러 주세요.';
+    if (/fetch|network|load failed|networkerror/i.test(m))
+      return '서버에 닿지 못했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요.';
+    if (/json|unexpected token|unexpected end/i.test(m))
+      return '서버가 답을 제대로 주지 못했습니다. 잠시 뒤 다시 눌러 주세요.';
+    return '잠시 문제가 있었습니다. 다시 눌러도 안 되면 관리자에게 알려 주세요.';
+  }
+
   function getGroupEmoji(groupName){
     const name = String(groupName || '').toLowerCase();
     if (name.includes('경제') || name.includes('금융')) return '💰';
@@ -1332,7 +1347,7 @@
         btn.disabled = false;
         btn.textContent = '제출하기';
         box.className = 'status show err';
-        box.textContent = '저장하지 못했습니다: ' + err.message;
+        box.textContent = '저장하지 못했습니다. ' + 말썽(err, '설정 저장');
       });
   }
 
@@ -4098,7 +4113,7 @@
       })
       .catch(function(err){
         hideLoading();
-        alert('삭제 중 오류가 발생했습니다: ' + err.message);
+        alert(말썽(err, '기사 삭제'));
         updateSelUI();
       });
   }
@@ -4136,7 +4151,7 @@
       })
       .catch(function(err){
         buttons.forEach(function(b){ b.disabled = false; });
-        alert('평가 저장 중 오류가 발생했습니다: ' + err.message);
+        alert(말썽(err, '평가 저장'));
       });
   }
 
@@ -4184,7 +4199,7 @@
         btn.disabled = false;
         btn.textContent = '조회';
         box.className = 'status show err';
-        box.textContent = '✕ 조회 중 오류가 발생했습니다: ' + err.message;
+        box.textContent = '✕ ' + 말썽(err, '기사 조회');
       });
   }
 
@@ -4395,7 +4410,7 @@
             '<b>수집 자체는 끝났을 수 있습니다.</b> 텔레그램과 메일을 먼저 확인해 보세요. ' +
             '새로 들어온 기사는 <b>전체 기사 조회</b> 탭에서도 보입니다.<br>' +
             '거기에도 없으면 그때 다시 눌러주세요.</div>'
-          : '<div class="empty-note">✕ 조회 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+          : '<div class="empty-note">✕ ' + escapeHtml(말썽(err, '즉시 조회')) + '</div>';
       });
   }
 
@@ -4499,7 +4514,7 @@
         hideLoading();
         btn.disabled = false;
         btn.textContent = '🔄 이 설정 불러오기';
-        alert('조회 중 오류가 발생했습니다: ' + err.message);
+        alert(말썽(err, '설정 불러오기'));
       });
   }
 
@@ -4649,7 +4664,7 @@
         hideLoading();
         btn.disabled = false;
         btn.textContent = '🔍 지금 조사하기';
-        resultBox.innerHTML = '<div class="empty-note">✕ 조사 중 오류가 발생했습니다: ' + escapeHtml(err.message) + '</div>';
+        resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(말썽(err, '키워드 조사')) + '</div>';
       });
   }
 
