@@ -76,7 +76,7 @@
     <a href="./hub.html?tab=apply">✏️ 키워드 신청/변경</a>
     <a href="./hub.html?tab=adhoc">🔍 특정 키워드 검색</a>
     <a href="./hub.html?tab=risk">🪨 실리코시스 리스크</a>
-    <a href="./hub.html?tab=comp">🏁 경쟁사 성과</a>
+    <a href="./hub.html?tab=co">🏢 계열사 들여다보기</a>
   </div>
 </div>
 
@@ -195,8 +195,12 @@ KCC: 분기보고서 제출
       <div class="field-desc">마지막 수집 건수(와 그 날짜) / 최근 7일 건수 / 최근 7일 중 중요도 4점 이상 / 최근 30일 실리코시스 보도. 아침 수집이 돌기 전에 열어도 "0건"이 뜨지 않도록, 오늘이 아니라 <b>마지막으로 수집이 돌아간 날</b>을 기준으로 셉니다.</div>
     </div>
     <div class="field-block">
+      <div class="field-name">계열사 칸 — 여기가 들머리입니다</div>
+      <div class="field-desc">숫자 넉 장 바로 아래에 계열사가 늘어섭니다. 칸마다 <b>경쟁사 몇 곳 · 지표 몇 개 · 최근 7일 기사 몇 건</b>과, 그 계열사 지표 가운데 <b>가장 크게 움직인 것 하나</b>가 적혀 있습니다. 칸을 누르면 그 계열사 안으로 들어갑니다. 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지 「경쟁사 전체가 어떤가」가 아니라서, 계열사를 먼저 고르게 두었습니다.</div>
+    </div>
+    <div class="field-block">
       <div class="field-name">아래 카드들</div>
-      <div class="field-desc">최근 기사 8건, 그룹별 수집 현황, 실리코시스 요약, 시장지표 공통 지표. 각 카드 오른쪽 위의 "자세히 →"를 누르면 해당 화면으로 넘어갑니다.</div>
+      <div class="field-desc">최근 기사 8건, 그룹별 수집 현황, 실리코시스 요약, 공통 지표(환율·금리 등). 각 카드 오른쪽 위의 "자세히 →"를 누르면 해당 화면으로 넘어갑니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">넓은 화면에서는</div>
@@ -291,9 +295,25 @@ KCC: 분기보고서 제출
     </div>
   </section>
 
-  <section class="card" id="comp">
-    <div class="step-head"><span class="step-num">7</span><span class="step-title">경쟁사 성과</span></div>
-    <div class="step-desc"><a href="./hub.html?tab=comp">경쟁사 성과 탭</a>은 계열사마다 경쟁사를 나란히 놓고 부문별 매출·영업이익을 견주는 화면입니다. 숫자는 DART 전자공시에서 옵니다.</div>
+  <section class="card" id="co">
+    <div class="step-head"><span class="step-num">7</span><span class="step-title">계열사 들여다보기</span></div>
+    <div class="step-desc"><a href="./hub.html?tab=co">계열사 탭</a>은 <b>계열사를 먼저 고르고</b>, 그 안에서 <b>경쟁사 성과</b>와 <b>시장 지표</b>를 오가는 화면입니다. 상황판의 계열사 칸을 눌러도 여기로 들어옵니다.</div>
+    <div class="field-block">
+      <div class="field-name">두 줄짜리 고르개</div>
+      <div class="field-desc">위 줄이 <b>계열사</b>(어느 회사 이야기냐), 아래 알약꼴 줄이 <b>무엇을 볼 것이냐</b>입니다. 계열사 고르개는 <b>하나</b>뿐이라, 경쟁사에서 하우시스를 보다가 시장 지표로 넘어가도 그대로 하우시스입니다 — 예전에는 둘이 각각 고르개를 들고 있어서 위에서는 하우시스를, 아래에서는 글라스를 보는 일이 생겼습니다. 마지막에 보던 계열사와 하위 탭은 기억해 두었다가 다음에 열 때 그대로 띄웁니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">공통 지표는 어느 계열사에서나</div>
+      <div class="field-desc">환율·금리처럼 어느 계열사에나 함께 걸리는 값은 <b>계열사 지표 바로 아래 따로 된 상자</b>에 늘 있습니다. 계열사를 바꿔도 이 상자는 그대로입니다. 한 상자에 섞지 않는 까닭은 「이게 우리 것인가 공통인가」를 지표마다 다시 가리게 되기 때문입니다. 드라이브에서도 공통은 제 파일 하나로 따로 있어서, 엑셀 단추도 둘입니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">그 계열사에 딸린 다른 화면</div>
+      <div class="field-desc">하우시스를 고르면 위쪽에 <b>미국 엔지니어드스톤 실리코시스</b>로 건너가는 줄이 뜹니다. 그 리스크가 걸려 있는 계열사가 하우시스이기 때문입니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">경쟁사 성과 — 어디서 오는 숫자인가</div>
+      <div class="field-desc">계열사마다 경쟁사를 나란히 놓고 부문별 매출·영업이익을 견줍니다. 숫자는 DART 전자공시에서 옵니다.</div>
+    </div>
     <div class="body-text">
       상장사는 <b>사업보고서</b>의 「사업의 내용」·「영업부문 정보」에서, 비상장 회사는 <b>감사보고서</b>에서 가져옵니다.
       LX판토스·LX글라스·LX MMA 처럼 상장하지 않은 계열사도 감사보고서는 내기 때문에 함께 볼 수 있습니다.
@@ -333,7 +353,7 @@ KCC: 분기보고서 제출
     </div>
     <div class="field-block">
       <div class="field-name">공시가 갈라 주는 만큼만</div>
-      <div class="field-desc">창호·바닥재 같은 <b>품목별 매출은 공시에 없습니다.</b> 사업보고서의 품목 칸은 "창호,바닥재,솔리드서피스 등"이라는 나열일 뿐 금액이 갈리지 않습니다. 품목 단위 흐름은 <a href="./hub.html?tab=index">시장지표 탭</a>이 관세청 수출입 통계로 대신 봅니다.</div>
+      <div class="field-desc">창호·바닥재 같은 <b>품목별 매출은 공시에 없습니다.</b> 사업보고서의 품목 칸은 "창호,바닥재,솔리드서피스 등"이라는 나열일 뿐 금액이 갈리지 않습니다. 품목 단위 흐름은 <a href="./hub.html?tab=co">계열사 탭의 시장 지표</a>이 관세청 수출입 통계로 대신 봅니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">회사마다 있는 「실적 마스터」 스프레드시트</div>
@@ -383,10 +403,10 @@ KCC: 분기보고서 제출
 
   <section class="card" id="index">
     <div class="step-head"><span class="step-num">8</span><span class="step-title">시장 지표</span></div>
-    <div class="step-desc"><a href="./hub.html?tab=index">시장 지표 탭</a>은 환율·금리·원자재·수출입처럼 계열사 실적에 앞서 움직이는 값을 모아 봅니다. 값은 한국은행(ECOS)·미국 연준(FRED)·관세청·통계청(KOSIS)에서 매일 아침 받아옵니다.</div>
+    <div class="step-desc">계열사 탭의 <b>「📊 시장 지표」</b> 하위 탭입니다. 환율·금리·원자재·수출입처럼 계열사 실적에 앞서 움직이는 값을 모아 봅니다. 값은 한국은행(ECOS)·미국 연준(FRED)·관세청·통계청(KOSIS)에서 매일 아침 받아옵니다.</div>
     <div class="field-block">
-      <div class="field-name">공통과 계열사</div>
-      <div class="field-desc">맨 위 하위 탭에서 고릅니다. <b>공통</b>은 환율·금리처럼 어느 계열사에나 함께 걸리는 것, 나머지는 그 계열사의 수요나 원가에 직접 걸리는 것입니다. 한 지표가 두 계열사에 다 걸리면 양쪽에 다 섭니다 — 건설기성액이 하우시스와 글라스 모두에게 진짜로 중요하기 때문입니다.</div>
+      <div class="field-name">한 지표가 두 계열사에 다 걸릴 때</div>
+      <div class="field-desc">양쪽에 다 섭니다 — 건설기성액이 하우시스와 글라스 모두에게 진짜로 중요하기 때문입니다. 대표를 하나 정해 숨기면 다른 쪽에서 놓칩니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">「선행 N개월」</div>
@@ -397,8 +417,8 @@ KCC: 분기보고서 제출
       <div class="field-desc">지표마다 따로 고를 수 있습니다. <b>끝나지 않은 이번 달은 월별에 넣지 않습니다</b> — 며칠치가 한 달치인 척하기 때문입니다. 연도별은 지표마다 셈이 다릅니다. 환율·금리·단가처럼 수준을 보는 것은 <b>그 해 마지막 값</b>, 수출액·거래량처럼 쌓여서 한 해를 이루는 것은 <b>열두 달을 더한 값</b>이고, 뒤엣것은 열두 달이 다 찬 해만 싣습니다.</div>
     </div>
     <div class="field-block">
-      <div class="field-name">「⬇ 이 탭 원본 엑셀」 단추</div>
-      <div class="field-desc">카드 오른쪽 위에 있습니다. 누르면 구글드라이브 <b>LX Group MI / 시장 지표</b> 폴더의 <b>「〈탭 이름〉 지표 마스터」</b> 스프레드시트를 그대로 엑셀로 받습니다. 탭마다 파일 하나이고 6시간마다 다시 씁니다. 탭은 넷입니다 — <b>지표 목록</b>(무엇을 어디서 받아 오는지, 값이 몇 개인지), <b>월별</b>·<b>일별</b>·<b>연도별</b>(줄이 기준일, 칸이 지표라 엑셀에서 바로 그래프를 그릴 수 있습니다). <b>화면은 최근 구간만 보여 주지만 파일에는 쌓인 것이 다 들어 있습니다.</b></div>
+      <div class="field-name">「⬇ 원본 엑셀」 단추</div>
+      <div class="field-desc">카드마다 오른쪽 위에 있습니다(계열사 것 하나, 공통 것 하나). 누르면 구글드라이브 <b>LX Group MI / 시장 지표</b> 폴더의 <b>「〈탭 이름〉 지표 마스터」</b> 스프레드시트를 그대로 엑셀로 받습니다. 탭마다 파일 하나이고 6시간마다 다시 씁니다. 탭은 넷입니다 — <b>지표 목록</b>(무엇을 어디서 받아 오는지, 값이 몇 개인지), <b>월별</b>·<b>일별</b>·<b>연도별</b>(줄이 기준일, 칸이 지표라 엑셀에서 바로 그래프를 그릴 수 있습니다). <b>화면은 최근 구간만 보여 주지만 파일에는 쌓인 것이 다 들어 있습니다.</b></div>
     </div>
     <div class="field-block">
       <div class="field-name">달러를 원화로</div>
@@ -412,7 +432,7 @@ KCC: 분기보고서 제출
 
 </main>
 
-<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=home">종합 상황판</a> · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">특정 키워드 검색</a> · <a href="./hub.html?tab=risk">실리코시스 리스크</a> · <a href="./hub.html?tab=comp">경쟁사 성과</a> · <a href="./hub.html?tab=index">시장 지표</a></footer>
+<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=home">종합 상황판</a> · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">특정 키워드 검색</a> · <a href="./hub.html?tab=risk">실리코시스 리스크</a> · <a href="./hub.html?tab=co">계열사 들여다보기</a></footer>
 
 </body>
 </html>

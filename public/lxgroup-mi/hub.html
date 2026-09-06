@@ -705,6 +705,42 @@
   .comp-zero{position:absolute; left:0; right:0; height:0; pointer-events:none;
              border-top:1px dashed #D6C6B5;}
 
+  /* ── 계열사 ────────────────────────────────────────────
+     하위 탭 두 줄. 위는 계열사(어느 회사 이야기냐), 아래는 무엇을 볼 것이냐.
+     둘을 같은 모양으로 두면 어느 쪽이 위층인지 안 보이므로, 아래 줄은
+     작고 알약꼴로 눌러 '한 계열사 안에서의 선택'으로 읽히게 한다. */
+  .co-sub{display:flex; gap:6px; margin:-4px 0 10px; flex-wrap:wrap;}
+  .co-sub .tab-btn{flex:0 0 auto; padding:7px 15px; font-size:12.5px; border-radius:999px;}
+  .co-pane{display:none;}
+  .co-pane.on{display:block;}
+  /* 그 계열사에 딸린 다른 화면으로 건너가는 줄. 지금은 하우시스의 실리코시스
+     하나뿐이지만, 계열사마다 붙는 것이 생기면 여기에 는다. */
+  .co-jump{display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:var(--card); border:1.5px solid var(--line); border-left:4px solid var(--danger);
+    border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:12.5px; color:var(--muted);}
+  .co-jump b{color:var(--text);}
+  .co-jump button{margin-left:auto; background:none; border:none; color:var(--green);
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; padding:3px 8px;
+    border-radius:7px;}
+  .co-jump button:hover{background:var(--green-tint);}
+
+  .co-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  .co-card{text-align:left; background:var(--card); border:1.5px solid var(--line);
+    border-radius:12px; padding:10px 12px; cursor:pointer; font-family:inherit;
+    transition:border-color .15s, background .15s; display:block; width:100%;}
+  .co-card:hover{border-color:var(--green); background:var(--green-tint);}
+  .co-card .co-nm{font-size:14px; font-weight:800; color:var(--text); letter-spacing:-.02em;}
+  .co-card .co-sum{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5;}
+  .co-card .co-sum b{color:var(--text); font-weight:700;}
+  .co-card .co-mv{font-size:11.5px; margin-top:4px; display:flex; align-items:baseline; gap:5px; flex-wrap:wrap;}
+  .co-card .co-mv em{font-style:normal; color:var(--muted);}
+  .co-card .co-mv .up{color:var(--danger); font-weight:700;}
+  .co-card .co-mv .dn{color:#1565C0; font-weight:700;}
+  .co-card .co-none{font-size:11.5px; color:var(--muted); margin-top:3px;}
+  /* 계열사가 예닐곱이라 넓은 화면에서는 셋씩 두 줄이 알맞다. 이 규칙을 위쪽
+     넓은-화면 뭉치에 두면 아래 기본 규칙에 덮인다 — 기본 규칙 바로 뒤에 둔다. */
+  @media (min-width:1024px){ .co-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;} }
+
   .ind-pend{display:flex; flex-wrap:wrap; gap:7px;}
   .ind-pend span{border:1px dashed var(--line); border-radius:999px; padding:5px 11px;
                  font-size:12px; color:var(--muted);}
@@ -767,7 +803,7 @@
     </div>
     <span class="badge">LX Group MI · 사내 전용</span>
     <h1>LX Group MI</h1>
-    <p>종합 상황판에서 오늘의 상황을 한눈에 보고, 왼쪽 차림표에서 기사·키워드 검색·리스크·시장지표로 들어갑니다. 설정은 아래 버튼에서 바꿉니다.</p>
+    <p>종합 상황판에서 계열사별 상황을 한눈에 보고, 계열사를 누르면 그 안의 경쟁사 성과와 시장 지표로 들어갑니다. 기사·키워드 검색·리스크는 왼쪽 차림표에 있습니다.</p>
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
@@ -786,9 +822,8 @@
       <button type="button" class="tab-btn active" data-tab="home">종합<br> 상황판</button>
       <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
       <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
+      <button type="button" class="tab-btn" data-tab="co">계열사<br> 들여다보기</button>
       <button type="button" class="tab-btn" data-tab="risk">실리코시스<br> 리스크</button>
-      <button type="button" class="tab-btn" data-tab="index">시장<br> 지표</button>
-      <button type="button" class="tab-btn" data-tab="comp">경쟁사<br> 성과</button>
     </div>
   </div>
 
@@ -797,6 +832,15 @@
   <!-- 탭 0: 종합 상황판 -->
   <div id="tab-home" class="tab-panel active">
     <div class="kpi-row" id="homeKpi"></div>
+
+    <!-- 계열사가 먼저다. 이 화면을 여는 사람은 대개 '어느 계열사 이야기'를
+         들고 오지, '전체 경쟁사'를 들고 오지 않는다. 칸을 누르면 그 계열사
+         안으로 들어간다. -->
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사</span></div>
+      <div class="step-desc">칸을 누르면 그 계열사의 경쟁사 성과와 시장 지표로 들어갑니다.</div>
+      <div class="co-grid" id="homeCo"><div class="empty-note">불러오는 중…</div></div>
+    </section>
 
     <div class="home-grid">
       <section class="card home-wide">
@@ -818,8 +862,8 @@
       </section>
 
       <section class="card home-wide">
-        <div class="step-head"><span class="step-num">📊</span><span class="step-title">시장지표 한눈에</span>
-          <button type="button" class="go-btn" data-goto="index">자세히 →</button></div>
+        <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span>
+          <button type="button" class="go-btn" data-goto="co">자세히 →</button></div>
         <div class="step-desc" id="homeIndDesc">불러오는 중…</div>
         <div id="homeInd"></div>
       </section>
@@ -1144,34 +1188,19 @@
     </section>
   </div>
 
-  <!-- 탭 6: 시장지표 -->
-  <div id="tab-index" class="tab-panel">
-    <!-- 위 본문 탭과 같은 모양의 하위 탭. 처음에는 공통만 보인다. -->
-    <div class="tab-nav ind-nav" id="indTabs"></div>
+  <!-- 탭 6·7: 계열사 들여다보기 — 계열사를 먼저 고르고, 그 안에서 경쟁사와
+       시장지표를 오간다. 실무에서 화면을 여는 까닭은 대개 '하우시스가 요즘
+       어떤가'이지 '경쟁사 전체가 어떤가'가 아니다. -->
+  <div id="tab-co" class="tab-panel">
+    <div class="tab-nav ind-nav" id="coTabs"></div>
+    <div class="co-sub" id="coSub">
+      <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
+      <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
+    </div>
 
-    <section class="card">
-      <div class="step-head"><span class="step-num" id="indHeadIcon">📊</span><span class="step-title" id="indHeadTitle">공통 지표</span></div>
-      <div class="step-desc" id="indHeadDesc"></div>
-      <div class="line-row">
-        <div class="ind-asof" id="indAsOf">불러오는 중…</div>
-        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 이 탭 원본 엑셀</button>
-      </div>
-      <div class="ind-grid" id="indBody"></div>
-      <div class="empty-note" id="indEmpty" style="display:none;"></div>
-    </section>
+    <div class="co-jump" id="coJump" style="display:none;"></div>
 
-    <section class="card" id="indPendCard" style="display:none;">
-      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
-      <div class="step-desc">무엇을 볼지는 정해뒀지만 아직 받아오지 않는 지표입니다.</div>
-      <div class="ind-pend" id="indPend"></div>
-    </section>
-  </div>
-
-  <!-- 탭 7: 경쟁사 성과 -->
-  <div id="tab-comp" class="tab-panel">
-    <!-- 계열사를 고르는 하위 탭. 시장지표와 같은 모양이라야 '같은 층의 선택'으로 읽힌다. -->
-    <div class="tab-nav ind-nav" id="compTabs"></div>
-
+    <div id="co-comp" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num">🏁</span><span class="step-title" id="compHeadTitle">경쟁사 성과</span></div>
       <div class="step-desc" id="compHeadDesc"></div>
@@ -1179,6 +1208,40 @@
       <div class="ind-grid" id="compBody"></div>
       <div class="empty-note" id="compEmpty" style="display:none;"></div>
     </section>
+    </div>
+
+    <div id="co-index" class="co-pane">
+    <!-- 그 계열사에만 걸리는 지표가 먼저다. 이 화면을 여는 까닭이 그것이기
+         때문이다. 환율·금리는 어느 계열사에나 똑같이 걸리므로 바로 아래에
+         따로 둔다 — 한 상자에 섞으면 '이게 우리 것인가 공통인가'를 지표마다
+         다시 가려야 한다. -->
+    <section class="card">
+      <div class="step-head"><span class="step-num" id="indHeadIcon">🏭</span><span class="step-title" id="indHeadTitle">지표</span></div>
+      <div class="step-desc" id="indHeadDesc"></div>
+      <div class="line-row">
+        <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀</button>
+      </div>
+      <div class="ind-grid" id="indBody"></div>
+      <div class="empty-note" id="indEmpty" style="display:none;"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span></div>
+      <div class="step-desc">환율·금리처럼 어느 계열사에나 함께 걸리는 값입니다. 계열사를 바꿔도 이 상자는 그대로 있습니다. <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="line-row">
+        <div class="ind-asof" id="indCommonAsOf"></div>
+        <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 공통 원본 엑셀</button>
+      </div>
+      <div class="ind-grid" id="indCommonBody"></div>
+    </section>
+
+    <section class="card" id="indPendCard" style="display:none;">
+      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
+      <div class="step-desc">무엇을 볼지는 정해뒀지만 아직 받아오지 않는 지표입니다.</div>
+      <div class="ind-pend" id="indPend"></div>
+    </section>
+    </div>
   </div>
 
   </div>
@@ -1407,6 +1470,123 @@
       });
   }
 
+  /* ---------- 계열사 들여다보기 ----------
+     실무에서 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지
+     「경쟁사 전체가 어떤가」가 아니다. 그래서 계열사를 먼저 고르고, 그 안에서
+     경쟁사 성과와 시장 지표를 오간다. 예전에는 둘이 각각 제 계열사 고르개를
+     들고 있어서, 위에서는 하우시스를 보면서 아래에서는 글라스를 읽는 일이
+     생겼다 — 이제 고르개는 하나다. */
+  const CO_ORDER = ['인터', '판토스', '하우시스', '글라스', '세미콘', 'MMA', '홀딩스'];
+  const CO_NAME = { '인터': 'LX인터내셔널', '판토스': 'LX판토스', '하우시스': 'LX하우시스',
+                    '글라스': 'LX글라스', '세미콘': 'LX세미콘', 'MMA': 'LX MMA',
+                    '홀딩스': 'LX홀딩스' };
+  function co이름(k){ return CO_NAME[k] || k || '계열사'; }
+
+  /* 브라우저가 저장을 막아 둔 경우가 있다(사생활 창, 사이트 자료 차단).
+     기억하지 못하는 것은 불편할 뿐이지만, 여기서 터지면 화면이 안 뜬다. */
+  function 기억(열쇠, 값){
+    try {
+      if (값 === undefined) return localStorage.getItem(열쇠);
+      localStorage.setItem(열쇠, 값);
+    } catch (e){}
+    return null;
+  }
+
+  let coTab = 기억('lx-co') || '하우시스';
+  let coSub = 기억('lx-co-sub') === 'index' ? 'index' : 'comp';
+
+  /* 시트에 새 계열사가 생기면 저절로 붙는다. 붙박이 목록만 믿으면 자료는
+     들어왔는데 화면에는 없는 계열사가 생긴다. */
+  function co목록(){
+    const 본것 = {};
+    CO_ORDER.forEach(function (k){ 본것[k] = 1; });
+    ((compData && compData.실적) || []).forEach(function (x){
+      (x.계열사 || []).forEach(function (g){ if (g) 본것[g] = 1; });
+    });
+    ((indData && indData.소속목록) || []).forEach(function (소){
+      if (소 === '공통') return;
+      const T = IND_TABS.filter(function (t){ return t.k !== '공통' && t.맞나(소); })[0];
+      본것[T ? T.k : 소] = 1;
+    });
+    return Object.keys(본것).sort(function (a, b){
+      const x = CO_ORDER.indexOf(a), y = CO_ORDER.indexOf(b);
+      return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
+    });
+  }
+
+  /* 그 계열사에 무엇이 얼마나 있는지. 상황판 칸과 탭 꼬리 숫자가 같은 셈을
+     써야 한다 — 한쪽은 3, 다른 쪽은 5라면 어느 쪽이 맞는지 알 수 없다. */
+  function co셈(k){
+    const 회사 = {};
+    ((compData && compData.실적) || []).forEach(function (x){
+      if ((x.계열사 || []).indexOf(k) < 0) return;
+      const c = String(x.회사명 || '').trim();
+      if (c) 회사[c] = 1;
+    });
+    const 지표 = indTabItems((indData && indData.지표) || [], k);
+    return { 경쟁사: Object.keys(회사).length, 지표: 지표.length, 지표들: 지표 };
+  }
+
+  function coDraw(){
+    const 목록 = co목록();
+    if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '하우시스';
+
+    document.getElementById('coTabs').innerHTML = 목록.map(function (k){
+      const c = co셈(k);
+      const 빔 = (!c.경쟁사 && !c.지표) ? ' data-empty="1"' : '';
+      return '<button type="button" class="tab-btn' + (k === coTab ? ' active' : '') +
+        '" data-co="' + escapeHtml(k) + '"' + 빔 + '>' + escapeHtml(k) + '</button>';
+    }).join('');
+
+    document.querySelectorAll('#coSub .tab-btn').forEach(function (b){
+      b.classList.toggle('active', b.dataset.coSub === coSub);
+    });
+    document.getElementById('co-comp').classList.toggle('on', coSub === 'comp');
+    document.getElementById('co-index').classList.toggle('on', coSub === 'index');
+
+    const 건너 = document.getElementById('coJump');
+    if (coTab === '하우시스'){
+      건너.style.display = 'flex';
+      건너.innerHTML = '<span>⚠️ <b>미국 엔지니어드스톤 실리코시스</b>가 이 계열사에 걸려 있습니다.</span>' +
+        '<button type="button" data-goto="risk">리스크 화면 →</button>';
+    } else {
+      건너.style.display = 'none';
+      건너.innerHTML = '';
+    }
+
+    if (coSub === 'comp') loadComp(false); else loadIndex(false);
+    /* 다른 쪽도 이미 받아 뒀으면 그려 둔다. 안 그리면 하위 탭을 눌렀을 때
+       지난 계열사 화면이 한 순간 비쳤다가 바뀐다. */
+    if (compData) compDraw();
+    if (indData) indDraw();
+  }
+
+  document.getElementById('coTabs').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-co]');
+    if (!b) return;
+    coTab = b.dataset.co;
+    기억('lx-co', coTab);
+    coDraw();
+    document.getElementById('coTabs').scrollIntoView({ block: 'nearest' });
+  });
+
+  document.getElementById('coSub').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-co-sub]');
+    if (!b) return;
+    coSub = b.dataset.coSub;
+    기억('lx-co-sub', coSub);
+    coDraw();
+  });
+
+  /* 상황판에서 계열사 칸을 눌러 들어온다. 어느 하위 탭으로 들어갈지는
+     마지막에 보던 것을 그대로 쓴다 — 경쟁사를 보러 다니던 사람을 매번
+     지표 화면에 떨어뜨리면 한 번씩 더 눌러야 한다. */
+  function co열기(k, 하위){
+    if (k) { coTab = k; 기억('lx-co', coTab); }
+    if (하위) { coSub = 하위; 기억('lx-co-sub', coSub); }
+    showTab('co');
+  }
+
   /* ---------- 탭 전환 ---------- */
   let applyAutoLoaded = false;
 
@@ -1418,12 +1598,11 @@
     history.replaceState(null, '', url);
     /* 상황판은 시장지표까지 같이 보여주므로 여기서 한 번 부른다.
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
-    if (tabName === 'home'){ renderHome(); loadIndex(false); }
+    if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
-    if (tabName === 'index'){ loadIndex(false); }
-    if (tabName === 'comp'){ loadComp(false); }
+    if (tabName === 'co'){ coDraw(); }
   }
 
   /* ---------- 탭6: 시장지표 ----------
@@ -1510,6 +1689,9 @@
     { k: '세미콘', 이름: '세미콘', 맞나: function(s){ return s.indexOf('세미콘') === 0; } },
     { k: 'MMA',    이름: 'MMA',    맞나: function(s){ return s.toUpperCase().indexOf('MMA') === 0; } }
   ];
+  /* 지금 보고 있는 계열사. 경쟁사와 시장지표가 이 하나를 같이 본다 —
+     둘을 따로 기억하면 화면 위에서는 하우시스를 보면서 아래에서는 글라스
+     지표를 읽는 일이 생긴다. */
   let indTab = '공통';
 
   /* ── 달러를 원화로 ─────────────────────────────────────────
@@ -1965,12 +2147,13 @@
 
      열쇠에 세로막대를 쓰는 이유는 그룹 이름에 띄어쓰기가 들어가기 때문이다
      ('국내 B2C · 리모델링'). 띄어쓰기로 나누면 이름이 잘린다. */
-  function indBlocks(지표들){
+  function indBlocks(지표들, 접두){
     const 순서 = [], 통 = {}, 그룹단위 = {};
+    const 앞 = 접두 || '';
     지표들.forEach(function(x){
       const 그룹 = x.그룹 || '기타';
       const 단위 = x.단위 || '';
-      const k = 그룹 + '|' + 단위;
+      const k = 앞 + 그룹 + '|' + 단위;
       if (!통[k]){ 통[k] = { 그룹: 그룹, 단위: 단위, 것들: [] }; 순서.push(k); }
       통[k].것들.push(x);
       (그룹단위[그룹] = 그룹단위[그룹] || {})[단위] = 1;
@@ -2017,49 +2200,56 @@
       IND_TABS.push({ k: s, 이름: s, 맞나: function(v){ return v === s; } });
     });
 
-    if (!IND_TABS.some(function(t){ return t.k === indTab; })) indTab = '공통';
+    indTab = coTab;
 
-    document.getElementById('indTabs').innerHTML = IND_TABS.map(function(t){
-      const n = indTabItems(지표, t.k).length;
-      return '<button type="button" class="tab-btn' + (t.k === indTab ? ' active' : '') +
-        '" data-ind-tab="' + escapeHtml(t.k) + '"' + (n ? '' : ' data-empty="1"') + '>' +
-        escapeHtml(t.이름) + (n ? '<i>' + n + '</i>' : '') + '</button>';
-    }).join('');
+    document.getElementById('indHeadTitle').textContent = co이름(coTab) + ' 지표';
+    document.getElementById('indHeadDesc').innerHTML =
+      '그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다. ' +
+      '<a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
-    const 공통인가 = indTab === '공통';
-    document.getElementById('indHeadIcon').textContent = 공통인가 ? '📊' : '🏭';
-    document.getElementById('indHeadTitle').textContent = 공통인가 ? '공통 지표' : indTab + ' 지표';
-    document.getElementById('indHeadDesc').innerHTML = 공통인가
-      ? '환율·금리처럼 어느 계열사에나 함께 걸리는 지표입니다. 위에서 계열사를 고르면 그 계열사 지표만 보입니다. <a href="manual.html#index" style="color:var(--green); font-weight:700;">자세히 →</a>'
-      : '그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다. <a href="manual.html#index" style="color:var(--green); font-weight:700;">자세히 →</a>';
+    /* 계열사 것과 공통 것을 상자 둘로 나눠 그린다. 공통은 어느 계열사를
+       보든 같은 자리에 그대로 있어야 한다 — 환율·금리는 계열사를 갈아도
+       바뀌지 않는 배경이기 때문이다. */
+    const 것들 = indTabItems(지표, coTab);
+    const 공통것 = indTabItems(지표, '공통');
+    document.getElementById('indBody').innerHTML = indBlocks(것들, '계|');
+    document.getElementById('indCommonBody').innerHTML = 공통것.length
+      ? indBlocks(공통것, '공|')
+      : '<div class="empty-note">공통 지표에 쌓인 값이 아직 없습니다.</div>';
 
-    const 것들 = indTabItems(지표, indTab);
-    document.getElementById('indBody').innerHTML = indBlocks(것들);
     /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
        아무 쓸모가 없으므로, 열자마자 맨 아래(최신)로 내려 둔다. 위로 밀면
        과거로 가는 것이 그래프를 왼쪽으로 훑는 것과 같은 몸짓이다. */
-    document.querySelectorAll('#indBody .ind-tbl-wrap').forEach(function(w){
+    document.querySelectorAll('#co-index .ind-tbl-wrap').forEach(function(w){
       w.scrollTop = w.scrollHeight;
     });
+
     const 빈칸 = document.getElementById('indEmpty');
     빈칸.style.display = 것들.length ? 'none' : 'block';
-    빈칸.textContent = 공통인가
-      ? '공통 지표에 쌓인 값이 아직 없습니다.'
-      : indTab + '에 걸린 지표가 아직 없습니다. 시장지표 시트에 소속을 ' + 으로(indTab) + ' 넣으면 여기에 나옵니다.';
+    빈칸.textContent = co이름(coTab) + '에 걸린 지표가 아직 없습니다. 시장지표 시트에 소속을 ' +
+      으로(coTab) + ' 넣으면 여기에 나옵니다. 아래 공통 지표는 그대로 보실 수 있습니다.';
 
-    /* 대기 목록도 지금 보고 있는 탭 것만 보여준다. 공통 탭에서는 전부 보여
-       무엇이 남았는지 한눈에 들어오게 한다. */
-    const 이탭대기 = 공통인가 ? 대기 : indTabItems(대기, indTab);
+    /* 대기 목록은 지금 보고 있는 계열사 것만. 어느 계열사에도 안 걸린
+       것(소속이 빈 것)은 어디서도 안 보이면 곤란하니 여기 함께 둔다. */
+    const 이탭대기 = 대기.filter(function(x){
+      const 소 = x.소속 || [];
+      if (!소.length) return true;
+      const T = IND_TABS.filter(function(t){ return t.k === coTab; })[0];
+      return T ? 소.some(T.맞나) : false;
+    });
     document.getElementById('indPendCard').style.display = 이탭대기.length ? 'block' : 'none';
     document.getElementById('indPend').innerHTML = 이탭대기.map(function(x){
       return '<span>' + escapeHtml(x.이름) + ' · ' + escapeHtml(x.출처) + '</span>';
     }).join('');
 
     document.getElementById('indAsOf').textContent =
-      indData.asOf + ' 기준 · 이 탭 ' + 것들.length + '개 · 전체 ' + 지표.length + '개' +
-      (대기.length ? ' · 대기 ' + 대기.length + '개' : '');
+      indData.asOf + ' 기준 · ' + co이름(coTab) + ' 지표 ' + 것들.length + '개' +
+      (이탭대기.length ? ' · 대기 ' + 이탭대기.length + '개' : '');
+    document.getElementById('indCommonAsOf').textContent =
+      '어느 계열사에나 함께 걸리는 지표 ' + 공통것.length + '개';
 
     homeInd();   // 상황판이 열려 있는 채로 지표가 도착할 수 있다
+    homeCo();
   }
 
   function loadIndex(force){
@@ -2089,24 +2279,19 @@
   }
 
   /* 시장지표 원본은 탭 하나가 파일 하나다. 그래서 단추도 지표마다가 아니라
-     카드 머리에 하나만 둔다. */
+     카드 머리에 하나씩 — 계열사 것과 공통 것이 드라이브에서도 서로 다른
+     파일이라 단추도 둘이다. */
   document.getElementById('indXlsBtn').addEventListener('click', function (){
-    원본받기('지표', indTab, this);
+    원본받기('지표', coTab, this);
   });
-
-  document.getElementById('indTabs').addEventListener('click', function(e){
-    const b = e.target.closest('button[data-ind-tab]');
-    if (!b) return;
-    indTab = b.dataset.indTab;
-    indDraw();
-    /* 탭을 바꾸면 카드가 통째로 갈리므로 화면을 위로 올린다. 아래를 보고
-       있다가 바꾸면 새 탭의 중간부터 보여 무엇이 바뀌었는지 모른다. */
-    document.getElementById('indTabs').scrollIntoView({ block: 'nearest' });
+  document.getElementById('indCommonXlsBtn').addEventListener('click', function (){
+    원본받기('지표', '공통', this);
   });
 
   /* 기간·통화·펼침은 그래프마다 따로 기억한다 — 환율은 일별로 보면서
      건설수주는 연도별로 두고 싶은 것이 자연스럽다. */
-  document.getElementById('indBody').addEventListener('click', function(e){
+  ['indBody', 'indCommonBody'].forEach(function (칸){
+  document.getElementById(칸).addEventListener('click', function(e){
     const b = e.target.closest('button[data-range], button[data-cur], button[data-view], button[data-xls]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
@@ -2122,6 +2307,7 @@
     else if (b.dataset.view === 'graph') indOpen[k] = !(indOpen[k] === true);
     else indTable[k] = !(indTable[k] === true);
     indDraw();
+  });
   });
 
 
@@ -3665,43 +3851,15 @@
     if (!compData) return;
     const 실적 = compData.실적 || [];
 
-    const 계열사 = [];
-    실적.forEach(function (x){
-      (x.계열사 || []).forEach(function (g){
-        if (g && 계열사.indexOf(g) < 0) 계열사.push(g);
-      });
-    });
-    /* 차례는 시장지표 하위 탭과 맞춘다 — 같은 회사를 두 화면에서 볼 때
-       순서가 다르면 매번 눈으로 찾게 된다. */
-    const 기준차례 = ['인터', '판토스', '하우시스', '글라스', '세미콘', 'MMA', '홀딩스'];
-    계열사.sort(function (a, b){
-      const x = 기준차례.indexOf(a), y = 기준차례.indexOf(b);
-      return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
-    });
-    if (계열사.indexOf(compTab) < 0) compTab = 계열사[0] || '';
+    /* 계열사는 위층(계열사 탭)에서 고른다. 여기서 또 고르게 하면 화면 위에서는
+       하우시스를 보면서 아래에서는 글라스를 보는 일이 생긴다. */
+    compTab = coTab;
 
-    document.getElementById('compTabs').innerHTML = 계열사.map(function (g){
-      /* 화면이 회사로 묶이니 꼬리 숫자도 회사 수라야 한다. 부문 수를 적어 두면
-         「인터 15」인데 칸이 셋만 보여 무엇이 빠진 줄 안다. */
-      const 회사들 = [];
-      실적.forEach(function (x){
-        if ((x.계열사 || []).indexOf(g) < 0) return;
-        const c = String(x.회사명 || '').trim();
-        if (c && 회사들.indexOf(c) < 0) 회사들.push(c);
-      });
-      const n = 회사들.length;
-      return '<button type="button" class="tab-btn' + (g === compTab ? ' active' : '') +
-        '" data-comp-tab="' + escapeHtml(g) + '">' + escapeHtml(g) +
-        (n ? '<i>' + n + '</i>' : '') + '</button>';
-    }).join('');
-
-    document.getElementById('compHeadTitle').textContent = (compTab || '경쟁사') + ' 경쟁사 성과';
+    document.getElementById('compHeadTitle').textContent = co이름(compTab) + ' 경쟁사';
     document.getElementById('compHeadDesc').innerHTML =
-      'DART 정기·감사보고서의 부문별 매출·영업이익입니다. <b>회사마다 한 칸</b>, 그 안에 <b>사업부문</b>이 섭니다 — ' +
-      '<b>우리 계열사는 왼쪽에 붉은 띠</b>. 분기 단추 이름은 <b>회사마다 다릅니다</b>: ' +
-      '<b>「누적」</b>은 연초부터의 누계(전년 같은 시점과 견주세요), <b>「분기별」</b>은 그 석 달치, ' +
-      '<b>「분기」</b>는 아직 못 가린 것이라 <code>2025Q2</code> 그대로 둡니다. ' +
-      '<a href="manual.html#comp" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
+      'DART 공시의 부문별 매출·영업이익. <b>회사마다 한 칸</b>이고 <b>우리 계열사는 왼쪽에 붉은 띠</b>입니다. ' +
+      '분기 단추 이름은 회사마다 다릅니다 — <b>「누적」</b>은 연초부터의 누계, <b>「분기별」</b>은 그 석 달치. ' +
+      '<a href="manual.html#co" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
     /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
        부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만
@@ -3728,7 +3886,7 @@
     const 빈칸 = document.getElementById('compEmpty');
     빈칸.style.display = 것들.length ? 'none' : 'block';
     빈칸.textContent = compTab
-      ? compTab + '에 아직 쌓인 실적이 없습니다. 원문을 받아 숫자를 뽑는 중입니다.'
+      ? co이름(compTab) + '에 아직 쌓인 실적이 없습니다. 원문을 받아 숫자를 뽑는 중입니다.'
       : '아직 쌓인 실적이 없습니다.';
 
     const 분기있음 = 것들.some(function (x){ return (x.분기 || []).length; });
@@ -3739,7 +3897,7 @@
     });
     document.getElementById('compAsOf').textContent =
       (compData.asOf ? compData.asOf + ' 기준 · ' : '') +
-      '이 탭 회사 ' + 이탭회사.length + '곳 · 부문 ' + 것들.length + '개' +
+      '경쟁사 ' + 이탭회사.length + '곳 · 부문 ' + 것들.length + '개' +
       (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '') +
       (compData.짝없는부문 && compData.짝없는부문.length
         ? ' · 짝 못 찾은 부문 ' + compData.짝없는부문.length + '개'
@@ -3765,6 +3923,7 @@
         }
         compData = d;
         compDraw();
+        homeCo();
       })
       .catch(() => {
         compLoading = false;
@@ -3774,15 +3933,8 @@
   }
 
   그래프커서(document.getElementById('indBody'), indGraph);
+  그래프커서(document.getElementById('indCommonBody'), indGraph);
   그래프커서(document.getElementById('compBody'), compGraph);
-
-  document.getElementById('compTabs').addEventListener('click', function (e){
-    const b = e.target.closest('button[data-comp-tab]');
-    if (!b) return;
-    compTab = b.dataset.compTab;
-    compDraw();
-    document.getElementById('compTabs').scrollIntoView({ block: 'nearest' });
-  });
 
   document.getElementById('compBody').addEventListener('click', function (e){
     const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls], button[data-old]');
@@ -3960,9 +4112,74 @@
       : '<div class="empty-note">아직 값이 쌓인 공통 지표가 없습니다.</div>';
   }
 
+  /* 계열사 칸. 이름만 늘어놓으면 누를 까닭이 없으므로, 들어가기 전에
+     「무엇이 있고 무엇이 움직였나」를 한 줄씩 적어 준다.
+
+     경쟁사 자료는 여기서 기다리지 않는다. 상황판이 웹훅 둘을 기다리게 되면
+     결국 느려서 아무도 안 본다 — 지표로 먼저 그리고, 경쟁사가 도착하면
+     그때 다시 그린다(loadComp 가 끝나며 homeCo 를 부른다). */
+  function homeCo(){
+    const 통 = document.getElementById('homeCo');
+    if (!통) return;
+    if (!indData && !compData){
+      통.innerHTML = '<div class="empty-note">' +
+        (indLoading || compLoading ? '불러오는 중…' : '아직 받아온 자료가 없습니다.') + '</div>';
+      return;
+    }
+    const 이레 = homeDay(6);
+    통.innerHTML = co목록().map(function (k){
+      const c = co셈(k);
+
+      /* 가장 크게 움직인 지표 하나. 어느 구간으로 재느냐를 지표마다 달리
+         하면 견줄 수 없으니 월별을 먼저 보고, 없으면 일별·연도별로 내려간다. */
+      let 큰것 = null;
+      c.지표들.forEach(function (x){
+        const b = (x.범위 && (x.범위['월'] || x.범위['일'] || x.범위['연'])) || null;
+        if (!b || b.변화율 === null || b.변화율 === undefined) return;
+        if (!큰것 || Math.abs(b.변화율) > Math.abs(큰것.b.변화율)) 큰것 = { x: x, b: b };
+      });
+
+      /* 그 계열사 이름이 든 그룹의 최근 기사 수. 기사 그룹 이름은 사람이
+         짓는 것이라 딱 맞아떨어지지 않을 수 있어, 이름이 들어가면 센다. */
+      let 기사 = 0;
+      (allArticles || []).forEach(function (a){
+        const g = String(a.group || '');
+        if (g.indexOf(k) < 0) return;
+        const d = String(a.collectedAt || a.pubDate || '').slice(0, 10);
+        if (d >= 이레) 기사++;
+      });
+
+      const 요약 = [];
+      if (c.경쟁사) 요약.push('경쟁사 <b>' + c.경쟁사 + '</b>곳');
+      if (c.지표) 요약.push('지표 <b>' + c.지표 + '</b>개');
+      if (기사) 요약.push('최근 7일 기사 <b>' + 기사 + '</b>건');
+
+      const 움직임 = 큰것
+        ? '<div class="co-mv"><em>' + escapeHtml(큰것.x.이름) + '</em>' +
+          '<span class="' + (큰것.b.변화율 > 0 ? 'up' : 'dn') + '">' +
+          (큰것.b.변화율 > 0 ? '▲' : '▼') + ' ' + Math.abs(큰것.b.변화율).toFixed(1) + '%</span>' +
+          '<em>' + escapeHtml(큰것.b.라벨 || '') + '</em></div>'
+        : '';
+
+      return '<button type="button" class="co-card" data-co-go="' + escapeHtml(k) + '">' +
+        '<div class="co-nm">' + escapeHtml(co이름(k)) + '</div>' +
+        (요약.length
+          ? '<div class="co-sum">' + 요약.join(' · ') + '</div>'
+          : '<div class="co-none">아직 쌓인 자료가 없습니다</div>') +
+        움직임 +
+      '</button>';
+    }).join('');
+  }
+
+  document.getElementById('homeCo').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-co-go]');
+    if (b) co열기(b.dataset.coGo);
+  });
+
   function renderHome(){
     if (!document.getElementById('homeKpi')) return;
     homeKpi();
+    homeCo();
     homeFeed();
     homeGroups();
     homeRisk();
@@ -4714,9 +4931,11 @@
 
     document.getElementById('adhocSearchBtn').addEventListener('click', runAdhocSearch);
 
-    document.getElementById('tab-home').addEventListener('click', function(e){
-      const b = e.target.closest('button[data-goto]');
-      if (b) showTab(b.dataset.goto);
+    ['tab-home', 'tab-co'].forEach(function (판){
+      document.getElementById(판).addEventListener('click', function(e){
+        const b = e.target.closest('button[data-goto]');
+        if (b) showTab(b.dataset.goto);
+      });
     });
 
     document.getElementById('knSubmitBtn').addEventListener('click', submitKnowledge);
@@ -4747,8 +4966,18 @@
     document.getElementById('sharedCode').value = initialCode;
     document.getElementById('changeCodeLabel').textContent = initialCode;
 
+    /* 예전 주소(?tab=index · ?tab=comp)로 들어오는 사람이 있다. 탭이 없어졌다고
+       상황판으로 떨어뜨리지 않고, 계열사 화면의 해당 하위 탭으로 보낸다.
+       ?co= 로 계열사를 곧바로 집을 수도 있다. */
     const tabFromUrl = urlParams.get('tab');
-    const initialTab = ['home','search','apply','adhoc','risk','knowledge','index','comp'].includes(tabFromUrl) ? tabFromUrl : 'home';
+    const coFromUrl = urlParams.get('co');
+    if (coFromUrl) { coTab = coFromUrl; 기억('lx-co', coTab); }
+    if (tabFromUrl === 'index' || tabFromUrl === 'comp'){
+      coSub = tabFromUrl === 'index' ? 'index' : 'comp';
+      기억('lx-co-sub', coSub);
+    }
+    const initialTab = (tabFromUrl === 'index' || tabFromUrl === 'comp') ? 'co'
+      : (['home','search','apply','adhoc','risk','knowledge','co'].includes(tabFromUrl) ? tabFromUrl : 'home');
     showTab(initialTab);
 
     loadArticles();
