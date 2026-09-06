@@ -127,16 +127,21 @@
      탭을 하나씩 눌러 봐야 무슨 일이 있었는지 아는 것이 이 화면의 가장 큰
      불편이었다. 기능이 늘수록 심해진다. 그래서 첫 화면은 각 탭에서 제일
      먼저 봐야 할 것만 뽑아 한 판에 놓는다. */
-  .kpi-row{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:10px;}
-  .kpi{background:var(--card); border-radius:var(--radius); padding:11px 13px 10px; min-width:0;
-    box-shadow:0 2px 10px rgba(0,0,0,0.05); border-left:4px solid var(--line);}
-  .kpi-l{font-size:11.5px; color:var(--muted); font-weight:600;}
-  .kpi-n{font-size:22px; font-weight:700; margin-top:2px; line-height:1.15; font-variant-numeric:tabular-nums;}
-  .kpi-n span{font-size:13px; font-weight:600; color:var(--muted); margin-left:3px;}
-  .kpi-s{font-size:11.5px; color:var(--muted); margin-top:2px;}
-  .kpi.on{border-left-color:var(--green);}
-  .kpi.hot{border-left-color:var(--danger);} .kpi.hot .kpi-n{color:var(--danger);}
-  .kpi.calm{border-left-color:#1F7A5A;}
+  /* 주요 뉴스 카드 머리에 붙는 요약 숫자 넷. 카드 넉 장을 따로 쌓을 만한
+     값은 아니지만, 뉴스를 볼 때 옆에 있으면 쓸모가 있다.
+     좁은 화면에서는 제목 아래로 줄바꿈되게 두고, 「전체 기사 →」가 늘 오른쪽
+     끝에 남도록 머리줄에 flex-wrap 을 건다. */
+  .step-head.mail-head{flex-wrap:wrap; row-gap:5px;}
+  /* 좁은 화면에서는 요약 숫자를 제목 아래 한 줄로 내리고 「전체 기사 →」는
+     제목과 같은 줄 오른쪽에 남긴다. 셋을 한 줄에 우겨넣으면 머리줄이 세 줄이 된다. */
+  .mail-head .go-btn{order:2;}
+  .kpi-mini{order:3; flex-basis:100%; margin-left:0;
+    display:flex; flex-wrap:wrap; gap:2px 13px; align-items:baseline;}
+  .kpi-mini .km{display:flex; align-items:baseline; gap:4px; white-space:nowrap;
+    font-size:11.5px; color:var(--muted); font-weight:600;}
+  .kpi-mini .km b{font-size:14.5px; font-weight:700; color:var(--text);
+    font-variant-numeric:tabular-nums; letter-spacing:-.2px;}
+  .kpi-mini .km.hot b{color:var(--danger);}
 
   /* 첫 화면의 카드는 순서를 설정에서 바꾼다. 그래서 카드를 모두 #tab-home 의
      직계 자식으로 두고 JS 가 appendChild 로 다시 늘어놓는다 — 감싸는 상자가
@@ -146,7 +151,6 @@
   #tab-home{grid-template-columns:minmax(0,1fr); gap:10px; align-items:start;}
   #tab-home.active{display:grid;}
   #tab-home > section.card{margin-bottom:0;}
-  #tab-home > .kpi-row{margin-bottom:0;}
   .go-btn{margin-left:auto; background:none; border:none; color:var(--green);
     font-size:12px; font-weight:700; cursor:pointer; padding:3px 6px; border-radius:7px; white-space:nowrap;}
   .go-btn:hover{background:var(--green-tint);}
@@ -208,12 +212,14 @@
     .cover-in{padding-right:300px;}
     .code-top{position:absolute; top:0; right:24px; width:250px; margin-bottom:0;}
     .panes{min-width:0;}
-    .kpi-row{grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
     /* 기본은 한 줄을 다 쓰고, 짧은 카드(data-half)만 둘씩 나란히 선다.
        순서를 바꿔도 붙어 선 짧은 카드끼리 자동으로 짝이 된다. */
     #tab-home{grid-template-columns:repeat(2,minmax(0,1fr));}
     #tab-home > *{grid-column:1 / -1;}
     #tab-home > [data-half]{grid-column:auto;}
+    /* 자리가 넉넉하면 요약 숫자를 제목과 「전체 기사 →」 사이에 끼워 한 줄로 만든다. */
+    .mail-head .go-btn{order:0;}
+    .kpi-mini{order:0; flex-basis:auto; margin-left:auto;}
     .hi{grid-template-columns:repeat(4,minmax(0,1fr));}
     /* 지표 카드도 두 칸으로. 지표가 스무 개를 넘어가면서 한 줄로는 끝이 안 보인다. */
     #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
@@ -892,15 +898,17 @@
     </section>
 
     <!-- 그 다음이 '오늘 아침 메일로 나간 것'이다. 점수가 높은 몇 건만 펴 두고
-         나머지는 「더보기」 뒤에 접어 둔다 — 전체 기사는 조회 탭에 그대로 있다. -->
+         나머지는 「더보기」 뒤에 접어 둔다 — 전체 기사는 조회 탭에 그대로 있다.
+         요약 숫자 넷은 이 카드 머리 오른쪽에 작게 붙인다. 수집이 얼마나 들어왔고
+         그중 몇 건이 중요한지는 뉴스를 볼 때 같이 보는 값이라, 따로 한 줄을
+         차지할 만큼은 아니다. -->
     <section class="card" data-card="mail">
-      <div class="step-head"><span class="step-num">📬</span><span class="step-title" id="homeMailTitle">주요 뉴스</span>
+      <div class="step-head mail-head"><span class="step-num">📬</span><span class="step-title" id="homeMailTitle">주요 뉴스</span>
+        <div class="kpi-mini" id="homeKpi" data-card="kpi"></div>
         <button type="button" class="go-btn" data-goto="search">전체 기사 →</button></div>
       <div class="step-desc" id="homeMailDesc">불러오는 중…</div>
       <div id="homeMail"></div>
     </section>
-
-    <div class="kpi-row" id="homeKpi" data-card="kpi"></div>
 
     <!-- 이 화면을 여는 사람은 대개 '어느 계열사 이야기'를 들고 오지, '전체
          경쟁사'를 들고 오지 않는다. 카드를 누르면 그 계열사 안으로 들어간다. -->
@@ -1196,6 +1204,7 @@
     <section class="card">
       <div class="step-head"><span class="step-num">📬</span><span class="step-title">주요 뉴스 기준</span><span class="optional-tag">첫 화면</span></div>
       <div class="step-desc">가장 최근 수집분 중 이 셋을 모두 넘은 기사만 첫 화면에 표시합니다.</div>
+      <div class="cfg-grid" id="cfgKpi" style="margin-bottom:12px;"></div>
       <div class="range-row">
         <div class="range-group">
           <label>중요도 <span id="cfgImpVal" class="range-val">2</span> 이상</label>
@@ -1609,13 +1618,17 @@
 
      서버에는 아무것도 보내지 않는다. 브라우저에만 적어 두므로 사람마다 제
      화면을 다르게 둘 수 있고, 설정 시트에 칸을 하나 더 만들 일도 없다. */
+  /* 순서를 바꿀 수 있는 카드만 여기 넣는다. 요약 숫자 넷(kpi)은 주요 뉴스 카드
+     머리 안에 붙어 있어서 따로 옮길 자리가 없다 — 켜고 끄기만 따로 둔다. */
   const CFG_HOME = [
-    { k: 'kpi',    이름: '요약 숫자 4개',   말: '마지막 수집·최근 7일·중요 기사·실리코시스' },
     { k: 'mail',   이름: '주요 뉴스',       말: '가장 최근 수집분 가운데 메일 기준을 넘은 것' },
     { k: 'co',     이름: '계열사 카드',     말: '계열사마다 한 줄 요약. 누르면 그 계열사로' },
     { k: 'groups',이름: '그룹별 수집 현황',말: '어느 그룹에 몇 건이 들어왔나' },
     { k: 'risk',   이름: '실리코시스 요약',말: '누적·최근 30일·중요 기사 수와 최신 한 건' },
     { k: 'ind',    이름: '공통 지표',       말: '환율·금리 등 어느 계열사에나 걸리는 값' }
+  ];
+  const CFG_KPI = [
+    { k: 'kpi', 이름: '요약 숫자 4개', 말: '마지막 수집·최근 7일·중요 4↑·실리코시스를 카드 머리 오른쪽에' }
   ];
   const CFG_SUB = [
     { k: 'comp',  이름: '경쟁사 성과',  말: 'DART 공시의 부문별 매출·영업이익' },
@@ -1625,7 +1638,7 @@
   const CFG_기본 = {
     /* 환율·금리를 맨 위에 두는 까닭은 아침에 제일 먼저 확인하는 값이기 때문이다.
        그 다음이 오늘 나간 뉴스다. 이 순서가 마음에 안 들면 설정에서 바꾼다. */
-    순서: ['ind', 'mail', 'kpi', 'co', 'groups', 'risk'],
+    순서: ['ind', 'mail', 'co', 'groups', 'risk'],
     home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1 },
     하위순서: ['comp', 'index', 'risk'],
     sub:  { comp: 1, index: 1, risk: 1 },
@@ -1690,8 +1703,10 @@
     document.querySelectorAll('#tab-home [data-card]').forEach(function (e){
       e.style.display = c.home[e.dataset.card] ? '' : 'none';
     });
+    /* 직계 자식만 옮긴다. 요약 숫자 넷은 주요 뉴스 카드 안에 들어 있어서,
+       그냥 querySelector 로 집으면 카드 밖으로 끌려 나온다. */
     if (홈) c.순서.forEach(function (k){
-      const e = 홈.querySelector('[data-card="' + k + '"]');
+      const e = 홈.querySelector(':scope > [data-card="' + k + '"]');
       if (e) 홈.appendChild(e);
     });
 
@@ -1788,6 +1803,9 @@
       }
       coDraw();
     });
+
+    /* 요약 숫자 넷은 주요 뉴스 카드 머리에 붙어 있어서 순서 목록에 못 넣는다. */
+    설정선택('cfgKpi', CFG_KPI, c.home, function (){ 설정보이기(); });
 
     /* 계열사는 빈 그릇이 '전부 보임'이라 처음 그릴 때 켠 것으로 채워 준다. */
     const 목록 = co목록().map(function (k){ return { k: k, 이름: co이름(k), 말: '' }; });
@@ -4390,21 +4408,22 @@
       return k && k >= 서른;
     });
 
-    const 칸 = function(꼴, 라벨, 수, 단위, 밑){
-      return '<div class="kpi ' + 꼴 + '"><div class="kpi-l">' + escapeHtml(라벨) + '</div>' +
-        '<div class="kpi-n">' + 수.toLocaleString() + '<span>' + 단위 + '</span></div>' +
-        '<div class="kpi-s">' + escapeHtml(밑) + '</div></div>';
+    /* 카드 머리에 붙는 자리라 라벨을 짧게 줄이고, 원래 카드 아래에 적던
+       설명은 title 로 옮겼다 — 한 줄에 넷이 들어가야 한다. */
+    const 칸 = function(꼴, 라벨, 수, 밑){
+      return '<span class="km ' + 꼴 + '" title="' + escapeHtml(라벨 + ' — ' + 밑) + '">' +
+        escapeHtml(라벨) + ' <b>' + 수.toLocaleString() + '</b>건</span>';
     };
 
     document.getElementById('homeKpi').innerHTML =
-      칸('on', '마지막 수집', 마지막건, '건',
+      칸('', '마지막 수집', 마지막건,
          마지막 ? 마지막 + ' 기준' : '아직 수집된 기사가 없습니다') +
-      칸('', '최근 7일', 이번주.length, '건',
+      칸('', '최근 7일', 이번주.length,
          '하루 평균 ' + Math.round(이번주.length / 7) + '건') +
-      칸(중요.length ? 'hot' : 'calm', '중요도 4↑ · 7일', 중요.length, '건',
-         중요.length ? '먼저 읽어야 할 기사입니다' : '눈에 띄는 기사가 없습니다') +
-      칸(리스크.length ? 'hot' : 'calm', '실리코시스 · 30일', 리스크.length, '건',
-         리스크.length ? '리스크 탭에서 확인하세요' : '최근 30일 보도가 없습니다');
+      칸(중요.length ? 'hot' : '', '중요 4↑', 중요.length,
+         중요.length ? '최근 7일, 먼저 읽어야 할 기사입니다' : '최근 7일, 눈에 띄는 기사가 없습니다') +
+      칸(리스크.length ? 'hot' : '', '실리코시스', 리스크.length,
+         리스크.length ? '최근 30일, 리스크 탭에서 확인하세요' : '최근 30일 보도가 없습니다');
   }
 
   /* 처음 들어왔을 때 볼 것은 「가장 최근 수집분 가운데 메일로 나간 것」이다.
