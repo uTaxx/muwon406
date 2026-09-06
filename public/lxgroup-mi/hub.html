@@ -138,8 +138,15 @@
   .kpi.hot{border-left-color:var(--danger);} .kpi.hot .kpi-n{color:var(--danger);}
   .kpi.calm{border-left-color:#1F7A5A;}
 
-  .home-grid{display:grid; grid-template-columns:minmax(0,1fr); gap:10px;}
-  .home-grid section.card{margin-bottom:0;}
+  /* 첫 화면의 카드는 순서를 설정에서 바꾼다. 그래서 카드를 모두 #tab-home 의
+     직계 자식으로 두고 JS 가 appendChild 로 다시 늘어놓는다 — 감싸는 상자가
+     있으면 그 상자 밖으로는 옮길 수 없다.
+     display 를 .active 에만 거는 까닭은 .tab-panel{display:none} 보다 id 선택자가
+     세서, 그냥 #tab-home{display:grid} 로 두면 다른 탭에 있어도 첫 화면이 보인다. */
+  #tab-home{grid-template-columns:minmax(0,1fr); gap:10px; align-items:start;}
+  #tab-home.active{display:grid;}
+  #tab-home > section.card{margin-bottom:0;}
+  #tab-home > .kpi-row{margin-bottom:0;}
   .go-btn{margin-left:auto; background:none; border:none; color:var(--green);
     font-size:12px; font-weight:700; cursor:pointer; padding:3px 6px; border-radius:7px; white-space:nowrap;}
   .go-btn:hover{background:var(--green-tint);}
@@ -151,6 +158,13 @@
   .hf-t:hover{color:var(--green);}
   .hf-m{font-size:11px; color:var(--muted); margin-top:2px;}
   .hf-d{font-size:11px; color:var(--muted); white-space:nowrap;}
+  .hf-sc{font-variant-numeric:tabular-nums;}
+  /* 더보기는 목록 맨 아래에 폭을 다 쓰고 선다. 오른쪽 구석에 작게 두면
+     다섯 건이 전부인 줄 알고 그냥 나간다. */
+  .home-more{width:100%; margin-top:8px; background:none; border:1px dashed var(--line);
+    border-radius:9px; padding:9px 12px; cursor:pointer; font-family:inherit;
+    font-size:12.5px; font-weight:700; color:var(--green);}
+  .home-more:hover{background:var(--green-tint); border-color:var(--green);}
 
   .hg-row{margin-top:7px;}
   .hg-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12.5px;}
@@ -195,8 +209,11 @@
     .code-top{position:absolute; top:0; right:24px; width:250px; margin-bottom:0;}
     .panes{min-width:0;}
     .kpi-row{grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
-    .home-grid{grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start;}
-    .home-wide{grid-column:1 / -1;}
+    /* 기본은 한 줄을 다 쓰고, 짧은 카드(data-half)만 둘씩 나란히 선다.
+       순서를 바꿔도 붙어 선 짧은 카드끼리 자동으로 짝이 된다. */
+    #tab-home{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #tab-home > *{grid-column:1 / -1;}
+    #tab-home > [data-half]{grid-column:auto;}
     .hi{grid-template-columns:repeat(4,minmax(0,1fr));}
     /* 지표 카드도 두 칸으로. 지표가 스무 개를 넘어가면서 한 줄로는 끝이 안 보인다. */
     #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
@@ -732,6 +749,29 @@
   .cfg-opt .t{font-size:13px; font-weight:700; color:var(--text);}
   .cfg-opt .d{font-size:11px; color:var(--muted); margin-top:2px; line-height:1.45;}
 
+  /* 순서까지 바꾸는 목록. 켜고 끄는 것과 위아래로 옮기는 것을 한 줄에 둔다 —
+     따로 두면 "3번 카드"가 어느 것인지 두 목록을 오가며 맞춰야 한다. */
+  .cfg-list{display:flex; flex-direction:column; gap:6px;}
+  .cfg-row{display:flex; align-items:stretch; gap:6px;}
+  .cfg-row > .cfg-opt{flex:1; min-width:0;}
+  .cfg-no{flex-shrink:0; width:19px; font-size:11.5px; font-weight:700; color:var(--muted);
+    text-align:right; font-variant-numeric:tabular-nums; padding-top:1px;}
+  .cfg-row.off .cfg-no{opacity:.4;}
+  .cfg-mv{display:flex; flex-direction:column; gap:3px; flex-shrink:0;}
+  .cfg-mv button{border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:7px; width:30px; flex:1; cursor:pointer; font-size:10px; line-height:1;
+    font-family:inherit; padding:0;}
+  .cfg-mv button:hover:not(:disabled){border-color:var(--green); color:var(--green);}
+  .cfg-mv button:disabled{opacity:.3; cursor:default;}
+
+  /* 둘 중 하나를 고르는 자리. 라디오 버튼보다 지금 무엇이 켜져 있는지가
+     또렷하다. */
+  .cfg-seg{display:inline-flex; gap:0; border:1.5px solid var(--line); border-radius:9px; overflow:hidden;}
+  .cfg-seg button{border:none; background:var(--card); color:var(--muted); cursor:pointer;
+    font-family:inherit; font-size:12.5px; font-weight:700; padding:8px 15px;}
+  .cfg-seg button + button{border-left:1.5px solid var(--line);}
+  .cfg-seg button.on{background:var(--green); color:#fff;}
+
   .co-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
   .co-card{text-align:left; background:var(--card); border:1.5px solid var(--line);
     border-radius:12px; padding:10px 12px; cursor:pointer; font-family:inherit;
@@ -839,11 +879,20 @@
   <div class="panes">
 
   <!-- 탭 0: 종합 상황판 -->
+  <!-- 카드는 모두 이 div 의 직계 자식이다. 설정에서 정한 순서대로 JS 가 다시
+       늘어놓으므로 여기 적힌 순서는 설정을 아직 손대지 않은 사람이 보는
+       기본값일 뿐이다. data-half 가 붙은 카드만 넓은 화면에서 둘씩 나란히 선다. -->
   <div id="tab-home" class="tab-panel active">
-    <div class="kpi-row" id="homeKpi" data-card="kpi"></div>
+    <!-- 환율·금리는 아침에 제일 먼저 확인하는 값이라 맨 위에 둔다. -->
+    <section class="card" data-card="ind">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span>
+        <button type="button" class="go-btn" data-goto="co">자세히 →</button></div>
+      <div class="step-desc" id="homeIndDesc">불러오는 중…</div>
+      <div id="homeInd"></div>
+    </section>
 
-    <!-- 처음 들어왔을 때 보아야 할 것은 '오늘 아침 메일로 나간 것'이다.
-         전체 기사는 조회 탭에 그대로 있으니 여기서는 추려서만 보여 준다. -->
+    <!-- 그 다음이 '오늘 아침 메일로 나간 것'이다. 점수가 높은 몇 건만 펴 두고
+         나머지는 「더보기」 뒤에 접어 둔다 — 전체 기사는 조회 탭에 그대로 있다. -->
     <section class="card" data-card="mail">
       <div class="step-head"><span class="step-num">📬</span><span class="step-title" id="homeMailTitle">주요 뉴스</span>
         <button type="button" class="go-btn" data-goto="search">전체 기사 →</button></div>
@@ -851,34 +900,26 @@
       <div id="homeMail"></div>
     </section>
 
-    <!-- 계열사가 먼저다. 이 화면을 여는 사람은 대개 '어느 계열사 이야기'를
-         들고 오지, '전체 경쟁사'를 들고 오지 않는다. 칸을 누르면 그 계열사
-         안으로 들어간다. -->
+    <div class="kpi-row" id="homeKpi" data-card="kpi"></div>
+
+    <!-- 이 화면을 여는 사람은 대개 '어느 계열사 이야기'를 들고 오지, '전체
+         경쟁사'를 들고 오지 않는다. 카드를 누르면 그 계열사 안으로 들어간다. -->
     <section class="card" data-card="co">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사</span></div>
       <div class="co-grid" id="homeCo"><div class="empty-note">불러오는 중…</div></div>
     </section>
 
-    <div class="home-grid">
-      <section class="card" data-card="groups">
-        <div class="step-head"><span class="step-num">🗂</span><span class="step-title">그룹별 수집 현황</span></div>
-        <div class="step-desc" id="homeGroupsDesc">최근 7일</div>
-        <div id="homeGroups"></div>
-      </section>
+    <section class="card" data-card="groups" data-half="1">
+      <div class="step-head"><span class="step-num">🗂</span><span class="step-title">그룹별 수집 현황</span></div>
+      <div class="step-desc" id="homeGroupsDesc">최근 7일</div>
+      <div id="homeGroups"></div>
+    </section>
 
-      <section class="card" data-card="risk">
-        <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
-          <button type="button" class="go-btn" data-co-open="하우시스|risk">자세히 →</button></div>
-        <div id="homeRisk"></div>
-      </section>
-
-      <section class="card home-wide" data-card="ind">
-        <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span>
-          <button type="button" class="go-btn" data-goto="co">자세히 →</button></div>
-        <div class="step-desc" id="homeIndDesc">불러오는 중…</div>
-        <div id="homeInd"></div>
-      </section>
-    </div>
+    <section class="card" data-card="risk" data-half="1">
+      <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
+        <button type="button" class="go-btn" data-co-open="하우시스|risk">자세히 →</button></div>
+      <div id="homeRisk"></div>
+    </section>
   </div>
 
   <!-- 탭 1: 전체 기사 조회 -->
@@ -1147,8 +1188,9 @@
     </section>
 
     <section class="card">
-      <div class="step-head"><span class="step-num">📋</span><span class="step-title">첫 화면에 넣을 것</span></div>
-      <div class="cfg-grid" id="cfgHome"></div>
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">첫 화면 구성</span></div>
+      <div class="step-desc">체크로 켜고 끄고, ▲▼로 위아래 순서를 바꿉니다. 바꾸는 즉시 첫 화면에 반영됩니다.</div>
+      <div class="cfg-list" id="cfgHome"></div>
     </section>
 
     <section class="card">
@@ -1167,16 +1209,33 @@
           <label>긴급성 <span id="cfgUrgVal" class="range-val">1</span> 이상</label>
           <input type="range" id="cfgUrg" min="1" max="5" step="1" value="1">
         </div>
+      </div>
+
+      <div class="kn-sec">보여주는 방식</div>
+      <div class="step-desc" style="margin-top:-2px;">먼저 펼칠 건수만큼만 보이고, 나머지는 목록 맨 아래 「더보기」로 펼칩니다.</div>
+      <div class="range-row">
         <div class="range-group">
-          <label>최대 <span id="cfgNumVal" class="range-val">15</span>건</label>
+          <label>먼저 <span id="cfgTopVal" class="range-val">5</span>건 펼침</label>
+          <input type="range" id="cfgTop" min="1" max="20" step="1" value="5">
+        </div>
+        <div class="range-group">
+          <label>모두 펼쳐도 최대 <span id="cfgNumVal" class="range-val">15</span>건</label>
           <input type="range" id="cfgNum" min="3" max="40" step="1" value="15">
+        </div>
+      </div>
+      <div style="margin-top:2px;">
+        <label style="display:block; margin-bottom:6px;">정렬</label>
+        <div class="cfg-seg" id="cfgSort">
+          <button type="button" data-v="score">총점 높은 순</button>
+          <button type="button" data-v="date">최신 순</button>
         </div>
       </div>
     </section>
 
     <section class="card">
-      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사 화면에 넣을 것</span></div>
-      <div class="cfg-grid" id="cfgSub"></div>
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사 화면 구성</span></div>
+      <div class="step-desc">하위 탭도 켜고 끄고 순서를 바꿀 수 있습니다. 맨 위 탭이 계열사를 처음 열었을 때 나옵니다.</div>
+      <div class="cfg-list" id="cfgSub"></div>
       <div class="kn-sec">보일 계열사</div>
       <div class="cfg-grid" id="cfgCo"></div>
     </section>
@@ -1551,9 +1610,9 @@
      서버에는 아무것도 보내지 않는다. 브라우저에만 적어 두므로 사람마다 제
      화면을 다르게 둘 수 있고, 설정 시트에 칸을 하나 더 만들 일도 없다. */
   const CFG_HOME = [
-    { k: 'kpi',    이름: '위 숫자 넉 장',   말: '마지막 수집·최근 7일·중요 기사·실리코시스' },
+    { k: 'kpi',    이름: '요약 숫자 4개',   말: '마지막 수집·최근 7일·중요 기사·실리코시스' },
     { k: 'mail',   이름: '주요 뉴스',       말: '가장 최근 수집분 가운데 메일 기준을 넘은 것' },
-    { k: 'co',     이름: '계열사 칸',       말: '계열사마다 한 줄 요약. 누르면 그 계열사로' },
+    { k: 'co',     이름: '계열사 카드',     말: '계열사마다 한 줄 요약. 누르면 그 계열사로' },
     { k: 'groups',이름: '그룹별 수집 현황',말: '어느 그룹에 몇 건이 들어왔나' },
     { k: 'risk',   이름: '실리코시스 요약',말: '누적·최근 30일·중요 기사 수와 최신 한 건' },
     { k: 'ind',    이름: '공통 지표',       말: '환율·금리 등 어느 계열사에나 걸리는 값' }
@@ -1564,24 +1623,45 @@
     { k: 'risk',  이름: '리스크 관리',  말: '그 계열사에 걸린 소송·규제·안전 이슈' }
   ];
   const CFG_기본 = {
+    /* 환율·금리를 맨 위에 두는 까닭은 아침에 제일 먼저 확인하는 값이기 때문이다.
+       그 다음이 오늘 나간 뉴스다. 이 순서가 마음에 안 들면 설정에서 바꾼다. */
+    순서: ['ind', 'mail', 'kpi', 'co', 'groups', 'risk'],
     home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1 },
+    하위순서: ['comp', 'index', 'risk'],
     sub:  { comp: 1, index: 1, risk: 1 },
     계열사: {},                       // 빈 것은 '전부 보임'
     기준: { 중요도: 2, 관련성: 1, 긴급성: 1 },
-    뉴스수: 15
+    뉴스수: 15,
+    첫뉴스수: 5,
+    정렬: 'score'                     // 'score' = 중요도+관련성+긴급성 합, 'date' = 최신순
   };
   let cfg = null;
+
+  /* 저장해 둔 순서에 카드가 빠져 있거나(설정을 만든 뒤에 카드를 새로 넣었다)
+     없는 이름이 들어 있으면(카드를 지웠다) 그대로 쓰면 화면이 어긋난다.
+     아는 이름만 남기고, 빠진 것은 기본 순서대로 뒤에 붙인다. */
+  function 순서맞추기(읽은것, 기본){
+    const 아는것 = 기본.slice();
+    const 결과 = (Array.isArray(읽은것) ? 읽은것 : [])
+      .filter(function (k, i, a){ return 아는것.indexOf(k) >= 0 && a.indexOf(k) === i; });
+    아는것.forEach(function (k){ if (결과.indexOf(k) < 0) 결과.push(k); });
+    return 결과;
+  }
 
   function 설정(){
     if (cfg) return cfg;
     let 읽은것 = null;
     try { 읽은것 = JSON.parse(기억('lx-cfg') || 'null'); } catch (e){}
     cfg = {
+      순서:  순서맞추기(읽은것 && 읽은것.순서, CFG_기본.순서),
       home:  Object.assign({}, CFG_기본.home,  (읽은것 && 읽은것.home)  || {}),
+      하위순서: 순서맞추기(읽은것 && 읽은것.하위순서, CFG_기본.하위순서),
       sub:   Object.assign({}, CFG_기본.sub,   (읽은것 && 읽은것.sub)   || {}),
       계열사: Object.assign({}, (읽은것 && 읽은것.계열사) || {}),
       기준:  Object.assign({}, CFG_기본.기준,  (읽은것 && 읽은것.기준)  || {}),
-      뉴스수: (읽은것 && 읽은것.뉴스수) || CFG_기본.뉴스수
+      뉴스수: (읽은것 && 읽은것.뉴스수) || CFG_기본.뉴스수,
+      첫뉴스수: (읽은것 && 읽은것.첫뉴스수) || CFG_기본.첫뉴스수,
+      정렬:  (읽은것 && 읽은것.정렬) === 'date' ? 'date' : 'score'
     };
     return cfg;
   }
@@ -1601,17 +1681,31 @@
   }
 
   /* 꺼 둔 카드는 감춘다. 지우지 않고 감추는 까닭은, 다시 켰을 때 그 안의
-     그래프·펼침 상태가 그대로 살아 있어야 하기 때문이다. */
+     그래프·펼침 상태가 그대로 살아 있어야 하기 때문이다.
+     순서는 appendChild 로 맞춘다 — 이미 붙어 있는 노드를 다시 붙이면 옮겨지므로
+     안에 그려 둔 그래프나 스크롤 위치가 그대로 살아 있다. */
   function 설정보이기(){
     const c = 설정();
+    const 홈 = document.getElementById('tab-home');
     document.querySelectorAll('#tab-home [data-card]').forEach(function (e){
       e.style.display = c.home[e.dataset.card] ? '' : 'none';
     });
+    if (홈) c.순서.forEach(function (k){
+      const e = 홈.querySelector('[data-card="' + k + '"]');
+      if (e) 홈.appendChild(e);
+    });
+
+    const 탭통 = document.getElementById('coSub');
     document.querySelectorAll('#coSub .tab-btn').forEach(function (b){
       b.style.display = c.sub[b.dataset.coSub] ? '' : 'none';
     });
+    if (탭통) c.하위순서.forEach(function (k){
+      const b = 탭통.querySelector('[data-co-sub="' + k + '"]');
+      if (b) 탭통.appendChild(b);
+    });
   }
 
+  /* 켜고 끄기만 하는 목록(계열사 고르기). 순서가 뜻을 갖지 않는 자리에 쓴다. */
   function 설정선택(통, 목록, 그릇, 뒤에){
     document.getElementById(통).innerHTML = 목록.map(function (o){
       const 켬 = !!그릇[o.k];
@@ -1630,15 +1724,66 @@
     };
   }
 
+  /* 켜고 끄는 것과 순서를 함께 다루는 목록.
+     `차례`는 화면에 보이는 그대로의 배열이라, ▲▼를 누르면 이 배열을 바꾸고
+     설정에 그대로 저장한다 — 화면과 저장값이 어긋날 자리가 없다. */
+  function 설정순서(통, 사전, 차례, 그릇, 뒤에){
+    const 그릇통 = document.getElementById(통);
+    if (!그릇통) return;
+    const 이름표 = {};
+    사전.forEach(function (o){ 이름표[o.k] = o; });
+
+    const 그리기 = function (){
+      그릇통.innerHTML = 차례.map(function (k, i){
+        const o = 이름표[k] || { k: k, 이름: k, 말: '' };
+        const 켬 = !!그릇[k];
+        return '<div class="cfg-row' + (켬 ? '' : ' off') + '" data-k="' + escapeHtml(k) + '">' +
+          '<div class="cfg-no">' + (i + 1) + '</div>' +
+          '<label class="cfg-opt' + (켬 ? ' on' : '') + '">' +
+            '<input type="checkbox"' + (켬 ? ' checked' : '') + '>' +
+            '<div><div class="t">' + escapeHtml(o.이름) + '</div>' +
+            (o.말 ? '<div class="d">' + escapeHtml(o.말) + '</div>' : '') + '</div></label>' +
+          '<div class="cfg-mv">' +
+            '<button type="button" data-mv="-1" title="위로"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+            '<button type="button" data-mv="1" title="아래로"' + (i === 차례.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '</div></div>';
+      }).join('');
+    };
+
+    그릇통.onchange = function (e){
+      const 줄 = e.target.closest('.cfg-row');
+      if (!줄) return;
+      그릇[줄.dataset.k] = e.target.checked ? 1 : 0;
+      줄.classList.toggle('off', !e.target.checked);
+      줄.querySelector('.cfg-opt').classList.toggle('on', e.target.checked);
+      설정저장();
+      뒤에();
+    };
+    그릇통.onclick = function (e){
+      const b = e.target.closest('button[data-mv]');
+      if (!b) return;
+      const 줄 = b.closest('.cfg-row');
+      const i = 차례.indexOf(줄.dataset.k);
+      const j = i + Number(b.dataset.mv);
+      if (i < 0 || j < 0 || j >= 차례.length) return;
+      차례.splice(j, 0, 차례.splice(i, 1)[0]);
+      설정저장();
+      그리기();
+      뒤에();
+    };
+    그리기();
+  }
+
   function 설정그리기(){
     const c = 설정();
-    설정선택('cfgHome', CFG_HOME, c.home, function (){ 설정보이기(); renderHome(); });
-    설정선택('cfgSub', CFG_SUB, c.sub, function (){
+    설정순서('cfgHome', CFG_HOME, c.순서, c.home, function (){ 설정보이기(); renderHome(); });
+    설정순서('cfgSub', CFG_SUB, c.하위순서, c.sub, function (){
       /* 지금 보던 하위 탭을 꺼 버렸으면 켜져 있는 첫 것으로 옮긴다. 안 그러면
-         빈 화면만 남는다. */
+         빈 화면만 남는다. 순서를 바꿨을 때도 '켜져 있는 첫 것'은 사람이 정한
+         순서를 따라야 하므로 CO_SUBS 가 아니라 c.하위순서를 본다. */
       설정보이기();
       if (!c.sub[coSub]){
-        const 켠것 = CO_SUBS.filter(function (k){ return c.sub[k]; })[0];
+        const 켠것 = c.하위순서.filter(function (k){ return c.sub[k]; })[0];
         if (켠것){ coSub = 켠것; 기억('lx-co-sub', coSub); }
       }
       coDraw();
@@ -1657,6 +1802,11 @@
       });
     document.getElementById('cfgNum').value = c.뉴스수;
     document.getElementById('cfgNumVal').textContent = c.뉴스수;
+    document.getElementById('cfgTop').value = c.첫뉴스수;
+    document.getElementById('cfgTopVal').textContent = c.첫뉴스수;
+    document.querySelectorAll('#cfgSort button').forEach(function (b){
+      b.classList.toggle('on', b.dataset.v === c.정렬);
+    });
   }
 
   /* ---------- 계열사 들여다보기 ----------
@@ -4271,6 +4421,12 @@
              어디서: c.읽었나 ? '이 계정 설정' : '권장 기본값' };
   }
 
+  /* 세 점수를 그냥 더한다(3~15). 가중치를 두면 왜 이 기사가 위에 있는지를
+     화면에서 설명할 수 없다 — 더한 값은 옆에 그대로 적어 둔다. */
+  function 기사총점(a){
+    return getScoreNum(a.importance) + getScoreNum(a.relevance) + getScoreNum(a.urgency);
+  }
+
   function homeMail(){
     const 통 = document.getElementById('homeMail');
     const 말 = document.getElementById('homeMailDesc');
@@ -4296,29 +4452,54 @@
       if (!isFinite(i) || !isFinite(r) || !isFinite(u)) return false;
       return i >= 기.중요도 && r >= 기.관련성 && u >= 기.긴급성;
     }));
-    const 몇 = Math.max(3, Number(설정().뉴스수) || 15);
-    const 것들 = 넘은것.slice(0, 몇);
+    const c = 설정();
+    const 몇 = Math.max(3, Number(c.뉴스수) || 15);
+
+    /* 최신순으로 미리 세워 둔 배열을 총점으로 다시 세운다. Array.prototype.sort 는
+       안정 정렬이라, 총점이 같으면 최신 기사가 앞에 남는다. */
+    const 세운것 = c.정렬 === 'date' ? 넘은것
+      : 넘은것.slice().sort(function (a, b){ return 기사총점(b) - 기사총점(a); });
+    const 것들 = 세운것.slice(0, 몇);
+    const 첫 = Math.min(것들.length, Math.max(1, Number(c.첫뉴스수) || 5));
 
     document.getElementById('homeMailTitle').textContent = '주요 뉴스 · ' + 막날;
     말.innerHTML = '수집 ' + 그날.length + '건 · 기준 통과 <b>' + 넘은것.length + '건</b>' +
-      (넘은것.length > 것들.length ? ' 중 ' + 것들.length + '건 표시' : '');
+      (넘은것.length > 것들.length ? ' 중 ' + 것들.length + '건' : '') +
+      ' · ' + (c.정렬 === 'date' ? '최신순' : '총점순');
 
     if (!것들.length){
       통.innerHTML = '<div class="empty-note">기준을 넘은 기사가 없습니다.</div>';
       return;
     }
-    통.innerHTML = 것들.map(function(a){
+
+    const 줄 = function (a){
       const 별 = getStars(a.importance);
-      const 말 = String(a.reason || '');
+      const 까닭 = String(a.reason || '');
       return '<div class="hf"><div class="hf-b">' +
           '<a class="hf-t" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">' +
             getDirectionIcon(a.direction) + escapeHtml(a.title) + '</a>' +
           (별 ? ' <span class="stars">' + 별 + '</span>' : '') +
           '<div class="hf-m">' + getGroupEmoji(a.group) + ' ' + escapeHtml(a.group || '기타') +
-            (말 ? ' · ' + escapeHtml(말.length > 70 ? 말.slice(0, 70) + '…' : 말) : '') +
+            ' · <span class="hf-sc">총점 ' + 기사총점(a) + '</span>' +
+            (까닭 ? ' · ' + escapeHtml(까닭.length > 70 ? 까닭.slice(0, 70) + '…' : 까닭) : '') +
           '</div>' +
         '</div><div class="hf-d">' + escapeHtml(articleDateKey(a)) + '</div></div>';
-    }).join('');
+    };
+
+    const 뒤 = 것들.slice(첫);
+    통.innerHTML = 것들.slice(0, 첫).map(줄).join('') +
+      (뒤.length
+        ? '<div id="homeMailRest" style="display:none;">' + 뒤.map(줄).join('') + '</div>' +
+          '<button type="button" class="home-more" id="homeMailMore">나머지 ' + 뒤.length + '건 더보기 ▾</button>'
+        : '');
+
+    const 더 = document.getElementById('homeMailMore');
+    if (더) 더.addEventListener('click', function (){
+      const 나머지 = document.getElementById('homeMailRest');
+      const 폄 = 나머지.style.display !== 'none';
+      나머지.style.display = 폄 ? 'none' : '';
+      더.textContent = 폄 ? ('나머지 ' + 뒤.length + '건 더보기 ▾') : '접기 ▴';
+    });
   }
 
   function homeGroups(){
@@ -5234,6 +5415,22 @@
       document.getElementById('cfgNumVal').textContent = this.value;
       설정().뉴스수 = Number(this.value);
       설정저장();
+      homeMail();
+    });
+    document.getElementById('cfgTop').addEventListener('input', function (){
+      document.getElementById('cfgTopVal').textContent = this.value;
+      설정().첫뉴스수 = Number(this.value);
+      설정저장();
+      homeMail();
+    });
+    document.getElementById('cfgSort').addEventListener('click', function (e){
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      설정().정렬 = b.dataset.v;
+      설정저장();
+      document.querySelectorAll('#cfgSort button').forEach(function (x){
+        x.classList.toggle('on', x === b);
+      });
       homeMail();
     });
     document.getElementById('cfgReset').addEventListener('click', function (){
