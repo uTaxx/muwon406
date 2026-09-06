@@ -13,8 +13,8 @@
     --green:#A32B26; --green-dark:#7A211D; --green-tint:#F1EBE5;
     --bg:#FAF7F4; --card:#FFFFFF; --line:#DED2C4;
     --text:#201D1B; --muted:#726A61; --danger:#F04452; --radius:14px;
-    /* 기간·보기 고르개의 '고른 것' 표시. 붉은색은 우리 계열사와 적자에만 쓴다 —
-       늘 켜져 있는 고르개까지 붉으면 정작 봐야 할 것이 안 도드라진다. */
+    /* 기간·보기 선택 버튼의 '고른 것' 표시. 붉은색은 우리 계열사와 적자에만 쓴다 —
+       늘 켜져 있는 선택 버튼까지 붉으면 정작 봐야 할 것이 안 도드라진다. */
     --pick-on:#5F5952;
   }
   *{box-sizing:border-box;}
@@ -61,7 +61,7 @@
   .code-row input{flex:1; margin-bottom:0;}
 
   /* 식별코드는 머리말 오른쪽 위에 둔다. 모든 화면이 이 코드 하나로 굴러가는데
-     왼쪽 차림표 맨 위에 두면 화면을 넘길 때마다 눈이 그리로 끌린다. 늘 같은
+     왼쪽 메뉴 맨 위에 두면 화면을 넘길 때마다 눈이 그리로 끌린다. 늘 같은
      자리에 있고 평소에는 눈에 안 걸리는 곳이 맞다.
      붉은 바탕 위라 입력칸은 흰색으로 둔다 — 반투명으로 두면 적어 넣은 코드가
      바탕색에 묻혀 무엇을 골랐는지 안 보인다. */
@@ -119,7 +119,7 @@
   @media (max-width:560px){
     .side .tab-nav{gap:4px;}
     .side .tab-btn{padding:10px 3px; font-size:11.5px; letter-spacing:-0.02em;}
-    /* 시각 고르개는 저 아래 제 규칙 바로 뒤에서 손본다 — 여기에 두면 뒤에 오는
+    /* 시각 선택 버튼는 저 아래 제 규칙 바로 뒤에서 손본다 — 여기에 두면 뒤에 오는
        규칙에 덮여 아무 일도 일어나지 않는다(같은 세기면 나중 것이 이긴다). */
   }
 
@@ -176,7 +176,7 @@
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
-     넓어지면 차림표를 왼쪽에 세워 늘 보이게 하고 본문을 두 칸으로 흘린다.
+     넓어지면 메뉴를 왼쪽에 세워 늘 보이게 하고 본문을 두 칸으로 흘린다.
      좁은 화면에서 바뀌는 것은 없다 — 아래 규칙은 전부 1024px 위에서만 산다. */
   @media (min-width:1024px){
     .cover{padding:20px 0 30px;}
@@ -402,7 +402,7 @@
   .src-row{flex-wrap:wrap;}
   .src-row > div{flex:1 1 120px;}
   .src-row > .src-col{flex:2 1 240px;}
-  /* 갈래가 둘뿐이면 위아래로 쌓을 까닭이 없다. */
+  /* 종류가 둘뿐이면 위아래로 쌓을 이유가 없다. */
   .opt-row{display:flex; flex-wrap:wrap; gap:0 10px;}
   .opt-row > .check-option{flex:1 1 240px;}
   .source-check{display:flex; align-items:center; gap:6px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; flex:1; justify-content:center; transition:border-color .15s, background .15s;}
@@ -452,7 +452,7 @@
   .time-check{display:flex; align-items:center; justify-content:center; gap:5px; background:var(--bg); border:1.5px solid var(--line); border-radius:9px; padding:7px 2px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--text); transition:border-color .15s, background .15s;}
   .time-check input{width:17px; height:17px; margin:0; accent-color:var(--green); flex-shrink:0;}
   .time-check.checked{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
-  /* 시각 고르개가 스물넷이라 좁은 화면에서 여섯 칸으로는 '00:00'과 네모가 칸보다
+  /* 시각 선택 버튼가 스물넷이라 좁은 화면에서 여섯 칸으로는 '00:00'과 네모가 칸보다
      넓어, 쪽 전체가 옆으로 밀렸다. 글자만 줄여서는 320px짜리 손전화에서 도로
      넘치므로 네 칸으로 내린다. 줄이 넷에서 여섯으로 늘지만 쪽이 옆으로 밀리는
      것보다 낫다. */
@@ -513,7 +513,7 @@
   .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
   .ind-bhead span{font-size:11px; color:var(--muted);}
 
-  /* 기간 고르기 — 오른쪽 끝에 붙인다. 달러 지표는 앞에 돈 고르개가 하나 더 붙는다. */
+  /* 기간 고르기 — 오른쪽 끝에 붙인다. 달러 지표는 앞에 돈 선택 버튼가 하나 더 붙는다. */
   .ind-pick{margin-left:auto; display:flex; gap:0; border:1px solid var(--line);
             border-radius:8px; overflow:hidden; align-self:center;}
   .ind-pick + .ind-pick{margin-left:6px;}
@@ -659,7 +659,7 @@
      저마다 색이 있어야 하므로, 우리 것이라는 표는 블록 바깥에 둔다. */
   .ind-block.comp-us{border-left:3px solid var(--green); padding-left:14px;}
   .ind-block.comp-us .ind-bhead b{color:var(--green);}
-  /* 접힌 옛 부문을 펴는 단추. 목록의 한 줄처럼 보이되 눌리는 것으로 읽히게. */
+  /* 접힌 옛 부문을 펴는 버튼. 목록의 한 줄처럼 보이되 눌리는 것으로 읽히게. */
   .comp-old{display:block; width:100%; text-align:left; margin-top:2px;
     padding:7px 8px; border:1px dashed var(--line); border-radius:9px;
     background:transparent; color:var(--muted); font:inherit; font-size:11.5px;
@@ -693,8 +693,8 @@
      뜻이 있는 것처럼 보인다. 그래서 위아래 두 칸으로 나누고 x축만 함께 쓴다.
      두 칸이 되었으니 칸 하나는 좀 낮춘다 — 안 그러면 한 블록이 화면을 넘긴다. */
   .comp-pair .ind-chart{height:150px;}
-  /* 모양 고르개는 그래프를 펼쳤을 때만, 그래프 바로 위 오른쪽에 붙는다.
-     머리줄에 고르개를 셋씩 늘어놓으면 정작 부문 이름이 밀린다. */
+  /* 모양 선택 버튼는 그래프를 펼쳤을 때만, 그래프 바로 위 오른쪽에 붙는다.
+     머리줄에 선택 버튼를 셋씩 늘어놓으면 정작 부문 이름이 밀린다. */
   .comp-shape{display:flex; justify-content:flex-end; margin-top:12px;}
   .comp-shape .ind-pick{margin-left:0;}
   /* 막대는 선보다 조금 높게 — 회사가 여럿이면 한 칸에 막대가 서넛씩 선다. */
@@ -746,7 +746,7 @@
   .co-card .co-mv .dn{color:#1565C0; font-weight:700;}
   .co-card .co-none{font-size:11.5px; color:var(--muted); margin-top:3px;}
   /* 계열사가 예닐곱이라 넓은 화면에서는 셋씩 두 줄이 알맞다. 이 규칙을 위쪽
-     넓은-화면 뭉치에 두면 아래 기본 규칙에 덮인다 — 기본 규칙 바로 뒤에 둔다. */
+     넓은 화면 미디어 쿼리 블록에 두면 아래 기본 규칙에 덮인다 — 기본 규칙 바로 뒤에 둔다. */
   @media (min-width:1024px){
     .co-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
     .cfg-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -761,7 +761,7 @@
     .ind-pick{margin-left:0; width:100%; justify-content:stretch;}
     .ind-pick + .ind-pick{margin-left:0; margin-top:5px;}
     /* 좁은 화면에서는 좌우 여백을 줄여 글자가 안 접히게 한다. '매출·이익'이
-       '매출·이 / 익'으로 접히면 단추 하나가 두 줄이 되어 줄이 어긋난다. */
+       '매출·이 / 익'으로 접히면 버튼 하나가 두 줄이 되어 줄이 어긋난다. */
     .ind-pick button{flex:1; padding:4px 6px; white-space:nowrap;}
     .ind-toggle{margin-left:0; margin-top:5px; flex:1 1 0;}
     .ind-toggle + .ind-toggle{margin-left:4px;}
@@ -801,7 +801,7 @@
 
 <div class="cover">
   <!-- 붉은 바탕은 화면 끝까지 가되, 글은 본문과 같은 상자 안에 넣는다.
-       그래야 제목의 왼쪽 끝과 아래 차림표의 왼쪽 끝이 같은 자리에 선다. -->
+       그래야 제목의 왼쪽 끝과 아래 메뉴의 왼쪽 끝이 같은 자리에 선다. -->
   <div class="cover-in">
     <!-- 식별코드는 화면 맨 위 오른쪽. 좁은 화면에서는 제목 위에 한 줄로 선다. -->
     <div class="code-top">
@@ -825,9 +825,9 @@
 <main>
 
   <div class="side">
-    <!-- 좁은 화면에서는 가로 탭, 넓은 화면에서는 왼쪽에 세워 둔 차림표가 된다.
+    <!-- 좁은 화면에서는 가로 탭, 넓은 화면에서는 왼쪽에 세워 둔 메뉴가 된다.
          br 뒤의 빈칸은 일부러 둔 것이다 — 넓은 화면에서 br 을 숨기면
-         그 빈칸이 낱말 사이를 벌려 '전체 기사 조회'로 읽힌다. -->
+         그 빈칸이 단어 사이를 벌려 '전체 기사 조회'로 읽힌다. -->
     <div class="tab-nav">
       <button type="button" class="tab-btn active" data-tab="home">종합<br> 상황판</button>
       <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
@@ -1390,7 +1390,7 @@
      「Unexpected token 'b', "boom" is not valid JSON」 같은 것이 화면에 뜬다.
      읽는 사람은 그걸 보고 자기가 뭘 잘못했나 싶어진다 — 무엇이 잘못됐고
      무엇을 하면 되는지만 적고, 원문은 콘솔로 보낸다. */
-  function 말썽(err, 하던일){
+  function 오류메시지(err, 하던일){
     const m = String((err && err.message) || err || '');
     try { console.error((하던일 || '요청') + ' 실패:', err); } catch (e) {}
     if (err && err.name === 'AbortError') return '너무 오래 걸려 멈췄습니다. 잠시 뒤 다시 눌러 주세요.';
@@ -1539,7 +1539,7 @@
         btn.disabled = false;
         btn.textContent = '제출하기';
         box.className = 'status show err';
-        box.textContent = '저장하지 못했습니다. ' + 말썽(err, '설정 저장');
+        box.textContent = '저장하지 못했습니다. ' + 오류메시지(err, '설정 저장');
       });
   }
 
@@ -1612,7 +1612,7 @@
     });
   }
 
-  function 고르개(통, 목록, 그릇, 뒤에){
+  function 설정선택(통, 목록, 그릇, 뒤에){
     document.getElementById(통).innerHTML = 목록.map(function (o){
       const 켬 = !!그릇[o.k];
       return '<label class="cfg-opt' + (켬 ? ' on' : '') + '" data-k="' + escapeHtml(o.k) + '">' +
@@ -1632,8 +1632,8 @@
 
   function 설정그리기(){
     const c = 설정();
-    고르개('cfgHome', CFG_HOME, c.home, function (){ 설정보이기(); renderHome(); });
-    고르개('cfgSub', CFG_SUB, c.sub, function (){
+    설정선택('cfgHome', CFG_HOME, c.home, function (){ 설정보이기(); renderHome(); });
+    설정선택('cfgSub', CFG_SUB, c.sub, function (){
       /* 지금 보던 하위 탭을 꺼 버렸으면 켜져 있는 첫 것으로 옮긴다. 안 그러면
          빈 화면만 남는다. */
       설정보이기();
@@ -1647,7 +1647,7 @@
     /* 계열사는 빈 그릇이 '전부 보임'이라 처음 그릴 때 켠 것으로 채워 준다. */
     const 목록 = co목록().map(function (k){ return { k: k, 이름: co이름(k), 말: '' }; });
     목록.forEach(function (o){ if (c.계열사[o.k] === undefined) c.계열사[o.k] = 1; });
-    고르개('cfgCo', 목록, c.계열사, function (){ coDraw(); renderHome(); });
+    설정선택('cfgCo', 목록, c.계열사, function (){ coDraw(); renderHome(); });
 
     [['cfgImp', 'cfgImpVal', '중요도'], ['cfgRel', 'cfgRelVal', '관련성'], ['cfgUrg', 'cfgUrgVal', '긴급성']]
       .forEach(function (짝){
@@ -1662,9 +1662,9 @@
   /* ---------- 계열사 들여다보기 ----------
      실무에서 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지
      「경쟁사 전체가 어떤가」가 아니다. 그래서 계열사를 먼저 고르고, 그 안에서
-     경쟁사 성과와 시장 지표를 오간다. 예전에는 둘이 각각 제 계열사 고르개를
+     경쟁사 성과와 시장 지표를 오간다. 예전에는 둘이 각각 제 계열사 선택 버튼를
      들고 있어서, 위에서는 하우시스를 보면서 아래에서는 글라스를 읽는 일이
-     생겼다 — 이제 고르개는 하나다. */
+     생겼다 — 이제 선택 버튼는 하나다. */
   const CO_ORDER = ['인터', '판토스', '하우시스', '글라스', '세미콘', 'MMA', '홀딩스'];
   const CO_NAME = { '인터': 'LX인터내셔널', '판토스': 'LX판토스', '하우시스': 'LX하우시스',
                     '글라스': 'LX글라스', '세미콘': 'LX세미콘', 'MMA': 'LX MMA',
@@ -1773,10 +1773,10 @@
       document.getElementById('riskShelfFolder').textContent = coTab;
     }
 
-    /* 한 계열사에 리스크가 둘 이상이면 고르개를 보인다. 하나뿐이면 군더더기다. */
-    const 고르개 = document.getElementById('riskPick');
-    고르개.style.display = 것들.length > 1 ? 'flex' : 'none';
-    고르개.innerHTML = 것들.length > 1 ? 것들.map(function (r){
+    /* 한 계열사에 리스크가 둘 이상이면 선택 버튼를 보인다. 하나뿐이면 불필요하다. */
+    const 선택버튼 = document.getElementById('riskPick');
+    선택버튼.style.display = 것들.length > 1 ? 'flex' : 'none';
+    선택버튼.innerHTML = 것들.length > 1 ? 것들.map(function (r){
       return '<button type="button" class="tab-btn' + (지금 && r.차례 === 지금.차례 ? ' active' : '') +
         '" data-risk="' + r.차례 + '">' + escapeHtml(r.이름) + '</button>';
     }).join('') : '';
@@ -2201,17 +2201,18 @@
      것이 다 들어 있고, 파일이 곧 드라이브의 그 파일이다. */
   const 원본_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-원본');
 
-  function 원본받기(갈래, 이름, 단추){
+  function 원본받기(구분, 이름, 버튼){
     const 코드 = sharedCode();
     if (!코드){ alert('맨 위에 식별코드를 넣어 주세요.'); return; }
     if (!이름){ alert('무엇을 받을지 알 수 없습니다.'); return; }
-    const 옛말 = 단추 ? 단추.textContent : '';
-    const 되돌리기 = function (){ if (단추){ 단추.disabled = false; 단추.textContent = 옛말; } };
-    if (단추){ 단추.disabled = true; 단추.textContent = '받는 중…'; }
+    const 옛말 = 버튼 ? 버튼.textContent : '';
+    const 되돌리기 = function (){ if (버튼){ 버튼.disabled = false; 버튼.textContent = 옛말; } };
+    if (버튼){ 버튼.disabled = true; 버튼.textContent = '받는 중…'; }
+    /* 질의 파라미터 이름 '갈래'는 LXGroup_원본내려받기 웹훅이 받는 이름이라 그대로 둔다. */
     const 주소 = 원본_URL + '?code=' + encodeURIComponent(코드) +
-          '&' + encodeURIComponent('갈래') + '=' + encodeURIComponent(갈래) +
+          '&' + encodeURIComponent('갈래') + '=' + encodeURIComponent(구분) +
           '&' + encodeURIComponent('이름') + '=' + encodeURIComponent(이름);
-    /* 먼저 물어보고, 잘 왔을 때만 브라우저에게 넘긴다. 받아 온 덩어리를
+    /* 먼저 물어보고, 잘 왔을 때만 브라우저에게 넘긴다. 받아 온 응답을
        a[download] 로 떨구지 않는 까닭은 파일 이름 때문이다 — 그 길로 가면
        이름을 브라우저가 제 나름대로 손보고, 우리말 이름을 통째로 버리고
        'download' 라고만 저장하는 브라우저가 있다. 곧장 주소로 가면 웹훅이
@@ -2278,7 +2279,7 @@
       그룹명 = 그룹명.replace(' · $', ' · 원');
     }
 
-    const 돈고르개 = 달러
+    const 통화선택 = 달러
       ? '<div class="ind-pick">' +
           '<button type="button" data-cur="$"' + (원화 ? '' : ' class="on"') + '>달러</button>' +
           '<button type="button" data-cur="원"' + (원화 ? ' class="on"' : '') +
@@ -2287,7 +2288,7 @@
         '</div>'
       : '';
 
-    const 고르개 = '<div class="ind-pick">' + IND_RANGES.map(function(x){
+    const 선택버튼 = '<div class="ind-pick">' + IND_RANGES.map(function(x){
       const 됨 = 가능.some(function(y){ return y.k === x.k; });
       return '<button type="button" data-range="' + x.k + '"' +
         (x.k === 지금 ? ' class="on"' : '') +
@@ -2335,8 +2336,8 @@
       const 마지막 = g.창.length - 1;
       const 축글 = indTicks(g.창.length).map(function(j){
         const 자리 = 마지막 > 0 ? (j / 마지막) * 100 : 50;
-        const 갈래 = j === 0 ? ' class="first"' : j === 마지막 ? ' class="last"' : '';
-        return '<span' + 갈래 + ' style="left:' + 자리.toFixed(2) + '%;">' +
+        const 구분 = j === 0 ? ' class="first"' : j === 마지막 ? ' class="last"' : '';
+        return '<span' + 구분 + ' style="left:' + 자리.toFixed(2) + '%;">' +
                escapeHtml(R.눈(g.창[j])) + '</span>';
       }).join('');
       그래프 =
@@ -2371,7 +2372,7 @@
              지표의 두 화면이 어긋난 것처럼 읽힌다. 열두 달이 다 찬 해만 넣으므로
              올해는 아직 안 나온다는 것도 같이 알려야 한다. */
           (합계연 ? ' · 연도별은 열두 달을 더한 값 (올해는 끝난 뒤에)' : '') + '</span>' +
-        돈고르개 + 고르개 +
+        통화선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') +
           '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') +
@@ -2459,7 +2460,7 @@
 
     /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
        아무 쓸모가 없으므로, 열자마자 맨 아래(최신)로 내려 둔다. 위로 밀면
-       과거로 가는 것이 그래프를 왼쪽으로 훑는 것과 같은 몸짓이다. */
+       과거로 가는 것이 그래프를 왼쪽으로 훑는 것과 같은 동작이다. */
     document.querySelectorAll('#co-index .ind-tbl-wrap').forEach(function(w){
       w.scrollTop = w.scrollHeight;
     });
@@ -2522,9 +2523,9 @@
       });
   }
 
-  /* 시장지표 원본은 탭 하나가 파일 하나다. 그래서 단추도 지표마다가 아니라
+  /* 시장지표 원본은 탭 하나가 파일 하나다. 그래서 버튼도 지표마다가 아니라
      카드 머리에 하나씩 — 계열사 것과 공통 것이 드라이브에서도 서로 다른
-     파일이라 단추도 둘이다. */
+     파일이라 버튼도 둘이다. */
   document.getElementById('indXlsBtn').addEventListener('click', function (){
     원본받기('지표', coTab, this);
   });
@@ -2544,7 +2545,7 @@
 
     /* 엑셀은 화면을 다시 그리지 않는다. 다시 그리면 눌렀던 표가 닫히거나
        스크롤이 맨 위로 튄다. */
-    if (b.dataset.xls) return;   /* 시장지표 단추는 카드 머리에 있다 */
+    if (b.dataset.xls) return;   /* 시장지표 버튼는 카드 머리에 있다 */
 
     if (b.dataset.range) indRange[k] = b.dataset.range;
     else if (b.dataset.cur) indCur[k] = b.dataset.cur;
@@ -2558,7 +2559,7 @@
   /* ── 커서를 따라 값 보여주기 ────────────────────────────────
      그래프만 보면 '어디쯤에서 꺾였나'는 알아도 '그게 언제 얼마였나'는 모른다.
      선을 하나하나 맞히게 하지 않고 세로로 훑어 그 시점의 값을 다 보여준다. */
-  /* 시장지표와 경쟁사가 같은 그래프를 쓰므로 이 손잡이도 같이 쓴다.
+  /* 시장지표와 경쟁사가 같은 그래프를 쓰므로 이 핸들러도 같이 쓴다.
      화면마다 따로 만들면 한쪽만 고쳐지는 날이 온다. */
   function 그래프커서(몸, 저장소){
     if (!몸) return;
@@ -2580,11 +2581,11 @@
       const 마지막 = g.창.length - 1;
       /* 막대는 칸의 '가운데'에 서고 선은 칸의 '끝점'에 찍힌다. 같은 셈으로
          집으면 막대에서 안내선이 반 칸씩 어긋나 옆 기간 값을 보여준다. */
-      const 띠 = 판.dataset.bars === '1';
-      const j = 띠
+      const 막대 = 판.dataset.bars === '1';
+      const j = 막대
         ? Math.max(0, Math.min(마지막, Math.floor((x / 폭) * g.창.length)))
         : (마지막 > 0 ? Math.max(0, Math.min(마지막, Math.round((x / 폭) * 마지막))) : 0);
-      const 자리 = 띠 ? ((j + 0.5) / g.창.length) * 폭
+      const 자리 = 막대 ? ((j + 0.5) / g.창.length) * 폭
                       : (마지막 > 0 ? (j / 마지막) * 폭 : 폭 / 2);
 
       const 선 = 판.querySelector('.ind-guide');
@@ -2981,8 +2982,8 @@
   }
 
   /* ---------- 계열사 리스크 관리 ----------
-     어느 낱말이 걸리면 그 리스크 기사로 보는지는 「리스크」 시트가 정한다.
-     낱말에 그룹명을 넣으면 그 그룹 기사는 표현과 상관없이 전부 들어온다 —
+     어느 키워드이 걸리면 그 리스크 기사로 보는지는 「리스크」 시트가 정한다.
+     키워드에 그룹명을 넣으면 그 그룹 기사는 표현과 상관없이 전부 들어온다 —
      실리코시스의 '해외_주요이슈' 가 그렇게 걸려 있다. */
   const RISK_PAGE_SIZE = 30;
   let riskShown = 0;
@@ -2990,13 +2991,13 @@
 
   /* 상황판의 실리코시스 요약 칸은 하우시스 리스크를 그대로 쓴다. 등록표가
      아직 안 왔으면 아무것도 못 세므로 빈 목록을 돌려준다. */
-  function 리스크낱말(r){
+  function 리스크키워드(r){
     return ((r && r.키워드) || []).map(function (t){ return String(t).toLowerCase(); });
   }
-  function isRiskArticle(a, 낱말){
-    if (!낱말 || !낱말.length) return false;
+  function isRiskArticle(a, 키워드){
+    if (!키워드 || !키워드.length) return false;
     const hay = ((a.title || '') + ' ' + (a.matched || '') + ' ' + (a.group || '') + ' ' + (a.reason || '')).toLowerCase();
-    return 낱말.some(function(t){ return hay.includes(t); });
+    return 키워드.some(function(t){ return hay.includes(t); });
   }
 
   function riskDateKey(a){
@@ -3013,13 +3014,13 @@
   function renderRiskDashboard(){
     const 이것 = 지금리스크();
     if (!이것) return;
-    const 낱말 = 리스크낱말(이것);
+    const 키워드 = 리스크키워드(이것);
     document.getElementById('riskTitle').textContent = 이것.이름;
     document.getElementById('riskNote').innerHTML =
       이것.설명 ? escapeHtml(이것.설명) : '';
     document.getElementById('riskCaseCard').style.display = 이것.사건원장 ? 'block' : 'none';
 
-    riskList = allArticles.filter(function (a){ return isRiskArticle(a, 낱말); }).slice().sort(function(a, b){
+    riskList = allArticles.filter(function (a){ return isRiskArticle(a, 키워드); }).slice().sort(function(a, b){
       return riskDateKey(b).localeCompare(riskDateKey(a));
     });
 
@@ -3270,14 +3271,14 @@
     const 셈 = {};
     통과.forEach(function(a){ const g = artGroup(a); 셈[g] = (셈[g] || 0) + 1; });
 
-    const 단추 = function(값, 이름, n){
+    const 버튼 = function(값, 이름, n){
       return '<button type="button" class="tab-btn' + (grpTab === 값 ? ' active' : '') +
         '" data-grp="' + escapeHtml(값) + '">' + escapeHtml(이름) +
         '<i>' + n + '</i></button>';
     };
     통.innerHTML = 있는그룹.length
-      ? 단추('', '전체', 통과.length) +
-        있는그룹.map(function(g){ return 단추(g, getGroupEmoji(g) + ' ' + g, 셈[g] || 0); }).join('')
+      ? 버튼('', '전체', 통과.length) +
+        있는그룹.map(function(g){ return 버튼(g, getGroupEmoji(g) + ' ' + g, 셈[g] || 0); }).join('')
       : '';
   }
 
@@ -3427,7 +3428,7 @@
     }
     return '';
   }
-  /* 기간 고르개에 적을 말. 누계면 「누적」, 그 분기면 「분기별」,
+  /* 기간 선택 버튼에 적을 말. 누계면 「누적」, 그 분기면 「분기별」,
      못 가렸으면 「분기」 — 아는 만큼만 적는다. */
   function comp꼴이름(꼴){
     return 꼴 === '누계' ? '누적' : (꼴 === '분기' ? '분기별' : '분기');
@@ -3667,7 +3668,7 @@
   }
 
   /* 그래프 한 칸. 위아래로 두 칸을 그리므로 각 칸이 제 눈금과 제 커서를 갖는다.
-     data-g 로 어느 그래프인지 적어 두면 커서 손잡이가 그 칸의 값을 집는다. */
+     data-g 로 어느 그래프인지 적어 두면 커서 핸들러가 그 칸의 값을 집는다. */
   function compChart(g, 그래프열쇠, 갈피){
     const 눈금 = function (v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
     const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
@@ -3837,8 +3838,8 @@
     const 마지막 = g.창.length - 1;
     return '<div class="ind-xax">' + indTicks(g.창.length).map(function (j){
       const 자리 = 마지막 > 0 ? (j / 마지막) * 100 : 50;
-      const 갈래 = j === 0 ? ' class="first"' : j === 마지막 ? ' class="last"' : '';
-      return '<span' + 갈래 + ' style="left:' + 자리.toFixed(2) + '%;">' +
+      const 구분 = j === 0 ? ' class="first"' : j === 마지막 ? ' class="last"' : '';
+      return '<span' + 구분 + ' style="left:' + 자리.toFixed(2) + '%;">' +
              escapeHtml(R눈(g, g.창[j])) + '</span>';
     }).join('') + '</div>';
   }
@@ -3868,7 +3869,7 @@
     const R = compR(기간);
 
     /* 분기가 누계인지 그 석 달치인지는 회사마다 다르다. 이 블록이 한 회사이므로
-       여기서 한 번 가려 두고, 칸 이름·고르개·표·엑셀이 모두 그것을 쓴다. */
+       여기서 한 번 가려 두고, 칸 이름·선택 버튼·표·엑셀이 모두 그것을 쓴다. */
     const 꼴 = comp꼴(줄들);
     const 기간말 = R.k === '분' ? comp꼴이름(꼴) : R.이름;
     const 칸눈 = R.k === '분' ? comp칸눈(꼴) : R.눈;
@@ -3959,7 +3960,7 @@
     let 그래프 = '';
     if (펼침){
       const 있는 = 짝들.filter(function (p){ return p.g; });
-      const 모양고르개 = '<div class="comp-shape"><div class="ind-pick">' +
+      const 모양선택 = '<div class="comp-shape"><div class="ind-pick">' +
         ['막대', '선'].map(function (s){
           return '<button type="button" data-shape="' + s + '"' +
                  (모양 === s ? ' class="on"' : '') + '>' + s + '</button>';
@@ -3976,7 +3977,7 @@
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g };
         }).filter(function (p){ return p.g; });
-        그래프 = 모양고르개 +
+        그래프 = 모양선택 +
           (민.length
             ? compBars(민, 열쇠) + compAxisBars(민[0].g) +
               '<div class="ind-note">' +
@@ -3996,7 +3997,7 @@
         /* 선일 때는 매출과 영업이익을 위아래 두 칸으로 나누고 x축만 함께 쓴다.
            축은 마지막 칸 아래에 한 번만 그린다 — 같은 눈금을 두 번 적으면
            서로 다른 축처럼 보인다. */
-        그래프 = 모양고르개 + '<div class="comp-pair">' +
+        그래프 = 모양선택 + '<div class="comp-pair">' +
           있는.map(function (p){
             return compChart(p.g, p.열쇠, 있는.length > 1 ? p.꼬리 : '');
           }).join('') +
@@ -4006,9 +4007,9 @@
       }
     }
 
-    /* 분기 단추의 이름은 회사마다 다르다 — 누계면 「누적」, 그 석 달치면
+    /* 분기 버튼의 이름은 회사마다 다르다 — 누계면 「누적」, 그 석 달치면
        「분기별」, 아직 못 가렸으면 그냥 「분기」. */
-    const 기간고르개 = '<div class="ind-pick">' + COMP_RANGES.map(function (x){
+    const 기간선택 = '<div class="ind-pick">' + COMP_RANGES.map(function (x){
       const 됨 = 기간가능.some(function (y){ return y.k === x.k; });
       const 말 = x.k === '분' ? comp꼴이름(꼴) : x.이름;
       return '<button type="button" data-range="' + x.k + '"' +
@@ -4017,13 +4018,13 @@
         '>' + 말 + '</button>';
     }).join('') + '</div>';
 
-    const 고르개 = '<div class="ind-pick">' + COMP_VIEWS.map(function (m){
+    const 선택버튼 = '<div class="ind-pick">' + COMP_VIEWS.map(function (m){
       return '<button type="button" data-metric="' + m.k + '"' +
              (보기 === m.k ? ' class="on"' : '') + '>' + m.이름 + '</button>';
     }).join('') + '</div>';
 
     /* 접힌 것이 있으면 그 수를 알린다. 조용히 감추면 빠진 줄 안다. */
-    const 옛단추 = 옛것.length
+    const 옛부문버튼 = 옛것.length
       ? '<button type="button" class="comp-old" data-old="1">' +
           (옛펼침 ? '옛 부문 ' + 옛것.length + '개 접기'
                   : '옛 부문 ' + 옛것.length + '개 더 보기') +
@@ -4036,7 +4037,7 @@
                     .filter(Boolean).sort().pop();
 
     /* 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그 이름을 적는다.
-       셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를 아래 단추가 알린다. */
+       셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를 아래 버튼가 알린다. */
     const 우리냐 = 것들.some(function (x){ return x.우리편; });
     const 부문말 = 골.length > 1
       ? '부문 ' + 골.length + '개'
@@ -4048,12 +4049,12 @@
         '<b>' + escapeHtml(회사) + '</b>' +
         (우리냐 ? '<span class="comp-tag">우리</span>' : '') +
         '<span>' + escapeHtml(최신 ? 칸눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
-        기간고르개 + 고르개 +
+        기간선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
         '<button type="button" class="xls-btn" data-xls="1">⬇ 원본 엑셀</button>' +
       '</div>' +
-      목록 + 옛단추 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
+      목록 + 옛부문버튼 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
   }
 
@@ -4233,8 +4234,8 @@
 
     const 이번주 = allArticles.filter(function(a){ return extractDateOnly(a.collectedAt) >= 이레; });
     const 중요 = 이번주.filter(function(a){ return getScoreNum(a.importance) >= 4; });
-    const 집낱말 = 리스크낱말(co리스크('하우시스')[0]);
-    const 리스크 = allArticles.filter(function (a){ return isRiskArticle(a, 집낱말); }).filter(function(a){
+    const 집키워드 = 리스크키워드(co리스크('하우시스')[0]);
+    const 리스크 = allArticles.filter(function (a){ return isRiskArticle(a, 집키워드); }).filter(function(a){
       const k = riskDateKey(a);
       return k && k >= 서른;
     });
@@ -4344,7 +4345,7 @@
 
   function homeRisk(){
     const 서른 = homeDay(29);
-    const 전부 = allArticles.filter(function (a){ return isRiskArticle(a, 리스크낱말(co리스크('하우시스')[0])); });
+    const 전부 = allArticles.filter(function (a){ return isRiskArticle(a, 리스크키워드(co리스크('하우시스')[0])); });
     const 최근 = 전부.filter(function(a){ const k = riskDateKey(a); return k && k >= 서른; });
     const 중요 = 전부.filter(function(a){ return getScoreNum(a.importance) >= 4; });
 
@@ -4582,7 +4583,7 @@
       })
       .catch(function(err){
         hideLoading();
-        alert(말썽(err, '기사 삭제'));
+        alert(오류메시지(err, '기사 삭제'));
         updateSelUI();
       });
   }
@@ -4620,7 +4621,7 @@
       })
       .catch(function(err){
         buttons.forEach(function(b){ b.disabled = false; });
-        alert(말썽(err, '평가 저장'));
+        alert(오류메시지(err, '평가 저장'));
       });
   }
 
@@ -4668,7 +4669,7 @@
         btn.disabled = false;
         btn.textContent = '조회';
         box.className = 'status show err';
-        box.textContent = '✕ ' + 말썽(err, '기사 조회');
+        box.textContent = '✕ ' + 오류메시지(err, '기사 조회');
       });
   }
 
@@ -4881,7 +4882,7 @@
             '<b>수집 자체는 끝났을 수 있습니다.</b> 텔레그램과 메일을 먼저 확인해 보세요. ' +
             '새로 들어온 기사는 <b>전체 기사 조회</b> 탭에서도 보입니다.<br>' +
             '거기에도 없으면 그때 다시 눌러주세요.</div>'
-          : '<div class="empty-note">✕ ' + escapeHtml(말썽(err, '즉시 조회')) + '</div>';
+          : '<div class="empty-note">✕ ' + escapeHtml(오류메시지(err, '즉시 조회')) + '</div>';
       });
   }
 
@@ -4986,7 +4987,7 @@
         hideLoading();
         btn.disabled = false;
         btn.textContent = '🔄 이 설정 불러오기';
-        alert(말썽(err, '설정 불러오기'));
+        alert(오류메시지(err, '설정 불러오기'));
       });
   }
 
@@ -5136,7 +5137,7 @@
         hideLoading();
         btn.disabled = false;
         btn.textContent = '🔍 지금 조사하기';
-        resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(말썽(err, '키워드 조사')) + '</div>';
+        resultBox.innerHTML = '<div class="empty-note">✕ ' + escapeHtml(오류메시지(err, '키워드 조사')) + '</div>';
       });
   }
 
