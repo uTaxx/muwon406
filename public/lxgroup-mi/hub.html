@@ -614,12 +614,12 @@
   .ind-tbl tbody tr:last-child td{border-bottom:none;}
   .ind-tbl td.none{color:var(--muted);}
 
-  .ind-xls{margin-top:9px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
-  .ind-xls button{border:1px solid var(--line); background:var(--card); color:var(--text);
-                  border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:700;
-                  cursor:pointer; font-family:inherit;}
-  .ind-xls button:hover{background:var(--bg);}
-  .ind-xls span{font-size:10.5px; color:var(--muted);}
+  .xls-btn{border:1px solid var(--line); background:var(--card); color:var(--text);
+    border-radius:8px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer;
+    font-family:inherit; white-space:nowrap; flex-shrink:0;}
+  .xls-btn:hover:not(:disabled){background:var(--bg); border-color:var(--muted);}
+  .xls-btn:disabled{opacity:.5; cursor:wait;}
+  .ind-bhead .xls-btn{margin-left:6px;}
   .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
             padding-top:8px; border-top:1px solid var(--line);}
   .ind-note b{color:var(--text); font-weight:700;}
@@ -1152,7 +1152,10 @@
     <section class="card">
       <div class="step-head"><span class="step-num" id="indHeadIcon">📊</span><span class="step-title" id="indHeadTitle">공통 지표</span></div>
       <div class="step-desc" id="indHeadDesc"></div>
-      <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+      <div class="line-row">
+        <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 이 탭 원본 엑셀</button>
+      </div>
       <div class="ind-grid" id="indBody"></div>
       <div class="empty-note" id="indEmpty" style="display:none;"></div>
     </section>
@@ -1762,146 +1765,54 @@
       });
       h += '</tr>';
     });
-    return h + '</tbody></table></div>' +
-      '<div class="ind-xls"><button type="button" data-xls="1">엑셀 내려받기</button>' +
-      '<span>지금 보고 있는 기간·통화 그대로 받습니다. 그래프와 같이 옛것이 위입니다.</span></div>';
+    return h + '</tbody></table></div>';
   }
 
-  /* ── 엑셀 파일 만들기 ──────────────────────────────────────
-     바깥 라이브러리를 안 쓴다. 이 저장소는 의존성 없는 정적 HTML이고,
-     CDN 하나를 걸면 그 CDN이 죽는 날 대시보드의 이 기능도 같이 죽는다.
-     xlsx 는 정해진 XML 몇 장을 zip 으로 묶은 것이라 직접 만들 수 있다.
+  /* ── 엑셀은 드라이브 원본을 그대로 받아 온다 ────────────────
+     예전에는 화면에 그린 표를 브라우저에서 xlsx 로 다시 만들어 주었다. 그러면
+     받는 것이 「지금 보고 있는 것」뿐이라, 옛 구간이나 다른 탭 값을 보려면
+     화면을 바꿔 가며 여러 번 받아야 했다. 무엇보다 화면과 파일이 어긋날 자리가
+     둘로 늘어난다 — 같은 숫자를 두 곳에서 따로 만들면 반드시 갈린다.
 
-     압축은 안 한다(stored). 스물몇 줄짜리 표라 줄어들 것도 없고,
-     압축을 넣으면 여기서 구현할 것이 훨씬 많아진다. */
-  function crc32(buf){
-    let 표 = crc32.표;
-    if (!표){
-      표 = crc32.표 = new Int32Array(256);
-      for (let n = 0; n < 256; n++){
-        let c = n;
-        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-        표[n] = c;
-      }
-    }
-    let crc = -1;
-    for (let i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ 표[(crc ^ buf[i]) & 0xFF];
-    return (crc ^ -1) >>> 0;
+     지금은 정리 워크플로가 드라이브에 쌓아 둔 마스터 스프레드시트를 웹훅이
+     xlsx 로 내보내 그대로 준다. 화면은 최근 구간만 그리지만 원본에는 모아 둔
+     것이 다 들어 있고, 파일이 곧 드라이브의 그 파일이다. */
+  const 원본_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-원본');
+
+  function 원본받기(갈래, 이름, 단추){
+    const 코드 = sharedCode();
+    if (!코드){ alert('맨 위에 식별코드를 넣어 주세요.'); return; }
+    if (!이름){ alert('무엇을 받을지 알 수 없습니다.'); return; }
+    const 옛말 = 단추 ? 단추.textContent : '';
+    const 되돌리기 = function (){ if (단추){ 단추.disabled = false; 단추.textContent = 옛말; } };
+    if (단추){ 단추.disabled = true; 단추.textContent = '받는 중…'; }
+    const 주소 = 원본_URL + '?code=' + encodeURIComponent(코드) +
+          '&' + encodeURIComponent('갈래') + '=' + encodeURIComponent(갈래) +
+          '&' + encodeURIComponent('이름') + '=' + encodeURIComponent(이름);
+    /* 먼저 물어보고, 잘 왔을 때만 브라우저에게 넘긴다. 받아 온 덩어리를
+       a[download] 로 떨구지 않는 까닭은 파일 이름 때문이다 — 그 길로 가면
+       이름을 브라우저가 제 나름대로 손보고, 우리말 이름을 통째로 버리고
+       'download' 라고만 저장하는 브라우저가 있다. 곧장 주소로 가면 웹훅이
+       붙여 보낸 Content-Disposition 을 브라우저가 그대로 쓴다.
+       두 번 받게 되지만 파일이 수십 KB라 눈에 띄지 않는다. */
+    fetch(주소)
+      .then(function (r){
+        if (r.ok) return null;
+        /* 못 준 까닭은 웹훅이 우리말로 적어 보낸다. 그대로 보여 준다. */
+        return r.json().then(function (j){
+          throw new Error((j && j.error) ? j.error : '내려받지 못했습니다.');
+        }, function (){ throw new Error('내려받지 못했습니다. (' + r.status + ')'); });
+      })
+      .then(function (){
+        window.location.href = 주소;
+        되돌리기();
+      })
+      .catch(function (e){
+        alert(e && e.message ? e.message : '내려받지 못했습니다.');
+        되돌리기();
+      });
   }
 
-  function zip(파일들){
-    const enc = new TextEncoder();
-    const 조각 = [], 가운데 = [];
-    let 자리 = 0;
-    파일들.forEach(function(f){
-      const 이름 = enc.encode(f.이름);
-      const 몸 = f.몸;
-      const crc = crc32(몸);
-      const lh = new Uint8Array(30 + 이름.length);
-      const d = new DataView(lh.buffer);
-      d.setUint32(0, 0x04034b50, true);
-      d.setUint16(4, 20, true);
-      d.setUint16(6, 0x0800, true);   // 이름이 UTF-8 이라고 알린다
-      d.setUint16(8, 0, true);        // 압축 안 함
-      d.setUint16(12, 0x2100, true);  // 날짜 자리. 아무 값이나 들어가면 된다
-      d.setUint32(14, crc, true);
-      d.setUint32(18, 몸.length, true);
-      d.setUint32(22, 몸.length, true);
-      d.setUint16(26, 이름.length, true);
-      lh.set(이름, 30);
-      조각.push(lh, 몸);
-
-      const ch = new Uint8Array(46 + 이름.length);
-      const c = new DataView(ch.buffer);
-      c.setUint32(0, 0x02014b50, true);
-      c.setUint16(4, 20, true);
-      c.setUint16(6, 20, true);
-      c.setUint16(8, 0x0800, true);
-      c.setUint16(10, 0, true);
-      c.setUint16(14, 0x2100, true);
-      c.setUint32(16, crc, true);
-      c.setUint32(20, 몸.length, true);
-      c.setUint32(24, 몸.length, true);
-      c.setUint16(28, 이름.length, true);
-      c.setUint32(42, 자리, true);
-      ch.set(이름, 46);
-      가운데.push(ch);
-      자리 += lh.length + 몸.length;
-    });
-    let 가운데크기 = 0;
-    가운데.forEach(function(x){ 가운데크기 += x.length; });
-    const 끝 = new Uint8Array(22);
-    const e = new DataView(끝.buffer);
-    e.setUint32(0, 0x06054b50, true);
-    e.setUint16(8, 파일들.length, true);
-    e.setUint16(10, 파일들.length, true);
-    e.setUint32(12, 가운데크기, true);
-    e.setUint32(16, 자리, true);
-    return new Blob(조각.concat(가운데, [끝]),
-      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  }
-
-  function xmlEsc(s){
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-  function 열이름(n){   // 0 → A, 26 → AA
-    let s = '';
-    n = n + 1;
-    while (n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = (n - 1 - r) / 26; }
-    return s;
-  }
-
-  /* 표 하나를 xlsx 로 만든다. 머리글은 글자, 값은 숫자로 넣는다 —
-     숫자를 글자로 넣으면 엑셀에서 그래프도 못 그리고 합계도 안 된다. */
-  function xlsx(시트명, 머리, 줄들){
-    const enc = new TextEncoder();
-    let sd = '';
-    const 칸 = function(r, c, v){
-      const ref = 열이름(c) + r;
-      if (v === null || v === undefined || v === '') return '';
-      if (typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '"><v>' + v + '</v></c>';
-      return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(v) + '</t></is></c>';
-    };
-    sd += '<row r="1">' + 머리.map(function(v, c){ return 칸(1, c, v); }).join('') + '</row>';
-    줄들.forEach(function(줄, i){
-      sd += '<row r="' + (i + 2) + '">' + 줄.map(function(v, c){ return 칸(i + 2, c, v); }).join('') + '</row>';
-    });
-
-    /* 엑셀은 시트 이름에 : \ / ? * [ ] 를 못 쓰고 31자를 넘길 수 없다. */
-    const 이름 = (String(시트명 || '지표').replace(/[:\\\/?*\[\]]/g, ' ').trim() || '지표').slice(0, 31);
-    const 파일 = [
-      ['[Content_Types].xml',
-       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
-       '<Default Extension="xml" ContentType="application/xml"/>' +
-       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-       '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
-      ['_rels/.rels',
-       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
-      ['xl/workbook.xml',
-       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-       '<sheets><sheet name="' + xmlEsc(이름) + '" sheetId="1" r:id="rId1"/></sheets></workbook>'],
-      ['xl/_rels/workbook.xml.rels',
-       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'],
-      ['xl/worksheets/sheet1.xml',
-       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-       '<sheetData>' + sd + '</sheetData></worksheet>']
-    ];
-    return zip(파일.map(function(f){ return { 이름: f[0], 몸: enc.encode(f[1]) }; }));
-  }
-
-  function 내려받기(blob, 파일명){
-    const u = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = u; a.download = 파일명;
-    document.body.appendChild(a); a.click(); a.remove();
-    /* 바로 지우면 브라우저가 아직 다 못 읽은 채로 끊길 수 있다. */
-    setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
-  }
 
   function indChgHtml(b){
     if (!b) return '';
@@ -2119,8 +2030,8 @@
     document.getElementById('indHeadIcon').textContent = 공통인가 ? '📊' : '🏭';
     document.getElementById('indHeadTitle').textContent = 공통인가 ? '공통 지표' : indTab + ' 지표';
     document.getElementById('indHeadDesc').innerHTML = 공통인가
-      ? '환율·금리처럼 어느 계열사에나 함께 걸리는 지표입니다. 위에서 계열사를 고르면 그 계열사 지표만 보입니다.'
-      : '그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다.';
+      ? '환율·금리처럼 어느 계열사에나 함께 걸리는 지표입니다. 위에서 계열사를 고르면 그 계열사 지표만 보입니다. <a href="manual.html#index" style="color:var(--green); font-weight:700;">자세히 →</a>'
+      : '그 계열사의 수요나 원가에 직접 걸리는 지표입니다. <b>선행 N개월</b>은 지금 이 값이 움직이면 실적이 대략 몇 달 뒤에 따라온다는 뜻입니다. <a href="manual.html#index" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
     const 것들 = indTabItems(지표, indTab);
     document.getElementById('indBody').innerHTML = indBlocks(것들);
@@ -2177,6 +2088,12 @@
       });
   }
 
+  /* 시장지표 원본은 탭 하나가 파일 하나다. 그래서 단추도 지표마다가 아니라
+     카드 머리에 하나만 둔다. */
+  document.getElementById('indXlsBtn').addEventListener('click', function (){
+    원본받기('지표', indTab, this);
+  });
+
   document.getElementById('indTabs').addEventListener('click', function(e){
     const b = e.target.closest('button[data-ind-tab]');
     if (!b) return;
@@ -2198,7 +2115,7 @@
 
     /* 엑셀은 화면을 다시 그리지 않는다. 다시 그리면 눌렀던 표가 닫히거나
        스크롤이 맨 위로 튄다. */
-    if (b.dataset.xls){ indXlsx(통, k); return; }
+    if (b.dataset.xls) return;   /* 시장지표 단추는 카드 머리에 있다 */
 
     if (b.dataset.range) indRange[k] = b.dataset.range;
     else if (b.dataset.cur) indCur[k] = b.dataset.cur;
@@ -2207,38 +2124,6 @@
     indDraw();
   });
 
-  /* 지금 보고 있는 표를 그대로 엑셀로 만든다. 화면과 파일이 다르면
-     어느 쪽이 맞는지 매번 확인하게 되므로, 기간·통화·차례를 그대로 쓴다. */
-  function indXlsx(통, 열쇠){
-    const g = indGraph[열쇠];
-    if (!g) return;
-    const 제목 = (통.querySelector('.ind-bhead b') || {}).textContent || '지표';
-    const 기간 = g.R.이름;
-
-    const 머리 = ['기간'].concat(g.선들.map(function(s){
-      return s.지표.이름 + (s.지표.단위 ? ' (' + s.지표.단위 + ')' : '');
-    }));
-    /* 값은 숫자로 넣는다. 글자로 넣으면 엑셀에서 그래프도 못 그리고
-       합계도 안 된다. 빈 칸은 그냥 비워 둔다 — 0 을 넣으면 '그 달에 0'
-       으로 읽혀서 없는 것과 뜻이 달라진다. */
-    const 줄들 = indTableRows(g).map(function(r){
-      return [r.칸].concat(r.값.map(function(v){
-        return (v === undefined || v === null) ? '' : v;
-      }));
-    });
-
-    const 오늘 = new Date();
-    const p2 = function(n){ return String(n).padStart(2, '0'); };
-    const 날 = '' + 오늘.getFullYear() + p2(오늘.getMonth() + 1) + p2(오늘.getDate());
-    const 파일명 = ('LX지표_' + 제목 + '_' + 기간 + '_' + 날)
-      .replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '') + '.xlsx';
-
-    try {
-      내려받기(xlsx(제목 + ' ' + 기간, 머리, 줄들), 파일명);
-    } catch (e) {
-      alert('엑셀 파일을 만들지 못했습니다: ' + (e && e.message ? e.message : e));
-    }
-  }
 
   /* ── 커서를 따라 값 보여주기 ────────────────────────────────
      그래프만 보면 '어디쯤에서 꺾였나'는 알아도 '그게 언제 얼마였나'는 모른다.
@@ -3724,7 +3609,8 @@
       ? '부문 ' + 골.length + '개'
       : comp부문이름((골[0] || {}).x || 것들[0]);
 
-    return '<div class="ind-block' + (우리냐 ? ' comp-us' : '') + '" data-blk="' + escapeHtml(열쇠) + '">' +
+    return '<div class="ind-block' + (우리냐 ? ' comp-us' : '') + '" data-blk="' + escapeHtml(열쇠) + '"' +
+        ' data-hoesa="' + escapeHtml(회사) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
         (우리냐 ? '<span class="comp-tag">우리</span>' : '') +
@@ -3732,6 +3618,7 @@
         기간고르개 + 고르개 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
+        '<button type="button" class="xls-btn" data-xls="1">⬇ 원본 엑셀</button>' +
       '</div>' +
       목록 + 옛단추 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
@@ -3906,7 +3793,7 @@
 
     /* 엑셀은 화면을 다시 그리지 않는다. 다시 그리면 눌렀던 표가 닫히거나
        스크롤이 맨 위로 튄다. */
-    if (b.dataset.xls){ compXlsx(통, k); return; }
+    if (b.dataset.xls){ 원본받기('경쟁사', 통.dataset.hoesa, b); return; }
 
     if (b.dataset.old) compOld[k] = !(compOld[k] === true);
     else if (b.dataset.range) compRange[k] = b.dataset.range;
@@ -3919,34 +3806,6 @@
     compDraw();
   });
 
-  function compXlsx(통, 열쇠){
-    const g = compGraph[열쇠];
-    if (!g) return;
-    const 부문 = (통.querySelector('.ind-bhead b') || {}).textContent || '경쟁사';
-    const 보기 = compView[열쇠] || '함께';
-    const 기간 = g.기간이름 || compR(compRange[열쇠] || '연').이름;
-
-    const 머리 = ['기간'].concat(g.선들.map(function (s){
-      return s.지표.이름 + (s.지표.단위 ? ' (' + s.지표.단위 + ')' : '');
-    }));
-    const 줄들 = indTableRows(g).map(function (r){
-      return [g.칸눈 ? g.칸눈(r.칸) : r.칸].concat(r.값.map(function (v){
-        return (v === undefined || v === null) ? '' : v;
-      }));
-    });
-
-    const 오늘 = new Date();
-    const p2 = function (n){ return String(n).padStart(2, '0'); };
-    const 날 = '' + 오늘.getFullYear() + p2(오늘.getMonth() + 1) + p2(오늘.getDate());
-    const 파일명 = ('LX경쟁사_' + compTab + '_' + 부문 + '_' + 보기 + '_' + 기간 + '_' + 날)
-      .replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '') + '.xlsx';
-
-    try {
-      내려받기(xlsx(부문 + ' ' + 보기, 머리, 줄들), 파일명);
-    } catch (e) {
-      alert('엑셀 파일을 만들지 못했습니다: ' + (e && e.message ? e.message : e));
-    }
-  }
 
   /* ---------- 종합 상황판 ----------
      탭을 하나씩 눌러 봐야 무슨 일이 있었는지 알 수 있던 것이 이 화면의 가장 큰
