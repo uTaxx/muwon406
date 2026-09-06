@@ -724,6 +724,14 @@
     border-radius:7px;}
   .co-jump button:hover{background:var(--green-tint);}
 
+  .cfg-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 10px;}
+  .cfg-opt{display:flex; align-items:flex-start; gap:9px; border:1.5px solid var(--line);
+    border-radius:10px; padding:9px 11px; cursor:pointer; transition:border-color .15s, background .15s;}
+  .cfg-opt.on{border-color:var(--green); background:var(--green-tint);}
+  .cfg-opt input{width:17px; height:17px; margin:1px 0 0; accent-color:var(--green); flex-shrink:0;}
+  .cfg-opt .t{font-size:13px; font-weight:700; color:var(--text);}
+  .cfg-opt .d{font-size:11px; color:var(--muted); margin-top:2px; line-height:1.45;}
+
   .co-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
   .co-card{text-align:left; background:var(--card); border:1.5px solid var(--line);
     border-radius:12px; padding:10px 12px; cursor:pointer; font-family:inherit;
@@ -739,7 +747,10 @@
   .co-card .co-none{font-size:11.5px; color:var(--muted); margin-top:3px;}
   /* 계열사가 예닐곱이라 넓은 화면에서는 셋씩 두 줄이 알맞다. 이 규칙을 위쪽
      넓은-화면 뭉치에 두면 아래 기본 규칙에 덮인다 — 기본 규칙 바로 뒤에 둔다. */
-  @media (min-width:1024px){ .co-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;} }
+  @media (min-width:1024px){
+    .co-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+    .cfg-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
 
   .ind-pend{display:flex; flex-wrap:wrap; gap:7px;}
   .ind-pend span{border:1px dashed var(--line); border-radius:999px; padding:5px 11px;
@@ -803,10 +814,11 @@
     </div>
     <span class="badge">LX Group MI · 사내 전용</span>
     <h1>LX Group MI</h1>
-    <p>종합 상황판에서 계열사별 상황을 한눈에 보고, 계열사를 누르면 그 안의 경쟁사 성과와 시장 지표로 들어갑니다. 기사·키워드 검색·리스크는 왼쪽 차림표에 있습니다.</p>
+    <p>첫 화면에는 가장 최근 수집분 가운데 메일로 나간 주요 뉴스가 뜹니다. 그 아래 계열사를 누르면 경쟁사 성과·시장 지표·리스크 관리로 들어갑니다. <b>무엇을 어디에 띄울지는 「대시보드 설정」에서 직접 바꾸실 수 있습니다.</b></p>
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="cfg">🎛 대시보드 설정</button>
       <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
     </div>
   </div>
@@ -823,7 +835,6 @@
       <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
       <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
       <button type="button" class="tab-btn" data-tab="co">계열사<br> 들여다보기</button>
-      <button type="button" class="tab-btn" data-tab="risk">실리코시스<br> 리스크</button>
     </div>
   </div>
 
@@ -831,37 +842,40 @@
 
   <!-- 탭 0: 종합 상황판 -->
   <div id="tab-home" class="tab-panel active">
-    <div class="kpi-row" id="homeKpi"></div>
+    <div class="kpi-row" id="homeKpi" data-card="kpi"></div>
+
+    <!-- 처음 들어왔을 때 보아야 할 것은 '오늘 아침 메일로 나간 것'이다.
+         전체 기사는 조회 탭에 그대로 있으니 여기서는 추려서만 보여 준다. -->
+    <section class="card" data-card="mail">
+      <div class="step-head"><span class="step-num">📬</span><span class="step-title" id="homeMailTitle">주요 뉴스</span>
+        <button type="button" class="go-btn" data-goto="search">전체 기사 →</button></div>
+      <div class="step-desc" id="homeMailDesc">불러오는 중…</div>
+      <div id="homeMail"></div>
+    </section>
 
     <!-- 계열사가 먼저다. 이 화면을 여는 사람은 대개 '어느 계열사 이야기'를
          들고 오지, '전체 경쟁사'를 들고 오지 않는다. 칸을 누르면 그 계열사
          안으로 들어간다. -->
-    <section class="card">
+    <section class="card" data-card="co">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사</span></div>
       <div class="step-desc">칸을 누르면 그 계열사의 경쟁사 성과와 시장 지표로 들어갑니다.</div>
       <div class="co-grid" id="homeCo"><div class="empty-note">불러오는 중…</div></div>
     </section>
 
     <div class="home-grid">
-      <section class="card home-wide">
-        <div class="step-head"><span class="step-num">📰</span><span class="step-title">최근 기사</span>
-          <button type="button" class="go-btn" data-goto="search">전체 기사 조회 →</button></div>
-        <div id="homeFeed"><div class="empty-note">불러오는 중…</div></div>
-      </section>
-
-      <section class="card">
+      <section class="card" data-card="groups">
         <div class="step-head"><span class="step-num">🗂</span><span class="step-title">그룹별 수집 현황</span></div>
         <div class="step-desc" id="homeGroupsDesc">최근 7일에 들어온 기사입니다.</div>
         <div id="homeGroups"></div>
       </section>
 
-      <section class="card">
+      <section class="card" data-card="risk">
         <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
-          <button type="button" class="go-btn" data-goto="risk">자세히 →</button></div>
+          <button type="button" class="go-btn" data-co-open="하우시스|risk">자세히 →</button></div>
         <div id="homeRisk"></div>
       </section>
 
-      <section class="card home-wide">
+      <section class="card home-wide" data-card="ind">
         <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span>
           <button type="button" class="go-btn" data-goto="co">자세히 →</button></div>
         <div class="step-desc" id="homeIndDesc">불러오는 중…</div>
@@ -1126,8 +1140,110 @@
     </section>
   </div>
 
-  <!-- 탭 4: 실리코시스 리스크 -->
-  <div id="tab-risk" class="tab-panel">
+  <!-- 대시보드 설정 — 무엇을 어디에 띄울지 사람이 직접 켜고 끈다.
+       이 화면은 서버에 아무것도 보내지 않는다. 브라우저에만 적어 두므로
+       사람마다 제 화면을 다르게 둘 수 있고, 만든 사람에게 물어볼 일이 없다. -->
+  <div id="tab-cfg" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🎛</span><span class="step-title">대시보드 설정</span></div>
+      <div class="step-desc">켜고 끄면 바로 반영됩니다. 이 브라우저에만 저장되고 다른 사람 화면은 바뀌지 않습니다.</div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">첫 화면에 넣을 것</span></div>
+      <div class="cfg-grid" id="cfgHome"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">📬</span><span class="step-title">주요 뉴스 기준</span><span class="optional-tag">첫 화면</span></div>
+      <div class="step-desc">가장 최근 수집분 가운데 이 셋을 모두 넘은 기사만 첫 화면에 올립니다. 메일에 실리는 기준과 같게 두면 「오늘 메일로 나간 것」이 그대로 보입니다.</div>
+      <div class="range-row">
+        <div class="range-group">
+          <label>중요도 <span id="cfgImpVal" class="range-val">2</span> 이상</label>
+          <input type="range" id="cfgImp" min="1" max="5" step="1" value="2">
+        </div>
+        <div class="range-group">
+          <label>관련성 <span id="cfgRelVal" class="range-val">1</span> 이상</label>
+          <input type="range" id="cfgRel" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="range-group">
+          <label>긴급성 <span id="cfgUrgVal" class="range-val">1</span> 이상</label>
+          <input type="range" id="cfgUrg" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="range-group">
+          <label>최대 <span id="cfgNumVal" class="range-val">15</span>건</label>
+          <input type="range" id="cfgNum" min="3" max="40" step="1" value="15">
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">계열사 화면에 넣을 것</span></div>
+      <div class="cfg-grid" id="cfgSub"></div>
+      <div class="kn-sec">보일 계열사</div>
+      <div class="cfg-grid" id="cfgCo"></div>
+    </section>
+
+    <section class="card">
+      <button type="button" class="small-btn" id="cfgReset">기본값으로 되돌리기</button>
+    </section>
+  </div>
+
+  <!-- 탭 5: AI 학습 데이터 -->
+  <div id="tab-knowledge" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🧠</span><span class="step-title">AI에게 알려줄 배경 지식</span></div>
+      <div class="step-desc">AI가 기사 중요도를 매길 때 배경으로 삼는 내용입니다. &lsquo;기사에 안 나와도 사업구조상 연결되는&rsquo; 정보를 넣어두면 판단이 정확해집니다.</div>
+
+      <div class="kn-sec" style="margin-top:4px;">새 내용 작성 <span class="kn-hint">제출하면 기존 내용을 <b>통째로 대체</b>합니다 — 고칠 때는 아래 &lsquo;현재 등록된 내용&rsquo;을 복사해 오세요.</span></div>
+      <textarea id="knInput" placeholder="예) [참고자료: 사업구조 요약]&#10;그룹은 ○○를 핵심 사업축으로 …"></textarea>
+      <div class="kn-send"><button type="button" class="submit-btn" id="knSubmitBtn">제출하기</button><span class="kn-count" id="knCount">0자</span></div>
+      <div class="status" id="knStatus"></div>
+
+      <div class="kn-sec">현재 등록된 내용</div>
+      <div class="kn-box" id="knCurrent">불러오는 중…</div>
+      <div class="kn-meta">
+        <span id="knLen"></span>
+        <button type="button" class="kn-copy" id="knCopyBtn" style="display:none;">위 입력칸으로 복사</button>
+      </div>
+
+      <div class="kn-warn">이 내용은 매 수집 때마다 AI 프롬프트 앞에 붙습니다. 길수록 판단 근거는 늘지만 호출 비용도 함께 늘어납니다 — 위에 표시된 회당·월 비용이 이 내용 때문에 추가로 드는 몫입니다(토큰 수는 어림치라 실제와 다를 수 있습니다). 비워두면 배경 지식 없이 기사 제목과 그룹 목적만으로 평가합니다.</div>
+    </section>
+  </div>
+
+  <!-- 탭 6·7: 계열사 들여다보기 — 계열사를 먼저 고르고, 그 안에서 경쟁사와
+       시장지표를 오간다. 실무에서 화면을 여는 까닭은 대개 '하우시스가 요즘
+       어떤가'이지 '경쟁사 전체가 어떤가'가 아니다. -->
+  <div id="tab-co" class="tab-panel">
+    <div class="tab-nav ind-nav" id="coTabs"></div>
+    <div class="co-sub" id="coSub">
+      <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
+      <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
+      <button type="button" class="tab-btn" data-co-sub="risk">⚠️ 리스크 관리</button>
+    </div>
+
+    <div id="co-comp" class="co-pane">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏁</span><span class="step-title" id="compHeadTitle">경쟁사 성과</span></div>
+      <div class="step-desc" id="compHeadDesc"></div>
+      <div class="ind-asof" id="compAsOf">불러오는 중…</div>
+      <div class="ind-grid" id="compBody"></div>
+      <div class="empty-note" id="compEmpty" style="display:none;"></div>
+    </section>
+    </div>
+
+    <!-- 계열사마다 리스크 관리. 지금 속이 찬 것은 하우시스(실리코시스)뿐이고
+         나머지는 자리만 잡아 둔다 — 자리가 있어야 무엇을 채워야 하는지 보인다. -->
+    <div id="co-risk" class="co-pane">
+      <div id="riskShelf" style="display:none;">
+        <section class="card">
+          <div class="step-head"><span class="step-num">⚠️</span><span class="step-title" id="riskShelfTitle">리스크 관리</span></div>
+          <div class="step-desc" id="riskShelfDesc"></div>
+          <div class="empty-note" style="padding:14px 0;">아직 등록된 리스크가 없습니다.</div>
+          <div class="word-hint" style="margin:0;">자료는 구글드라이브 <b>LX Group MI / 리스크 관리 / <span id="riskShelfFolder"></span></b> 폴더에 모읍니다. <a id="riskShelfLink" href="https://drive.google.com/drive/folders/1Yxp7Fr1keGnXdne40QiBTd7Q2WThciEV" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">폴더 열기 →</a></div>
+        </section>
+      </div>
+      <div id="riskHousys">
     <section class="card">
       <div class="risk-kicker" id="riskKicker" style="display:none;">신규 중요 변동</div>
       <div class="risk-title">미국 엔지니어드스톤 리스크</div>
@@ -1164,50 +1280,7 @@
       <div class="empty-note" id="riskEmpty" style="display:none;">아직 수집된 실리코시스 관련 기사가 없습니다.</div>
       <button type="button" class="add-btn" id="riskMoreBtn" style="display:none;">더 보기</button>
     </section>
-  </div>
-
-  <!-- 탭 5: AI 학습 데이터 -->
-  <div id="tab-knowledge" class="tab-panel">
-    <section class="card">
-      <div class="step-head"><span class="step-num">🧠</span><span class="step-title">AI에게 알려줄 배경 지식</span></div>
-      <div class="step-desc">AI가 기사 중요도를 매길 때 배경으로 삼는 내용입니다. &lsquo;기사에 안 나와도 사업구조상 연결되는&rsquo; 정보를 넣어두면 판단이 정확해집니다.</div>
-
-      <div class="kn-sec" style="margin-top:4px;">새 내용 작성 <span class="kn-hint">제출하면 기존 내용을 <b>통째로 대체</b>합니다 — 고칠 때는 아래 &lsquo;현재 등록된 내용&rsquo;을 복사해 오세요.</span></div>
-      <textarea id="knInput" placeholder="예) [참고자료: 사업구조 요약]&#10;그룹은 ○○를 핵심 사업축으로 …"></textarea>
-      <div class="kn-send"><button type="button" class="submit-btn" id="knSubmitBtn">제출하기</button><span class="kn-count" id="knCount">0자</span></div>
-      <div class="status" id="knStatus"></div>
-
-      <div class="kn-sec">현재 등록된 내용</div>
-      <div class="kn-box" id="knCurrent">불러오는 중…</div>
-      <div class="kn-meta">
-        <span id="knLen"></span>
-        <button type="button" class="kn-copy" id="knCopyBtn" style="display:none;">위 입력칸으로 복사</button>
       </div>
-
-      <div class="kn-warn">이 내용은 매 수집 때마다 AI 프롬프트 앞에 붙습니다. 길수록 판단 근거는 늘지만 호출 비용도 함께 늘어납니다 — 위에 표시된 회당·월 비용이 이 내용 때문에 추가로 드는 몫입니다(토큰 수는 어림치라 실제와 다를 수 있습니다). 비워두면 배경 지식 없이 기사 제목과 그룹 목적만으로 평가합니다.</div>
-    </section>
-  </div>
-
-  <!-- 탭 6·7: 계열사 들여다보기 — 계열사를 먼저 고르고, 그 안에서 경쟁사와
-       시장지표를 오간다. 실무에서 화면을 여는 까닭은 대개 '하우시스가 요즘
-       어떤가'이지 '경쟁사 전체가 어떤가'가 아니다. -->
-  <div id="tab-co" class="tab-panel">
-    <div class="tab-nav ind-nav" id="coTabs"></div>
-    <div class="co-sub" id="coSub">
-      <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
-      <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
-    </div>
-
-    <div class="co-jump" id="coJump" style="display:none;"></div>
-
-    <div id="co-comp" class="co-pane">
-    <section class="card">
-      <div class="step-head"><span class="step-num">🏁</span><span class="step-title" id="compHeadTitle">경쟁사 성과</span></div>
-      <div class="step-desc" id="compHeadDesc"></div>
-      <div class="ind-asof" id="compAsOf">불러오는 중…</div>
-      <div class="ind-grid" id="compBody"></div>
-      <div class="empty-note" id="compEmpty" style="display:none;"></div>
-    </section>
     </div>
 
     <div id="co-index" class="co-pane">
@@ -1470,6 +1543,122 @@
       });
   }
 
+  /* ---------- 대시보드 설정 ----------
+     무엇을 어디에 띄울지는 사람마다 다르다. 누구는 첫 화면에서 뉴스만 보고
+     싶고, 누구는 지표까지 같이 보고 싶다. 그래서 화면을 고정해 두지 않고
+     켜고 끄게 한다 — 만든 사람에게 물어보지 않고도 바꿀 수 있어야 한다.
+
+     서버에는 아무것도 보내지 않는다. 브라우저에만 적어 두므로 사람마다 제
+     화면을 다르게 둘 수 있고, 설정 시트에 칸을 하나 더 만들 일도 없다. */
+  const CFG_HOME = [
+    { k: 'kpi',    이름: '위 숫자 넉 장',   말: '마지막 수집·최근 7일·중요 기사·실리코시스' },
+    { k: 'mail',   이름: '주요 뉴스',       말: '가장 최근 수집분 가운데 메일 기준을 넘은 것' },
+    { k: 'co',     이름: '계열사 칸',       말: '계열사마다 한 줄 요약. 누르면 그 계열사로' },
+    { k: 'groups',이름: '그룹별 수집 현황',말: '어느 그룹에 몇 건이 들어왔나' },
+    { k: 'risk',   이름: '실리코시스 요약',말: '누적·최근 30일·중요 기사 수와 최신 한 건' },
+    { k: 'ind',    이름: '공통 지표',       말: '환율·금리 등 어느 계열사에나 걸리는 값' }
+  ];
+  const CFG_SUB = [
+    { k: 'comp',  이름: '경쟁사 성과',  말: 'DART 공시의 부문별 매출·영업이익' },
+    { k: 'index', 이름: '시장 지표',    말: '그 계열사에 걸리는 지표 + 공통 지표' },
+    { k: 'risk',  이름: '리스크 관리',  말: '그 계열사에 걸린 소송·규제·안전 이슈' }
+  ];
+  const CFG_기본 = {
+    home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1 },
+    sub:  { comp: 1, index: 1, risk: 1 },
+    계열사: {},                       // 빈 것은 '전부 보임'
+    기준: { 중요도: 2, 관련성: 1, 긴급성: 1 },
+    뉴스수: 15
+  };
+  let cfg = null;
+
+  function 설정(){
+    if (cfg) return cfg;
+    let 읽은것 = null;
+    try { 읽은것 = JSON.parse(기억('lx-cfg') || 'null'); } catch (e){}
+    cfg = {
+      home:  Object.assign({}, CFG_기본.home,  (읽은것 && 읽은것.home)  || {}),
+      sub:   Object.assign({}, CFG_기본.sub,   (읽은것 && 읽은것.sub)   || {}),
+      계열사: Object.assign({}, (읽은것 && 읽은것.계열사) || {}),
+      기준:  Object.assign({}, CFG_기본.기준,  (읽은것 && 읽은것.기준)  || {}),
+      뉴스수: (읽은것 && 읽은것.뉴스수) || CFG_기본.뉴스수
+    };
+    return cfg;
+  }
+  function 설정저장(){
+    try { 기억('lx-cfg', JSON.stringify(설정())); } catch (e){}
+  }
+
+  /* 신청 화면을 한 번 열면 그 계정의 출력 기준을 그대로 가져다 쓴다. 사람이
+     설정에서 손대기 전까지는 이쪽이 맞다 — 메일에 실리는 기준 그대로다. */
+  function 기준받아쓰기(중, 관, 긴){
+    const c = 설정();
+    if (c.기준.손댐) return;
+    c.기준 = { 중요도: 중, 관련성: 관, 긴급성: 긴, 읽었나: 1 };
+    설정저장();
+    설정그리기();
+    if (document.getElementById('tab-home').classList.contains('active')) homeMail();
+  }
+
+  /* 꺼 둔 카드는 감춘다. 지우지 않고 감추는 까닭은, 다시 켰을 때 그 안의
+     그래프·펼침 상태가 그대로 살아 있어야 하기 때문이다. */
+  function 설정보이기(){
+    const c = 설정();
+    document.querySelectorAll('#tab-home [data-card]').forEach(function (e){
+      e.style.display = c.home[e.dataset.card] ? '' : 'none';
+    });
+    document.querySelectorAll('#coSub .tab-btn').forEach(function (b){
+      b.style.display = c.sub[b.dataset.coSub] ? '' : 'none';
+    });
+  }
+
+  function 고르개(통, 목록, 그릇, 뒤에){
+    document.getElementById(통).innerHTML = 목록.map(function (o){
+      const 켬 = !!그릇[o.k];
+      return '<label class="cfg-opt' + (켬 ? ' on' : '') + '" data-k="' + escapeHtml(o.k) + '">' +
+        '<input type="checkbox"' + (켬 ? ' checked' : '') + '>' +
+        '<div><div class="t">' + escapeHtml(o.이름) + '</div>' +
+        (o.말 ? '<div class="d">' + escapeHtml(o.말) + '</div>' : '') + '</div></label>';
+    }).join('');
+    document.getElementById(통).onchange = function (e){
+      const 상자 = e.target.closest('.cfg-opt');
+      if (!상자) return;
+      그릇[상자.dataset.k] = e.target.checked ? 1 : 0;
+      상자.classList.toggle('on', e.target.checked);
+      설정저장();
+      뒤에();
+    };
+  }
+
+  function 설정그리기(){
+    const c = 설정();
+    고르개('cfgHome', CFG_HOME, c.home, function (){ 설정보이기(); renderHome(); });
+    고르개('cfgSub', CFG_SUB, c.sub, function (){
+      /* 지금 보던 하위 탭을 꺼 버렸으면 켜져 있는 첫 것으로 옮긴다. 안 그러면
+         빈 화면만 남는다. */
+      설정보이기();
+      if (!c.sub[coSub]){
+        const 켠것 = CO_SUBS.filter(function (k){ return c.sub[k]; })[0];
+        if (켠것){ coSub = 켠것; 기억('lx-co-sub', coSub); }
+      }
+      coDraw();
+    });
+
+    /* 계열사는 빈 그릇이 '전부 보임'이라 처음 그릴 때 켠 것으로 채워 준다. */
+    const 목록 = co목록().map(function (k){ return { k: k, 이름: co이름(k), 말: '' }; });
+    목록.forEach(function (o){ if (c.계열사[o.k] === undefined) c.계열사[o.k] = 1; });
+    고르개('cfgCo', 목록, c.계열사, function (){ coDraw(); renderHome(); });
+
+    [['cfgImp', 'cfgImpVal', '중요도'], ['cfgRel', 'cfgRelVal', '관련성'], ['cfgUrg', 'cfgUrgVal', '긴급성']]
+      .forEach(function (짝){
+        const 손 = document.getElementById(짝[0]);
+        손.value = c.기준[짝[2]];
+        document.getElementById(짝[1]).textContent = c.기준[짝[2]];
+      });
+    document.getElementById('cfgNum').value = c.뉴스수;
+    document.getElementById('cfgNumVal').textContent = c.뉴스수;
+  }
+
   /* ---------- 계열사 들여다보기 ----------
      실무에서 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지
      「경쟁사 전체가 어떤가」가 아니다. 그래서 계열사를 먼저 고르고, 그 안에서
@@ -1493,10 +1682,24 @@
   }
 
   let coTab = 기억('lx-co') || '하우시스';
-  let coSub = 기억('lx-co-sub') === 'index' ? 'index' : 'comp';
+  const CO_SUBS = ['comp', 'index', 'risk'];
+  let coSub = CO_SUBS.indexOf(기억('lx-co-sub')) >= 0 ? 기억('lx-co-sub') : 'comp';
+  /* 리스크 관리에 속이 찬 계열사. 자료가 붙는 대로 여기에 는다 — 나머지는
+     자리만 잡아 두고 무엇을 채워야 하는지 보이게 한다. */
+  const CO_RISK = { '하우시스': { 이름: '미국 엔지니어드스톤 실리코시스' } };
+  const RISK_FOLDER = 'https://drive.google.com/drive/folders/1Yxp7Fr1keGnXdne40QiBTd7Q2WThciEV';
 
   /* 시트에 새 계열사가 생기면 저절로 붙는다. 붙박이 목록만 믿으면 자료는
      들어왔는데 화면에는 없는 계열사가 생긴다. */
+  function co보임(){
+    const c = 설정().계열사;
+    const 다 = co목록();
+    const 켠것 = 다.filter(function (k){ return c[k] === undefined || c[k]; });
+    /* 다 꺼 버리면 화면이 텅 빈다. 그때는 전부 보여 준다 — 아무것도 없는
+       화면보다 낫고, 껐다는 사실은 설정 화면에 그대로 남아 있다. */
+    return 켠것.length ? 켠것 : 다;
+  }
+
   function co목록(){
     const 본것 = {};
     CO_ORDER.forEach(function (k){ 본것[k] = 1; });
@@ -1528,7 +1731,8 @@
   }
 
   function coDraw(){
-    const 목록 = co목록();
+    설정보이기();
+    const 목록 = co보임();
     if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '하우시스';
 
     document.getElementById('coTabs').innerHTML = 목록.map(function (k){
@@ -1541,20 +1745,24 @@
     document.querySelectorAll('#coSub .tab-btn').forEach(function (b){
       b.classList.toggle('active', b.dataset.coSub === coSub);
     });
-    document.getElementById('co-comp').classList.toggle('on', coSub === 'comp');
-    document.getElementById('co-index').classList.toggle('on', coSub === 'index');
+    CO_SUBS.forEach(function (k){
+      document.getElementById('co-' + k).classList.toggle('on', coSub === k);
+    });
 
-    const 건너 = document.getElementById('coJump');
-    if (coTab === '하우시스'){
-      건너.style.display = 'flex';
-      건너.innerHTML = '<span>⚠️ <b>미국 엔지니어드스톤 실리코시스</b>가 이 계열사에 걸려 있습니다.</span>' +
-        '<button type="button" data-goto="risk">리스크 화면 →</button>';
-    } else {
-      건너.style.display = 'none';
-      건너.innerHTML = '';
+    /* 리스크 관리: 속이 찬 계열사면 그 화면을, 아니면 자리만 보여 준다. */
+    const 찬것 = CO_RISK[coTab];
+    document.getElementById('riskHousys').style.display = 찬것 ? 'block' : 'none';
+    document.getElementById('riskShelf').style.display = 찬것 ? 'none' : 'block';
+    if (!찬것){
+      document.getElementById('riskShelfTitle').textContent = co이름(coTab) + ' 리스크 관리';
+      document.getElementById('riskShelfDesc').textContent =
+        '그 계열사에 걸린 소송·규제·안전 이슈를 모아 두는 자리입니다.';
+      document.getElementById('riskShelfFolder').textContent = coTab;
     }
 
-    if (coSub === 'comp') loadComp(false); else loadIndex(false);
+    if (coSub === 'comp') loadComp(false);
+    else if (coSub === 'index') loadIndex(false);
+    else if (찬것){ renderRiskDashboard(); loadCases(false); }
     /* 다른 쪽도 이미 받아 뒀으면 그려 둔다. 안 그리면 하위 탭을 눌렀을 때
        지난 계열사 화면이 한 순간 비쳤다가 바뀐다. */
     if (compData) compDraw();
@@ -1600,9 +1808,9 @@
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
-    if (tabName === 'risk'){ renderRiskDashboard(); loadCases(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
+    if (tabName === 'cfg'){ 설정그리기(); }
   }
 
   /* ---------- 탭6: 시장지표 ----------
@@ -4009,10 +4217,59 @@
          리스크.length ? '리스크 탭에서 확인하세요' : '최근 30일 보도가 없습니다');
   }
 
-  function homeFeed(){
-    const 통 = document.getElementById('homeFeed');
-    const 것들 = sortByDateDesc(allArticles).slice(0, 8);
-    if (!것들.length){ 통.innerHTML = '<div class="empty-note">아직 수집된 기사가 없습니다.</div>'; return; }
+  /* 처음 들어왔을 때 볼 것은 「가장 최근 수집분 가운데 메일로 나간 것」이다.
+     쌓인 기사를 최신순으로 여덟 건 보여 주면, 그 여덟이 오늘 것인지 사흘 전
+     것인지도 모르고 메일에 실렸는지도 모른다.
+
+     메일에 실리는 기준은 출력 기준(중요도·관련성·긴급성) 셋을 다 넘는 것이다.
+     점수가 아예 없는 기사(AI 제외 그룹)는 메일에 안 나가므로 여기서도 뺀다.
+     기준값은 신청 화면을 한 번 열면 그 계정 것을 적어 두었다가 쓰고, 아직
+     못 읽었으면 권장 기본값을 쓴다 — 어느 쪽인지는 카드 머리에 적는다. */
+  function 발송기준(){
+    const c = 설정().기준 || {};
+    return { 중요도: c.중요도 || 2, 관련성: c.관련성 || 1, 긴급성: c.긴급성 || 1,
+             어디서: c.읽었나 ? '이 계정 설정' : '권장 기본값' };
+  }
+
+  function homeMail(){
+    const 통 = document.getElementById('homeMail');
+    const 말 = document.getElementById('homeMailDesc');
+    if (!통) return;
+    const 기 = 발송기준();
+
+    /* '오늘'로 세면 아침 수집이 돌기 전에 열었을 때 0이 뜬다. 마지막으로
+       수집이 돌아간 날을 찾아 그 날치만 본다. */
+    let 막날 = '';
+    (allArticles || []).forEach(function (a){
+      const d = extractDateOnly(a.collectedAt);
+      if (d && d > 막날) 막날 = d;
+    });
+    if (!막날){
+      말.textContent = '아직 수집된 기사가 없습니다.';
+      통.innerHTML = '';
+      return;
+    }
+
+    const 그날 = (allArticles || []).filter(function (a){ return extractDateOnly(a.collectedAt) === 막날; });
+    const 넘은것 = sortByDateDesc(그날.filter(function (a){
+      const i = Number(a.importance), r = Number(a.relevance), u = Number(a.urgency);
+      if (!isFinite(i) || !isFinite(r) || !isFinite(u)) return false;
+      return i >= 기.중요도 && r >= 기.관련성 && u >= 기.긴급성;
+    }));
+    const 몇 = Math.max(3, Number(설정().뉴스수) || 15);
+    const 것들 = 넘은것.slice(0, 몇);
+
+    document.getElementById('homeMailTitle').textContent = '주요 뉴스 · ' + 막날;
+    말.innerHTML = '가장 최근 수집(<b>' + escapeHtml(막날) + '</b>) ' + 그날.length + '건 가운데 ' +
+      '메일에 실리는 기준(중요도 ' + 기.중요도 + '↑ · 관련성 ' + 기.관련성 + '↑ · 긴급성 ' + 기.긴급성 + '↑, ' +
+      기.어디서 + ')을 넘은 <b>' + 넘은것.length + '건</b>' +
+      (넘은것.length > 것들.length ? ' 가운데 ' + 것들.length + '건' : '') + '입니다.';
+
+    if (!것들.length){
+      통.innerHTML = '<div class="empty-note">그날 수집분 가운데 기준을 넘은 기사가 없습니다. ' +
+        '기준은 <b>대시보드 설정</b>에서 바꿀 수 있습니다.</div>';
+      return;
+    }
     통.innerHTML = 것들.map(function(a){
       const 별 = getStars(a.importance);
       const 말 = String(a.reason || '');
@@ -4127,7 +4384,7 @@
       return;
     }
     const 이레 = homeDay(6);
-    통.innerHTML = co목록().map(function (k){
+    통.innerHTML = co보임().map(function (k){
       const c = co셈(k);
 
       /* 가장 크게 움직인 지표 하나. 어느 구간으로 재느냐를 지표마다 달리
@@ -4178,9 +4435,10 @@
 
   function renderHome(){
     if (!document.getElementById('homeKpi')) return;
+    설정보이기();
     homeKpi();
     homeCo();
-    homeFeed();
+    homeMail();
     homeGroups();
     homeRisk();
     homeInd();
@@ -4638,6 +4896,7 @@
     document.getElementById('minRelevanceVal').textContent = minRelevance;
     document.getElementById('minUrgency').value = minUrgency;
     document.getElementById('minUrgencyVal').textContent = minUrgency;
+    기준받아쓰기(minImportance, minRelevance, minUrgency);
 
     if (data.sendTimes && data.sendTimes.length > 0) {
       applyTimeSelection(data.sendTimes);
@@ -4924,6 +5183,33 @@
     document.getElementById('loadCodeBtn').addEventListener('click', loadByCode);
     document.getElementById('instantCheckBtn').addEventListener('click', instantCheck);
     document.getElementById('submitBtn').addEventListener('click', submitForm);
+    [['cfgImp','cfgImpVal','중요도'], ['cfgRel','cfgRelVal','관련성'], ['cfgUrg','cfgUrgVal','긴급성']]
+      .forEach(function (짝){
+        document.getElementById(짝[0]).addEventListener('input', function (){
+          document.getElementById(짝[1]).textContent = this.value;
+          const c = 설정();
+          c.기준[짝[2]] = Number(this.value);
+          c.기준.손댐 = 1;          // 사람이 손댄 뒤로는 신청 화면 값을 덮어쓰지 않는다
+          설정저장();
+          homeMail();
+        });
+      });
+    document.getElementById('cfgNum').addEventListener('input', function (){
+      document.getElementById('cfgNumVal').textContent = this.value;
+      설정().뉴스수 = Number(this.value);
+      설정저장();
+      homeMail();
+    });
+    document.getElementById('cfgReset').addEventListener('click', function (){
+      if (!confirm('대시보드 설정을 기본값으로 되돌립니다. 계속할까요?')) return;
+      try { localStorage.removeItem('lx-cfg'); } catch (e){}
+      cfg = null;
+      설정그리기();
+      설정보이기();
+      coDraw();
+      renderHome();
+    });
+
     bindRangeDisplay('minImportance', 'minImportanceVal');
     bindRangeDisplay('minRelevance', 'minRelevanceVal');
     bindRangeDisplay('minUrgency', 'minUrgencyVal');
@@ -4933,6 +5219,8 @@
 
     ['tab-home', 'tab-co'].forEach(function (판){
       document.getElementById(판).addEventListener('click', function(e){
+        const 열기 = e.target.closest('button[data-co-open]');
+        if (열기){ const 짝 = 열기.dataset.coOpen.split('|'); co열기(짝[0], 짝[1]); return; }
         const b = e.target.closest('button[data-goto]');
         if (b) showTab(b.dataset.goto);
       });
@@ -4972,12 +5260,16 @@
     const tabFromUrl = urlParams.get('tab');
     const coFromUrl = urlParams.get('co');
     if (coFromUrl) { coTab = coFromUrl; 기억('lx-co', coTab); }
-    if (tabFromUrl === 'index' || tabFromUrl === 'comp'){
-      coSub = tabFromUrl === 'index' ? 'index' : 'comp';
+    const 옛것 = { index: 'index', comp: 'comp', risk: 'risk' };
+    if (옛것[tabFromUrl]){
+      coSub = 옛것[tabFromUrl];
       기억('lx-co-sub', coSub);
+      /* 실리코시스는 하우시스에 걸린 리스크다. ?tab=risk 로 들어온 사람을
+         엉뚱한 계열사의 빈 리스크 화면에 떨어뜨리지 않는다. */
+      if (tabFromUrl === 'risk' && !coFromUrl){ coTab = '하우시스'; 기억('lx-co', coTab); }
     }
-    const initialTab = (tabFromUrl === 'index' || tabFromUrl === 'comp') ? 'co'
-      : (['home','search','apply','adhoc','risk','knowledge','co'].includes(tabFromUrl) ? tabFromUrl : 'home');
+    const initialTab = 옛것[tabFromUrl] ? 'co'
+      : (['home','search','apply','adhoc','knowledge','co','cfg'].includes(tabFromUrl) ? tabFromUrl : 'home');
     showTab(initialTab);
 
     loadArticles();

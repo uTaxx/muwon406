@@ -76,6 +76,7 @@
     <a href="./hub.html?tab=apply">✏️ 키워드 신청/변경</a>
     <a href="./hub.html?tab=adhoc">🔍 특정 키워드 검색</a>
     <a href="./hub.html?tab=risk">🪨 실리코시스 리스크</a>
+    <a href="./hub.html?tab=cfg">🎛 대시보드 설정</a>
     <a href="./hub.html?tab=co">🏢 계열사 들여다보기</a>
   </div>
 </div>
@@ -195,7 +196,11 @@ KCC: 분기보고서 제출
       <div class="field-desc">마지막 수집 건수(와 그 날짜) / 최근 7일 건수 / 최근 7일 중 중요도 4점 이상 / 최근 30일 실리코시스 보도. 아침 수집이 돌기 전에 열어도 "0건"이 뜨지 않도록, 오늘이 아니라 <b>마지막으로 수집이 돌아간 날</b>을 기준으로 셉니다.</div>
     </div>
     <div class="field-block">
-      <div class="field-name">계열사 칸 — 여기가 들머리입니다</div>
+      <div class="field-name">주요 뉴스 — 첫 화면의 첫 카드</div>
+      <div class="field-desc"><b>가장 최근 수집분</b> 가운데 <b>메일에 실리는 기준</b>(중요도·관련성·긴급성 셋을 다 넘는 것)을 넘은 기사만 올립니다. 「오늘 아침 메일로 나간 것」을 화면에서 다시 보는 자리입니다. 점수가 아예 없는 기사(AI 제외 그룹)는 메일에 안 나가므로 여기서도 빠집니다. 오른쪽 위 <b>「전체 기사 →」</b>를 누르면 기준과 상관없이 전부 있는 조회 화면으로 넘어갑니다.<br>기준값은 <a href="./hub.html?tab=apply">신청/변경 탭</a>을 한 번 열면 그 계정 것을 그대로 가져다 쓰고, 아직 못 읽었으면 권장 기본값을 씁니다 — 어느 쪽인지는 카드 머리에 적혀 있습니다. <a href="./hub.html?tab=cfg">대시보드 설정</a>에서 직접 바꿀 수도 있고, 한 번 손대면 그 뒤로는 신청 화면 값이 덮어쓰지 않습니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">계열사 칸 — 그 아래</div>
       <div class="field-desc">숫자 넉 장 바로 아래에 계열사가 늘어섭니다. 칸마다 <b>경쟁사 몇 곳 · 지표 몇 개 · 최근 7일 기사 몇 건</b>과, 그 계열사 지표 가운데 <b>가장 크게 움직인 것 하나</b>가 적혀 있습니다. 칸을 누르면 그 계열사 안으로 들어갑니다. 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지 「경쟁사 전체가 어떤가」가 아니라서, 계열사를 먼저 고르게 두었습니다.</div>
     </div>
     <div class="field-block">
@@ -249,7 +254,7 @@ KCC: 분기보고서 제출
 
   <section class="card">
     <div class="step-head"><span class="step-num">6</span><span class="step-title">실리코시스 리스크</span></div>
-    <div class="step-desc"><a href="./hub.html?tab=risk">실리코시스 리스크 탭</a>은 미국 엔지니어드스톤 관련 실리코시스(규폐증) 소송·규제 동향만 따로 모아 보여주는 전용 화면입니다.</div>
+    <div class="step-desc"><a href="./hub.html?tab=risk">계열사 → LX하우시스 → 리스크 관리</a>에 있습니다. 미국 엔지니어드스톤 관련 실리코시스(규폐증) 소송·규제 동향만 따로 모아 보여줍니다. 예전에는 따로 선 탭이었는데, <b>이 리스크가 걸린 계열사가 하우시스</b>라서 그 안으로 넣었습니다. 옛 주소(<code>?tab=risk</code>)로 들어와도 그리로 갑니다.</div>
     <div class="body-text">
       LX하우시스가 미국에서 엔지니어드스톤을 생산하는 만큼, 현지 소송 확산 여부를 별도로 추적하기 위한 탭입니다.
       별도로 신청하거나 설정할 것은 없고, <b>전체 기사 조회에 이미 수집된 기사 중</b> 실리코시스·엔지니어드스톤·규폐증·인조대리석 등
@@ -307,8 +312,8 @@ KCC: 분기보고서 제출
       <div class="field-desc">환율·금리처럼 어느 계열사에나 함께 걸리는 값은 <b>계열사 지표 바로 아래 따로 된 상자</b>에 늘 있습니다. 계열사를 바꿔도 이 상자는 그대로입니다. 한 상자에 섞지 않는 까닭은 「이게 우리 것인가 공통인가」를 지표마다 다시 가리게 되기 때문입니다. 드라이브에서도 공통은 제 파일 하나로 따로 있어서, 엑셀 단추도 둘입니다.</div>
     </div>
     <div class="field-block">
-      <div class="field-name">그 계열사에 딸린 다른 화면</div>
-      <div class="field-desc">하우시스를 고르면 위쪽에 <b>미국 엔지니어드스톤 실리코시스</b>로 건너가는 줄이 뜹니다. 그 리스크가 걸려 있는 계열사가 하우시스이기 때문입니다.</div>
+      <div class="field-name">리스크 관리</div>
+      <div class="field-desc">세 번째 하위 탭입니다. 그 계열사에 걸린 소송·규제·안전 이슈를 모으는 자리로, 지금 속이 찬 것은 <b>하우시스(미국 엔지니어드스톤 실리코시스)</b> 하나뿐입니다. 나머지 계열사는 <b>자리만 잡아 두었습니다</b> — 자리가 있어야 무엇을 채워야 하는지 보이기 때문입니다. 자료는 구글드라이브 <b>LX Group MI / 리스크 관리 / 〈계열사〉</b> 폴더에 모으고, 화면에서 폴더로 바로 갈 수 있습니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">경쟁사 성과 — 어디서 오는 숫자인가</div>
@@ -427,6 +432,31 @@ KCC: 분기보고서 제출
     <div class="field-block">
       <div class="field-name">「아직 값이 없는 지표」</div>
       <div class="field-desc">무엇을 볼지는 정해 뒀지만 아직 받아오지 않는 것입니다. 숨기지 않고 이름을 띄웁니다 — 없는 줄 모르고 지나치는 것보다 낫습니다.</div>
+    </div>
+  </section>
+
+  <section class="card" id="cfg">
+    <div class="step-head"><span class="step-num">9</span><span class="step-title">대시보드 설정</span></div>
+    <div class="step-desc">머리말의 <b>🎛 대시보드 설정</b>에서 무엇을 어디에 띄울지 직접 켜고 끕니다. 만든 사람에게 요청하지 않아도 바꿀 수 있습니다.</div>
+    <div class="field-block">
+      <div class="field-name">이 브라우저에만 저장됩니다</div>
+      <div class="field-desc">서버로는 아무것도 보내지 않습니다. 그래서 <b>사람마다 제 화면을 다르게</b> 둘 수 있고, 다른 사람 화면은 바뀌지 않습니다. 브라우저 자료를 지우면 기본값으로 돌아갑니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">첫 화면에 넣을 것</div>
+      <div class="field-desc">위 숫자 넉 장 / 주요 뉴스 / 계열사 칸 / 그룹별 수집 현황 / 실리코시스 요약 / 공통 지표 — 여섯 가지를 켜고 끕니다. 끈 카드는 <b>감출 뿐 지우지 않습니다</b>. 다시 켰을 때 그 안의 그래프와 펼침 상태가 그대로 살아 있어야 하기 때문입니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">주요 뉴스 기준</div>
+      <div class="field-desc">중요도·관련성·긴급성 셋과 <b>최대 몇 건</b>까지 올릴지를 정합니다. 메일에 실리는 기준과 같게 두면 「오늘 메일로 나간 것」이 그대로 보입니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">계열사 화면에 넣을 것 · 보일 계열사</div>
+      <div class="field-desc">경쟁사 성과 / 시장 지표 / 리스크 관리 가운데 필요한 것만 남길 수 있고, 계열사 목록에서도 안 보고 싶은 것을 뺄 수 있습니다. 지금 보고 있던 하위 탭을 꺼 버리면 켜져 있는 첫 것으로 옮겨 갑니다 — 빈 화면만 남지 않게 하려는 것입니다. 계열사를 <b>전부 꺼 버리면 전부 보여 줍니다</b>. 아무것도 없는 화면보다 낫고, 껐다는 사실은 설정 화면에 그대로 남아 있습니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">기본값으로 되돌리기</div>
+      <div class="field-desc">맨 아래 단추 하나로 처음 상태로 돌아갑니다.</div>
     </div>
   </section>
 
