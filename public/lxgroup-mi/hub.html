@@ -230,8 +230,8 @@
     #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
     #indBody .ind-block{margin-bottom:0;}
     /* 경쟁사도 두 칸으로. 회사가 열넷이라 한 줄로는 끝이 안 보인다. */
-    #compBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
-    #compBody .ind-block{margin-bottom:0;}
+    #compBody, #groupBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
+    #compBody .ind-block, #groupBody .ind-block{margin-bottom:0;}
     /* 기사도 두 칸으로. 쉰 건을 한 줄로 쌓으면 일곱 화면이 넘어간다.
        읽는 차례는 왼쪽에서 오른쪽, 그다음 아랫줄이다 — 신문 지면과 같다.
        리스크 목록의 연도 구분선만 두 칸을 가로지른다. */
@@ -680,13 +680,6 @@
   }
   .ind-nav .tab-btn.active i, .grp-nav .tab-btn.active i{opacity:.8;}
 
-  /* 우리 계열사 줄은 살짝 띄워 둔다. 색만으로는 목록이 길어질수록 묻힌다. */
-  .ind-leg.comp-us{background:var(--green-tint); border-radius:9px; margin-left:-6px; padding-left:6px; padding-right:6px;}
-  .ind-leg.comp-us .ind-leg-t b{color:var(--green-dark);}
-  /* 한 블록이 한 회사다. 우리 회사는 왼쪽 띠로 표시한다 — 안의 부문들은
-     저마다 색이 있어야 하므로, 우리 것이라는 표는 블록 바깥에 둔다. */
-  .ind-block.comp-us{border-left:3px solid var(--green); padding-left:14px;}
-  .ind-block.comp-us .ind-bhead b{color:var(--green);}
   /* 접힌 옛 부문을 펴는 버튼. 목록의 한 줄처럼 보이되 눌리는 것으로 읽히게. */
   .comp-old{display:block; width:100%; text-align:left; margin-top:2px;
     padding:7px 8px; border:1px dashed var(--line); border-radius:9px;
@@ -694,8 +687,6 @@
     font-weight:700; cursor:pointer;}
   .comp-old:hover{border-color:var(--muted); color:var(--text);}
   .comp-old span{display:block; margin-top:2px; font-weight:400; font-size:10.5px;}
-  .comp-tag{display:inline-block; margin-left:6px; background:var(--green); color:#fff;
-    font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; vertical-align:middle;}
 
   /* 매출액 아래 붙는 영업이익·이익률 한 줄. 큰 숫자 하나만 보고 지나가는
      사람에게도 '얼마 팔아 얼마 남겼나'가 같이 들어와야 한다. */
@@ -1321,6 +1312,20 @@
       <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
       <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
       <button type="button" class="tab-btn" data-co-sub="risk">⚠️ 리스크 관리</button>
+      <button type="button" class="tab-btn" data-co-sub="group">🏢 그룹 실적</button>
+    </div>
+
+    <!-- 그룹 실적은 계열사 하나가 아니라 그룹 전체를 본다. 그래서 이 탭에서는
+         위쪽 계열사 선택을 감춘다 — 남겨 두면 무엇을 골라도 화면이 안 바뀐다. -->
+    <div id="co-group" class="co-pane">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">LX그룹 실적</span></div>
+      <div class="step-desc" id="groupHeadDesc"></div>
+      <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
+      <div class="ind-grid" id="groupBody"></div>
+      <div class="empty-note" id="groupEmpty" style="display:none;"></div>
+      <div class="word-hint" id="groupGap" style="display:none;"></div>
+    </section>
     </div>
 
     <div id="co-comp" class="co-pane">
@@ -1669,7 +1674,8 @@
   const CFG_SUB = [
     { k: 'comp',  이름: '경쟁사 성과',  말: 'DART 공시의 부문별 매출·영업이익' },
     { k: 'index', 이름: '시장 지표',    말: '그 계열사에 걸리는 지표 + 공통 지표' },
-    { k: 'risk',  이름: '리스크 관리',  말: '그 계열사에 걸린 소송·규제·안전 이슈' }
+    { k: 'risk',  이름: '리스크 관리',  말: '그 계열사에 걸린 소송·규제·안전 이슈' },
+    { k: 'group', 이름: '그룹 실적',    말: '계열사 실적을 한 화면에. 계열사를 안 가린다' }
   ];
   const CFG_기본 = {
     /* 환율·금리를 맨 위에 두는 까닭은 아침에 제일 먼저 확인하는 값이기 때문이다.
@@ -1679,8 +1685,8 @@
     /* 카드 폭. 1 = 한 줄을 다 쓴다, 2 = 절반만 써서 옆 카드와 나란히 선다.
        넓은 화면에서만 뜻이 있고, 좁은 화면에서는 어차피 다 쌓인다. */
     폭:   { mail: 1, co: 1, ind: 1, groups: 2, risk: 2 },
-    하위순서: ['comp', 'index', 'risk'],
-    sub:  { comp: 1, index: 1, risk: 1 },
+    하위순서: ['comp', 'index', 'risk', 'group'],
+    sub:  { comp: 1, index: 1, risk: 1, group: 1 },
     계열사: {},                       // 빈 것은 '전부 보임'
     기준: { 중요도: 2, 관련성: 1, 긴급성: 1 },
     뉴스수: 15,
@@ -1941,7 +1947,7 @@
   }
 
   let coTab = 기억('lx-co') || '하우시스';
-  const CO_SUBS = ['comp', 'index', 'risk'];
+  const CO_SUBS = ['comp', 'index', 'risk', 'group'];
   let coSub = CO_SUBS.indexOf(기억('lx-co-sub')) >= 0 ? 기억('lx-co-sub') : 'comp';
   /* 어느 계열사에 어떤 리스크를 따로 관리하는지는 설정 스프레드시트의
      「리스크」 시트가 정한다. 화면은 그 목록을 보고 그릴 뿐이라, 새 리스크를
@@ -2019,6 +2025,10 @@
       document.getElementById('co-' + k).classList.toggle('on', coSub === k);
     });
 
+    /* 그룹 실적은 계열사를 가리지 않는다. 선택 줄을 남겨 두면 무엇을 눌러도
+       화면이 안 바뀌어 고장으로 읽힌다. */
+    document.getElementById('coTabs').style.display = coSub === 'group' ? 'none' : '';
+
     /* 리스크 관리: 등록된 것이 있으면 그 화면을, 없으면 자리만 보여 준다. */
     const 것들 = co리스크(coTab);
     const 지금 = 지금리스크();
@@ -2040,7 +2050,7 @@
         '" data-risk="' + r.차례 + '">' + escapeHtml(r.이름) + '</button>';
     }).join('') : '';
 
-    if (coSub === 'comp') loadComp(false);
+    if (coSub === 'comp' || coSub === 'group') loadComp(false);
     else if (coSub === 'index') loadIndex(false);
     else {
       /* 등록표가 지표 웹훅에 실려 오므로 리스크 화면도 그것을 기다린다. */
@@ -3660,10 +3670,8 @@
   let compOld = {};            // 블록마다 옛 부문까지 펼쳐 보는지
   let compGraph = {};          // 커서·표·엑셀이 값을 꺼내 쓰는 그래프
 
-  /* 우리 것은 붉게, 남의 것은 가라앉은 색으로. 규모 순이 아니라 '우리와 남'이
-     먼저 눈에 들어와야 하는 화면이다. */
-  const COMP_US = '#A32B26';
-  const COMP_THEM = ['#35566B', '#6E8CA0', '#4A6B5A', '#8A7B6B', '#9AAFBD', '#B0A090', '#5E6B7A'];
+  /* 한 블록 안의 부문을 가르는 색. 붉은색은 적자에만 쓰므로 여기엔 없다. */
+  const COMP_색 = ['#35566B', '#6E8CA0', '#4A6B5A', '#8A7B6B', '#9AAFBD', '#B0A090', '#5E6B7A'];
 
   /* 분기는 'YYYYQn' 한 가지 꼴로만 받는다. 글자 크기순 정렬이 곧 시간순이라
      날짜로 바꾸는 일이 없다. 축에는 '25.3Q'로 줄여 적는다 — 눈금이 예닐곱 개라
@@ -4144,11 +4152,9 @@
     });
     /* 색은 목록 차례대로 한 번만 정한다. 지표를 바꿀 때마다 다시 매기면
        같은 부문이 매출 그래프에서는 파랑, 이익 그래프에서는 초록이 된다.
-       한 블록이 한 회사이므로 붉은색은 여기서 쓰지 않는다 — 우리 회사인지는
-       블록 제목의 「우리」 표로 알린다. 부문마다 붉으면 아무것도 도드라지지
-       않는다. */
+       붉은색은 적자에만 쓴다. 부문마다 붉으면 아무것도 도드라지지 않는다. */
     const 온골 = 것들.map(function (x, i){
-      return { x: x, 이름: comp부문이름(x), 색: COMP_THEM[i % COMP_THEM.length] };
+      return { x: x, 이름: comp부문이름(x), 색: COMP_색[i % COMP_색.length] };
     });
 
     /* 회사가 보고서마다 부문 이름을 바꾸면 옛 이름이 시트에 그대로 남는다.
@@ -4297,16 +4303,14 @@
 
     /* 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그 이름을 적는다.
        셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를 아래 버튼가 알린다. */
-    const 우리냐 = 것들.some(function (x){ return x.우리편; });
     const 부문말 = 골.length > 1
       ? '부문 ' + 골.length + '개'
       : comp부문이름((골[0] || {}).x || 것들[0]);
 
-    return '<div class="ind-block' + (우리냐 ? ' comp-us' : '') + '" data-blk="' + escapeHtml(열쇠) + '"' +
+    return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '"' +
         ' data-hoesa="' + escapeHtml(회사) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
-        (우리냐 ? '<span class="comp-tag">우리</span>' : '') +
         '<span>' + escapeHtml(최신 ? 칸눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
         기간선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
@@ -4317,7 +4321,7 @@
     '</div>';
   }
 
-  function compBlocks(줄들){
+  function compBlocks(줄들, 열쇠앞){
     /* 회사로 묶는다. 부문으로 묶으면 한 탭에 서른 칸이 넘게 서서, 어느 회사
        이야기인지가 제목마다 흩어진다. 회사가 바깥이고 부문이 그 안이다. */
     const 통 = {};
@@ -4328,8 +4332,7 @@
       통[회사].push(x);
     });
 
-    /* 우리 것을 맨 위에, 그 아래는 회사 덩치 순 — 부문 매출을 모두 더해 견준다.
-       덩치 순으로 서면 우리가 어디쯤인지가 한눈에 들어온다. */
+    /* 회사 매출 규모 순으로 세운다 — 제 회사가 어디쯤인지가 한눈에 들어온다. */
     const R = compR('연');
     const 덩치 = function (것들){
       /* 있는 부문을 모두 더하면 안 된다. 회사가 보고서마다 부문 이름을 바꾸면
@@ -4345,13 +4348,30 @@
       return 합;
     };
     return Object.keys(통).sort(function (a, b){
-      const 가 = 통[a].some(function (x){ return x.우리편; });
-      const 나 = 통[b].some(function (x){ return x.우리편; });
-      if (가 !== 나) return 가 ? -1 : 1;
       return 덩치(통[b]) - 덩치(통[a]);
     }).map(function (회사){
-      return compBlock(회사, 통[회사], compTab + '|' + 회사);
+      return compBlock(회사, 통[회사], 열쇠앞 + '|' + 회사);
     }).join('');
+  }
+
+  /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
+     부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만 있고
+     속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로 막아 둔다 —
+     빈 블록은 어느 쪽 잘못이든 읽는 사람에게는 고장이다.
+     경쟁사 성과와 그룹 실적이 같은 규칙을 써야 해서 함수로 뺐다. */
+  function comp쓸것(줄들){
+    return (줄들 || []).filter(function (x){
+      const 점들 = (x.해 || []).concat(x.분기 || []);
+      if (!점들.length) return false;
+      /* 부문 이름 자리에 기간이 들어앉는 일이 있다 — 자본변동표의 '당기말'이나
+         '제26(당)기' 같은 것이 부문표로 잘못 읽힌 것이다. 이름이 기간꼴이거나
+         매출액이 한 해도 없으면 부문이 아니다. 부문 실적인데 매출이 아예 없는
+         일은 없다. */
+      const 이름 = String(x.부문 || '').replace(/\s/g, '');
+      if (이름 && /^(당기|전기|당분기|전분기|당반기|전반기|기초|기말)(말|초)?$/.test(이름)) return false;
+      if (이름 && /^제?\s*\d+\s*\(?[당전]?\)?\s*기|^20\d\d년?$/.test(이름)) return false;
+      return 점들.some(function (p){ return p.매출액 !== null && p.매출액 !== undefined && p.매출액 !== ''; });
+    });
   }
 
   function compDraw(){
@@ -4364,27 +4384,17 @@
 
     document.getElementById('compHeadTitle').textContent = co이름(compTab) + ' 경쟁사';
     document.getElementById('compHeadDesc').innerHTML =
-      'DART 공시의 부문별 매출·영업이익 · 우리 계열사는 붉은 띠 ' +
+      'DART 공시의 부문별 매출·영업이익 · 매출 규모 순 ' +
       '<a href="manual.html#co" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
     /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
        부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만
        있고 속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로
        막아 둔다 — 빈 블록은 어느 쪽 잘못이든 읽는 사람에게는 고장이다. */
-    const 것들 = 실적.filter(function (x){
-      if ((x.계열사 || []).indexOf(compTab) < 0) return false;
-      const 점들 = (x.해 || []).concat(x.분기 || []);
-      if (!점들.length) return false;
-      /* 부문 이름 자리에 기간이 들어앉는 일이 있다 — 자본변동표의 '당기말'이나
-         '제26(당)기' 같은 것이 부문표로 잘못 읽힌 것이다. 이름이 기간꼴이거나
-         매출액이 한 해도 없으면 부문이 아니다. 부문 실적인데 매출이 아예 없는
-         일은 없다. */
-      const 이름 = String(x.부문 || '').replace(/\s/g, '');
-      if (이름 && /^(당기|전기|당분기|전분기|당반기|전반기|기초|기말)(말|초)?$/.test(이름)) return false;
-      if (이름 && /^제?\s*\d+\s*\(?[당전]?\)?\s*기|^20\d\d년?$/.test(이름)) return false;
-      return 점들.some(function (p){ return p.매출액 !== null && p.매출액 !== undefined && p.매출액 !== ''; });
-    });
-    document.getElementById('compBody').innerHTML = compBlocks(것들);
+    const 것들 = comp쓸것(실적.filter(function (x){
+      return (x.계열사 || []).indexOf(compTab) >= 0;
+    }));
+    document.getElementById('compBody').innerHTML = compBlocks(것들, compTab);
     document.querySelectorAll('#compBody .ind-tbl-wrap').forEach(function (w){
       w.scrollTop = w.scrollHeight;
     });
@@ -4410,11 +4420,66 @@
         : '');
   }
 
+  /* ---------- 그룹 실적 ----------
+     경쟁사 성과는 계열사 하나를 남과 견주는 화면이다. 이 화면은 그 반대로,
+     계열사를 가리지 않고 그룹 회사만 한자리에 모은다 — 「지금 그룹이 어떤가」를
+     보려고 탭을 여섯 번 누르지 않게 하려는 것이다.
+
+     그리는 방법은 경쟁사와 같으므로 블록 함수를 그대로 쓰고, 열쇠 앞에 '그룹'을
+     붙여 펼침·기간·보기 상태만 따로 둔다. 같은 회사를 두 탭에서 보더라도 한쪽에서
+     펼친 그래프가 다른 쪽까지 펼쳐지지 않는다. */
+  const 경쟁사시트 = 'https://docs.google.com/spreadsheets/d/1emQDc0-bWdSIjQm61yvP2eu38JUJqx3VSzQhFQEAboI/edit';
+
+  function groupDraw(){
+    if (!compData) return;
+    const 것들 = comp쓸것((compData.실적 || []).filter(function (x){ return x.우리편; }));
+
+    document.getElementById('groupHeadDesc').innerHTML =
+      'DART 공시의 부문별 매출·영업이익 · 계열사를 가리지 않고 그룹 회사만 모읍니다 · 매출 규모 순 ' +
+      '<a href="manual.html#co" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
+
+    document.getElementById('groupBody').innerHTML = compBlocks(것들, '그룹');
+    document.querySelectorAll('#groupBody .ind-tbl-wrap').forEach(function (w){
+      w.scrollTop = w.scrollHeight;
+    });
+
+    const 회사들 = [];
+    const 있는곳 = {};
+    것들.forEach(function (x){
+      const c = String(x.회사명 || '').trim();
+      if (c && 회사들.indexOf(c) < 0) 회사들.push(c);
+      (x.계열사 || []).forEach(function (k){ 있는곳[k] = 1; });
+    });
+
+    const 빈칸 = document.getElementById('groupEmpty');
+    빈칸.style.display = 것들.length ? 'none' : 'block';
+    빈칸.textContent = '「경쟁사」 시트에 우리편으로 등록된 회사가 아직 없습니다.';
+
+    const 분기있음 = 것들.some(function (x){ return (x.분기 || []).length; });
+    document.getElementById('groupAsOf').textContent =
+      (compData.asOf ? compData.asOf + ' 기준 · ' : '') +
+      '계열사 ' + 회사들.length + '곳 · 부문 ' + 것들.length + '개' +
+      (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '');
+
+    /* 아직 시트에 없는 계열사를 밝혀 둔다. 두 곳만 뜨는 화면을 보고 '그룹에
+       회사가 둘뿐인가' 하고 오해하지 않도록, 없는 쪽을 이름으로 적는다. */
+    const 없는곳 = co목록().filter(function (k){ return !있는곳[k]; });
+    const 알림 = document.getElementById('groupGap');
+    if (!없는곳.length){ 알림.style.display = 'none'; 알림.innerHTML = ''; return; }
+    알림.style.display = 'block';
+    알림.innerHTML = '・아직 등록되지 않은 계열사: <b>' +
+      escapeHtml(없는곳.map(co이름).join(' · ')) + '</b><br>' +
+      '・<b>「경쟁사」 시트</b>에 회사명과 DART 고유번호(corp_code)를 적고 <b>소속</b>에 계열사를, ' +
+      '<b>우리편</b>을 TRUE로 두면 다음 수집분부터 이 자리에 함께 표시됩니다. ' +
+      '<a href="' + 경쟁사시트 + '" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">시트 열기 →</a>';
+  }
+
   function loadComp(force){
     if (compLoading) return;
-    if (compData && !force){ compDraw(); return; }
+    if (compData && !force){ compDraw(); groupDraw(); return; }
     compLoading = true;
     document.getElementById('compAsOf').textContent = '불러오는 중…';
+    document.getElementById('groupAsOf').textContent = '불러오는 중…';
     fetch(COMP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4424,25 +4489,32 @@
       .then(d => {
         compLoading = false;
         if (!d || d.ok === false){
-          document.getElementById('compAsOf').textContent = (d && d.error) || '경쟁사 실적을 불러오지 못했습니다.';
+          const 말 = (d && d.error) || '경쟁사 실적을 불러오지 못했습니다.';
+          document.getElementById('compAsOf').textContent = 말;
+          document.getElementById('groupAsOf').textContent = 말;
           return;
         }
         compData = d;
         compDraw();
+        groupDraw();
         homeCo();
       })
       .catch(() => {
         compLoading = false;
-        document.getElementById('compAsOf').textContent =
-          '경쟁사 실적을 불러오지 못했습니다. 아직 수집 중일 수 있습니다.';
+        const 말 = '경쟁사 실적을 불러오지 못했습니다. 아직 수집 중일 수 있습니다.';
+        document.getElementById('compAsOf').textContent = 말;
+        document.getElementById('groupAsOf').textContent = 말;
       });
   }
 
   그래프커서(document.getElementById('indBody'), indGraph);
   그래프커서(document.getElementById('indCommonBody'), indGraph);
   그래프커서(document.getElementById('compBody'), compGraph);
+  그래프커서(document.getElementById('groupBody'), compGraph);
 
-  document.getElementById('compBody').addEventListener('click', function (e){
+  /* 경쟁사 성과와 그룹 실적이 같은 블록을 쓰므로 누름도 같이 쓴다. 어느 쪽을
+     다시 그릴지만 다르다. */
+  function comp누름(e, 다시그리기){
     const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls], button[data-old]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
@@ -4461,8 +4533,10 @@
     else if (b.dataset.metric){ compView[k] = b.dataset.metric; delete compShape[k]; }
     else if (b.dataset.view === 'graph') compOpen[k] = !(compOpen[k] === true);
     else compTable[k] = !(compTable[k] === true);
-    compDraw();
-  });
+    다시그리기();
+  }
+  document.getElementById('compBody').addEventListener('click', function (e){ comp누름(e, compDraw); });
+  document.getElementById('groupBody').addEventListener('click', function (e){ comp누름(e, groupDraw); });
 
 
   /* ---------- 종합 상황판 ----------
