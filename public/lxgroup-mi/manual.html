@@ -443,8 +443,41 @@ KCC: 분기보고서 제출
     </div>
   </section>
 
+  <section class="card" id="deal">
+    <div class="step-head"><span class="step-num">9</span><span class="step-title">자본시장 딜</span></div>
+    <div class="step-desc">왼쪽 메뉴의 <b>「자본시장 딜」</b> 탭입니다. 금융감독원 전자공시(DART)의 <b>주요사항보고서</b>를 매일 아침 8시에 시장 전체로 훑어, 딜에 해당하는 것만 골라 쌓습니다. 뉴스는 「검토 중이라고 한다」까지지만, 공시는 회사가 직접 낸 사실입니다.</div>
+    <div class="field-block">
+      <div class="field-name">여섯 가지 구분</div>
+      <div class="field-desc"><b>지분취득</b>·<b>지분처분</b>(타법인 주식 양수·양도), <b>합병·분할</b>(회사 합병·분할·주식교환·주식이전), <b>영업·자산 양수도</b>(영업·유형자산·비유동자산 양수도), <b>유상증자</b>, <b>메자닌</b>(전환사채·신주인수권부사채·교환사채 발행)으로 나눕니다. 주요사항보고서에는 자기주식 취득이나 채무보증처럼 딜이 아닌 것도 섞여 있는데, 그런 것은 아예 담지 않습니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">처음 열면 M&A만 보입니다</div>
+      <div class="field-desc">60일에 900건이 넘는데 그중 600건 넘는 <b>유상증자·메자닌은 대개 코스닥 소형주의 자금 조달</b>이라 전략 부서가 볼 것이 아닙니다. 그래서 기본은 앞의 네 구분(M&A)만 켜 둡니다. 필요하면 위쪽 구분 버튼으로 켭니다 — 버튼마다 건수가 적혀 있어 누르기 전에 볼 것이 있는지 알 수 있습니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">계열사·경쟁사 표시</div>
+      <div class="field-desc">공시를 낸 회사가 <b>「경쟁사」 시트</b>에 등록돼 있으면 줄 왼쪽에 <b>계열사</b> 또는 <b>경쟁사</b> 배지가 붙고 바탕색이 달라집니다. 회사명이 아니라 <b>DART 고유번호(corp_code)</b>로 맞추므로 「주식회사」·괄호·띄어쓰기가 달라도 어긋나지 않습니다. 오른쪽 <b>「계열사·경쟁사만」</b>을 켜면 그것만 남습니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">좁혀 보기</div>
+      <div class="field-desc">구분 버튼, <b>회사명·보고서명 검색</b>, <b>시장</b>(유가증권·코스닥·코넥스·기타 비상장) 셋을 겹쳐 씁니다. 목록은 접수 최신순이고 마흔 건씩 끊어 보여 줍니다. 조건을 바꾸면 「더보기」로 펼친 것은 처음으로 되돌아갑니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">회사 이름을 누르면</div>
+      <div class="field-desc">DART 공시 원문으로 갑니다. 거래 상대방·금액·일정 같은 알맹이는 원문에 있고, 이 화면은 <b>무엇이 언제 나왔는지까지만</b> 보여 줍니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">얼마나 거슬러 올라가나</div>
+      <div class="field-desc">보통은 최근 <b>14일</b>치만 새로 받습니다 — 접수번호로 걸러내므로 겹쳐 받아도 줄이 늘지 않습니다. 구분을 새로 넣거나 분류 규칙을 고쳐 <b>어느 구분에 60일치가 아직 안 찼으면 그때만 60일을 다시 훑습니다</b>. 화면 위 「2026-07-09 ~ 2026-09-07 접수분」이 지금 쌓여 있는 기간입니다.</div>
+    </div>
+    <div class="field-block">
+      <div class="field-name">종합 상황판의 딜 카드</div>
+      <div class="field-desc">첫 화면에도 같은 자료로 <b>지분 거래 · 합병·분할 · 영업·자산 · 계열사·경쟁사</b> 네 숫자와 다섯 줄을 올립니다. 다섯 줄은 <b>계열사·경쟁사가 낀 것부터</b> 채우고, 남는 자리를 최근 M&A로 메웁니다. 카드를 끄거나 순서를 바꾸는 것은 대시보드 설정에서 합니다.</div>
+    </div>
+  </section>
+
   <section class="card" id="cfg">
-    <div class="step-head"><span class="step-num">9</span><span class="step-title">대시보드 설정</span></div>
+    <div class="step-head"><span class="step-num">10</span><span class="step-title">대시보드 설정</span></div>
     <div class="step-desc">머리말의 <b>🎛 대시보드 설정</b>에서 무엇을 어디에 띄울지 직접 켜고 끕니다. 만든 사람에게 요청하지 않아도 바꿀 수 있습니다.</div>
     <div class="field-block">
       <div class="field-name">이 브라우저에만 저장됩니다</div>
@@ -452,7 +485,7 @@ KCC: 분기보고서 제출
     </div>
     <div class="field-block">
       <div class="field-name">첫 화면 구성 — 켜고 끄기 + 순서 바꾸기</div>
-      <div class="field-desc">공통 지표 / 주요 뉴스 / 계열사 카드 / 그룹별 수집 현황 / 실리코시스 요약 — 다섯 가지를 <b>체크로 켜고 끄고, ▲▼로 위아래 순서를 바꾸고, 「1열/2열」 버튼으로 폭을 정합니다</b>. 왼쪽 숫자가 첫 화면에 나오는 차례입니다. 바꾸면 즉시 첫 화면에 반영되고, 다음에 열 때도 그대로 남습니다.<br><b>1열</b>은 그 카드가 한 줄을 다 쓰고, <b>2열</b>은 절반만 써서 <b>바로 옆에 오는 2열 카드와 나란히</b> 섭니다. 2열 카드 옆에 1열 카드가 오면 짝이 없으니 그 자리는 비워 둡니다 — 나란히 세우고 싶은 둘은 순서에서도 붙여 두세요. 기본값은 그룹별 수집 현황과 실리코시스 요약만 2열입니다. 폭은 가로 1024px 이상에서만 뜻이 있고, 휴대폰에서는 어차피 위아래로 쌓입니다.<br>끈 카드는 <b>감출 뿐 지우지 않습니다</b>. 다시 켰을 때 그 안의 그래프와 펼침 상태가 그대로 살아 있어야 하기 때문입니다.</div>
+      <div class="field-desc">공통 지표 / 주요 뉴스 / 계열사 카드 / 자본시장 딜 / 그룹별 수집 현황 / 실리코시스 요약 — 여섯 가지를 <b>체크로 켜고 끄고, ▲▼로 위아래 순서를 바꾸고, 「1열/2열」 버튼으로 폭을 정합니다</b>. 왼쪽 숫자가 첫 화면에 나오는 차례입니다. 바꾸면 즉시 첫 화면에 반영되고, 다음에 열 때도 그대로 남습니다.<br><b>1열</b>은 그 카드가 한 줄을 다 쓰고, <b>2열</b>은 절반만 써서 <b>바로 옆에 오는 2열 카드와 나란히</b> 섭니다. 2열 카드 옆에 1열 카드가 오면 짝이 없으니 그 자리는 비워 둡니다 — 나란히 세우고 싶은 둘은 순서에서도 붙여 두세요. 기본값은 그룹별 수집 현황과 실리코시스 요약만 2열입니다. 폭은 가로 1024px 이상에서만 뜻이 있고, 휴대폰에서는 어차피 위아래로 쌓입니다.<br>끈 카드는 <b>감출 뿐 지우지 않습니다</b>. 다시 켰을 때 그 안의 그래프와 펼침 상태가 그대로 살아 있어야 하기 때문입니다.</div>
     </div>
     <div class="field-block">
       <div class="field-name">주요 뉴스 기준</div>
@@ -478,7 +511,7 @@ KCC: 분기보고서 제출
 
 </main>
 
-<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=home">종합 상황판</a> · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">특정 키워드 검색</a> · <a href="./hub.html?tab=risk">실리코시스 리스크</a> · <a href="./hub.html?tab=co">계열사 현황</a></footer>
+<footer>LX Group MI 사내 전용 도구입니다. · <a href="./hub.html?tab=home">종합 상황판</a> · <a href="./hub.html?tab=search">전체 기사 조회</a> · <a href="./hub.html?tab=apply">키워드 설정 변경</a> · <a href="./hub.html?tab=adhoc">특정 키워드 검색</a> · <a href="./hub.html?tab=risk">실리코시스 리스크</a> · <a href="./hub.html?tab=co">계열사 현황</a> · <a href="./hub.html?tab=deal">자본시장 딜</a></footer>
 
 </body>
 </html>

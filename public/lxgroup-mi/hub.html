@@ -191,6 +191,39 @@
   .hi-c .chg{display:block; font-size:11.5px; font-weight:700; margin-top:2px; white-space:nowrap;}
   .hi-c .chg em{font-style:normal; font-weight:600; margin-left:4px;}
 
+  /* ── 자본시장 딜 ────────────────────────────────────────
+     공시는 건수가 많다(60일에 900건 넘음). 그냥 쌓으면 못 읽으므로 구분·시장·
+     회사명으로 좁혀서 본다. 우리 계열사나 등록한 경쟁사가 낸 공시는 바탕색을
+     달리해 목록 안에서 눈에 띄게 한다. */
+  .dl-kinds{display:flex; flex-wrap:wrap; gap:5px; margin:9px 0 8px;}
+  .dl-kind{background:var(--card); border:1.5px solid var(--line); color:var(--muted);
+    border-radius:9px; padding:6px 10px; font-family:inherit; font-size:12px;
+    font-weight:700; cursor:pointer; white-space:nowrap;}
+  .dl-kind.active{background:var(--green); border-color:var(--green); color:#fff;}
+  .dl-kind i{font-style:normal; font-weight:600; opacity:.72; margin-left:4px;
+    font-variant-numeric:tabular-nums;}
+  .dl-line{display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:9px;}
+  .dl-line input[type="text"], .dl-line select{width:auto; flex:1; min-width:132px;
+    padding:8px 11px; font-size:12.5px; margin:0;}
+  .dl-chk{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
+    color:var(--muted); white-space:nowrap; cursor:pointer;}
+  .dl-chk input{width:auto; margin:0;}
+
+  .dl-row{display:flex; gap:9px; align-items:baseline; padding:7px 0;
+    border-bottom:1px solid var(--line);}
+  .dl-row:last-child{border-bottom:none;}
+  .dl-row.mine{background:var(--green-tint); border-radius:8px; padding-left:9px; padding-right:9px;}
+  .dl-b{flex:1; min-width:0;}
+  .dl-t{font-size:13px; font-weight:700; color:var(--text); text-decoration:none;}
+  .dl-t:hover{color:var(--green);}
+  .dl-m{font-size:11px; color:var(--muted); margin-top:3px; line-height:1.6;}
+  .dl-d{font-size:11px; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .dl-tag{display:inline-block; font-size:10.5px; font-weight:700; border-radius:6px;
+    padding:1px 6px; margin-right:5px; background:var(--bg);
+    border:1px solid var(--line); color:var(--muted);}
+  .dl-tag.mine{background:var(--green); border-color:var(--green); color:#fff;}
+  .dl-tag.rival{background:#fff; border-color:var(--green); color:var(--green-dark);}
+
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
@@ -238,6 +271,9 @@
     #articleList, #riskTimeline{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
       column-gap:26px; align-items:start;}
     #riskTimeline .risk-year{grid-column:1 / -1;}
+    /* 딜 목록도 마찬가지다. 마흔 건을 한 줄로 쌓으면 화면 넷을 넘긴다. */
+    #dealList{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+      column-gap:26px; align-items:start;}
   }
 
   .kn-box{background:var(--bg); border:1px solid var(--line); border-radius:12px;
@@ -900,6 +936,7 @@
       <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
       <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
       <button type="button" class="tab-btn" data-tab="co">계열사<br> 현황</button>
+      <button type="button" class="tab-btn" data-tab="deal">자본시장<br> 딜</button>
     </div>
   </div>
 
@@ -948,6 +985,15 @@
       <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
         <button type="button" class="go-btn" data-co-open="하우시스|risk">자세히 →</button></div>
       <div id="homeRisk"></div>
+    </section>
+
+    <!-- 딜은 뉴스보다 늦지만 확실하다. 기사가 「검토 중」이라고 쓴 것이 실제로
+         이사회를 통과했는지는 이 카드에서만 알 수 있다. -->
+    <section class="card" data-card="deal">
+      <div class="step-head"><span class="step-num">💼</span><span class="step-title">자본시장 딜</span>
+        <button type="button" class="go-btn" data-goto="deal">전체 딜 →</button></div>
+      <div class="step-desc" id="homeDealDesc">불러오는 중…</div>
+      <div id="homeDeal"></div>
     </section>
   </div>
 
@@ -1426,6 +1472,27 @@
     </div>
   </div>
 
+  <!-- 탭 8: 자본시장 딜 — 뉴스와 달리 회사가 직접 낸 공시라 추측이 섞이지 않는다.
+       대신 늦다. 「매각 검토」 단계는 기사에만 나오고, 여기 올라올 때는 이미
+       이사회를 지난 뒤다. 둘을 같이 봐야 딜의 앞뒤가 맞는다. -->
+  <div id="tab-deal" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">💼</span><span class="step-title">자본시장 딜</span></div>
+      <div class="step-desc">DART 주요사항보고서를 매일 아침 시장 전체로 훑어, 지분 거래·합병·분할·영업양수도·유상증자·메자닌만 골라 모읍니다. <a href="manual.html#deal" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="ind-asof" id="dealAsOf">불러오는 중…</div>
+      <div class="dl-kinds" id="dealKinds"></div>
+      <div class="dl-line">
+        <input type="text" id="dealQ" placeholder="회사명·보고서명 검색">
+        <select id="dealMarket"><option value="">시장 전체</option></select>
+        <label class="dl-chk"><input type="checkbox" id="dealMine"> 계열사·경쟁사만</label>
+      </div>
+      <div class="step-desc" id="dealCount"></div>
+      <div id="dealList"></div>
+      <div class="empty-note" id="dealEmpty" style="display:none;"></div>
+      <button type="button" class="home-more" id="dealMore" style="display:none;"></button>
+    </section>
+  </div>
+
   </div>
 
 </main>
@@ -1446,6 +1513,7 @@
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
+  const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -1666,7 +1734,8 @@
     { k: 'co',     이름: '계열사 카드',     말: '계열사마다 한 줄 요약. 누르면 그 계열사로' },
     { k: 'groups',이름: '그룹별 수집 현황',말: '어느 그룹에 몇 건이 들어왔나' },
     { k: 'risk',   이름: '실리코시스 요약',말: '누적·최근 30일·중요 기사 수와 최신 한 건' },
-    { k: 'ind',    이름: '공통 지표',       말: '환율·금리 등 어느 계열사에나 걸리는 값' }
+    { k: 'ind',    이름: '공통 지표',       말: '환율·금리 등 어느 계열사에나 걸리는 값' },
+    { k: 'deal',   이름: '자본시장 딜',     말: 'DART 주요사항보고서에서 고른 M&A·증자 공시' }
   ];
   const CFG_KPI = [
     { k: 'kpi', 이름: '요약 숫자 4개', 말: '마지막 수집·최근 7일·중요 4↑·실리코시스를 카드 머리 오른쪽에' }
@@ -1696,11 +1765,11 @@
   const CFG_기본 = {
     /* 환율·금리를 맨 위에 두는 까닭은 아침에 제일 먼저 확인하는 값이기 때문이다.
        그 다음이 오늘 나간 뉴스다. 이 순서가 마음에 안 들면 설정에서 바꾼다. */
-    순서: ['ind', 'mail', 'co', 'groups', 'risk'],
-    home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1 },
+    순서: ['ind', 'mail', 'co', 'deal', 'groups', 'risk'],
+    home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1, deal: 1 },
     /* 카드 폭. 1 = 한 줄을 다 쓴다, 2 = 절반만 써서 옆 카드와 나란히 선다.
        넓은 화면에서만 뜻이 있고, 좁은 화면에서는 어차피 다 쌓인다. */
-    폭:   { mail: 1, co: 1, ind: 1, groups: 2, risk: 2 },
+    폭:   { mail: 1, co: 1, ind: 1, deal: 1, groups: 2, risk: 2 },
     하위순서: ['group', 'index', 'comp', 'risk'],
     sub:  { comp: 1, index: 1, risk: 1, group: 1 },
     계열사: {},                       // 빈 것은 '전부 보임'
@@ -2124,10 +2193,11 @@
     history.replaceState(null, '', url);
     /* 상황판은 시장지표까지 같이 보여주므로 여기서 한 번 부른다.
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
-    if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); }
+    if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
+    if (tabName === 'deal'){ loadDeal(false); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
 
@@ -4558,6 +4628,181 @@
   document.getElementById('groupBody').addEventListener('click', function (e){ comp누름(e, groupDraw); });
 
 
+  /* ---------- 자본시장 딜 ----------
+     뉴스는 「매각을 검토 중」까지만 말한다. 실제로 이사회를 지났는지, 값이
+     얼마인지는 회사가 낸 공시에만 있다. 그래서 DART 주요사항보고서를 매일
+     시장 전체로 훑어 딜에 해당하는 것만 골라 쌓는다(LXGroup_딜공시수집).
+
+     여기서 세는 것은 없다 — 건수도 구분도 조회 웹훅이 만들어 준 것을 그대로
+     쓴다. 화면과 서버가 같은 숫자를 따로 세면 반드시 어긋난다.
+
+     기본을 M&A 로 두는 까닭은 건수 때문이다. 60일에 900건이 넘는데 그중
+     600건 넘는 유상증자·메자닌은 대개 코스닥 소형주의 자금 조달이라
+     전략 부서가 볼 것이 아니다. 필요하면 버튼으로 켠다. */
+  const DEAL_MNA = ['지분취득', '지분처분', '합병·분할', '영업·자산 양수도'];
+  const DEAL_KINDS = DEAL_MNA.concat(['유상증자', '메자닌']);
+  const DEAL_STEP = 40;
+
+  let dealData = null;
+  let dealLoading = false;
+  let dealKind = 'M&A';
+  let dealShown = DEAL_STEP;
+
+  /* 시트에는 20260907 로 들어 있다. 사람이 읽는 자리에서는 늘 하이픈을 넣는다. */
+  function 딜날짜(s){
+    const t = String(s || '').trim();
+    return t.length === 8 ? t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6) : t;
+  }
+
+  function 딜쓸것(){
+    if (!dealData) return [];
+    const q = String((document.getElementById('dealQ') || {}).value || '').trim().toLowerCase();
+    const 시 = (document.getElementById('dealMarket') || {}).value || '';
+    const 우리 = !!(document.getElementById('dealMine') || {}).checked;
+    return (dealData.딜 || []).filter(function (x){
+      if (dealKind === 'M&A'){ if (DEAL_MNA.indexOf(x.구분) < 0) return false; }
+      else if (dealKind !== '전체' && x.구분 !== dealKind) return false;
+      if (시 && x.시장 !== 시) return false;
+      if (우리 && !x.관련) return false;
+      if (q){
+        const 글 = (String(x.회사 || '') + ' ' + String(x.보고서명 || '')).toLowerCase();
+        if (글.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function 딜줄(x){
+    const 관 = x.관련
+      ? '<span class="dl-tag ' + (x.관련 === '계열사' ? 'mine' : 'rival') + '">' +
+        escapeHtml(x.관련 + (x.계열사 ? ' · ' + x.계열사 : '')) + '</span>'
+      : '';
+    return '<div class="dl-row' + (x.관련 ? ' mine' : '') + '">' +
+      '<div class="dl-b">' + 관 +
+        '<a class="dl-t" href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=' +
+          encodeURIComponent(x.번호) + '" target="_blank" rel="noopener">' +
+          escapeHtml(x.회사 || '') + '</a>' +
+        '<div class="dl-m"><span class="dl-tag">' + escapeHtml(x.구분 || '') + '</span>' +
+          escapeHtml(x.보고서명 || '') + ' · ' + escapeHtml(x.시장 || '') + '</div>' +
+      '</div><div class="dl-d">' + escapeHtml(딜날짜(x.일)) + '</div></div>';
+  }
+
+  function dealDraw(){
+    const 목록 = document.getElementById('dealList');
+    if (!목록) return;
+    const 때 = document.getElementById('dealAsOf');
+    const 셈칸 = document.getElementById('dealCount');
+    const 빈칸 = document.getElementById('dealEmpty');
+    const 더 = document.getElementById('dealMore');
+
+    if (!dealData){
+      때.textContent = dealLoading ? '불러오는 중…' : '딜 공시를 불러오지 못했습니다.';
+      목록.innerHTML = '';
+      셈칸.textContent = '';
+      빈칸.style.display = 'none';
+      더.style.display = 'none';
+      return;
+    }
+
+    const 셈 = dealData.구분별 || {};
+    const 몫 = function (ks){ return ks.reduce(function (s, k){ return s + (셈[k] || 0); }, 0); };
+    때.textContent = 딜날짜(dealData.처음) + ' ~ ' + 딜날짜(dealData.마지막) + ' 접수분 · ' +
+      (dealData.총건수 || 0).toLocaleString() + '건' +
+      (dealData.asOf ? ' · ' + dealData.asOf + ' 기준' : '');
+
+    /* 구분 버튼. 건수를 같이 적어 두면 어느 쪽을 눌러야 볼 것이 있는지
+       누르기 전에 안다. */
+    const 버튼 = function (k, 이름, n){
+      return '<button type="button" class="dl-kind' + (dealKind === k ? ' active' : '') +
+        '" data-kind="' + escapeHtml(k) + '">' + escapeHtml(이름) +
+        '<i>' + n.toLocaleString() + '</i></button>';
+    };
+    document.getElementById('dealKinds').innerHTML =
+      버튼('M&A', 'M&A', 몫(DEAL_MNA)) +
+      DEAL_KINDS.map(function (k){ return 버튼(k, k, 셈[k] || 0); }).join('') +
+      버튼('전체', '전체', dealData.총건수 || 0);
+
+    /* 시장 선택은 받아온 것에 있는 시장만 넣는다. 고른 값은 다시 그려도
+       그대로 남아야 하므로 값이 그대로면 손대지 않는다. */
+    const 시통 = document.getElementById('dealMarket');
+    const 시들 = ['유가증권', '코스닥', '코넥스', '기타·비상장']
+      .filter(function (m){ return (dealData.시장별 || {})[m]; });
+    const 새것 = '<option value="">시장 전체</option>' +
+      시들.map(function (m){
+        return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) +
+          ' (' + (dealData.시장별[m] || 0).toLocaleString() + ')</option>';
+      }).join('');
+    if (시통.dataset.만든것 !== 새것){
+      const 골랐던 = 시통.value;
+      시통.innerHTML = 새것;
+      시통.dataset.만든것 = 새것;
+      시통.value = 골랐던;
+    }
+
+    const 것들 = 딜쓸것();
+    const 보일것 = 것들.slice(0, dealShown);
+    셈칸.textContent = 것들.length
+      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건' +
+        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+      : '';
+    목록.innerHTML = 보일것.map(딜줄).join('');
+    빈칸.style.display = 것들.length ? 'none' : '';
+    if (!것들.length) 빈칸.textContent = '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.';
+    if (것들.length > 보일것.length){
+      더.style.display = '';
+      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
+        Math.min(DEAL_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
+    } else {
+      더.style.display = 'none';
+    }
+  }
+
+  function loadDeal(force){
+    if (dealLoading) return;
+    if (dealData && !force){ dealDraw(); homeDeal(); return; }
+    dealLoading = true;
+    dealDraw();
+    fetch(DEAL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS' })
+    })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        dealLoading = false;
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'failed');
+        dealData = d;
+        dealDraw();
+        homeDeal();
+      })
+      .catch(function (){
+        dealLoading = false;
+        dealData = null;
+        dealDraw();
+        homeDeal();
+      });
+  }
+
+  /* 조건을 바꾸면 「더보기」로 펼쳐 둔 것은 처음으로 되돌린다 — 그러지 않으면
+     좁혔는데도 사백 건이 그대로 깔려 있어 좁힌 티가 안 난다. */
+  function 딜다시(){ dealShown = DEAL_STEP; dealDraw(); }
+
+  document.getElementById('dealKinds').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-kind]');
+    if (!b) return;
+    dealKind = b.dataset.kind;
+    딜다시();
+  });
+  document.getElementById('dealQ').addEventListener('input', 딜다시);
+  document.getElementById('dealMarket').addEventListener('change', 딜다시);
+  document.getElementById('dealMine').addEventListener('change', 딜다시);
+  document.getElementById('dealMore').addEventListener('click', function (){
+    dealShown += DEAL_STEP;
+    dealDraw();
+  });
+
+
+
   /* ---------- 종합 상황판 ----------
      탭을 하나씩 눌러 봐야 무슨 일이 있었는지 알 수 있던 것이 이 화면의 가장 큰
      불편이었다. 그래서 각 탭에서 제일 먼저 봐야 할 것만 뽑아 한 판에 놓는다.
@@ -4855,6 +5100,44 @@
     if (b) co열기(b.dataset.coGo);
   });
 
+  /* 딜 카드. 전체 목록은 딜 탭에 있으므로 여기서는 「무엇이 얼마나 있었나」와
+     우리 계열사·경쟁사가 낀 것부터 다섯 줄만 올린다. 관련 없는 딜로 다섯 줄을
+     다 채우면 정작 봐야 할 한 건이 밀린다. */
+  function homeDeal(){
+    const 말 = document.getElementById('homeDealDesc');
+    const 통 = document.getElementById('homeDeal');
+    if (!통) return;
+    if (!dealData){
+      말.textContent = dealLoading ? '불러오는 중…' : '딜 공시를 불러오지 못했습니다.';
+      통.innerHTML = '';
+      return;
+    }
+
+    const 셈 = dealData.구분별 || {};
+    말.textContent = 딜날짜(dealData.처음) + ' ~ ' + 딜날짜(dealData.마지막) + ' · 주요사항보고서 ' +
+      (dealData.총건수 || 0).toLocaleString() + '건';
+
+    const 칸 = function (n, l, 뜨겁나){
+      return '<div class="hr-c"><div class="hr-n' + (뜨겁나 ? ' hot' : '') + '">' +
+        n.toLocaleString() + '</div><div class="hr-l">' + l + '</div></div>';
+    };
+
+    const 전부 = dealData.딜 || [];
+    const 관련 = 전부.filter(function (x){ return x.관련; });
+    const 엠 = 전부.filter(function (x){ return !x.관련 && DEAL_MNA.indexOf(x.구분) >= 0; });
+    const 뽑 = 관련.concat(엠).slice(0, 5);
+
+    통.innerHTML =
+      '<div class="hr-row">' +
+        칸((셈['지분취득'] || 0) + (셈['지분처분'] || 0), '지분 거래', false) +
+        칸(셈['합병·분할'] || 0, '합병·분할', false) +
+        칸(셈['영업·자산 양수도'] || 0, '영업·자산', false) +
+        칸(관련.length, '계열사·경쟁사', 관련.length > 0) +
+      '</div>' +
+      (뽑.length ? 뽑.map(딜줄).join('')
+                 : '<div class="empty-note">아직 모은 딜 공시가 없습니다.</div>');
+  }
+
   function renderHome(){
     if (!document.getElementById('homeKpi')) return;
     설정보이기();
@@ -4864,6 +5147,7 @@
     homeGroups();
     homeRisk();
     homeInd();
+    homeDeal();
   }
 
   /* ---------- 선택삭제 ----------
@@ -5710,7 +5994,7 @@
       if (tabFromUrl === 'risk' && !coFromUrl){ coTab = '하우시스'; 기억('lx-co', coTab); }
     }
     const initialTab = 옛것[tabFromUrl] ? 'co'
-      : (['home','search','apply','adhoc','knowledge','co','cfg'].includes(tabFromUrl) ? tabFromUrl : 'home');
+      : (['home','search','apply','adhoc','knowledge','co','deal','cfg'].includes(tabFromUrl) ? tabFromUrl : 'home');
     showTab(initialTab);
 
     loadArticles();
