@@ -212,15 +212,20 @@
     .cover-in{padding-right:300px;}
     .code-top{position:absolute; top:0; right:24px; width:250px; margin-bottom:0;}
     .panes{min-width:0;}
-    /* 기본은 한 줄을 다 쓰고, 짧은 카드(data-half)만 둘씩 나란히 선다.
-       순서를 바꿔도 붙어 선 짧은 카드끼리 자동으로 짝이 된다. */
+    /* 카드마다 폭을 설정에서 정한다. data-col="1" 이면 한 줄을 다 쓰고,
+       data-col="2" 면 절반만 써서 옆 카드와 나란히 선다. 순서를 바꿔도
+       「2열」로 둔 카드끼리 붙어 있으면 자동으로 짝이 된다.
+       좁은 화면에서는 그리드가 한 칸이라 이 값과 상관없이 다 쌓인다. */
     #tab-home{grid-template-columns:repeat(2,minmax(0,1fr));}
     #tab-home > *{grid-column:1 / -1;}
-    #tab-home > [data-half]{grid-column:auto;}
+    #tab-home > [data-col="2"]{grid-column:auto;}
     /* 자리가 넉넉하면 요약 숫자를 제목과 「전체 기사 →」 사이에 끼워 한 줄로 만든다. */
     .mail-head .go-btn{order:0;}
     .kpi-mini{order:0; flex-basis:auto; margin-left:auto;}
-    .hi{grid-template-columns:repeat(4,minmax(0,1fr));}
+    /* 카드 폭을 설정에서 바꿀 수 있게 되면서, 안쪽 격자를 화면 폭으로 정하면
+       절반 폭 카드에서 글자가 잘린다. auto-fit 으로 두어 카드가 실제로 가진
+       폭에 맞춰 칸 수가 정해지게 한다 — 1열 카드는 넷, 2열 카드는 둘. */
+    .hi{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
     /* 지표 카드도 두 칸으로. 지표가 스무 개를 넘어가면서 한 줄로는 끝이 안 보인다. */
     #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
     #indBody .ind-block{margin-bottom:0;}
@@ -769,6 +774,17 @@
     font-family:inherit; padding:0;}
   .cfg-mv button:hover:not(:disabled){border-color:var(--green); color:var(--green);}
   .cfg-mv button:disabled{opacity:.3; cursor:default;}
+  /* 카드 폭 바꾸기. 누를 때마다 1열↔2열이라 지금 값이 그대로 버튼 글자다. */
+  .cfg-w{flex-shrink:0; width:48px; border:1px solid var(--line); background:var(--card);
+    color:var(--muted); border-radius:8px; cursor:pointer; font-family:inherit;
+    font-size:12px; font-weight:700; padding:0; line-height:1; white-space:nowrap;}
+  .cfg-w:hover{border-color:var(--green);}
+  .cfg-w b{font-size:13.5px; color:var(--text);}
+  /* 절반 폭인 카드만 색을 준다. 목록을 훑을 때 「어느 것이 나란히 서나」가
+     한눈에 보여야 순서를 짤 수 있다. */
+  .cfg-w[data-w="2"]{border-color:var(--green); background:var(--green-tint);}
+  .cfg-w[data-w="2"] b{color:var(--green-dark);}
+  .cfg-row.off .cfg-w{opacity:.4;}
 
   /* 둘 중 하나를 고르는 자리. 라디오 버튼보다 지금 무엇이 켜져 있는지가
      또렷하다. */
@@ -794,7 +810,7 @@
   /* 계열사가 예닐곱이라 넓은 화면에서는 셋씩 두 줄이 알맞다. 이 규칙을 위쪽
      넓은 화면 미디어 쿼리 블록에 두면 아래 기본 규칙에 덮인다 — 기본 규칙 바로 뒤에 둔다. */
   @media (min-width:1024px){
-    .co-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+    .co-grid{grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:10px;}
     .cfg-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   }
 
@@ -887,7 +903,7 @@
   <!-- 탭 0: 종합 상황판 -->
   <!-- 카드는 모두 이 div 의 직계 자식이다. 설정에서 정한 순서대로 JS 가 다시
        늘어놓으므로 여기 적힌 순서는 설정을 아직 손대지 않은 사람이 보는
-       기본값일 뿐이다. data-half 가 붙은 카드만 넓은 화면에서 둘씩 나란히 선다. -->
+       기본값일 뿐이다. 카드 폭(data-col)도 설정이 정하므로 여기 적지 않는다. -->
   <div id="tab-home" class="tab-panel active">
     <!-- 환율·금리는 아침에 제일 먼저 확인하는 값이라 맨 위에 둔다. -->
     <section class="card" data-card="ind">
@@ -917,13 +933,13 @@
       <div class="co-grid" id="homeCo"><div class="empty-note">불러오는 중…</div></div>
     </section>
 
-    <section class="card" data-card="groups" data-half="1">
+    <section class="card" data-card="groups">
       <div class="step-head"><span class="step-num">🗂</span><span class="step-title">그룹별 수집 현황</span></div>
       <div class="step-desc" id="homeGroupsDesc">최근 7일</div>
       <div id="homeGroups"></div>
     </section>
 
-    <section class="card" data-card="risk" data-half="1">
+    <section class="card" data-card="risk">
       <div class="step-head"><span class="step-num">⚠️</span><span class="step-title">실리코시스 리스크</span>
         <button type="button" class="go-btn" data-co-open="하우시스|risk">자세히 →</button></div>
       <div id="homeRisk"></div>
@@ -1197,7 +1213,7 @@
 
     <section class="card">
       <div class="step-head"><span class="step-num">📋</span><span class="step-title">첫 화면 구성</span></div>
-      <div class="step-desc">체크로 켜고 끄고, ▲▼로 위아래 순서를 바꿉니다. 바꾸는 즉시 첫 화면에 반영됩니다.</div>
+      <div class="step-desc">체크로 켜고 끄고, ▲▼로 위아래 순서를 바꿉니다. <b>「1열」 버튼</b>을 누르면 그 카드가 한 줄을 다 쓸지(1열) 절반만 쓸지(2열) 바뀝니다 — 2열끼리 붙어 있으면 나란히 섭니다. 바꾸는 즉시 첫 화면에 반영됩니다. <span style="color:var(--muted);">폭은 가로 1024px 이상에서만 뜻이 있고, 휴대폰에서는 어차피 위아래로 쌓입니다.</span></div>
       <div class="cfg-list" id="cfgHome"></div>
     </section>
 
@@ -1640,6 +1656,9 @@
        그 다음이 오늘 나간 뉴스다. 이 순서가 마음에 안 들면 설정에서 바꾼다. */
     순서: ['ind', 'mail', 'co', 'groups', 'risk'],
     home: { kpi: 1, mail: 1, co: 1, groups: 1, risk: 1, ind: 1 },
+    /* 카드 폭. 1 = 한 줄을 다 쓴다, 2 = 절반만 써서 옆 카드와 나란히 선다.
+       넓은 화면에서만 뜻이 있고, 좁은 화면에서는 어차피 다 쌓인다. */
+    폭:   { mail: 1, co: 1, ind: 1, groups: 2, risk: 2 },
     하위순서: ['comp', 'index', 'risk'],
     sub:  { comp: 1, index: 1, risk: 1 },
     계열사: {},                       // 빈 것은 '전부 보임'
@@ -1661,6 +1680,17 @@
     return 결과;
   }
 
+  /* 폭은 1 아니면 2다. 저장된 값이 이상하면(옛 설정, 손으로 고친 값) 기본으로
+     되돌린다 — 3이 들어오면 CSS 가 조용히 무시해 카드가 한 줄을 다 쓰게 된다. */
+  function 폭맞추기(읽은것){
+    const 결과 = Object.assign({}, CFG_기본.폭);
+    Object.keys(결과).forEach(function (k){
+      const v = Number(읽은것 && 읽은것[k]);
+      if (v === 1 || v === 2) 결과[k] = v;
+    });
+    return 결과;
+  }
+
   function 설정(){
     if (cfg) return cfg;
     let 읽은것 = null;
@@ -1668,6 +1698,7 @@
     cfg = {
       순서:  순서맞추기(읽은것 && 읽은것.순서, CFG_기본.순서),
       home:  Object.assign({}, CFG_기본.home,  (읽은것 && 읽은것.home)  || {}),
+      폭:    폭맞추기(읽은것 && 읽은것.폭),
       하위순서: 순서맞추기(읽은것 && 읽은것.하위순서, CFG_기본.하위순서),
       sub:   Object.assign({}, CFG_기본.sub,   (읽은것 && 읽은것.sub)   || {}),
       계열사: Object.assign({}, (읽은것 && 읽은것.계열사) || {}),
@@ -1707,7 +1738,9 @@
        그냥 querySelector 로 집으면 카드 밖으로 끌려 나온다. */
     if (홈) c.순서.forEach(function (k){
       const e = 홈.querySelector(':scope > [data-card="' + k + '"]');
-      if (e) 홈.appendChild(e);
+      if (!e) return;
+      e.dataset.col = String(c.폭[k] === 2 ? 2 : 1);
+      홈.appendChild(e);
     });
 
     const 탭통 = document.getElementById('coSub');
@@ -1739,10 +1772,11 @@
     };
   }
 
-  /* 켜고 끄는 것과 순서를 함께 다루는 목록.
+  /* 켜고 끄는 것 · 순서 · 폭을 한 줄에서 다루는 목록.
      `차례`는 화면에 보이는 그대로의 배열이라, ▲▼를 누르면 이 배열을 바꾸고
-     설정에 그대로 저장한다 — 화면과 저장값이 어긋날 자리가 없다. */
-  function 설정순서(통, 사전, 차례, 그릇, 뒤에){
+     설정에 그대로 저장한다 — 화면과 저장값이 어긋날 자리가 없다.
+     `폭그릇`을 주지 않으면 폭 버튼을 그리지 않는다(계열사 하위 탭에는 폭이 없다). */
+  function 설정순서(통, 사전, 차례, 그릇, 폭그릇, 뒤에){
     const 그릇통 = document.getElementById(통);
     if (!그릇통) return;
     const 이름표 = {};
@@ -1752,12 +1786,19 @@
       그릇통.innerHTML = 차례.map(function (k, i){
         const o = 이름표[k] || { k: k, 이름: k, 말: '' };
         const 켬 = !!그릇[k];
+        const 폭 = 폭그릇 ? (폭그릇[k] === 2 ? 2 : 1) : 0;
         return '<div class="cfg-row' + (켬 ? '' : ' off') + '" data-k="' + escapeHtml(k) + '">' +
           '<div class="cfg-no">' + (i + 1) + '</div>' +
           '<label class="cfg-opt' + (켬 ? ' on' : '') + '">' +
             '<input type="checkbox"' + (켬 ? ' checked' : '') + '>' +
             '<div><div class="t">' + escapeHtml(o.이름) + '</div>' +
             (o.말 ? '<div class="d">' + escapeHtml(o.말) + '</div>' : '') + '</div></label>' +
+          (폭
+            ? '<button type="button" class="cfg-w" data-w="' + 폭 + '" ' +
+                'title="' + (폭 === 1 ? '지금 한 줄을 다 씁니다. 누르면 절반으로 줄어 옆 카드와 나란히 섭니다.'
+                                      : '지금 절반만 씁니다. 누르면 한 줄을 다 쓰게 됩니다.') + '">' +
+                '<b>' + 폭 + '</b>열</button>'
+            : '') +
           '<div class="cfg-mv">' +
             '<button type="button" data-mv="-1" title="위로"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
             '<button type="button" data-mv="1" title="아래로"' + (i === 차례.length - 1 ? ' disabled' : '') + '>▼</button>' +
@@ -1775,6 +1816,15 @@
       뒤에();
     };
     그릇통.onclick = function (e){
+      const 폭단 = e.target.closest('button[data-w]');
+      if (폭단 && 폭그릇){
+        const k = 폭단.closest('.cfg-row').dataset.k;
+        폭그릇[k] = 폭그릇[k] === 2 ? 1 : 2;
+        설정저장();
+        그리기();
+        뒤에();
+        return;
+      }
       const b = e.target.closest('button[data-mv]');
       if (!b) return;
       const 줄 = b.closest('.cfg-row');
@@ -1791,8 +1841,8 @@
 
   function 설정그리기(){
     const c = 설정();
-    설정순서('cfgHome', CFG_HOME, c.순서, c.home, function (){ 설정보이기(); renderHome(); });
-    설정순서('cfgSub', CFG_SUB, c.하위순서, c.sub, function (){
+    설정순서('cfgHome', CFG_HOME, c.순서, c.home, c.폭, function (){ 설정보이기(); renderHome(); });
+    설정순서('cfgSub', CFG_SUB, c.하위순서, c.sub, null, function (){
       /* 지금 보던 하위 탭을 꺼 버렸으면 켜져 있는 첫 것으로 옮긴다. 안 그러면
          빈 화면만 남는다. 순서를 바꿨을 때도 '켜져 있는 첫 것'은 사람이 정한
          순서를 따라야 하므로 CO_SUBS 가 아니라 c.하위순서를 본다. */
