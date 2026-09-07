@@ -1,0 +1,9 @@
+{
+  "name": "lxgroup-apps-script",
+  "private": true,
+  "description": "LX 회사 워크플로를 옮기는 Apps Script 프로젝트의 순수 함수 시험. Node 22의 내장 test runner를 쓴다.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "check": "node --check lxgroup/src/*.js"
+  }
+}
