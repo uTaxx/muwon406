@@ -12,3 +12,7 @@ LCIP_PILOT/logs/
 LCIP_PILOT/archive/
 LCIP_PILOT/n8n/backups/
 LCIP_PILOT/n8n_credential_ids.json
+
+# Apps Script
+.clasprc.json
+apps-script/node_modules/

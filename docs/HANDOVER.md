@@ -480,3 +480,13 @@ Playwright 기반 스크립트가 세션 스크래치패드에 있다(세션 종
 
 웹훅 응답은 `lookup7.json`(경쟁사), `ind.json`(지표), `art.json`(기사), `딜.json`(딜공시)으로 저장해
 `page.route`로 주입한다. 브라우저에서 외부 네트워크는 사용할 수 없다.
+
+---
+
+## Apps Script 이관 기반 (2026-09-07)
+
+n8n의 회사 워크플로(시간표 10개, 조회 웹훅 4개)를 Google Apps Script로 옮기기로
+했다. 뉴스 파이프라인(LXGroup_MI, 신청접수, 콜백처리)은 n8n에 남는다. 자동으로
+수집하지 않고 hub.html의 「업데이트」 버튼으로 한꺼번에 수집하는 구조다.
+설계는 `docs/앱스스크립트_이관_설계_2026-09-07.md`, 코드는 `apps-script/lxgroup`,
+사람이 할 일은 `apps-script/README.md`다. **아직 아무것도 연결하지 않았다.**
