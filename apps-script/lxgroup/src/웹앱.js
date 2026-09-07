@@ -12,10 +12,10 @@
      진행      code 필요. 작업 상태. GET도 된다. */
 
 const 조회처리 = {
-  '지표': null,     // LXGroup_지표조회 (YpCv6bPYsEcxE4cS)
-  '경쟁사': null,   // LXGroup_경쟁사_조회 (66OHWRcUSok5i0J0)
-  '딜': null,       // LXGroup_딜조회 (v2YFEGynGuz0bp6g)
-  '원본': null      // LXGroup_원본내려받기 (l1YMWL5bmAZUciMZ)
+  '지표': null,        // LXGroup_지표조회 (YpCv6bPYsEcxE4cS)
+  '경쟁사': null,      // LXGroup_경쟁사_조회 (66OHWRcUSok5i0J0)
+  '딜': null,          // LXGroup_딜조회 (v2YFEGynGuz0bp6g)
+  '원본': 원본조회      // LXGroup_원본내려받기 (l1YMWL5bmAZUciMZ)
 };
 
 function doGet(e) {
