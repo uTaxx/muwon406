@@ -794,6 +794,20 @@
   .cfg-seg button + button{border-left:1.5px solid var(--line);}
   .cfg-seg button.on{background:var(--green); color:#fff;}
 
+  /* 설정 화면이 길어서, 아래에 붙어 다니게 둔다. 어디까지 내려가도 저장 상태와
+     되돌리기가 손에 닿는다. */
+  .cfg-bar{position:sticky; bottom:0; z-index:5; display:flex; flex-wrap:wrap;
+    align-items:center; gap:8px 10px; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:12px 14px; margin-bottom:14px;
+    box-shadow:0 -4px 16px rgba(0,0,0,0.07);}
+  .cfg-saved{flex:1 1 200px; min-width:0; font-size:12.5px; color:var(--muted); line-height:1.5;}
+  .cfg-saved.ok{color:#1F7A5A; font-weight:600;}
+  .cfg-saved.bad{color:var(--danger); font-weight:600;}
+  .ghost-btn{border:1.5px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:10px; padding:9px 14px; font-size:12.5px; font-weight:700;
+    cursor:pointer; font-family:inherit; flex-shrink:0;}
+  .ghost-btn:hover{border-color:var(--danger); color:var(--danger);}
+
   .co-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
   .co-card{text-align:left; background:var(--card); border:1.5px solid var(--line);
     border-radius:12px; padding:10px 12px; cursor:pointer; font-family:inherit;
@@ -1208,7 +1222,7 @@
   <div id="tab-cfg" class="tab-panel">
     <section class="card">
       <div class="step-head"><span class="step-num">🎛</span><span class="step-title">대시보드 설정</span></div>
-      <div class="step-desc">이 브라우저에만 저장되며 다른 사람 화면은 바뀌지 않습니다.</div>
+      <div class="step-desc">바꾸는 즉시 저장되고 화면에 반영됩니다. 이 브라우저에만 저장되며 다른 사람 화면은 바뀌지 않습니다.</div>
     </section>
 
     <section class="card">
@@ -1265,9 +1279,15 @@
       <div class="cfg-grid" id="cfgCo"></div>
     </section>
 
-    <section class="card">
-      <button type="button" class="small-btn" id="cfgReset">기본값으로 되돌리기</button>
-    </section>
+    <!-- 저장 버튼을 따로 두지 않는다. 바꾸는 순간 저장되기 때문인데, 그러면
+         「저장이 됐나」를 알 길이 없다. 그래서 화면 아래에 붙어 다니는 띠에
+         마지막으로 저장한 시각을 적고, 저장에 실패하면(시크릿 모드 등) 그
+         사실을 여기서 알린다. -->
+    <div class="cfg-bar">
+      <div class="cfg-saved" id="cfgSaved">바꾸는 즉시 저장됩니다.</div>
+      <button type="button" class="ghost-btn" id="cfgReset">기본값으로 되돌리기</button>
+      <button type="button" class="small-btn" id="cfgDone">첫 화면에서 확인 →</button>
+    </div>
   </div>
 
   <!-- 탭 5: AI 학습 데이터 -->
@@ -1709,8 +1729,29 @@
     };
     return cfg;
   }
+  /* 기억()은 실패를 삼키는데, 설정은 저장이 됐는지를 사람에게 알려야 해서
+     여기서만 localStorage 를 직접 쓰고 성공 여부를 본다. 시크릿 모드나 사이트
+     데이터를 막아 둔 브라우저에서는 던진다. */
   function 설정저장(){
-    try { 기억('lx-cfg', JSON.stringify(설정())); } catch (e){}
+    let 됨 = false;
+    try { localStorage.setItem('lx-cfg', JSON.stringify(설정())); 됨 = true; } catch (e){}
+    저장알림(됨);
+    return 됨;
+  }
+
+  function 저장알림(됨){
+    const 칸 = document.getElementById('cfgSaved');
+    if (!칸) return;
+    if (!됨){
+      칸.className = 'cfg-saved bad';
+      칸.textContent = '✕ 저장하지 못했습니다. 이 브라우저가 사이트 데이터를 막고 있어(시크릿 모드 등) 창을 닫으면 설정이 사라집니다.';
+      return;
+    }
+    const t = new Date();
+    const 두자리 = function (n){ return (n < 10 ? '0' : '') + n; };
+    칸.className = 'cfg-saved ok';
+    칸.textContent = '✓ 이 브라우저에 저장했습니다 · ' +
+      두자리(t.getHours()) + ':' + 두자리(t.getMinutes()) + ':' + 두자리(t.getSeconds());
   }
 
   /* 신청 화면을 한 번 열면 그 계정의 출력 기준을 그대로 가져다 쓴다. 사람이
@@ -5510,7 +5551,10 @@
       설정보이기();
       coDraw();
       renderHome();
+      const 칸 = document.getElementById('cfgSaved');
+      if (칸){ 칸.className = 'cfg-saved'; 칸.textContent = '기본값으로 되돌렸습니다. 바꾸는 즉시 다시 저장됩니다.'; }
     });
+    document.getElementById('cfgDone').addEventListener('click', function (){ showTab('home'); });
 
     bindRangeDisplay('minImportance', 'minImportanceVal');
     bindRangeDisplay('minRelevance', 'minRelevanceVal');
