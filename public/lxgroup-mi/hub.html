@@ -899,7 +899,7 @@
       <button type="button" class="tab-btn active" data-tab="home">종합<br> 상황판</button>
       <button type="button" class="tab-btn" data-tab="search">전체 기사<br> 조회</button>
       <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
-      <button type="button" class="tab-btn" data-tab="co">계열사<br> 들여다보기</button>
+      <button type="button" class="tab-btn" data-tab="co">계열사<br> 현황</button>
     </div>
   </div>
 
@@ -1303,16 +1303,16 @@
     </section>
   </div>
 
-  <!-- 탭 6·7: 계열사 들여다보기 — 계열사를 먼저 고르고, 그 안에서 경쟁사와
-       시장지표를 오간다. 실무에서 화면을 여는 까닭은 대개 '하우시스가 요즘
-       어떤가'이지 '경쟁사 전체가 어떤가'가 아니다. -->
+  <!-- 탭 6·7: 계열사 현황 — 그룹 실적을 먼저 보이고, 계열사를 고르면 그 안에서
+       시장 지표·경쟁사 성과·리스크를 오간다. 실무에서 화면을 여는 까닭은 대개
+       '하우시스가 요즘 어떤가'이지 '경쟁사 전체가 어떤가'가 아니다. -->
   <div id="tab-co" class="tab-panel">
     <div class="tab-nav ind-nav" id="coTabs"></div>
     <div class="co-sub" id="coSub">
-      <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
-      <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
-      <button type="button" class="tab-btn" data-co-sub="risk">⚠️ 리스크 관리</button>
       <button type="button" class="tab-btn" data-co-sub="group">🏢 그룹 실적</button>
+      <button type="button" class="tab-btn" data-co-sub="index">📊 시장 지표</button>
+      <button type="button" class="tab-btn" data-co-sub="comp">🏁 경쟁사 성과</button>
+      <button type="button" class="tab-btn" data-co-sub="risk">⚠️ 리스크 관리</button>
     </div>
 
     <!-- 그룹 실적은 계열사 하나가 아니라 그룹 전체를 본다. 그래서 이 탭에서는
@@ -1677,6 +1677,22 @@
     { k: 'risk',  이름: '리스크 관리',  말: '그 계열사에 걸린 소송·규제·안전 이슈' },
     { k: 'group', 이름: '그룹 실적',    말: '계열사 실적을 한 화면에. 계열사를 안 가린다' }
   ];
+  /* 설정 판을 올리면 저장해 둔 하위 탭 차례와 마지막에 본 탭을 한 번만 버린다.
+     차례를 바꿔도 이미 쓰던 사람 화면은 그대로라 새 기본값이 닿지 않기 때문이다.
+     다른 설정(카드 순서·폭·뉴스 기준)은 사람이 정한 것이라 건드리지 않는다.
+     coSub 이 아래에서 곧바로 정해지므로, 설정()을 기다리지 않고 여기서 지운다. */
+  const CFG_판 = 2;
+  (function 판올리기(){
+    try {
+      const 옛 = JSON.parse(localStorage.getItem('lx-cfg') || 'null');
+      if (!옛 || 옛.판 === CFG_판) return;
+      delete 옛.하위순서;
+      옛.판 = CFG_판;
+      localStorage.setItem('lx-cfg', JSON.stringify(옛));
+      localStorage.removeItem('lx-co-sub');
+    } catch (e){}
+  })();
+
   const CFG_기본 = {
     /* 환율·금리를 맨 위에 두는 까닭은 아침에 제일 먼저 확인하는 값이기 때문이다.
        그 다음이 오늘 나간 뉴스다. 이 순서가 마음에 안 들면 설정에서 바꾼다. */
@@ -1685,7 +1701,7 @@
     /* 카드 폭. 1 = 한 줄을 다 쓴다, 2 = 절반만 써서 옆 카드와 나란히 선다.
        넓은 화면에서만 뜻이 있고, 좁은 화면에서는 어차피 다 쌓인다. */
     폭:   { mail: 1, co: 1, ind: 1, groups: 2, risk: 2 },
-    하위순서: ['comp', 'index', 'risk', 'group'],
+    하위순서: ['group', 'index', 'comp', 'risk'],
     sub:  { comp: 1, index: 1, risk: 1, group: 1 },
     계열사: {},                       // 빈 것은 '전부 보임'
     기준: { 중요도: 2, 관련성: 1, 긴급성: 1 },
@@ -1722,6 +1738,7 @@
     let 읽은것 = null;
     try { 읽은것 = JSON.parse(기억('lx-cfg') || 'null'); } catch (e){}
     cfg = {
+      판: CFG_판,
       순서:  순서맞추기(읽은것 && 읽은것.순서, CFG_기본.순서),
       home:  Object.assign({}, CFG_기본.home,  (읽은것 && 읽은것.home)  || {}),
       폭:    폭맞추기(읽은것 && 읽은것.폭),
@@ -1924,7 +1941,7 @@
     });
   }
 
-  /* ---------- 계열사 들여다보기 ----------
+  /* ---------- 계열사 현황 ----------
      실무에서 이 화면을 여는 까닭은 대개 「하우시스가 요즘 어떤가」이지
      「경쟁사 전체가 어떤가」가 아니다. 그래서 계열사를 먼저 고르고, 그 안에서
      경쟁사 성과와 시장 지표를 오간다. 예전에는 둘이 각각 제 계열사 선택 버튼를
@@ -1947,8 +1964,8 @@
   }
 
   let coTab = 기억('lx-co') || '하우시스';
-  const CO_SUBS = ['comp', 'index', 'risk', 'group'];
-  let coSub = CO_SUBS.indexOf(기억('lx-co-sub')) >= 0 ? 기억('lx-co-sub') : 'comp';
+  const CO_SUBS = ['group', 'index', 'comp', 'risk'];
+  let coSub = CO_SUBS.indexOf(기억('lx-co-sub')) >= 0 ? 기억('lx-co-sub') : 'group';
   /* 어느 계열사에 어떤 리스크를 따로 관리하는지는 설정 스프레드시트의
      「리스크」 시트가 정한다. 화면은 그 목록을 보고 그릴 뿐이라, 새 리스크를
      붙이는 일은 시트에 줄을 하나 보태는 것이지 코드를 고치는 일이 아니다. */
@@ -4752,11 +4769,13 @@
     }
 
     /* 공통 지표만 올린다. 계열사 것까지 다 올리면 스무 칸이 넘어 '한눈에'가
-       아니게 된다 — 계열사는 시장지표 탭에서 본다. */
+       아니게 된다 — 계열사는 시장 지표 탭에서 본다.
+       열둘까지 두는 것은 주간으로 챙기던 운임 셋이 들어오면서 공통이 열하나가
+       됐기 때문이다. 넓은 화면에서 네 칸씩 세 줄이라 아직 한눈에 든다. */
     const 것들 = indTabItems(indData.지표 || [], '공통');
     const 칸들 = [];
     것들.forEach(function(x){
-      if (칸들.length >= 8) return;
+      if (칸들.length >= 12) return;
       const b = (x.범위 && (x.범위['월'] || x.범위['일'] || x.범위['연'])) || null;
       if (!b || b.최신값 === null || b.최신값 === undefined) return;
       칸들.push('<div class="hi-c">' +
