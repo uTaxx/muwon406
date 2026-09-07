@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { 불러오기, 값 } = require('./gas');
 
-const 파일들 = ['설정.js', '공통_시트.js', '단계.js', '작업.js', '웹앱.js', '점검.js'];
+const 파일들 = ['설정.js', '공통_시트.js', '조회_원본.js', '단계.js', '작업.js', '웹앱.js', '점검.js'];
 
 test('식별코드는 설정 탭에서 상태가 운영중일 때만 통과한다', () => {
   const g = 불러오기('lxgroup', 파일들);
