@@ -2335,7 +2335,11 @@
     /* 탭을 옮길 때 주소에 ?tab= 을 써 넣지 않는다. 써 넣으면 주소창을 복사해
        건네준 링크가 「그 사람이 마지막에 보던 탭」으로 열린다 — 링크를 받은
        사람은 Home 부터 보고 싶어 한다. 주소에 ?tab= 이 적혀 들어온 경우
-       (사용설명서의 바로가기)는 그대로 그 탭을 연다. */
+       (사용설명서의 바로가기)는 그대로 그 탭을 연다.
+
+       대신 보던 탭은 이 브라우저에만 적어 둔다. 새로고침했을 때만 쓰는 값이고
+       (아래 initialTab), 남에게 건네주는 주소에는 묻어 나가지 않는다. */
+    기억('lx-tab', tabName);
     /* 상황판은 시장지표까지 같이 보여주므로 여기서 한 번 부른다.
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
@@ -6729,8 +6733,22 @@
       coPick = coTab;
       기억('lx-co-pick', coPick);
     }
+    /* 새로고침은 「보던 화면을 다시 그리는 일」이라 그 탭으로 돌아간다. 링크를
+       타고 새로 들어온 것은 Home 부터 연다 — 링크를 받은 사람은 오늘 무슨 일이
+       있었는지부터 보고 싶어 한다. 둘을 가르지 않고 늘 Home 으로 보내면, 설정을
+       바꿔 놓고 새로고침한 사람이 매번 Home 으로 튕긴다. */
+    const 아는탭 = ['home','search','apply','adhoc','knowledge','co','index','deal','cfg'];
+    const 새로고침이냐 = (function (){
+      try {
+        const n = (performance.getEntriesByType('navigation') || [])[0];
+        return !!n && n.type === 'reload';
+      } catch (e){ return false; }
+    })();
+    const 보던탭 = 기억('lx-tab');
     const initialTab = (tabFromUrl === 'comp' || tabFromUrl === 'risk') ? 'co'
-      : (['home','search','apply','adhoc','knowledge','co','index','deal','cfg'].includes(tabFromUrl) ? tabFromUrl : 'home');
+      : 아는탭.includes(tabFromUrl) ? tabFromUrl
+      : (새로고침이냐 && 아는탭.includes(보던탭)) ? 보던탭
+      : 'home';
     showTab(initialTab);
 
     loadArticles();
