@@ -684,6 +684,18 @@
   .xls-btn:hover:not(:disabled){background:var(--bg); border-color:var(--muted);}
   .xls-btn:disabled{opacity:.5; cursor:wait;}
   .ind-bhead .xls-btn{margin-left:6px;}
+
+  /* 수집을 손으로 돌리는 버튼. 엑셀 내려받기와 같은 자리에 서므로 생김새를
+     맞추되, 시트를 고치는 일이라 눌렀을 때 티가 나게 초록으로 둔다. */
+  .upd-btn{border:1px solid var(--green); background:var(--green-tint); color:var(--green);
+    border-radius:8px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer;
+    font-family:inherit; white-space:nowrap; flex-shrink:0; margin-left:6px;}
+  .upd-btn:hover:not(:disabled){background:var(--card);}
+  .upd-btn:disabled{opacity:.55; cursor:wait;}
+  .upd-msg{font-size:11px; font-weight:600; margin-top:6px; line-height:1.5;}
+  .upd-msg.ok{color:var(--green);}
+  .upd-msg.bad{color:var(--danger);}
+
   .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
             padding-top:8px; border-top:1px solid var(--line);}
   .ind-note b{color:var(--text); font-weight:700;}
@@ -1367,7 +1379,11 @@
     <section class="card">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title">LX그룹 실적</span></div>
       <div class="step-desc" id="groupHeadDesc"></div>
-      <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
+      <div class="line-row">
+        <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
+        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
+      </div>
+      <div class="upd-msg"></div>
       <div class="ind-grid" id="groupBody"></div>
       <div class="empty-note" id="groupEmpty" style="display:none;"></div>
       <div class="word-hint" id="groupGap" style="display:none;"></div>
@@ -1378,7 +1394,10 @@
     <section class="card">
       <div class="step-head"><span class="step-num">🏁</span><span class="step-title" id="compHeadTitle">경쟁사 성과</span></div>
       <div class="step-desc" id="compHeadDesc"></div>
-      <div class="ind-asof" id="compAsOf">불러오는 중…</div>
+      <div class="line-row">
+        <div class="ind-asof" id="compAsOf">불러오는 중…</div>
+        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
+      </div>
       <div class="ind-grid" id="compBody"></div>
       <div class="empty-note" id="compEmpty" style="display:none;"></div>
     </section>
@@ -1450,7 +1469,9 @@
       <div class="line-row">
         <div class="ind-asof" id="indAsOf">불러오는 중…</div>
         <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀</button>
+        <button type="button" class="upd-btn" data-update="지표">↻ 업데이트</button>
       </div>
+      <div class="upd-msg"></div>
       <div class="ind-grid" id="indBody"></div>
       <div class="empty-note" id="indEmpty" style="display:none;"></div>
     </section>
@@ -1514,6 +1535,7 @@
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
+  const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
   const PAGE_SIZE = 50;
 
   let identifierCode = '';
@@ -3029,6 +3051,100 @@
   function clearAdminPw(){
     try { sessionStorage.removeItem(ADMIN_PW_KEY); } catch (e) {}
   }
+
+  /* ---------- 수집을 손으로 돌리기 ----------
+     시장 지표와 계열사 실적은 금요일에 한 번만 자동으로 모은다. 그 사이에
+     새 값이 필요하면 이 버튼으로 그때 부른다.
+
+     비밀번호는 「설정」 시트의 「실행 PW」와 맞춰 본다 — 확인은 화면이 아니라
+     웹훅에서 하므로, 이 페이지 소스를 읽어도 비밀번호 없이는 아무것도 못 돌린다.
+     기사 삭제와는 다른 비밀번호라 저장하는 자리도 따로 둔다.
+
+     웹훅은 시작했다는 답을 먼저 보내고 뒤에서 수집을 이어 돌린다. 그래서 화면은
+     몇 분을 기다리지 않고, 대신 「새로고침하세요」라고만 알린다. */
+  const RUN_PW_KEY = 'lxmi.runPw';
+
+  function savedRunPw(){
+    try { return sessionStorage.getItem(RUN_PW_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  /* 버튼마다 알림 자리를 하나씩 둔다. 미리 만들어 둔 곳도 있고 없는 곳도 있어
+     없으면 그 자리에서 만든다 — 화면마다 자리를 미리 잡아 두는 것보다 낫다. */
+  function 실행알림자리(버튼){
+    const 줄 = 버튼.closest('.line-row') || 버튼.parentElement;
+    let m = 줄.nextElementSibling;
+    if (!m || !m.classList || !m.classList.contains('upd-msg')){
+      m = document.createElement('div');
+      m.className = 'upd-msg';
+      줄.parentNode.insertBefore(m, 줄.nextSibling);
+    }
+    return m;
+  }
+
+  function 업데이트누름(버튼){
+    const 대상 = 버튼.dataset.update;
+    if (!대상) return;
+    const 알림 = 실행알림자리(버튼);
+    /* 다른 조회들과 같은 자리에서 코드를 읽는다. identifierCode 는 「키워드
+       신청/변경」을 거쳤을 때만 채워져서, 계열사 화면만 열어 본 사람에게는 빈 값이다. */
+    const code = sharedCode();
+    if (!code){
+      알림.className = 'upd-msg bad';
+      알림.textContent = '식별코드를 먼저 확인해 주세요.';
+      return;
+    }
+
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('수집을 손으로 돌립니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+
+    const 이름 = 대상 === '지표' ? '시장 지표' : '계열사·경쟁사 실적';
+    /* 같은 대상 버튼이 화면 둘에 있다(그룹 실적·경쟁사 성과). 하나를 누르면
+       둘 다 잠가야 두 번 돌리지 않는다. */
+    const 같은것 = Array.prototype.slice.call(
+      document.querySelectorAll('.upd-btn[data-update="' + 대상 + '"]'));
+    같은것.forEach(function (b){ b.disabled = true; });
+    알림.className = 'upd-msg';
+    알림.textContent = 이름 + ' 갱신을 부르는 중…';
+
+    fetch(RUN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, pw: pw, 대상: 대상 })
+    })
+      .then(function (res){
+        return res.json().catch(function (){ return {}; })
+          .then(function (d){ return { ok: res.ok, d: d }; });
+      })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          /* 틀린 비밀번호는 지운다 — 안 지우면 다음에도 같은 것으로 또 튕긴다. */
+          try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {}
+          알림.className = 'upd-msg bad';
+          알림.textContent = (r.d && r.d.message) || '실행하지 못했습니다.';
+          return;
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        알림.className = 'upd-msg ok';
+        알림.textContent = r.d.message || (이름 + ' 갱신을 시작했습니다.');
+      })
+      .catch(function (){
+        알림.className = 'upd-msg bad';
+        알림.textContent = '실행 요청을 보내지 못했습니다. 잠시 뒤 다시 눌러 주세요.';
+      })
+      .then(function (){
+        /* 수집은 뒤에서 도는 중이다. 곧바로 다시 누르면 같은 일을 겹쳐 시키므로
+           잠깐 잠가 둔다. */
+        setTimeout(function (){ 같은것.forEach(function (b){ b.disabled = false; }); }, 20000);
+      });
+  }
+
+  document.addEventListener('click', function (e){
+    const b = e.target.closest('.upd-btn');
+    if (b) 업데이트누름(b);
+  });
 
   /* ---------- 소송 사건 원장 · 책임 배분 ---------- */
   /* caseList = 집계·표에 쓰는 확정 사건만. 자동 감지된 '검토대기'는 승인 전까지
