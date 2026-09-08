@@ -628,7 +628,9 @@
      공중에 떠 보인다. */
   .ind-chart{position:relative; height:200px; margin:14px 0 0;
              border-bottom:1px solid var(--line);}
-  .ind-svg{display:block; width:100%; height:100%;}
+  /* overflow 를 열어 두는 까닭: 첫 점과 끝 점은 그림판 좌우 끝에 딱 붙어 있어서,
+     기본값(hidden)이면 선 굵기의 절반이 잘려 끝이 뭉툭해 보인다. */
+  .ind-svg{display:block; width:100%; height:100%; overflow:visible;}
   /* 눈금은 왼쪽에 둔다. 오른쪽 끝은 가장 최근 값이 찍히는 자리라
      거기에 글자를 얹으면 제일 봐야 할 곳을 가린다. */
   .ind-y{position:absolute; left:0; font-size:10.5px; color:var(--muted); font-weight:600;
@@ -644,6 +646,17 @@
   .ind-xax span{position:absolute; top:0; transform:translateX(-50%); white-space:nowrap;}
   .ind-xax span.first{transform:none; left:0;}
   .ind-xax span.last{transform:translateX(-100%);}
+
+  /* 선 위의 점. SVG 안에 그리면 그림판이 가로로만 늘어나는 탓에 납작한 타원이
+     되고 오른쪽 끝 점은 절반이 잘린다. 자리를 백분율로 준 HTML 로 찍으면 어느
+     폭에서도 동그랗다. */
+  .ind-dots{position:absolute; inset:0; pointer-events:none;}
+  .ind-dots i{position:absolute; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+              border-radius:50%; border:2px solid; box-sizing:border-box;}
+  /* 커서가 가리키는 자리의 점은 조금 크게, 속을 비워 배경과 구분되게 한다. */
+  .ind-dots.on{display:none;}
+  .ind-dots.on i{width:10px; height:10px; margin:-5px 0 0 -5px; background:var(--card);
+                 box-shadow:0 1px 4px rgba(0,0,0,0.18);}
 
   /* 커서를 따라다니는 안내선과 값 상자 */
   .ind-guide{position:absolute; top:0; bottom:0; width:1px; background:var(--muted);
@@ -2539,10 +2552,42 @@
   }
   function 창수열(n){ const a = []; for (let j = 0; j < n; j++) a.push(j); return a; }
 
+  /* 그림판 크기와 여백. 위 여백이 아래보다 넓은 까닭은 왼쪽 위에 최댓값 눈금
+     글자(`.ind-y.hi`)가 얹히기 때문이다. 위아래를 같게 두었더니 꼭짓점이 그
+     글자에 덮이거나 그림 맨 위 선에 딱 붙어 잘린 것처럼 보였다.
+
+     비율 셈을 함수 하나로 둔다 — 그림과 커서 점, 기준선 글자가 각각 제 셈을
+     하면 조금씩 어긋나고, 어긋난 뒤에는 어느 쪽이 맞는지 알 수 없다. */
+  const IND_W = 600, IND_H = 200, IND_PT = 26, IND_PB = 14;
+  function ind높이비율(g, v){
+    return (IND_H - IND_PB - ((v - g.lo) / (g.hi - g.lo)) * (IND_H - IND_PT - IND_PB)) / IND_H;
+  }
+
+  /* 꺾은선을 부드러운 곡선으로 잇는다. 조종점의 세로 자리는 **양 끝 값 사이로
+     잡아 둔다** — 안 그러면 곡선이 실제 값보다 위로 솟구쳐, 있지도 않은 최고점을
+     그린 그래프가 된다. 가로는 등간격이라 그냥 두어도 왼쪽에서 오른쪽으로만 간다. */
+  function ind곡선(점들){
+    if (점들.length < 3){
+      return 'M' + 점들.map(function (p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' L');
+    }
+    const t = 0.22;
+    let d = 'M' + 점들[0].x.toFixed(1) + ',' + 점들[0].y.toFixed(1);
+    for (let i = 0; i < 점들.length - 1; i++){
+      const p0 = 점들[i - 1] || 점들[i], p1 = 점들[i];
+      const p2 = 점들[i + 1], p3 = 점들[i + 2] || 점들[i + 1];
+      const 아래 = Math.min(p1.y, p2.y), 위 = Math.max(p1.y, p2.y);
+      const 잡기 = function (y){ return Math.min(위, Math.max(아래, y)); };
+      d += ' C' + (p1.x + (p2.x - p0.x) * t).toFixed(1) + ',' + 잡기(p1.y + (p2.y - p0.y) * t).toFixed(1) +
+           ' ' + (p2.x - (p3.x - p1.x) * t).toFixed(1) + ',' + 잡기(p2.y - (p3.y - p1.y) * t).toFixed(1) +
+           ' ' + p2.x.toFixed(1) + ',' + p2.y.toFixed(1);
+    }
+    return d;
+  }
+
   function indPlot(g){
-    const W = 600, H = 200, PAD = 14;
+    const W = IND_W, H = IND_H;
     const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
-    const Y = function(v){ return H - PAD - ((v - g.lo) / (g.hi - g.lo)) * (H - PAD * 2); };
+    const Y = function(v){ return ind높이비율(g, v) * H; };
 
     let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
     if (g.여럿){
@@ -2552,19 +2597,28 @@
              '" stroke="#D6C6B5" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>';
     }
     g.선들.forEach(function(s, i){
-      const pts = s.pts.map(function(p){ return X(p.j).toFixed(1) + ',' + Y(p.y).toFixed(1); }).join(' ');
+      const 점들 = s.pts.map(function(p){ return { x: X(p.j), y: Y(p.y) }; });
       /* 옅은 색일수록 조금 굵게 긋는다. 같은 굵기로 그으면 옅은 선이 먼저
          묻혀서, 색 순서가 곧 중요도 순서처럼 보이게 된다. 나라로 색을 가른
          그래프는 농담이 아니라 아예 다른 색이라 이 보정이 필요 없다. */
-      const 굵기 = (g.나라구분 ? 1.7 : 1.6 + i * 0.18).toFixed(2);
-      out += '<polyline points="' + pts + '" fill="none" stroke="' + s.색 + '" stroke-width="' + 굵기 + '" ' +
+      const 굵기 = (g.나라구분 ? 2.3 : 2.2 + i * 0.2).toFixed(2);
+      out += '<path d="' + ind곡선(점들) + '" fill="none" stroke="' + s.색 + '" stroke-width="' + 굵기 + '" ' +
              (s.점선 ? 'stroke-dasharray="' + s.점선 + '" ' : '') +
              'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
-      const 끝 = s.pts[s.pts.length - 1];
-      out += '<circle cx="' + X(끝.j).toFixed(1) + '" cy="' + Y(끝.y).toFixed(1) +
-             '" r="2.6" fill="' + s.색 + '"/>';
     });
-    return out + '</svg>';
+    out += '</svg>';
+
+    /* 마지막 값의 점은 SVG 가 아니라 HTML 로 찍는다. 이 그림판은 가로만 늘어나는
+       preserveAspectRatio="none" 이라, SVG 안의 원은 화면에서 납작한 타원이 되고
+       오른쪽 끝에 걸린 것은 절반이 잘린다. 자리를 백분율로 두면 어느 폭에서도
+       동그랗고 잘리지 않는다. */
+    out += '<span class="ind-dots end">' + g.선들.map(function (s){
+      const p = s.pts[s.pts.length - 1];
+      return '<i style="left:' + ((X(p.j) / W) * 100).toFixed(2) + '%; top:' +
+        (ind높이비율(g, p.y) * 100).toFixed(2) + '%; border-color:' + s.색 +
+        '; background:' + s.색 + ';"></i>';
+    }).join('') + '</span>';
+    return out;
   }
 
   /* 범례 표식도 그래프와 같은 선 모양으로 그린다. 그래프는 점선인데 범례는
@@ -2764,7 +2818,7 @@
       /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
          원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다. */
       const 눈금 = function(v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
-      const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
+      const 기준높이 = ind높이비율(g, 100) * 100;
       const 마지막 = g.창.length - 1;
       const 축글 = indTicks(g.창.length).map(function(j){
         const 자리 = 마지막 > 0 ? (j / 마지막) * 100 : 50;
@@ -2778,7 +2832,7 @@
           '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
           (g.여럿 && 기준높이 > 6 && 기준높이 < 94
             ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
-          '<span class="ind-guide"></span><div class="ind-tip"></div>' +
+          '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
         '</div>' +
         '<div class="ind-xax">' + 축글 + '</div>' +
         (g.여럿
@@ -2998,8 +3052,10 @@
 
     function 지우기(판){
       const 선 = 판.querySelector('.ind-guide'), 상자 = 판.querySelector('.ind-tip');
+      const 점통 = 판.querySelector('.ind-dots.on');
       if (선) 선.style.display = 'none';
       if (상자) 상자.style.display = 'none';
+      if (점통) 점통.style.display = 'none';
     }
 
     function 그리기(판, x){
@@ -3023,6 +3079,21 @@
       const 선 = 판.querySelector('.ind-guide');
       선.style.left = 자리.toFixed(1) + 'px';
       선.style.display = 'block';
+
+      /* 안내선이 어느 선의 어느 높이를 지나는지 점으로 찍는다. 세로선만 있으면
+         값 상자의 숫자가 어느 선의 것인지 눈으로 잇기 어렵다. 막대 그래프에는
+         찍지 않는다 — 막대에는 지날 점이 없다. */
+      const 점통 = 판.querySelector('.ind-dots.on');
+      if (점통){
+        const 점들 = 막대 ? '' : g.선들.map(function(s){
+          const p = s.pts.filter(function(q){ return q.j === j; })[0];
+          if (!p) return '';
+          return '<i style="left:' + 자리.toFixed(1) + 'px; top:' +
+            (ind높이비율(g, p.y) * 100).toFixed(2) + '%; border-color:' + s.색 + ';"></i>';
+        }).join('');
+        점통.innerHTML = 점들;
+        점통.style.display = 점들 ? 'block' : 'none';
+      }
 
       /* 지수로 맞춘 그래프여도 **실제 값**을 보여준다. 100 언저리 숫자는
          읽는 사람에게 아무 뜻이 없다. */
@@ -4218,8 +4289,8 @@
      data-g 로 어느 그래프인지 적어 두면 커서 핸들러가 그 칸의 값을 집는다. */
   function compChart(g, 그래프열쇠, 갈피){
     const 눈금 = function (v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
-    const 기준높이 = ((g.hi - 100) / (g.hi - g.lo)) * 100;
-    const 영높이 = ((g.hi - 0) / (g.hi - g.lo)) * 100;
+    const 기준높이 = ind높이비율(g, 100) * 100;
+    const 영높이 = ind높이비율(g, 0) * 100;
     const 영선 = !g.여럿 && g.lo < 0 && g.hi > 0;
     return (갈피
         ? '<div class="comp-cap">' + escapeHtml(갈피) +
@@ -4235,7 +4306,7 @@
                 '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>' : '') +
         (g.여럿 && 기준높이 > 6 && 기준높이 < 94
           ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
-        '<span class="ind-guide"></span><div class="ind-tip"></div>' +
+        '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
   /* g 가 제 칸 이름표를 들고 있으면 그것이 먼저다 — 회사마다 분기를 누계로
@@ -4313,8 +4384,10 @@
     hi = 어림(hi * 1.02);
     lo = 적자 ? -어림(-Math.min(lo * 1.02, -(hi - lo) * 0.08)) : 0;
 
-    const W = 600, H = 200, PAD = 8;
-    const Y = function (v){ return H - PAD - ((v - lo) / (hi - lo)) * (H - PAD * 2); };
+    /* 위 여백을 아래보다 넓게 둔다 — 왼쪽 위 최댓값 눈금 글자가 그림에 얹혀
+       있어서, 같게 두면 제일 높은 막대의 머리가 글자에 덮인다. */
+    const W = 600, H = 200, PAD_T = 20, PAD_B = 8;
+    const Y = function (v){ return H - PAD_B - ((v - lo) / (hi - lo)) * (H - PAD_T - PAD_B); };
     const C = 회사들.length || 1;
     const 칸 = W / N, 묶 = 칸 * 0.76, 막 = 묶 / C;
     const 바닥 = Y(0);
@@ -4331,7 +4404,7 @@
     let out = '<svg class="ind-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
     if (적자){
       out += '<rect x="0" y="' + 바닥.toFixed(1) + '" width="' + W + '" height="' +
-             Math.max(H - PAD - 바닥, 0).toFixed(1) + '" fill="#B3453F" fill-opacity="0.07"/>';
+             Math.max(H - PAD_B - 바닥, 0).toFixed(1) + '" fill="#B3453F" fill-opacity="0.07"/>';
     }
     for (let j = 0; j < N; j++){
       회사들.forEach(function (c, i){
@@ -4349,7 +4422,7 @@
     out += '</svg>';
 
     const 눈금 = function (v){ return indNum(v) + (몸.단위 || ''); };
-    const 영높이 = ((hi - 0) / (hi - lo)) * 100;
+    const 영높이 = (Y(0) / H) * 100;
     return '<div class="ind-chart comp-bars" data-bars="1" data-g="' + escapeHtml(그래프열쇠) + '">' + out +
         '<span class="ind-y hi">' + escapeHtml(눈금(hi)) + '</span>' +
         '<span class="ind-y lo">' + escapeHtml(눈금(lo)) + '</span>' +
@@ -4357,7 +4430,7 @@
           ? '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' +
             '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>'
           : '') +
-        '<span class="ind-guide"></span><div class="ind-tip"></div>' +
+        '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
 
