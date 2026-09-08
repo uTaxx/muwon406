@@ -2303,9 +2303,10 @@
   function showTab(tabName){
     document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tabName);
-    history.replaceState(null, '', url);
+    /* 탭을 옮길 때 주소에 ?tab= 을 써 넣지 않는다. 써 넣으면 주소창을 복사해
+       건네준 링크가 「그 사람이 마지막에 보던 탭」으로 열린다 — 링크를 받은
+       사람은 Home 부터 보고 싶어 한다. 주소에 ?tab= 이 적혀 들어온 경우
+       (사용설명서의 바로가기)는 그대로 그 탭을 연다. */
     /* 상황판은 시장지표까지 같이 보여주므로 여기서 한 번 부른다.
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }

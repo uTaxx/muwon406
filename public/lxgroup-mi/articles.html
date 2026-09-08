@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LX Group MI</title>
 <meta name="robots" content="noindex, nofollow">
+<!-- 통합 전 옛 주소. 링크를 타고 들어온 사람은 Home 부터 본다.
+     주소에 ?tab= 을 적어 온 경우에는 그대로 그 탭으로 보낸다. -->
 <script>
   (function(){
-    var params = new URLSearchParams(window.location.search);
-    if (!params.has('tab')) params.set('tab', 'search');
-    var qs = params.toString();
-    window.location.replace('./hub.html' + (qs ? '?' + qs : ''));
+    var qs = window.location.search || '';
+    window.location.replace('./hub.html' + qs);
   })();
 </script>
-<meta http-equiv="refresh" content="0; url=./hub.html?tab=search">
+<meta http-equiv="refresh" content="0; url=./hub.html">
 </head>
 <body>
-<p>새 통합 페이지로 이동 중입니다… 자동으로 이동하지 않으면 <a href="./hub.html?tab=search">여기를 클릭하세요</a>.</p>
+<p>새 통합 페이지로 이동 중입니다… 자동으로 이동하지 않으면 <a href="./hub.html">여기를 클릭하세요</a>.</p>
 </body>
 </html>
