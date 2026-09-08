@@ -647,16 +647,17 @@
   .ind-xax span.first{transform:none; left:0;}
   .ind-xax span.last{transform:translateX(-100%);}
 
-  /* 선 위의 점. SVG 안에 그리면 그림판이 가로로만 늘어나는 탓에 납작한 타원이
-     되고 오른쪽 끝 점은 절반이 잘린다. 자리를 백분율로 준 HTML 로 찍으면 어느
-     폭에서도 동그랗다. */
-  .ind-dots{position:absolute; inset:0; pointer-events:none;}
-  .ind-dots i{position:absolute; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
-              border-radius:50%; border:2px solid; box-sizing:border-box;}
-  /* 커서가 가리키는 자리의 점은 조금 크게, 속을 비워 배경과 구분되게 한다. */
-  .ind-dots.on{display:none;}
-  .ind-dots.on i{width:10px; height:10px; margin:-5px 0 0 -5px; background:var(--card);
-                 box-shadow:0 1px 4px rgba(0,0,0,0.18);}
+  /* 커서가 가리키는 자리의 점. 늘 찍혀 있는 점은 두지 않는다 — 마지막 값에만
+     점이 박혀 있으면 그 점이 무슨 뜻인지 묻게 되고, 정작 커서를 올렸을 때
+     생기는 점과 헷갈린다. 점은 「지금 가리키는 곳」이라는 뜻 하나만 가진다.
+
+     SVG 안에 그리면 그림판이 가로로만 늘어나는 탓에 납작한 타원이 되고 오른쪽
+     끝 점은 절반이 잘린다. 자리를 백분율로 준 HTML 로 찍으면 어느 폭에서도
+     동그랗다. */
+  .ind-dots{position:absolute; inset:0; pointer-events:none; display:none;}
+  .ind-dots i{position:absolute; width:10px; height:10px; margin:-5px 0 0 -5px;
+              border-radius:50%; border:2px solid; box-sizing:border-box;
+              background:var(--card); box-shadow:0 1px 4px rgba(0,0,0,0.18);}
 
   /* 커서를 따라다니는 안내선과 값 상자 */
   .ind-guide{position:absolute; top:0; bottom:0; width:1px; background:var(--muted);
@@ -2632,19 +2633,7 @@
              (s.점선 ? 'stroke-dasharray="' + s.점선 + '" ' : '') +
              'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
     });
-    out += '</svg>';
-
-    /* 마지막 값의 점은 SVG 가 아니라 HTML 로 찍는다. 이 그림판은 가로만 늘어나는
-       preserveAspectRatio="none" 이라, SVG 안의 원은 화면에서 납작한 타원이 되고
-       오른쪽 끝에 걸린 것은 절반이 잘린다. 자리를 백분율로 두면 어느 폭에서도
-       동그랗고 잘리지 않는다. */
-    out += '<span class="ind-dots end">' + g.선들.map(function (s){
-      const p = s.pts[s.pts.length - 1];
-      return '<i style="left:' + ((X(p.j) / W) * 100).toFixed(2) + '%; top:' +
-        (ind높이비율(g, p.y) * 100).toFixed(2) + '%; border-color:' + s.색 +
-        '; background:' + s.색 + ';"></i>';
-    }).join('') + '</span>';
-    return out;
+    return out + '</svg>';
   }
 
   /* 범례 표식도 그래프와 같은 선 모양으로 그린다. 그래프는 점선인데 범례는
@@ -2858,7 +2847,7 @@
           '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
           (g.여럿 && 기준높이 > 6 && 기준높이 < 94
             ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
-          '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
+          '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
         '</div>' +
         '<div class="ind-xax">' + 축글 + '</div>' +
         (g.여럿
@@ -3078,7 +3067,7 @@
 
     function 지우기(판){
       const 선 = 판.querySelector('.ind-guide'), 상자 = 판.querySelector('.ind-tip');
-      const 점통 = 판.querySelector('.ind-dots.on');
+      const 점통 = 판.querySelector('.ind-dots');
       if (선) 선.style.display = 'none';
       if (상자) 상자.style.display = 'none';
       if (점통) 점통.style.display = 'none';
@@ -3109,7 +3098,7 @@
       /* 안내선이 어느 선의 어느 높이를 지나는지 점으로 찍는다. 세로선만 있으면
          값 상자의 숫자가 어느 선의 것인지 눈으로 잇기 어렵다. 막대 그래프에는
          찍지 않는다 — 막대에는 지날 점이 없다. */
-      const 점통 = 판.querySelector('.ind-dots.on');
+      const 점통 = 판.querySelector('.ind-dots');
       if (점통){
         const 점들 = 막대 ? '' : g.선들.map(function(s){
           const p = s.pts.filter(function(q){ return q.j === j; })[0];
@@ -4332,7 +4321,7 @@
                 '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>' : '') +
         (g.여럿 && 기준높이 > 6 && 기준높이 < 94
           ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
-        '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
+        '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
   /* g 가 제 칸 이름표를 들고 있으면 그것이 먼저다 — 회사마다 분기를 누계로
@@ -4456,7 +4445,7 @@
           ? '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' +
             '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>'
           : '') +
-        '<span class="ind-dots on"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
+        '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
       '</div>';
   }
 
