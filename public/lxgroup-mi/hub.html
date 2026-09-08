@@ -1433,6 +1433,28 @@
     </section>
     </div>
 
+    <!-- 계열사와 그 경쟁사가 낸 DART 공시. 실적은 석 달에 한 번 갱신되지만
+         공시는 날마다 나온다 — 「요즘 이 회사에 무슨 일이 있나」는 여기서 본다.
+         자본시장 딜 현황이 시장 전체에서 딜만 고르는 것과 달리, 이쪽은 우리가
+         보는 회사가 낸 것이면 종류를 가리지 않는다. -->
+    <div id="co-disc" class="co-pane">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📄</span><span class="step-title" id="discHeadTitle">주요 공시</span></div>
+      <div class="step-desc" id="discHeadDesc"></div>
+      <div class="ind-asof" id="discAsOf">불러오는 중…</div>
+      <div class="dl-kinds" id="discKinds"></div>
+      <div class="dl-line">
+        <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
+        <select id="discCorp"><option value="">회사 전체</option></select>
+        <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사가 낸 것만</label>
+      </div>
+      <div class="step-desc" id="discCount"></div>
+      <div id="discList"></div>
+      <div class="empty-note" id="discEmpty" style="display:none;"></div>
+      <button type="button" class="home-more" id="discMore" style="display:none;"></button>
+    </section>
+    </div>
+
     <!-- 계열사마다 리스크 관리. 지금 속이 찬 것은 하우시스(실리코시스)뿐이고
          나머지는 자리만 잡아 둔다 — 자리가 있어야 무엇을 채워야 하는지 보인다. -->
     <div id="co-risk" class="co-pane">
@@ -1597,6 +1619,7 @@
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
+  const DISC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-회사공시');
   const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
   const PAGE_SIZE = 50;
 
@@ -2175,6 +2198,7 @@
     const 그룹이냐 = coPick === '그룹';
     document.getElementById('co-group').classList.toggle('on', 그룹이냐);
     document.getElementById('co-comp').classList.toggle('on', !그룹이냐);
+    document.getElementById('co-disc').classList.toggle('on', !그룹이냐);
     document.getElementById('co-risk').classList.toggle('on', !그룹이냐);
 
     /* 리스크 관리: 등록된 것이 있으면 그 화면을, 없으면 자리만 보여 준다. */
@@ -2201,6 +2225,8 @@
     loadComp(false);
     /* 리스크 등록표가 지표 웹훅에 실려 오므로 리스크 화면도 그것을 기다린다. */
     loadIndex(false);
+    /* 공시는 계열사를 고른 뒤에야 부른다 — 그룹 전체 화면에서는 쓰지 않는다. */
+    if (!그룹이냐){ discShown = DISC_STEP; loadDisc(coTab, false); }
     if (!그룹이냐 && 지금){
       renderRiskDashboard();
       if (지금.사건원장) loadCases(false);
@@ -5213,6 +5239,188 @@
   document.getElementById('dealNewsMore').addEventListener('click', function (){
     dealNewsShown += DEAL_NEWS_STEP;
     dealNewsDraw();
+  });
+
+  /* ---------- 계열사 주요 공시 ----------
+     실적은 석 달에 한 번 갱신되지만 공시는 날마다 나온다. 「요즘 이 회사에 무슨
+     일이 있나」를 보려고 DART 를 따로 열지 않게, 계열사 화면 안에 둔다.
+
+     자본시장 딜 현황의 「주요 공시」가 시장 전체에서 딜만 고른 것이라면, 이쪽은
+     우리가 보는 회사(계열사 + 그 계열사의 경쟁사)가 낸 것이면 종류를 가리지
+     않는다. 그래서 시트도 웹훅도 따로 둔다.
+
+     받아 둔 것은 계열사별로 기억한다 — 계열사를 오갈 때마다 다시 부르면 그때마다
+     몇 초씩 빈 화면이 된다. */
+  const DISC_STEP = 30;
+  const DISC_KINDS = ['정기보고서', '감사보고서', '실적·전망', '주요사항',
+                      '자금조달', '지분·주주', '지배구조', '기타'];
+
+  let discData = {};       // 계열사 → 조회 웹훅이 준 덩어리
+  let discLoading = {};    // 계열사 → 부르는 중인가
+  let discKind = '전체';
+  let discShown = DISC_STEP;
+
+  function 공시줄(x){
+    const 관 = x.관련
+      ? '<span class="dl-tag ' + (x.관련 === '계열사' ? 'mine' : 'rival') + '">' +
+        escapeHtml(x.관련) + '</span>'
+      : '';
+    /* 제출인이 회사 자신이면 적지 않는다 — 「케이씨씨 · 케이씨씨」가 된다.
+       국민연금공단처럼 남이 낸 것일 때만 누가 냈는지가 뜻을 가진다. */
+    const 낸이 = (x.제출인 && x.제출인 !== x.회사)
+      ? ' · ' + escapeHtml(x.제출인) : '';
+    return '<div class="dl-row' + (x.관련 === '계열사' ? ' mine' : '') + '">' +
+      '<div class="dl-b">' + 관 +
+        '<a class="dl-t" href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=' +
+          encodeURIComponent(x.번호) + '" target="_blank" rel="noopener">' +
+          escapeHtml(x.회사 || '') + '</a>' +
+        '<div class="dl-m"><span class="dl-tag">' + escapeHtml(x.구분 || '') + '</span>' +
+          escapeHtml(x.보고서명 || '') + 낸이 + '</div>' +
+      '</div><div class="dl-d">' + escapeHtml(딜날짜(x.일)) + '</div></div>';
+  }
+
+  function 공시쓸것(){
+    const 짐 = discData[coTab];
+    if (!짐) return [];
+    const q = String((document.getElementById('discQ') || {}).value || '').trim().toLowerCase();
+    const 회 = (document.getElementById('discCorp') || {}).value || '';
+    const 우리 = !!(document.getElementById('discMine') || {}).checked;
+    return (짐.공시 || []).filter(function (x){
+      if (discKind !== '전체' && x.구분 !== discKind) return false;
+      if (회 && x.회사 !== 회) return false;
+      if (우리 && x.관련 !== '계열사') return false;
+      if (q){
+        const 글 = (String(x.회사 || '') + ' ' + String(x.보고서명 || '')).toLowerCase();
+        if (글.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function discDraw(){
+    const 목록 = document.getElementById('discList');
+    if (!목록) return;
+    const 때 = document.getElementById('discAsOf');
+    const 셈칸 = document.getElementById('discCount');
+    const 빈칸 = document.getElementById('discEmpty');
+    const 더 = document.getElementById('discMore');
+    const 짐 = discData[coTab];
+
+    document.getElementById('discHeadTitle').textContent = co이름(coTab) + ' 주요 공시';
+    /* 회사 이름을 「LX + 탭 이름」으로 지어 쓰지 않는다 — 시트에는 엘엑스판토스처럼
+       적혀 있어 실제 이름과 어긋난다. */
+    document.getElementById('discHeadDesc').textContent =
+      '이 계열사와 등록된 경쟁사가 DART 에 낸 공시입니다. 회사 이름을 누르면 공시 원문으로 갑니다.';
+
+    if (!짐){
+      때.textContent = discLoading[coTab] ? '불러오는 중…' : '공시를 불러오지 못했습니다.';
+      목록.innerHTML = '';
+      document.getElementById('discKinds').innerHTML = '';
+      셈칸.textContent = '';
+      빈칸.style.display = 'none';
+      더.style.display = 'none';
+      return;
+    }
+
+    때.textContent = 짐.총건수
+      ? 딜날짜(짐.처음) + ' ~ ' + 딜날짜(짐.마지막) + ' · ' +
+        (짐.총건수 || 0).toLocaleString() + '건' +
+        (짐.asOf ? ' · ' + 짐.asOf + ' 기준' : '')
+      : '아직 쌓인 공시가 없습니다.';
+
+    /* 구분 버튼. 건수를 같이 적어 두면 어느 쪽을 눌러야 볼 것이 있는지
+       누르기 전에 안다. 한 건도 없는 구분은 아예 세우지 않는다. */
+    const 셈 = 짐.구분별 || {};
+    const 버튼 = function (k, n){
+      return '<button type="button" class="dl-kind' + (discKind === k ? ' active' : '') +
+        '" data-disc="' + escapeHtml(k) + '">' + escapeHtml(k) +
+        '<i>' + n.toLocaleString() + '</i></button>';
+    };
+    if (discKind !== '전체' && !셈[discKind]) discKind = '전체';
+    document.getElementById('discKinds').innerHTML =
+      버튼('전체', 짐.총건수 || 0) +
+      DISC_KINDS.filter(function (k){ return 셈[k]; })
+                .map(function (k){ return 버튼(k, 셈[k]); }).join('');
+
+    /* 회사 선택은 받아온 것에 있는 회사만 넣는다. 고른 값은 다시 그려도
+       그대로 남아야 하므로 값이 그대로면 손대지 않는다. */
+    const 회통 = document.getElementById('discCorp');
+    const 회셈 = 짐.회사별 || {};
+    const 새것 = '<option value="">회사 전체</option>' +
+      Object.keys(회셈).sort(function (a, b){ return 회셈[b] - 회셈[a]; })
+        .map(function (m){
+          return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) +
+            ' (' + 회셈[m].toLocaleString() + ')</option>';
+        }).join('');
+    if (회통.dataset.만든것 !== 새것){
+      const 골랐던 = 회통.value;
+      회통.innerHTML = 새것;
+      회통.dataset.만든것 = 새것;
+      회통.value = 골랐던;
+    }
+
+    const 것들 = 공시쓸것();
+    const 보일것 = 것들.slice(0, discShown);
+    셈칸.textContent = 것들.length
+      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건' +
+        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+      : '';
+    목록.innerHTML = 보일것.map(공시줄).join('');
+    빈칸.style.display = 것들.length ? 'none' : '';
+    if (!것들.length){
+      빈칸.textContent = 짐.총건수
+        ? '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.'
+        : '이 계열사로 등록된 회사의 공시가 아직 없습니다. 「경쟁사」 시트에 corp_code 가 채워져 있는지 보세요.';
+    }
+    if (것들.length > 보일것.length){
+      더.style.display = '';
+      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
+        Math.min(DISC_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
+    } else {
+      더.style.display = 'none';
+    }
+  }
+
+  function loadDisc(계열사, force){
+    if (!계열사 || 계열사 === '그룹') return;
+    if (discLoading[계열사]) return;
+    if (discData[계열사] && !force){ discDraw(); return; }
+    discLoading[계열사] = true;
+    discDraw();
+    fetch(DISC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS', 계열사: 계열사 })
+    })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        discLoading[계열사] = false;
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'failed');
+        discData[계열사] = d;
+        discDraw();
+      })
+      .catch(function (){
+        discLoading[계열사] = false;
+        delete discData[계열사];
+        discDraw();
+      });
+  }
+
+  /* 조건을 바꾸면 「더보기」로 펼쳐 둔 것은 처음으로 되돌린다. */
+  function 공시다시(){ discShown = DISC_STEP; discDraw(); }
+
+  document.getElementById('discKinds').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-disc]');
+    if (!b) return;
+    discKind = b.dataset.disc;
+    공시다시();
+  });
+  document.getElementById('discQ').addEventListener('input', 공시다시);
+  document.getElementById('discCorp').addEventListener('change', 공시다시);
+  document.getElementById('discMine').addEventListener('change', 공시다시);
+  document.getElementById('discMore').addEventListener('click', function (){
+    discShown += DISC_STEP;
+    discDraw();
   });
 
   /* 하위 탭. 공시는 웹훅에서, 보도는 이미 받아 둔 기사에서 오므로 켤 때마다
