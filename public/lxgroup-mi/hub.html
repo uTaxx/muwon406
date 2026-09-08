@@ -229,6 +229,10 @@
   .dl-tag.mine{background:var(--green); border-color:var(--green); color:#fff;}
   .dl-tag.rival{background:#fff; border-color:var(--green); color:var(--green-dark);}
 
+  /* 주요 공시 / 관련 보도 두 하위 탭. 한 번에 하나만 보인다. */
+  .dl-pane{display:none;}
+  .dl-pane.on{display:block;}
+
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
@@ -1523,18 +1527,39 @@
   <div id="tab-deal" class="tab-panel">
     <section class="card">
       <div class="step-head"><span class="step-num">💼</span><span class="step-title">자본시장 딜</span></div>
-      <div class="step-desc">DART 주요사항보고서를 매일 아침 시장 전체로 훑어, 지분 거래·합병·분할·영업양수도·유상증자·메자닌만 골라 모읍니다. <a href="manual.html#deal" style="color:var(--green); font-weight:700;">자세히 →</a></div>
-      <div class="ind-asof" id="dealAsOf">불러오는 중…</div>
-      <div class="dl-kinds" id="dealKinds"></div>
-      <div class="dl-line">
-        <input type="text" id="dealQ" placeholder="회사명·보고서명 검색">
-        <select id="dealMarket"><option value="">시장 전체</option></select>
-        <label class="dl-chk"><input type="checkbox" id="dealMine"> 계열사·경쟁사만</label>
+      <div class="step-desc">회사가 직접 낸 <b>주요 공시</b>와, 같은 딜을 다룬 <b>관련 보도</b>를 한 화면에 둡니다. <a href="manual.html#deal" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+
+      <div class="tab-nav grp-nav" id="dealTabs">
+        <button type="button" class="tab-btn active" data-deal="disc">📄 주요 공시</button>
+        <button type="button" class="tab-btn" data-deal="news">📰 관련 보도</button>
       </div>
-      <div class="step-desc" id="dealCount"></div>
-      <div id="dealList"></div>
-      <div class="empty-note" id="dealEmpty" style="display:none;"></div>
-      <button type="button" class="home-more" id="dealMore" style="display:none;"></button>
+
+      <div id="deal-disc" class="dl-pane on">
+        <div class="step-desc">DART 주요사항보고서를 매일 아침 시장 전체로 훑어, 지분 거래·합병·분할·영업양수도·유상증자·메자닌만 골라 모읍니다.</div>
+        <div class="ind-asof" id="dealAsOf">불러오는 중…</div>
+        <div class="dl-kinds" id="dealKinds"></div>
+        <div class="dl-line">
+          <input type="text" id="dealQ" placeholder="회사명·보고서명 검색">
+          <select id="dealMarket"><option value="">시장 전체</option></select>
+          <label class="dl-chk"><input type="checkbox" id="dealMine"> 계열사·경쟁사만</label>
+        </div>
+        <div class="step-desc" id="dealCount"></div>
+        <div id="dealList"></div>
+        <div class="empty-note" id="dealEmpty" style="display:none;"></div>
+        <button type="button" class="home-more" id="dealMore" style="display:none;"></button>
+      </div>
+
+      <div id="deal-news" class="dl-pane">
+        <div class="ind-asof" id="dealNewsAsOf">불러오는 중…</div>
+        <div class="dl-kinds" id="dealNewsGroups"></div>
+        <div class="dl-line">
+          <input type="text" id="dealNewsQ" placeholder="제목 검색">
+        </div>
+        <div class="step-desc" id="dealNewsCount"></div>
+        <div id="dealNewsList"></div>
+        <div class="empty-note" id="dealNewsEmpty" style="display:none;"></div>
+        <button type="button" class="home-more" id="dealNewsMore" style="display:none;"></button>
+      </div>
     </section>
   </div>
 
@@ -2248,7 +2273,7 @@
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
-    if (tabName === 'deal'){ loadDeal(false); }
+    if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
 
@@ -4994,6 +5019,149 @@
     dealDraw();
   });
 
+  /* ---------- 관련 보도 ----------
+     공시는 「이사회를 지났다」는 사실만 담는다. 누가 왜 파는지, 값이 어떻게
+     오갔는지, 인수 후보가 누구인지는 뉴스에만 있다. 두 화면을 따로 두면
+     같은 딜을 두 번 찾아야 하므로 하위 탭으로 나란히 둔다.
+
+     여기서 새로 부르는 웹훅은 없다 — 이미 받아 둔 allArticles 에서 그룹
+     이름에 「자본시장」이 든 것만 뽑는다. 그룹은 설정 시트에서 늘어날 수
+     있으므로 이름을 박아 두지 않고 받아온 것에서 찾아 버튼을 만든다.
+
+     날짜 범위는 공시(7일)와 달리 두지 않는다. 뉴스 수집은 주 1회라 이레로
+     자르면 수집 직후가 아니면 빈 화면이 된다. 대신 머리글에 실제 기간을
+     적어 무엇을 보고 있는지 밝힌다. */
+  const DEAL_NEWS_STEP = 20;
+  let dealNewsGroup = null;        // null = 아직 안 정함, '' = 자본시장 계열 전체
+  let dealNewsShown = DEAL_NEWS_STEP;
+
+  function 딜뉴스대상(){
+    return (allArticles || []).filter(function (a){
+      return artGroup(a).indexOf('자본시장') >= 0;
+    });
+  }
+  function 딜뉴스그룹들(){
+    const 셈 = {};
+    딜뉴스대상().forEach(function (a){
+      const g = artGroup(a);
+      셈[g] = (셈[g] || 0) + 1;
+    });
+    /* 딜 단계를 말하는 그룹을 앞에 세운다 — 이 화면에서 먼저 봐야 할 것이다. */
+    return Object.keys(셈).sort(function (a, b){
+      const x = a.indexOf('딜') >= 0 ? 0 : 1, y = b.indexOf('딜') >= 0 ? 0 : 1;
+      return x !== y ? x - y : (a < b ? -1 : a > b ? 1 : 0);
+    }).map(function (g){ return { g: g, n: 셈[g] }; });
+  }
+
+  function 딜뉴스쓸것(){
+    const q = String((document.getElementById('dealNewsQ') || {}).value || '').trim().toLowerCase();
+    return sortByDateDesc(딜뉴스대상().filter(function (a){
+      if (dealNewsGroup && artGroup(a) !== dealNewsGroup) return false;
+      if (q && String(a.title || '').toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }));
+  }
+
+  function 딜뉴스줄(a){
+    const 별 = getStars(a.importance);
+    const 까닭 = String(a.reason || '');
+    return '<div class="hf"><div class="hf-b">' +
+        '<a class="hf-t" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">' +
+          getDirectionIcon(a.direction) + escapeHtml(a.title) + '</a>' +
+        (별 ? ' <span class="stars">' + 별 + '</span>' : '') +
+        '<div class="hf-m">' + getGroupEmoji(a.group) + ' ' + escapeHtml(artGroup(a)) +
+          (까닭 ? ' · ' + escapeHtml(까닭.length > 70 ? 까닭.slice(0, 70) + '…' : 까닭) : '') +
+        '</div>' +
+      '</div><div class="hf-d">' + escapeHtml(articleDateKey(a) || '날짜미상') + '</div></div>';
+  }
+
+  function dealNewsDraw(){
+    const 목록 = document.getElementById('dealNewsList');
+    if (!목록) return;
+    const 때 = document.getElementById('dealNewsAsOf');
+    const 셈칸 = document.getElementById('dealNewsCount');
+    const 빈칸 = document.getElementById('dealNewsEmpty');
+    const 더 = document.getElementById('dealNewsMore');
+
+    const 그룹들 = 딜뉴스그룹들();
+    if (dealNewsGroup === null){
+      /* 「자본시장」 그룹은 시장 논평이 대부분이라 처음부터 다 깔면 딜 기사가
+         묻힌다. 딜 단계 그룹이 있으면 그것부터 보여준다. */
+      const 딜것 = 그룹들.filter(function (x){ return x.g.indexOf('딜') >= 0; })[0];
+      dealNewsGroup = 딜것 ? 딜것.g : '';
+    }
+    if (dealNewsGroup && !그룹들.some(function (x){ return x.g === dealNewsGroup; })) dealNewsGroup = '';
+
+    const 다 = 딜뉴스대상();
+    const 버튼 = function (k, 이름, n){
+      return '<button type="button" class="dl-kind' + (dealNewsGroup === k ? ' active' : '') +
+        '" data-dnews="' + escapeHtml(k) + '">' + escapeHtml(이름) +
+        '<i>' + n.toLocaleString() + '</i></button>';
+    };
+    document.getElementById('dealNewsGroups').innerHTML =
+      버튼('', '전체', 다.length) +
+      그룹들.map(function (x){ return 버튼(x.g, x.g, x.n); }).join('');
+
+    const 것들 = 딜뉴스쓸것();
+    const 날들 = 다.map(articleDateKey).filter(Boolean).sort();
+    때.textContent = 다.length
+      ? (날들.length ? 날들[0] + ' ~ ' + 날들[날들.length - 1] + ' 수집분 · ' : '') +
+        다.length.toLocaleString() + '건'
+      : (allArticles && allArticles.length
+          ? '자본시장 그룹으로 수집된 기사가 없습니다.'
+          : '기사를 불러오는 중…');
+
+    const 보일것 = 것들.slice(0, dealNewsShown);
+    셈칸.textContent = 것들.length
+      ? '조건에 맞는 기사 ' + 것들.length.toLocaleString() + '건' +
+        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+      : '';
+    목록.innerHTML = 보일것.map(딜뉴스줄).join('');
+    빈칸.style.display = 것들.length ? 'none' : '';
+    if (!것들.length) 빈칸.textContent = '조건에 맞는 기사가 없습니다. 그룹이나 검색어를 바꿔보세요.';
+    if (것들.length > 보일것.length){
+      더.style.display = '';
+      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
+        Math.min(DEAL_NEWS_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
+    } else {
+      더.style.display = 'none';
+    }
+  }
+
+  function 딜뉴스다시(){ dealNewsShown = DEAL_NEWS_STEP; dealNewsDraw(); }
+
+  document.getElementById('dealNewsGroups').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-dnews]');
+    if (!b) return;
+    dealNewsGroup = b.dataset.dnews;
+    딜뉴스다시();
+  });
+  document.getElementById('dealNewsQ').addEventListener('input', 딜뉴스다시);
+  document.getElementById('dealNewsMore').addEventListener('click', function (){
+    dealNewsShown += DEAL_NEWS_STEP;
+    dealNewsDraw();
+  });
+
+  /* 하위 탭. 공시는 웹훅에서, 보도는 이미 받아 둔 기사에서 오므로 켤 때마다
+     각각 한 번씩 그린다. */
+  let dealPick = 기억('lx-deal-pick') || 'disc';
+  function dealPaneDraw(){
+    if (dealPick !== 'news') dealPick = 'disc';
+    document.querySelectorAll('#dealTabs .tab-btn').forEach(function (b){
+      b.classList.toggle('active', b.dataset.deal === dealPick);
+    });
+    document.getElementById('deal-disc').classList.toggle('on', dealPick === 'disc');
+    document.getElementById('deal-news').classList.toggle('on', dealPick === 'news');
+    if (dealPick === 'news') dealNewsDraw(); else dealDraw();
+  }
+  document.getElementById('dealTabs').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-deal]');
+    if (!b) return;
+    dealPick = b.dataset.deal;
+    기억('lx-deal-pick', dealPick);
+    dealPaneDraw();
+  });
+
 
 
   /* ---------- Home ----------
@@ -5460,6 +5628,7 @@
         applyFilters();
         renderRiskDashboard();
         renderHome();
+        dealNewsDraw();
 
         const missed = keys.length - (r.data.deleted || 0);
         alert(r.data.deleted + '건을 지웠습니다.' +
@@ -5547,6 +5716,7 @@
         applyFilters();
         renderRiskDashboard();
         renderHome();
+        dealNewsDraw();
       })
       .catch(err => {
         hideLoading();
