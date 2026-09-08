@@ -4799,16 +4799,20 @@
      여기서 세는 것은 없다 — 건수도 구분도 조회 웹훅이 만들어 준 것을 그대로
      쓴다. 화면과 서버가 같은 숫자를 따로 세면 반드시 어긋난다.
 
-     기본을 M&A 로 두는 까닭은 건수 때문이다. 60일에 900건이 넘는데 그중
-     600건 넘는 유상증자·메자닌은 대개 코스닥 소형주의 자금 조달이라
-     전략 부서가 볼 것이 아니다. 필요하면 버튼으로 켠다. */
+     화면에는 **최근 7일 접수분만** 세운다. 시트에는 60일치가 쌓이지만, 이
+     화면을 여는 까닭은 「이번 주에 무엇이 새로 나왔나」이지 「두 달 동안
+     무엇이 있었나」가 아니다. 60일을 다 세우면 900건이 넘어 새로 들어온
+     것이 묻힌다. 지난 것을 봐야 하면 시트를 연다.
+     범위를 좁혔으므로 구분 기본값도 「전체」로 둔다 — 한 주치는 유상증자까지
+     같이 봐도 몇십 건이라 한눈에 든다. */
   const DEAL_MNA = ['지분취득', '지분처분', '합병·분할', '영업·자산 양수도'];
   const DEAL_KINDS = DEAL_MNA.concat(['유상증자', '메자닌']);
   const DEAL_STEP = 40;
+  const DEAL_DAYS = 7;
 
   let dealData = null;
   let dealLoading = false;
-  let dealKind = 'M&A';
+  let dealKind = '전체';
   let dealShown = DEAL_STEP;
 
   /* 시트에는 20260907 로 들어 있다. 사람이 읽는 자리에서는 늘 하이픈을 넣는다. */
@@ -4817,12 +4821,33 @@
     return t.length === 8 ? t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6) : t;
   }
 
+  /* 오늘을 넣어 이레째 되는 날. 글자로 견주므로 20260902 꼴 그대로 쓴다. */
+  function 딜자름(){
+    const d = new Date(Date.now() - (DEAL_DAYS - 1) * 86400000);
+    const p2 = function (n){ return String(n).padStart(2, '0'); };
+    return '' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
+  }
+  /* 최근 이레치. Home 카드와 딜 화면이 같은 것을 봐야 두 자리의 숫자가
+     어긋나지 않는다. 날짜 칸 이름은 「일」이다(「접수일」이 아니다). */
+  function 딜최근(){
+    const 자름 = 딜자름();
+    return ((dealData && dealData.딜) || []).filter(function (x){
+      return String(x.일 || '').trim() >= 자름;
+    });
+  }
+  /* 구분별 셈. 서버가 준 것은 60일치라 이레치 화면에 쓸 수 없다. */
+  function 딜셈(것들){
+    const 셈 = {};
+    것들.forEach(function (x){ 셈[x.구분] = (셈[x.구분] || 0) + 1; });
+    return 셈;
+  }
+
   function 딜쓸것(){
     if (!dealData) return [];
     const q = String((document.getElementById('dealQ') || {}).value || '').trim().toLowerCase();
     const 시 = (document.getElementById('dealMarket') || {}).value || '';
     const 우리 = !!(document.getElementById('dealMine') || {}).checked;
-    return (dealData.딜 || []).filter(function (x){
+    return 딜최근().filter(function (x){
       if (dealKind === 'M&A'){ if (DEAL_MNA.indexOf(x.구분) < 0) return false; }
       else if (dealKind !== '전체' && x.구분 !== dealKind) return false;
       if (시 && x.시장 !== 시) return false;
@@ -4867,11 +4892,14 @@
       return;
     }
 
-    const 셈 = dealData.구분별 || {};
+    const 최근 = 딜최근();
+    const 셈 = 딜셈(최근);
     const 몫 = function (ks){ return ks.reduce(function (s, k){ return s + (셈[k] || 0); }, 0); };
-    때.textContent = 딜날짜(dealData.처음) + ' ~ ' + 딜날짜(dealData.마지막) + ' 접수분 · ' +
-      (dealData.총건수 || 0).toLocaleString() + '건' +
-      (dealData.asOf ? ' · ' + dealData.asOf + ' 기준' : '');
+    때.textContent = 딜날짜(딜자름()) + ' 이후 ' + DEAL_DAYS + '일 접수분 · ' +
+      최근.length.toLocaleString() + '건' +
+      (dealData.asOf ? ' · ' + dealData.asOf + ' 기준' : '') +
+      ' · 시트에는 ' + 딜날짜(dealData.처음) + '부터 ' +
+      (dealData.총건수 || 0).toLocaleString() + '건이 쌓여 있습니다';
 
     /* 구분 버튼. 건수를 같이 적어 두면 어느 쪽을 눌러야 볼 것이 있는지
        누르기 전에 안다. */
@@ -4881,19 +4909,21 @@
         '<i>' + n.toLocaleString() + '</i></button>';
     };
     document.getElementById('dealKinds').innerHTML =
+      버튼('전체', '전체', 최근.length) +
       버튼('M&A', 'M&A', 몫(DEAL_MNA)) +
-      DEAL_KINDS.map(function (k){ return 버튼(k, k, 셈[k] || 0); }).join('') +
-      버튼('전체', '전체', dealData.총건수 || 0);
+      DEAL_KINDS.map(function (k){ return 버튼(k, k, 셈[k] || 0); }).join('');
 
     /* 시장 선택은 받아온 것에 있는 시장만 넣는다. 고른 값은 다시 그려도
        그대로 남아야 하므로 값이 그대로면 손대지 않는다. */
     const 시통 = document.getElementById('dealMarket');
+    const 시셈 = {};
+    최근.forEach(function (x){ 시셈[x.시장] = (시셈[x.시장] || 0) + 1; });
     const 시들 = ['유가증권', '코스닥', '코넥스', '기타·비상장']
-      .filter(function (m){ return (dealData.시장별 || {})[m]; });
+      .filter(function (m){ return 시셈[m]; });
     const 새것 = '<option value="">시장 전체</option>' +
       시들.map(function (m){
         return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) +
-          ' (' + (dealData.시장별[m] || 0).toLocaleString() + ')</option>';
+          ' (' + 시셈[m].toLocaleString() + ')</option>';
       }).join('');
     if (시통.dataset.만든것 !== 새것){
       const 골랐던 = 시통.value;
@@ -5294,23 +5324,12 @@
       return;
     }
 
-    /* Home 은 「이번 주에 무엇이 새로 나왔나」를 보는 자리다. 60일치를 다 세면
-       숫자가 늘 커서 어느 주에 무슨 일이 있었는지가 안 보인다. 최근 7일만
-       세고, 그 안에서 계열사·경쟁사 것과 M&A 를 앞세운다. 전체는 딜 탭에 있다. */
-    const 이레 = 7;
-    const 자름 = (function (){
-      const d = new Date(Date.now() - (이레 - 1) * 86400000);
-      const p2 = function (n){ return String(n).padStart(2, '0'); };
-      return '' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
-    })();
-    const 최근 = (dealData.딜 || []).filter(function (x){
-      return String(x.접수일 || '').trim() >= 자름;
-    });
+    /* 딜 화면과 똑같이 최근 이레치만 본다 — 같은 함수를 써야 두 자리의 숫자가
+       어긋나지 않는다. 그 안에서 계열사·경쟁사 것과 M&A 를 앞세운다. */
+    const 최근 = 딜최근();
+    const 셈 = 딜셈(최근);
 
-    const 셈 = {};
-    최근.forEach(function (x){ 셈[x.구분] = (셈[x.구분] || 0) + 1; });
-
-    말.textContent = 딜날짜(자름) + ' 이후 ' + 이레 + '일 · 주요사항보고서 ' +
+    말.textContent = 딜날짜(딜자름()) + ' 이후 ' + DEAL_DAYS + '일 · 주요사항보고서 ' +
       최근.length.toLocaleString() + '건';
 
     const 칸 = function (n, l, 뜨겁나){
@@ -5330,7 +5349,7 @@
         칸(관련.length, '계열사·경쟁사', 관련.length > 0) +
       '</div>' +
       (뽑.length ? 뽑.map(딜줄).join('')
-                 : '<div class="empty-note">최근 ' + 이레 + '일 안에 올라온 딜 공시가 없습니다.</div>');
+                 : '<div class="empty-note">최근 ' + DEAL_DAYS + '일 안에 올라온 딜 공시가 없습니다.</div>');
   }
 
   function renderHome(){
