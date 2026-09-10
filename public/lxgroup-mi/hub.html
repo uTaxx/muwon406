@@ -4971,13 +4971,16 @@
      같이 봐도 몇십 건이라 한눈에 든다. */
   const DEAL_MNA = ['지분취득', '지분처분', '합병·분할', '영업·자산 양수도'];
   const DEAL_KINDS = DEAL_MNA.concat(['유상증자', '메자닌']);
-  const DEAL_STEP = 40;
   const DEAL_DAYS = 7;
+  /* 개별 공시 건수가 아니라 회사 수로 자른다. 공시 40건이 서로 다른 회사
+     40곳에서 하나씩 나오면 화면이 낯선 회사 이름으로 도배된다 — 최근에
+     낸 회사 열 곳까지만 펴 보이고 나머지는 펼치기로 넘긴다. */
+  const DEAL_COMPANY_STEP = 10;
 
   let dealData = null;
   let dealLoading = false;
   let dealKind = '전체';
-  let dealShown = DEAL_STEP;
+  let dealCompanyExpanded = false;
 
   /* 시트에는 20260907 로 들어 있다. 사람이 읽는 자리에서는 늘 하이픈을 넣는다. */
   function 딜날짜(s){
@@ -5097,18 +5100,28 @@
     }
 
     const 것들 = 딜쓸것();
-    const 보일것 = 것들.slice(0, dealShown);
+    /* 회사가 처음 나온 순서 = 그 회사의 가장 최근 공시 순서(것들이 날짜
+       내림차순이므로). 그 순서대로 열 곳까지만 편다. */
+    const 회사순서 = [];
+    것들.forEach(function (x){
+      const 이름 = x.회사 || '';
+      if (회사순서.indexOf(이름) < 0) 회사순서.push(이름);
+    });
+    const 보일회사 = dealCompanyExpanded ? 회사순서 : 회사순서.slice(0, DEAL_COMPANY_STEP);
+    const 보일회사셋 = new Set(보일회사);
+    const 보일것 = 것들.filter(function (x){ return 보일회사셋.has(x.회사 || ''); });
+
     셈칸.textContent = 것들.length
-      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건' +
-        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건 · ' +
+        회사순서.length.toLocaleString() + '개 기업' +
+        (회사순서.length > 보일회사.length ? ' 중 ' + 보일회사.length.toLocaleString() + '개 기업' : '')
       : '';
     목록.innerHTML = 보일것.map(딜줄).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
     if (!것들.length) 빈칸.textContent = '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.';
-    if (것들.length > 보일것.length){
+    if (회사순서.length > 보일회사.length){
       더.style.display = '';
-      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
-        Math.min(DEAL_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
+      더.textContent = '나머지 ' + (회사순서.length - 보일회사.length).toLocaleString() + '개 기업 펼치기 ▾';
     } else {
       더.style.display = 'none';
     }
@@ -5142,7 +5155,7 @@
 
   /* 조건을 바꾸면 「더보기」로 펼쳐 둔 것은 처음으로 되돌린다 — 그러지 않으면
      좁혔는데도 사백 건이 그대로 깔려 있어 좁힌 티가 안 난다. */
-  function 딜다시(){ dealShown = DEAL_STEP; dealDraw(); }
+  function 딜다시(){ dealCompanyExpanded = false; dealDraw(); }
 
   document.getElementById('dealKinds').addEventListener('click', function (e){
     const b = e.target.closest('button[data-kind]');
@@ -5154,7 +5167,7 @@
   document.getElementById('dealMarket').addEventListener('change', 딜다시);
   document.getElementById('dealMine').addEventListener('change', 딜다시);
   document.getElementById('dealMore').addEventListener('click', function (){
-    dealShown += DEAL_STEP;
+    dealCompanyExpanded = true;
     dealDraw();
   });
 
