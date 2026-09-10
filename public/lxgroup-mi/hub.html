@@ -259,6 +259,10 @@
     justify-content:flex-start; gap:1px; border-radius:7px; font-size:10.5px;
     font-variant-numeric:tabular-nums; cursor:pointer; color:var(--text); background:none; border:none;
     font-family:inherit; padding:3px 3px 4px; text-align:left; overflow:hidden;}
+  /* 공휴일 칸은 옅은 분홍으로 채운다. hover·오늘·선택 배경이 이 뒤에 이어져서
+     같은 우선순위일 때 나중에 적힌 규칙이 이기므로, 그 칸에서는 분홍이 자동으로
+     덮인다 — 겹침을 따로 처리하는 규칙을 추가할 필요가 없다. */
+  .cal-cell.holiday{background:rgba(192,57,43,.08);}
   .cal-cell:hover{background:var(--green-tint);}
   .cal-cell.out{color:var(--muted); opacity:.4;}
   .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--green);}
@@ -274,12 +278,13 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .cal-cell.sel .cal-evt-label{color:#fff;}
   .cal-cell.out .cal-evt-label{color:var(--muted);}
-  .cal-evt-row{display:flex; gap:9px; align-items:baseline; padding:7px 0;
-    border-bottom:1px solid var(--line); font-size:12.5px;}
+  /* 날짜와 제목을 한 줄에 나란히 뒀더니, 날짜 칸 폭(70px)보다 긴 값(예:
+     '2026-09-18 15:00', 여러 날짜 일정의 'YYYY-MM-DD ~ YYYY-MM-DD')이
+     줄바꿈 없이 옆 제목 위로 넘쳐 겹쳐 보였다. 날짜를 제목 위 별도 줄로
+     내려서, 날짜 길이와 무관하게 겹치지 않게 한다. */
+  .cal-evt-row{padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
   .cal-evt-row:last-child{border-bottom:none;}
-  .cal-evt-date{color:var(--muted); font-size:11px; white-space:nowrap; flex-shrink:0; width:70px;
-    font-variant-numeric:tabular-nums;}
-  .cal-evt-b{flex:1; min-width:0;}
+  .cal-evt-date{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; margin-bottom:2px;}
   .cal-evt-title{font-weight:700; color:var(--text);}
   .cal-evt-loc{color:var(--muted); font-size:11px; margin-top:1px;}
 
