@@ -233,6 +233,42 @@
   .dl-pane{display:none;}
   .dl-pane.on{display:block;}
 
+  /* ── 주요 일정 ──────────────────────────────────────────
+     팀원들이 iOS 캘린더의 공개 캘린더 링크로 올린 연간 주요 행사를 본다.
+     화면을 많이 차지하면 안 되므로 달력 칸은 작게 두고, 아래에 다가오는
+     일정 목록을 짧게 붙인다 — 달력은 '언제 몰려 있나'를 보는 용도고,
+     실제로 읽는 것은 목록 쪽이다. */
+  .cal-head{display:flex; align-items:center; gap:8px; margin:10px 0 8px;}
+  .cal-nav{background:var(--card); border:1.5px solid var(--line); border-radius:8px;
+    width:28px; height:28px; font-size:15px; line-height:1; cursor:pointer;
+    color:var(--green-dark); flex-shrink:0;}
+  .cal-nav:hover{background:var(--green-tint); border-color:var(--green);}
+  .cal-month{font-weight:700; font-size:13.5px; flex:1; text-align:center;}
+  .cal-today{background:var(--card); border:1.5px solid var(--line); border-radius:8px;
+    padding:5px 10px; font-size:11.5px; font-weight:700; color:var(--green-dark);
+    cursor:pointer; flex-shrink:0;}
+  .cal-today:hover{background:var(--green-tint); border-color:var(--green);}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; margin-bottom:6px;}
+  .cal-dow{font-size:10px; font-weight:700; color:var(--muted); text-align:center; padding:2px 0 4px;}
+  .cal-cell{aspect-ratio:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:1px; border-radius:7px; font-size:11px;
+    font-variant-numeric:tabular-nums; cursor:pointer; color:var(--text); background:none; border:none;
+    font-family:inherit; padding:0;}
+  .cal-cell:hover{background:var(--green-tint);}
+  .cal-cell.out{color:var(--muted); opacity:.4;}
+  .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--green); font-weight:700;}
+  .cal-cell.sel{background:var(--green); color:#fff;}
+  .cal-dot{width:4px; height:4px; border-radius:50%; background:var(--green); margin-top:1px;}
+  .cal-cell.sel .cal-dot{background:#fff;}
+  .cal-evt-row{display:flex; gap:9px; align-items:baseline; padding:7px 0;
+    border-bottom:1px solid var(--line); font-size:12.5px;}
+  .cal-evt-row:last-child{border-bottom:none;}
+  .cal-evt-date{color:var(--muted); font-size:11px; white-space:nowrap; flex-shrink:0; width:70px;
+    font-variant-numeric:tabular-nums;}
+  .cal-evt-b{flex:1; min-width:0;}
+  .cal-evt-title{font-weight:700; color:var(--text);}
+  .cal-evt-loc{color:var(--muted); font-size:11px; margin-top:1px;}
+
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
@@ -990,6 +1026,7 @@
       <button type="button" class="tab-btn" data-tab="co">계열사<br> 현황</button>
       <button type="button" class="tab-btn" data-tab="index">시장<br> 지표</button>
       <button type="button" class="tab-btn" data-tab="deal">자본시장<br> 딜 현황</button>
+      <button type="button" class="tab-btn" data-tab="cal">주요<br> 일정</button>
     </div>
   </div>
 
@@ -1612,6 +1649,27 @@
     </section>
   </div>
 
+  <!-- 탭 9: 주요 일정 — 팀원이 iOS 캘린더의 공개 캘린더 링크로 올린 연간 주요
+       행사를 본다. 편집은 여기서 하지 않는다(iOS 캘린더 쪽이 원본이고 여긴
+       보기 전용) — 그래야 "어느 쪽이 맞나"가 갈리지 않는다. -->
+  <div id="tab-cal" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📅</span><span class="step-title">주요 일정</span></div>
+      <div class="step-desc">iOS 캘린더의 공개 캘린더 링크로 올린 연간 주요 행사입니다. 일정을 더하거나 고치려면 iOS 캘린더 앱에서 합니다.</div>
+      <div class="ind-asof" id="calAsOf">불러오는 중…</div>
+      <div class="cal-head">
+        <button type="button" class="cal-nav" id="calPrev" aria-label="이전 달">‹</button>
+        <div class="cal-month" id="calMonthLabel"></div>
+        <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
+        <button type="button" class="cal-today" id="calTodayBtn">오늘</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="step-desc" id="calListTitle">다가오는 일정</div>
+      <div id="calList"></div>
+      <div class="empty-note" id="calEmpty" style="display:none;"></div>
+    </section>
+  </div>
+
   </div>
 
 </main>
@@ -1633,6 +1691,7 @@
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
+  const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
   const DISC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-회사공시');
   const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
   const PAGE_SIZE = 50;
@@ -2348,6 +2407,7 @@
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
     if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); }
+    if (tabName === 'cal'){ loadCal(false); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
 
@@ -5496,7 +5556,180 @@
     dealPaneDraw();
   });
 
+  /* ---------- 주요 일정 ----------
+     iOS 캘린더의 공개 캘린더 링크를 n8n이 매일 읽어 시트에 앉히고, 여기서는
+     그 시트를 그대로 그린다 — 대시보드에서 일정을 고치는 기능은 없다.
+     달력은 '몰려 있는 달'을 보는 용도라 칸을 작게 두고, 실제로 읽는 목록은
+     달력 아래 따로 짧게 둔다. 날짜를 누르면 목록이 그 날로 좁혀진다. */
+  let calData = null;
+  let calLoading = false;
+  const 오늘 = new Date();
+  let calYear = 오늘.getFullYear();
+  let calMonth = 오늘.getMonth(); // 0-11
+  let calSelDate = null; // 'YYYY-MM-DD', 고르지 않았으면 null
 
+  function 오늘날짜키(){
+    return 오늘.getFullYear() + '-' + String(오늘.getMonth() + 1).padStart(2, '0') + '-' + String(오늘.getDate()).padStart(2, '0');
+  }
+  function 날짜키(y, m, d){
+    return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+  /* 하루짜리든 여러 날짜에 걸친 일정이든, '시작일 ~ 종료일 하루 전'을
+     그 일정이 걸리는 날로 본다 — 종일 일정의 종료일은 iCalendar 관례상
+     다음날 0시라 그대로 쓰면 하루 밀린다. */
+  function 일정날짜들(ev){
+    const out = [];
+    let d = new Date(ev.시작일 + 'T00:00:00');
+    const 끝 = new Date((ev.종료일 || ev.시작일) + 'T00:00:00');
+    if (!ev.종일여부 || 끝 <= d) { out.push(ev.시작일); return out; }
+    while (d < 끝 && out.length < 31){
+      out.push(날짜키(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setDate(d.getDate() + 1);
+    }
+    return out.length ? out : [ev.시작일];
+  }
+
+  function calEvtsByDate(){
+    const 것들 = (calData && calData.일정) || [];
+    const map = {};
+    것들.forEach(function (ev){
+      일정날짜들(ev).forEach(function (k){
+        (map[k] = map[k] || []).push(ev);
+      });
+    });
+    return map;
+  }
+
+  function calGrid그리기(){
+    const 그리드 = document.getElementById('calGrid');
+    const 라벨 = document.getElementById('calMonthLabel');
+    라벨.textContent = calYear + '년 ' + (calMonth + 1) + '월';
+
+    const byDate = calEvtsByDate();
+    const dow = ['일', '월', '화', '수', '목', '금', '토'];
+    let html = dow.map(function (w){ return '<div class="cal-dow">' + w + '</div>'; }).join('');
+
+    const 첫날 = new Date(calYear, calMonth, 1);
+    const 시작칸 = 첫날.getDay(); // 이번 달 1일이 놓일 칸(0=일)
+    const 이달일수 = new Date(calYear, calMonth + 1, 0).getDate();
+    const 지난달일수 = new Date(calYear, calMonth, 0).getDate();
+    const 오늘키 = 오늘날짜키();
+
+    const cells = [];
+    for (let i = 0; i < 시작칸; i++){
+      cells.push({ y: calMonth === 0 ? calYear - 1 : calYear, m: calMonth === 0 ? 11 : calMonth - 1, d: 지난달일수 - 시작칸 + 1 + i, out: true });
+    }
+    for (let d = 1; d <= 이달일수; d++) cells.push({ y: calYear, m: calMonth, d: d, out: false });
+    while (cells.length % 7 !== 0){
+      const last = cells[cells.length - 1];
+      const nd = new Date(last.y, last.m, last.d + 1);
+      cells.push({ y: nd.getFullYear(), m: nd.getMonth(), d: nd.getDate(), out: true });
+    }
+
+    html += cells.map(function (c){
+      const key = 날짜키(c.y, c.m, c.d);
+      const cls = ['cal-cell'];
+      if (c.out) cls.push('out');
+      if (key === 오늘키) cls.push('today');
+      if (key === calSelDate) cls.push('sel');
+      const 점 = byDate[key] && byDate[key].length ? '<span class="cal-dot"></span>' : '';
+      return '<button type="button" class="' + cls.join(' ') + '" data-date="' + key + '">' + c.d + 점 + '</button>';
+    }).join('');
+
+    그리드.innerHTML = html;
+  }
+
+  function calEvtRow(ev){
+    const 시작 = ev.시작일 + (ev.시작시각 ? ' ' + ev.시작시각 : '');
+    const 범위 = (ev.종료일 && ev.종료일 !== ev.시작일) ? (ev.시작일 + ' ~ ' + ev.종료일) : 시작;
+    return '<div class="cal-evt-row">' +
+      '<div class="cal-evt-date">' + escapeHtml(범위) + '</div>' +
+      '<div class="cal-evt-b"><div class="cal-evt-title">' + escapeHtml(ev.제목 || '(제목 없음)') + '</div>' +
+      (ev.장소 ? '<div class="cal-evt-loc">📍 ' + escapeHtml(ev.장소) + '</div>' : '') +
+      '</div></div>';
+  }
+
+  function calListDraw(){
+    const 목록 = document.getElementById('calList');
+    const 빈칸 = document.getElementById('calEmpty');
+    const 제목칸 = document.getElementById('calListTitle');
+    const byDate = calEvtsByDate();
+
+    let 것들;
+    if (calSelDate){
+      제목칸.textContent = calSelDate + ' 일정';
+      것들 = (byDate[calSelDate] || []).slice();
+    } else {
+      제목칸.textContent = '다가오는 일정';
+      const 오늘키 = 오늘날짜키();
+      것들 = ((calData && calData.일정) || []).filter(function (ev){ return ev.시작일 >= 오늘키; }).slice(0, 8);
+    }
+    것들.sort(function (a, b){
+      if (a.시작일 !== b.시작일) return a.시작일 < b.시작일 ? -1 : 1;
+      return (a.시작시각 || '').localeCompare(b.시작시각 || '');
+    });
+
+    목록.innerHTML = 것들.map(calEvtRow).join('');
+    빈칸.style.display = 것들.length ? 'none' : '';
+    if (!것들.length){
+      빈칸.textContent = calSelDate ? '이 날짜에는 일정이 없습니다.' : '다가오는 일정이 없습니다.';
+    }
+  }
+
+  function calDraw(){
+    const 때 = document.getElementById('calAsOf');
+    if (!calData){
+      때.textContent = calLoading ? '불러오는 중…' : '주요 일정을 불러오지 못했습니다.';
+      document.getElementById('calGrid').innerHTML = '';
+      document.getElementById('calList').innerHTML = '';
+      document.getElementById('calEmpty').style.display = 'none';
+      return;
+    }
+    때.textContent = (calData.asOf ? calData.asOf + ' 기준' : '') +
+      ' · 캘린더 ' + escapeHtml(calData.캘린더이름 || 'LX Holdings');
+    calGrid그리기();
+    calListDraw();
+  }
+
+  function loadCal(force){
+    if (calLoading) return;
+    if (calData && !force){ calDraw(); return; }
+    calLoading = true;
+    calDraw();
+    fetch(CAL_URL)
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        calLoading = false;
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'failed');
+        calData = d;
+        calDraw();
+      })
+      .catch(function (){
+        calLoading = false;
+        calData = null;
+        calDraw();
+      });
+  }
+
+  document.getElementById('calPrev').addEventListener('click', function (){
+    calMonth--; if (calMonth < 0){ calMonth = 11; calYear--; }
+    calDraw();
+  });
+  document.getElementById('calNext').addEventListener('click', function (){
+    calMonth++; if (calMonth > 11){ calMonth = 0; calYear++; }
+    calDraw();
+  });
+  document.getElementById('calTodayBtn').addEventListener('click', function (){
+    calYear = 오늘.getFullYear(); calMonth = 오늘.getMonth(); calSelDate = null;
+    calDraw();
+  });
+  document.getElementById('calGrid').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-date]');
+    if (!b) return;
+    calSelDate = (calSelDate === b.dataset.date) ? null : b.dataset.date;
+    calGrid그리기();
+    calListDraw();
+  });
 
   /* ---------- Home ----------
      탭을 하나씩 눌러 봐야 무슨 일이 있었는지 알 수 있던 것이 이 화면의 가장 큰
@@ -6750,7 +6983,7 @@
        타고 새로 들어온 것은 Home 부터 연다 — 링크를 받은 사람은 오늘 무슨 일이
        있었는지부터 보고 싶어 한다. 둘을 가르지 않고 늘 Home 으로 보내면, 설정을
        바꿔 놓고 새로고침한 사람이 매번 Home 으로 튕긴다. */
-    const 아는탭 = ['home','search','apply','adhoc','knowledge','co','index','deal','cfg'];
+    const 아는탭 = ['home','search','apply','adhoc','knowledge','co','index','deal','cal','cfg'];
     const 새로고침이냐 = (function (){
       try {
         const n = (performance.getEntriesByType('navigation') || [])[0];
