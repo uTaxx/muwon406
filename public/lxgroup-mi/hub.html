@@ -282,8 +282,12 @@
      '2026-09-18 15:00', 여러 날짜 일정의 'YYYY-MM-DD ~ YYYY-MM-DD')이
      줄바꿈 없이 옆 제목 위로 넘쳐 겹쳐 보였다. 날짜를 제목 위 별도 줄로
      내려서, 날짜 길이와 무관하게 겹치지 않게 한다. */
-  .cal-evt-row{padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+  .cal-evt-row{padding:7px 0 7px 10px; border-left:3px solid transparent;
+    border-bottom:1px solid var(--line); font-size:12.5px;}
   .cal-evt-row:last-child{border-bottom:none;}
+  /* 날짜를 고르면 목록을 그 날짜만 남기고 줄이던 것을, 전체 목록은 그대로
+     두고 고른 날짜의 일정만 왼쪽 띠 + 옅은 배경으로 표시하도록 바꿨다. */
+  .cal-evt-row.sel{background:var(--green-tint); border-left-color:var(--green);}
   .cal-evt-date{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; margin-bottom:2px;}
   .cal-evt-title{font-weight:700; color:var(--text);}
   .cal-evt-loc{color:var(--muted); font-size:11px; margin-top:1px;}
@@ -5710,40 +5714,41 @@
     그리드.innerHTML = html;
   }
 
-  function calEvtRow(ev){
+  function calEvtRow(ev, 강조){
     const 시작 = ev.시작일 + (ev.시작시각 ? ' ' + ev.시작시각 : '');
     const 범위 = (ev.종료일 && ev.종료일 !== ev.시작일) ? (ev.시작일 + ' ~ ' + ev.종료일) : 시작;
-    return '<div class="cal-evt-row">' +
+    return '<div class="cal-evt-row' + (강조 ? ' sel' : '') + '">' +
       '<div class="cal-evt-date">' + escapeHtml(범위) + '</div>' +
       '<div class="cal-evt-b"><div class="cal-evt-title">' + escapeHtml(ev.제목 || '(제목 없음)') + '</div>' +
       (ev.장소 ? '<div class="cal-evt-loc">📍 ' + escapeHtml(ev.장소) + '</div>' : '') +
       '</div></div>';
   }
 
+  /* 날짜를 고르면 목록이 그 날짜만 남기고 줄었었다. 그러면 고른 날짜에
+     일정이 없을 때 목록이 통째로 사라져 "다른 날은 뭐가 있었는지"를 알 수
+     없었다. 이제는 목록을 '다가오는 일정' 그대로 두고, 고른 날짜에 걸리는
+     일정만 왼쪽 띠로 강조한다 — 달력 칸 선택은 목록을 좁히는 필터가 아니라
+     그 안에서 찾아 주는 역할로 바뀐 것이다. */
   function calListDraw(){
     const 목록 = document.getElementById('calList');
     const 빈칸 = document.getElementById('calEmpty');
     const 제목칸 = document.getElementById('calListTitle');
-    const byDate = calEvtsByDate();
 
-    let 것들;
-    if (calSelDate){
-      제목칸.textContent = calSelDate + ' 일정';
-      것들 = (byDate[calSelDate] || []).slice();
-    } else {
-      제목칸.textContent = '다가오는 일정';
-      const 오늘키 = 오늘날짜키();
-      것들 = ((calData && calData.일정) || []).filter(function (ev){ return ev.시작일 >= 오늘키; }).slice(0, 8);
-    }
+    제목칸.textContent = '다가오는 일정';
+    const 오늘키 = 오늘날짜키();
+    const 것들 = ((calData && calData.일정) || []).filter(function (ev){ return ev.시작일 >= 오늘키; }).slice(0, 8);
     것들.sort(function (a, b){
       if (a.시작일 !== b.시작일) return a.시작일 < b.시작일 ? -1 : 1;
       return (a.시작시각 || '').localeCompare(b.시작시각 || '');
     });
 
-    목록.innerHTML = 것들.map(calEvtRow).join('');
+    목록.innerHTML = 것들.map(function (ev){
+      const 강조 = calSelDate ? 일정날짜들(ev).indexOf(calSelDate) !== -1 : false;
+      return calEvtRow(ev, 강조);
+    }).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
     if (!것들.length){
-      빈칸.textContent = calSelDate ? '이 날짜에는 일정이 없습니다.' : '다가오는 일정이 없습니다.';
+      빈칸.textContent = '다가오는 일정이 없습니다.';
     }
   }
 
