@@ -4664,6 +4664,36 @@
     };
   }
 
+  /* 표 머리에 적을 수집기간. 여태는 '2025년까지'처럼 끝점만 적어서, 회사마다
+     시작 연도가 다른 것이 한눈에 안 보였다. 시작~끝을 다 적는다.
+     끝은 분기 자료가 연도 자료보다 최근이면 분기로, 아니면 연도로 적는다 —
+     최신 분기가 아직 없는 회사도 있고, 있어도 연간 결산보다 늦게 나온다. */
+  function comp수집기간(원본들){
+    let 최소연 = null, 최대연 = null, 최대분기 = null;
+    원본들.forEach(function (x){
+      (x.해 || []).forEach(function (h){
+        if (h.매출액 == null && h.영업이익 == null) return;
+        const y = Number(h.연도);
+        if (!isFinite(y)) return;
+        if (최소연 === null || y < 최소연) 최소연 = y;
+        if (최대연 === null || y > 최대연) 최대연 = y;
+      });
+      (x.분기 || []).forEach(function (q){
+        if (q.매출액 == null && q.영업이익 == null) return;
+        if (!최대분기 || q.기간 > 최대분기) 최대분기 = q.기간;
+      });
+    });
+    if (최소연 === null) return '';
+    let 끝;
+    const m = 최대분기 && /^(\d{4})Q([1-4])$/.exec(최대분기);
+    if (m && Number(m[1]) >= 최대연){
+      끝 = "'" + m[1].slice(2) + '년 ' + m[2] + '분기';
+    } else {
+      끝 = "'" + String(최대연).slice(2) + '년';
+    }
+    return "'" + String(최소연).slice(2) + '~' + 끝;
+  }
+
   function compBlock(회사, 줄들, 열쇠){
     /* 한 블록이 한 회사다. 그 안에 그 회사의 사업부문들이 선다 — 부문마다
        블록을 세우면 한 탭에 서른 칸이 넘어 무엇을 보는지 놓친다. */
@@ -4842,8 +4872,7 @@
         '</button>'
       : '';
 
-    const 최신 = 보인것들.map(function (x){ const l = compLatest(x, '매출액', R); return l ? l.칸 : ''; })
-                    .filter(Boolean).sort().pop();
+    const 수집기간 = comp수집기간(원본들);
 
     /* 부문 셈에서는 화면이 만든 전사(합계) 줄을 빼고, 공시에 실제로 있는
        부문 수만 말한다. 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그
@@ -4858,7 +4887,7 @@
         ' data-hoesa="' + escapeHtml(회사) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
-        '<span>' + escapeHtml(최신 ? 칸눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
+        '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') + escapeHtml(부문말) + ' · DART 공시</span>' +
         기간선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
@@ -5019,10 +5048,12 @@
              (보기 === m.k ? ' class="on"' : '') + '>' + m.이름 + '</button>';
     }).join('') + '</div>';
 
+    const 수집기간 = comp수집기간(회사행);
     return '<div class="ind-block comp-group-total" data-blk="' + escapeHtml(열쇠) + '">' +
       '<div class="ind-bhead">' +
         '<b>계열사별 전사 기준 비교</b>' +
-        '<span>부문을 더한 전사 합계로 계열사 ' + 골.length + '곳을 견줍니다 · DART 공시</span>' +
+        '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') +
+          '부문을 더한 전사 합계로 계열사 ' + 골.length + '곳을 견줍니다 · DART 공시</span>' +
         기간선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
