@@ -643,6 +643,10 @@
   .ind-grid{display:flex; flex-direction:column; gap:10px;}
 
   .ind-block{border:1px solid var(--line); border-radius:12px; padding:10px 13px 9px; background:var(--card);}
+  /* 그룹 실적 탭 맨 위, 계열사끼리 전사 합계로 견주는 블록만 위 띠를 둬서
+     아래 이어지는 회사별 블록과 한눈에 갈린다. */
+  .comp-group-total{border-color:var(--green); border-top-width:3px;}
+  .comp-group-total .ind-bhead b{color:var(--green-dark);}
   .ind-bhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
              padding-bottom:9px; margin-bottom:4px; border-bottom:1px solid var(--line);}
   .ind-bhead b{font-size:13.5px; font-weight:800; letter-spacing:-.02em;}
@@ -4259,8 +4263,30 @@
     return 지표 === '영업이익률' ? '%' : String((줄 && 줄.단위) || '억원');
   }
 
+  /* 연도별 그래프의 가로축 시작을 전체 계열사 중 가장 이른 해로 맞춘다.
+     회사마다 2020·2021·2024로 시작이 다르면 카드마다 축 폭이 달라 나란히
+     보기 어렵다. compData 전체(지금 불러온 실적 전부)를 훑어 한 번 구한다 —
+     이 블록 하나가 보는 회사만 보면 그 회사 자신의 시작 해로 되돌아간다. */
+  function comp전체시작연도(){
+    let 시작 = null;
+    ((compData && compData.실적) || []).forEach(function (x){
+      (x.해 || []).forEach(function (h){
+        if (h.매출액 == null && h.영업이익 == null) return;
+        const y = Number(h.연도);
+        if (isFinite(y) && (시작 === null || y < 시작)) 시작 = y;
+      });
+    });
+    return 시작;
+  }
+
   /* 두 지표를 위아래로 겹쳐 보려면 x축이 같아야 한다. 그래서 창(가로 칸)은
-     지표별로 따로 만들지 않고 한 번에 만들어 두 그래프에 같이 넘긴다. */
+     지표별로 따로 만들지 않고 한 번에 만들어 두 그래프에 같이 넘긴다.
+
+     연도별일 때는 실제 자료가 있는 해만 잇지 않고, 전체 시작 해부터 이
+     블록의 마지막 해까지를 빈틈없이 채운다. 그래야 자료가 늦게 시작하는
+     회사·부문은 그 앞이 빈 채로(선이 안 그어진 채로) 남아, 시작이 다르다는
+     사실 자체가 보인다 — 축을 그 회사 자료에 맞춰 줄이면 다들 2020년에
+     시작한 것처럼 보인다. */
   function compWindow(것들, 지표들, R){
     const 있는 = {};
     것들.forEach(function (x){
@@ -4268,7 +4294,18 @@
         if (지표들.some(function (k){ return compVal(s.값, k) !== null; })) 있는[s.칸] = 1;
       });
     });
-    return Object.keys(있는).sort();
+    const 칸들 = Object.keys(있는);
+    if (!칸들.length) return [];
+    if (R.k === '연'){
+      const 전체시작 = comp전체시작연도();
+      const 연들 = 칸들.map(Number);
+      const 시작 = 전체시작 !== null ? Math.min(전체시작, Math.min.apply(null, 연들)) : Math.min.apply(null, 연들);
+      const 끝 = Math.max.apply(null, 연들);
+      const 전체 = [];
+      for (let y = 시작; y <= 끝; y++) 전체.push(String(y));
+      return 전체;
+    }
+    return 칸들.sort();
   }
 
   /* indPlot·indTableHtml 이 아는 모양 그대로 만든다.
@@ -4626,6 +4663,70 @@
      빈 이름으로 오는데, 그대로 두면 이름 없는 줄이 뜬다. */
   function comp부문이름(x){ return String(x.부문 || '').trim() || '전사'; }
 
+  /* 부문이 여럿인 회사는 부문별 값을 더해 전사(합계) 줄 하나를 만든다.
+     공시에 '전사'라는 항목이 따로 있는 것이 아니라 화면이 부문을 더한
+     값이다. 부문 중 그 기간에 값이 없는 것이 있으면 있는 부문만 더하므로,
+     지금 서 있는 부문이 전부 그 기간을 채우고 있을 때만 실제 전사 값과
+     같다. 부문이 하나뿐인 회사는 그 한 줄이 이미 전사이므로 만들지 않는다. */
+  function comp전사행(것들){
+    if (것들.length < 2) return null;
+    function 더하기(꺼내기, 키){
+      const 통 = {};
+      것들.forEach(function (x){
+        (꺼내기(x) || []).forEach(function (row){
+          const k = row[키];
+          if (!k) return;
+          const b = 통[k] = 통[k] || { 매출액: null, 영업이익: null, 수출: null, 내수: null };
+          b[키] = k;
+          ['매출액', '영업이익'].forEach(function (f){
+            if (row[f] === null || row[f] === undefined) return;
+            b[f] = (b[f] || 0) + row[f];
+          });
+        });
+      });
+      return Object.keys(통).sort().map(function (k){ return 통[k]; });
+    }
+    const 해 = 더하기(function (x){ return x.해; }, '연도');
+    const 분기 = 더하기(function (x){ return x.분기; }, '기간');
+    if (!해.length && !분기.length) return null;
+    return {
+      회사명: 것들[0].회사명, corp_code: 것들[0].corp_code, 계열사: 것들[0].계열사,
+      부문: '전사(합계)', 우리편: 것들[0].우리편, 단위: 것들[0].단위,
+      근거: '부문 ' + 것들.length + '개 합계', 해: 해, 분기: 분기,
+      분기꼴: 것들[0].분기꼴 || ''
+    };
+  }
+
+  /* 표 머리에 적을 수집기간. 여태는 '2025년까지'처럼 끝점만 적어서, 회사마다
+     시작 연도가 다른 것이 한눈에 안 보였다. 시작~끝을 다 적는다.
+     끝은 분기 자료가 연도 자료보다 최근이면 분기로, 아니면 연도로 적는다 —
+     최신 분기가 아직 없는 회사도 있고, 있어도 연간 결산보다 늦게 나온다. */
+  function comp수집기간(원본들){
+    let 최소연 = null, 최대연 = null, 최대분기 = null;
+    원본들.forEach(function (x){
+      (x.해 || []).forEach(function (h){
+        if (h.매출액 == null && h.영업이익 == null) return;
+        const y = Number(h.연도);
+        if (!isFinite(y)) return;
+        if (최소연 === null || y < 최소연) 최소연 = y;
+        if (최대연 === null || y > 최대연) 최대연 = y;
+      });
+      (x.분기 || []).forEach(function (q){
+        if (q.매출액 == null && q.영업이익 == null) return;
+        if (!최대분기 || q.기간 > 최대분기) 최대분기 = q.기간;
+      });
+    });
+    if (최소연 === null) return '';
+    let 끝;
+    const m = 최대분기 && /^(\d{4})Q([1-4])$/.exec(최대분기);
+    if (m && Number(m[1]) >= 최대연){
+      끝 = "'" + m[1].slice(2) + '년 ' + m[2] + '분기';
+    } else {
+      끝 = "'" + String(최대연).slice(2) + '년';
+    }
+    return "'" + String(최소연).slice(2) + '~' + 끝;
+  }
+
   function compBlock(회사, 줄들, 열쇠){
     /* 한 블록이 한 회사다. 그 안에 그 회사의 사업부문들이 선다 — 부문마다
        블록을 세우면 한 탭에 서른 칸이 넘어 무엇을 보는지 놓친다. */
@@ -4641,11 +4742,20 @@
     const 칸눈 = R.k === '분' ? comp칸눈() : R.눈;
 
     const 보기 = compView[열쇠] || '매출액';
-    const 펼침 = compOpen[열쇠] === true;
+    /* 그래프는 기본으로 펼친다. 처음 열자마자 숫자만 보고 그래프를 못 본
+       채 지나치는 사람이 많았다 — 눌러야 보이는 것과 눌러야 접히는 것 중
+       읽는 사람이 더 자주 하는 쪽이 기본이어야 한다. */
+    const 펼침 = compOpen[열쇠] !== false;
     const 표펼침 = compTable[열쇠] === true;
 
+    /* 부문이 둘 이상이면 부문을 더한 전사(합계) 줄을 하나 끼워 넣는다.
+       합계가 부문 하나하나보다 항상 크므로, 큰 부문부터 매기는 정렬에서
+       저절로 맨 앞에 선다. */
+    const 전사행 = comp전사행(줄들);
+    const 원본들 = 전사행 ? [전사행].concat(줄들) : 줄들;
+
     /* 큰 부문부터. 회사 안에서는 덩치 순이 곧 중요한 순이다. */
-    const 것들 = 줄들.slice().sort(function (a, b){
+    const 것들 = 원본들.slice().sort(function (a, b){
       const x = compLatest(a, '매출액', R), y = compLatest(b, '매출액', R);
       return (y ? y.v : -Infinity) - (x ? x.v : -Infinity);
     });
@@ -4795,26 +4905,28 @@
         '</button>'
       : '';
 
-    const 최신 = 보인것들.map(function (x){ const l = compLatest(x, '매출액', R); return l ? l.칸 : ''; })
-                    .filter(Boolean).sort().pop();
+    const 수집기간 = comp수집기간(원본들);
 
-    /* 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그 이름을 적는다.
-       셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를 아래 버튼가 알린다. */
-    const 부문말 = 골.length > 1
-      ? '부문 ' + 골.length + '개'
-      : comp부문이름((골[0] || {}).x || 것들[0]);
+    /* 부문 셈에서는 화면이 만든 전사(합계) 줄을 빼고, 공시에 실제로 있는
+       부문 수만 말한다. 부문이 하나뿐이면 「부문 1개」라 적을 것 없이 그
+       이름을 적는다. 셈은 지금 서 있는 부문만 — 접힌 옛 부문은 그 수를
+       아래 버튼가 알린다. */
+    const 실부문들 = 골.filter(function (c){ return c.x !== 전사행; });
+    const 부문말 = 실부문들.length > 1
+      ? '전사 합계 · 부문 ' + 실부문들.length + '개'
+      : comp부문이름((실부문들[0] || {}).x || 것들[0]);
 
     return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '"' +
         ' data-hoesa="' + escapeHtml(회사) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
-        '<span>' + escapeHtml(최신 ? 칸눈(최신) : '') + '까지 · ' + escapeHtml(부문말) + ' · DART 공시</span>' +
+        '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') + escapeHtml(부문말) + ' · DART 공시</span>' +
         기간선택 + 선택버튼 +
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
         '<button type="button" class="xls-btn" data-xls="1">⬇ 원본 엑셀</button>' +
       '</div>' +
-      목록 + 옛부문버튼 + 그래프 + (표펼침 && g합 ? indTableHtml(g합) : '') +
+      그래프 + 목록 + 옛부문버튼 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
   }
 
@@ -4849,6 +4961,138 @@
     }).map(function (회사){
       return compBlock(회사, 통[회사], 열쇠앞 + '|' + 회사);
     }).join('');
+  }
+
+  /* 계열사별 전사 기준 비교. compBlock은 한 회사 안의 부문끼리 견주고,
+     이것은 계열사끼리 전사 합계로 견준다 — 부문 한 줄이 회사 한 줄로
+     바뀔 뿐, 그리는 방법(compBuild·compChart·compBars)은 그대로 쓴다.
+     그룹 실적 탭 맨 위에서 '지금 그룹에서 어느 계열사가 가장 큰가'를
+     한 그래프로 보여주려는 것이다. */
+  function compGroupBlock(줄들){
+    const 통 = {};
+    줄들.forEach(function (x){
+      const 회사 = String(x.회사명 || '').trim();
+      if (!회사) return;
+      (통[회사] = 통[회사] || []).push(x);
+    });
+    const 회사행 = Object.keys(통).map(function (회사){
+      const 부문들 = 통[회사];
+      return 부문들.length > 1 ? comp전사행(부문들) : 부문들[0];
+    }).filter(Boolean);
+    if (회사행.length < 2) return '';
+
+    const 열쇠 = '그룹전사';
+    const 기간가능 = COMP_RANGES.filter(function (R){
+      return 회사행.some(function (x){ return compSeq(x, R).length; });
+    });
+    if (!기간가능.length) return '';
+    let 기간 = compRange[열쇠] || '연';
+    if (!기간가능.some(function (R){ return R.k === 기간; })) 기간 = 기간가능[0].k;
+    const R = compR(기간);
+    const 기간말 = R.k === '분' ? comp꼴이름() : R.이름;
+    const 칸눈 = R.k === '분' ? comp칸눈() : R.눈;
+    const 보기 = compView[열쇠] || '매출액';
+    const 펼침 = compOpen[열쇠] !== false;
+    const 표펼침 = compTable[열쇠] === true;
+
+    const 것들 = 회사행.slice().sort(function (a, b){
+      const x = compLatest(a, '매출액', R), y = compLatest(b, '매출액', R);
+      return (y ? y.v : -Infinity) - (x ? x.v : -Infinity);
+    });
+    const 골 = 것들.map(function (x, i){
+      return { x: x, 이름: x.회사명, 색: COMP_색[i % COMP_색.length] };
+    });
+
+    const 지표들 = [보기];
+    const 창 = (펼침 || 표펼침) ? compWindow(것들, 지표들, R) : null;
+    const 짝들 = (펼침 || 표펼침)
+      ? 지표들.map(function (k){
+          const g = compBuild(골, k, R, 창);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
+        })
+      : [];
+    짝들.forEach(function (p){ compGraph[p.열쇠] = p.g; });
+    const g합 = compMerge(짝들);
+    compGraph[열쇠] = g합;
+
+    const 주지표 = 보기;
+    const 목록 = 골.map(function (c){
+      const x = c.x;
+      const 끝 = compLatest(x, 주지표, R);
+      const 단위 = compUnit(x, 주지표);
+      return '<div class="ind-leg' + (끝 ? '' : ' off') + '">' +
+        indSwatch(c.색, '') +
+        '<div class="ind-leg-b"><div class="ind-leg-t"><b>' + escapeHtml(c.이름) + '</b></div></div>' +
+        '<div class="ind-leg-v">' +
+          (끝
+            ? '<div class="val' + (끝.v < 0 ? ' neg' : '') + '">' + indNum(끝.v, 단위) +
+              '<span>' + escapeHtml(단위) + '</span></div>' +
+              compChgHtml(x, 주지표, R, 칸눈) +
+              (보기 === '매출액' ? compSideHtml(x, R) : '')
+            : '<span class="chg ind-flat">' + escapeHtml(기간말) + ' 자료 없음</span>') +
+        '</div></div>';
+    }).join('');
+
+    const 모양 = compShape[열쇠] || '선';
+    let 그래프 = '';
+    if (펼침){
+      const 있는 = 짝들.filter(function (p){ return p.g; });
+      const 모양선택 = '<div class="comp-shape"><div class="ind-pick">' +
+        ['막대', '선'].map(function (s){
+          return '<button type="button" data-shape="' + s + '"' +
+                 (모양 === s ? ' class="on"' : '') + '>' + s + '</button>';
+        }).join('') + '</div></div>';
+      if (!있는.length){
+        그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다.</div>';
+      } else if (모양 === '막대'){
+        const 민 = 지표들.map(function (k){
+          const g = compBuild(골, k, R, 창, true);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g };
+        }).filter(function (p){ return p.g; });
+        그래프 = 모양선택 +
+          (민.length
+            ? compBars(민, 열쇠) + compAxisBars(민[0].g) +
+              '<div class="ind-note">막대는 <b>0에서</b> 올라옵니다.' +
+              (compHasLoss(민) ? ' <b>적자</b>는 0선 아래 붉은 구역으로 내려갑니다.' : '') +
+              '</div>'
+            : '<div class="ind-note">이 기간에는 막대로 그릴 값이 없습니다.</div>');
+      } else {
+        그래프 = 모양선택 + '<div class="comp-pair">' +
+          있는.map(function (p){ return compChart(p.g, p.열쇠, 있는.length > 1 ? p.꼬리 : ''); }).join('') +
+          compAxis(있는[있는.length - 1].g) +
+          compNote(있는) +
+        '</div>';
+      }
+    }
+
+    const 기간선택 = '<div class="ind-pick">' + COMP_RANGES.map(function (x){
+      const 됨 = 기간가능.some(function (y){ return y.k === x.k; });
+      const 말 = x.k === '분' ? comp꼴이름() : x.이름;
+      return '<button type="button" data-range="' + x.k + '"' +
+        (x.k === 기간 ? ' class="on"' : '') +
+        (됨 ? '' : ' disabled title="아직 ' + 말 + ' 자료가 없습니다"') +
+        '>' + 말 + '</button>';
+    }).join('') + '</div>';
+
+    const 선택버튼 = '<div class="ind-pick">' + COMP_VIEWS.map(function (m){
+      return '<button type="button" data-metric="' + m.k + '"' +
+             (보기 === m.k ? ' class="on"' : '') + '>' + m.이름 + '</button>';
+    }).join('') + '</div>';
+
+    const 수집기간 = comp수집기간(회사행);
+    return '<div class="ind-block comp-group-total" data-blk="' + escapeHtml(열쇠) + '">' +
+      '<div class="ind-bhead">' +
+        '<b>계열사별 전사 기준 비교</b>' +
+        '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') +
+          '부문을 더한 전사 합계로 계열사 ' + 골.length + '곳을 견줍니다 · DART 공시</span>' +
+        기간선택 + 선택버튼 +
+        '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
+        '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
+      '</div>' +
+      그래프 + 목록 + (표펼침 && g합 ? indTableHtml(g합) : '') +
+    '</div>';
   }
 
   /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
@@ -4935,7 +5179,7 @@
       'DART 공시의 부문별 매출·영업이익 · 계열사를 가리지 않고 그룹 회사만 모읍니다 · 매출 규모 순 ' +
       '<a href="manual.html#co" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
-    document.getElementById('groupBody').innerHTML = compBlocks(것들, '그룹');
+    document.getElementById('groupBody').innerHTML = compGroupBlock(것들) + compBlocks(것들, '그룹');
     document.querySelectorAll('#groupBody .ind-tbl-wrap').forEach(function (w){
       w.scrollTop = w.scrollHeight;
     });
@@ -5030,7 +5274,11 @@
     /* 보기를 바꾸면 모양은 그 보기의 기본으로 되돌린다. '매출·이익'은 막대가,
        지표 하나는 선이 낫다 — 앞서 고른 모양이 따라다니면 매번 다시 누르게 된다. */
     else if (b.dataset.metric){ compView[k] = b.dataset.metric; delete compShape[k]; }
-    else if (b.dataset.view === 'graph') compOpen[k] = !(compOpen[k] === true);
+    /* 그래프는 기본이 '펼침'이라(compOpen[k]가 undefined일 때도 펼침),
+       지금 실제로 펼쳐져 있는지를 그 기본까지 감안해서 뒤집어야 한다.
+       예전처럼 '=== true'만 보면 처음 눌렀을 때 이미 펼쳐진 것을 또
+       펼침으로 적어 아무 일도 안 일어난 것처럼 보인다. */
+    else if (b.dataset.view === 'graph') compOpen[k] = !(compOpen[k] !== false);
     else compTable[k] = !(compTable[k] === true);
     다시그리기();
   }
