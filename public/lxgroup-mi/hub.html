@@ -5877,15 +5877,20 @@
   function 날짜키(y, m, d){
     return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
   }
-  /* 하루짜리든 여러 날짜에 걸친 일정이든, '시작일 ~ 종료일 하루 전'을
-     그 일정이 걸리는 날로 본다 — 종일 일정의 종료일은 iCalendar 관례상
-     다음날 0시라 그대로 쓰면 하루 밀린다. */
+  /* 종일 일정과 시간 지정 일정은 종료일의 뜻이 다르다. 종일 일정의
+     종료일은 iCalendar 관례상 다음날 0시라 '하루 전'까지가 실제 마지막
+     날이다. 시간 지정 일정(아이폰에서 시각까지 넣어 여러 날에 걸쳐 등록한
+     일정)은 종료일 자체가 실제로 끝나는 날이라, 하루를 밀어 같은 규칙
+     (끝 미만)으로 셀 수 있게 한다. 예전에는 시간 지정 일정을 종일이
+     아니라는 이유만으로 첫날 하루로 줄여서, '기간'으로 등록한 일정이
+     달력에 첫날에만 표시됐다. */
   function 일정날짜들(ev){
     const out = [];
     let d = new Date(ev.시작일 + 'T00:00:00');
     const 끝 = new Date((ev.종료일 || ev.시작일) + 'T00:00:00');
-    if (!ev.종일여부 || 끝 <= d) { out.push(ev.시작일); return out; }
-    while (d < 끝 && out.length < 31){
+    if (끝 <= d) { out.push(ev.시작일); return out; }
+    const 마감 = ev.종일여부 ? 끝 : new Date(끝.getFullYear(), 끝.getMonth(), 끝.getDate() + 1);
+    while (d < 마감 && out.length < 31){
       out.push(날짜키(d.getFullYear(), d.getMonth(), d.getDate()));
       d.setDate(d.getDate() + 1);
     }
