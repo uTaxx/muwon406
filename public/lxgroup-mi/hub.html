@@ -292,6 +292,23 @@
   .cal-evt-title{font-weight:700; color:var(--text);}
   .cal-evt-loc{color:var(--muted); font-size:11px; margin-top:1px;}
 
+  /* 캘린더 소스 관리 — 달력을 여러 개 붙일 수 있게 되면서 생긴 자리다.
+     본문 목록과 헷갈리지 않게 위에 구분선을 두고 톤을 옅게 낮춘다. */
+  .cal-mgmt{margin-top:20px; padding-top:14px; border-top:1px solid var(--line);}
+  .cal-src-row{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+  .cal-src-row:last-child{border-bottom:none;}
+  .cal-src-name{font-weight:700; color:var(--text);}
+  .cal-src-url{color:var(--muted); font-size:11px; margin-top:1px; word-break:break-all;}
+  .cal-src-toggle{border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer;
+    font-family:inherit; white-space:nowrap; flex-shrink:0;}
+  .cal-src-toggle[data-use="1"]{border-color:var(--green); background:var(--green-tint); color:var(--green);}
+  .cal-src-toggle:disabled{opacity:.55; cursor:wait;}
+  .cal-src-add{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .cal-src-add input[type=text]{flex:1 1 160px; min-width:0;}
+  .cal-src-add .upd-btn{margin-left:0;}
+
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
@@ -1696,6 +1713,18 @@
       <div class="step-desc" id="calListTitle">다가오는 일정</div>
       <div id="calList"></div>
       <div class="empty-note" id="calEmpty" style="display:none;"></div>
+
+      <div class="cal-mgmt">
+        <div class="step-desc">캘린더 소스 관리</div>
+        <div class="step-desc" style="margin-top:0; font-size:11px;">여러 개의 캘린더 링크를 등록할 수 있습니다. 사용을 끄면 다음 수집부터 그 캘린더의 일정을 가져오지 않습니다.</div>
+        <div class="cal-src-list" id="calSrcList"></div>
+        <div class="cal-src-add">
+          <input type="text" id="calSrcName" placeholder="이름 (예: 판토스)">
+          <input type="text" id="calSrcUrl" placeholder="캘린더 공개 링크(ICS 주소)">
+          <button type="button" class="upd-btn" id="calSrcAddBtn">＋ 추가</button>
+        </div>
+        <div class="upd-msg" id="calSrcMsg"></div>
+      </div>
     </section>
   </div>
 
@@ -1721,6 +1750,7 @@
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
   const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
+  const CAL_SRC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-캘린더소스');
   const DISC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-회사공시');
   const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
   const PAGE_SIZE = 50;
@@ -2442,7 +2472,7 @@
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
     if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); }
-    if (tabName === 'cal'){ loadCal(false); }
+    if (tabName === 'cal'){ loadCal(false); loadCalSources(); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
 
@@ -6023,7 +6053,7 @@
       return;
     }
     때.textContent = (calData.asOf ? calData.asOf + ' 기준' : '') +
-      ' · 캘린더 ' + escapeHtml(calData.캘린더이름 || 'LX Holdings');
+      ' · 캘린더 ' + escapeHtml(calData.캘린더이름 || '(등록된 캘린더 없음)');
     calGrid그리기();
     calListDraw();
   }
@@ -6047,6 +6077,135 @@
         calDraw();
       });
   }
+
+  /* ---------- 캘린더 소스 관리 ----------
+     여러 개의 캘린더 링크를 등록·해지할 수 있게 하는 자리다. 시트를 고치는
+     일이라 「업데이트」 버튼과 같은 실행 PW 로 지킨다. 링크 자체는 사실상
+     비밀값이라(아는 사람 누구나 그 캘린더를 볼 수 있다) n8n 쪽에서 도메인만
+     남기고 가려 보낸다 — 여기서는 가려진 값을 그대로 보여 줄 뿐이다. */
+  let calSources = [];
+
+  function calSrcCall(action, extra){
+    const code = sharedCode();
+    if (!code) return Promise.reject(new Error('식별코드를 먼저 확인해 주세요.'));
+
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('캘린더 소스를 관리합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return Promise.reject(new Error('취소했습니다.'));
+    }
+
+    const body = Object.assign({ code: code, pw: pw, action: action }, extra || {});
+    return fetch(CAL_SRC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (res){
+        return res.json().catch(function (){ return {}; })
+          .then(function (d){ return { ok: res.ok, d: d }; });
+      })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {}
+          throw new Error((r.d && r.d.message) || '요청을 처리하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        return r.d;
+      });
+  }
+
+  function calSrcListDraw(){
+    const 자리 = document.getElementById('calSrcList');
+    if (!calSources.length){
+      자리.innerHTML = '<div class="empty-note">등록된 캘린더 소스가 없습니다.</div>';
+      return;
+    }
+    자리.innerHTML = calSources.map(function (s){
+      return '<div class="cal-src-row">' +
+        '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(s.이름) + '</div>' +
+        '<div class="cal-src-url">' + escapeHtml(s.url표시 || '') + '</div></div>' +
+        '<button type="button" class="cal-src-toggle" data-name="' + escapeHtml(s.이름) + '" data-use="' + (s.사용 ? '1' : '0') + '">' +
+        (s.사용 ? '사용 중' : '중지됨') + '</button></div>';
+    }).join('');
+  }
+
+  function loadCalSources(){
+    const code = sharedCode();
+    if (!code){
+      document.getElementById('calSrcList').innerHTML =
+        '<div class="empty-note">식별코드를 확인하면 등록된 캘린더 목록을 볼 수 있습니다.</div>';
+      return;
+    }
+    calSrcCall('list').then(function (d){
+      calSources = d.목록 || [];
+      calSrcListDraw();
+    }).catch(function (){
+      /* 목록을 못 가져와도 화면을 비우지 않는다 — 이전에 본 목록이 남는
+         쪽이, 실행 PW 를 다시 물어 매번 프롬프트를 띄우는 쪽보다 낫다. */
+    });
+  }
+
+  /* 소스를 더하거나 껐다 켜면 시트가 바뀔 뿐 대시보드가 보는 「주요일정」
+     시트는 그대로다. 다음 06:20 자동 수집을 기다리지 않도록 바로 한 번
+     돌리고, 몇 초 뒤 결과를 다시 불러온다. */
+  function calSrcRecollect(){
+    const code = sharedCode(), pw = savedRunPw();
+    if (!code || !pw) return Promise.resolve();
+    return fetch(RUN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, pw: pw, 대상: '일정' })
+    }).then(function (){
+      setTimeout(function (){ loadCal(true); }, 15000);
+    }).catch(function (){});
+  }
+
+  document.getElementById('calSrcAddBtn').addEventListener('click', function (){
+    const 이름칸 = document.getElementById('calSrcName');
+    const url칸 = document.getElementById('calSrcUrl');
+    const 이름 = 이름칸.value.trim();
+    const url = url칸.value.trim();
+    const 알림 = document.getElementById('calSrcMsg');
+    if (!이름 || !url){
+      알림.className = 'upd-msg bad';
+      알림.textContent = '이름과 링크를 모두 입력해 주세요.';
+      return;
+    }
+    알림.className = 'upd-msg';
+    알림.textContent = '추가하는 중…';
+    calSrcCall('add', { 이름: 이름, url: url }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '추가했습니다.';
+      이름칸.value = '';
+      url칸.value = '';
+      loadCalSources();
+      calSrcRecollect();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '캘린더 추가');
+    });
+  });
+
+  document.addEventListener('click', function (e){
+    const b = e.target.closest('.cal-src-toggle');
+    if (!b) return;
+    const 이름 = b.dataset.name;
+    const 새값 = b.dataset.use !== '1';
+    const 알림 = document.getElementById('calSrcMsg');
+    b.disabled = true;
+    알림.className = 'upd-msg';
+    알림.textContent = '바꾸는 중…';
+    calSrcCall('setUse', { 이름: 이름, 사용: 새값 }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '바꿨습니다.';
+      loadCalSources();
+      calSrcRecollect();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '사용 여부 변경');
+    }).then(function (){ b.disabled = false; });
+  });
 
   document.getElementById('calPrev').addEventListener('click', function (){
     calMonth--; if (calMonth < 0){ calMonth = 11; calYear--; }
