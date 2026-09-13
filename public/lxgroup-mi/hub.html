@@ -300,14 +300,32 @@
   .cal-src-row:last-child{border-bottom:none;}
   .cal-src-name{font-weight:700; color:var(--text);}
   .cal-src-url{color:var(--muted); font-size:11px; margin-top:1px; word-break:break-all;}
+  /* 캘린더별 색상 표시. 소스 목록의 이름 앞과 달력 일정 앞에 같은 색을 쓴다. */
+  .cal-src-dot{display:inline-block; width:9px; height:9px; border-radius:50%;
+    margin-right:6px; vertical-align:middle; flex-shrink:0;}
+  .cal-src-actions{display:flex; gap:6px; align-items:center; flex-shrink:0;}
+  .cal-src-rename{border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:8px; padding:5px 8px; font-size:11px; font-weight:600; cursor:pointer;
+    font-family:inherit; white-space:nowrap;}
+  .cal-src-rename:hover:not(:disabled){background:var(--bg);}
+  .cal-src-rename:disabled{opacity:.55; cursor:wait;}
   .cal-src-toggle{border:1px solid var(--line); background:var(--card); color:var(--muted);
     border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer;
     font-family:inherit; white-space:nowrap; flex-shrink:0;}
   .cal-src-toggle[data-use="1"]{border-color:var(--green); background:var(--green-tint); color:var(--green);}
   .cal-src-toggle:disabled{opacity:.55; cursor:wait;}
+  /* 주소는 아는 사람 누구나 그 캘린더를 볼 수 있는 사실상 비밀값이라 기본은
+     숨겨 두고, 추가 버튼을 눌러야 입력칸이 나오게 한다. */
   .cal-src-add{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
   .cal-src-add input[type=text]{flex:1 1 160px; min-width:0;}
   .cal-src-add .upd-btn{margin-left:0;}
+  #calSrcAddOpenBtn{margin-top:12px;}
+  /* 달력 일정 앞의 작은 점(목록)과 달력 칸 안의 점 줄(월간 그리드)로 어느
+     캘린더에서 온 일정인지 색으로 구분한다. */
+  .cal-evt-dot2{display:inline-block; width:8px; height:8px; border-radius:50%;
+    margin-right:6px; vertical-align:middle; flex-shrink:0;}
+  .cal-evt-dots{display:flex; gap:2px; justify-content:center; margin-top:1px;}
+  .cal-evt-dot{width:5px; height:5px; border-radius:50%; display:inline-block;}
 
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
@@ -1718,10 +1736,12 @@
         <div class="step-desc">캘린더 소스 관리</div>
         <div class="step-desc" style="margin-top:0; font-size:11px;">여러 개의 캘린더 링크를 등록할 수 있습니다. 사용을 끄면 다음 수집부터 그 캘린더의 일정을 가져오지 않습니다.</div>
         <div class="cal-src-list" id="calSrcList"></div>
-        <div class="cal-src-add">
+        <button type="button" class="upd-btn" id="calSrcAddOpenBtn">＋ 새 캘린더 추가</button>
+        <div class="cal-src-add" id="calSrcAddForm" style="display:none;">
           <input type="text" id="calSrcName" placeholder="이름 (예: 판토스)">
           <input type="text" id="calSrcUrl" placeholder="캘린더 공개 링크(ICS 주소)">
-          <button type="button" class="upd-btn" id="calSrcAddBtn">＋ 추가</button>
+          <button type="button" class="upd-btn" id="calSrcAddBtn">저장</button>
+          <button type="button" class="xls-btn" id="calSrcAddCancelBtn">취소</button>
         </div>
         <div class="upd-msg" id="calSrcMsg"></div>
       </div>
@@ -5997,9 +6017,18 @@
         라벨줄 = '<span class="cal-evt-label">' + escapeHtml(휴일이름) + '</span>';
       }
 
+      /* 캘린더가 여러 개 붙으면서 한 날짜에 서로 다른 캘린더의 일정이 같이
+         걸릴 수 있다. 어느 캘린더 것인지 색으로 구분한다(최대 4개까지). */
+      let 점줄 = '';
+      if (일정들.length){
+        점줄 = '<span class="cal-evt-dots">' + 일정들.slice(0, 4).map(function (ev){
+          return '<span class="cal-evt-dot" style="background:' + escapeHtml(ev.색상 || 'var(--muted)') + '"></span>';
+        }).join('') + '</span>';
+      }
+
       return '<button type="button" class="' + cls.join(' ') + '" data-date="' + key + '"' +
         (휴일이름 ? ' title="' + escapeHtml(휴일이름) + '"' : '') + '>' +
-        '<span class="cal-day-num">' + c.d + '</span>' + 라벨줄 + '</button>';
+        '<span class="cal-day-num">' + c.d + '</span>' + 점줄 + 라벨줄 + '</button>';
     }).join('');
 
     그리드.innerHTML = html;
@@ -6008,9 +6037,10 @@
   function calEvtRow(ev, 강조){
     const 시작 = ev.시작일 + (ev.시작시각 ? ' ' + ev.시작시각 : '');
     const 범위 = (ev.종료일 && ev.종료일 !== ev.시작일) ? (ev.시작일 + ' ~ ' + ev.종료일) : 시작;
+    const 점 = ev.색상 ? '<span class="cal-evt-dot2" style="background:' + escapeHtml(ev.색상) + '"></span>' : '';
     return '<div class="cal-evt-row' + (강조 ? ' sel' : '') + '">' +
       '<div class="cal-evt-date">' + escapeHtml(범위) + '</div>' +
-      '<div class="cal-evt-b"><div class="cal-evt-title">' + escapeHtml(ev.제목 || '(제목 없음)') + '</div>' +
+      '<div class="cal-evt-b"><div class="cal-evt-title">' + 점 + escapeHtml(ev.제목 || '(제목 없음)') + '</div>' +
       (ev.장소 ? '<div class="cal-evt-loc">📍 ' + escapeHtml(ev.장소) + '</div>' : '') +
       '</div></div>';
   }
@@ -6122,11 +6152,16 @@
       return;
     }
     자리.innerHTML = calSources.map(function (s){
+      const 색 = s.색상 || '#999';
       return '<div class="cal-src-row">' +
-        '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(s.이름) + '</div>' +
+        '<div class="cal-src-b"><div class="cal-src-name">' +
+        '<span class="cal-src-dot" style="background:' + escapeHtml(색) + '"></span>' + escapeHtml(s.이름) + '</div>' +
         '<div class="cal-src-url">' + escapeHtml(s.url표시 || '') + '</div></div>' +
-        '<button type="button" class="cal-src-toggle" data-name="' + escapeHtml(s.이름) + '" data-use="' + (s.사용 ? '1' : '0') + '">' +
-        (s.사용 ? '사용 중' : '중지됨') + '</button></div>';
+        '<div class="cal-src-actions">' +
+        '<button type="button" class="cal-src-rename" data-id="' + escapeHtml(s.id) + '" data-name="' + escapeHtml(s.이름) + '">이름 변경</button>' +
+        '<button type="button" class="cal-src-toggle" data-id="' + escapeHtml(s.id) + '" data-use="' + (s.사용 ? '1' : '0') + '">' +
+        (s.사용 ? '사용 중' : '중지됨') + '</button>' +
+        '</div></div>';
     }).join('');
   }
 
@@ -6161,6 +6196,21 @@
     }).catch(function (){});
   }
 
+  /* 링크는 사실상 비밀값이라 기본은 접어 두고, 버튼을 눌러야 입력칸이
+     나온다. 추가에 성공하면 다시 접는다. */
+  document.getElementById('calSrcAddOpenBtn').addEventListener('click', function (){
+    document.getElementById('calSrcAddForm').style.display = '';
+    this.style.display = 'none';
+    document.getElementById('calSrcName').focus();
+  });
+  document.getElementById('calSrcAddCancelBtn').addEventListener('click', function (){
+    document.getElementById('calSrcAddForm').style.display = 'none';
+    document.getElementById('calSrcAddOpenBtn').style.display = '';
+    document.getElementById('calSrcName').value = '';
+    document.getElementById('calSrcUrl').value = '';
+    document.getElementById('calSrcMsg').textContent = '';
+  });
+
   document.getElementById('calSrcAddBtn').addEventListener('click', function (){
     const 이름칸 = document.getElementById('calSrcName');
     const url칸 = document.getElementById('calSrcUrl');
@@ -6179,6 +6229,8 @@
       알림.textContent = d.message || '추가했습니다.';
       이름칸.value = '';
       url칸.value = '';
+      document.getElementById('calSrcAddForm').style.display = 'none';
+      document.getElementById('calSrcAddOpenBtn').style.display = '';
       loadCalSources();
       calSrcRecollect();
     }).catch(function (err){
@@ -6190,13 +6242,13 @@
   document.addEventListener('click', function (e){
     const b = e.target.closest('.cal-src-toggle');
     if (!b) return;
-    const 이름 = b.dataset.name;
+    const id = b.dataset.id;
     const 새값 = b.dataset.use !== '1';
     const 알림 = document.getElementById('calSrcMsg');
     b.disabled = true;
     알림.className = 'upd-msg';
     알림.textContent = '바꾸는 중…';
-    calSrcCall('setUse', { 이름: 이름, 사용: 새값 }).then(function (d){
+    calSrcCall('setUse', { id: id, 사용: 새값 }).then(function (d){
       알림.className = 'upd-msg ok';
       알림.textContent = d.message || '바꿨습니다.';
       loadCalSources();
@@ -6204,6 +6256,28 @@
     }).catch(function (err){
       알림.className = 'upd-msg bad';
       알림.textContent = 오류메시지(err, '사용 여부 변경');
+    }).then(function (){ b.disabled = false; });
+  });
+
+  document.addEventListener('click', function (e){
+    const b = e.target.closest('.cal-src-rename');
+    if (!b) return;
+    const id = b.dataset.id;
+    const 기존이름 = b.dataset.name || '';
+    const 새이름 = prompt('새 이름을 입력해 주세요.', 기존이름);
+    if (!새이름 || !새이름.trim() || 새이름.trim() === 기존이름) return;
+    const 알림 = document.getElementById('calSrcMsg');
+    b.disabled = true;
+    알림.className = 'upd-msg';
+    알림.textContent = '이름을 바꾸는 중…';
+    calSrcCall('rename', { id: id, 새이름: 새이름.trim() }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '이름을 바꿨습니다.';
+      loadCalSources();
+      calSrcRecollect();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '이름 변경');
     }).then(function (){ b.disabled = false; });
   });
 
