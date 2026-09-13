@@ -1760,6 +1760,14 @@
   const SUBMIT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-intake';
   const INSTANT_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-instant';
   const ARTICLES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-articles';
+  /* 기사 목록은 원래 열 때마다 n8n을 거쳐 구글 시트를 두 번 읽어 왔다.
+     그 시트는 07·11·16시에만 바뀌므로, 그 직후 구글 드라이브에 공개
+     파일로 미리 내보내 두고(LXGroup_기사_정적내보내기) 여기서는 그 파일을
+     먼저 시도한다. 식별코드마다 파일이 따로 있고 파일 아이디는 새 고객이
+     생길 때 이 표에 손으로 추가한다. 없는 코드는 그대로 n8n 경로로 간다. */
+  const ARTICLES_STATIC_MAP = {
+    'LXHOLDINGS': 'https://drive.google.com/uc?export=download&id=1qZ89cAX6t2W_o1IQvZspAjQ3W1Z8305y'
+  };
   const ADHOC_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-adhoc-search';
   const FEEDBACK_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-feedback';
   const CASES_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-cases';
@@ -6841,6 +6849,20 @@
       });
   }
 
+  /* 정적 파일이 있으면 그것부터 시도한다. 없거나, 못 받거나, 모양이
+     다르면 그냥 실패로 던진다 — loadArticles 가 이어서 n8n 경로로 넘어간다. */
+  function loadArticlesFromStatic(code){
+    const url = ARTICLES_STATIC_MAP[code];
+    if (!url) return Promise.reject(new Error('static-not-configured'));
+    return fetch(url).then(function (res){
+      if (!res.ok) throw new Error('static-http-' + res.status);
+      return res.json();
+    }).then(function (data){
+      if (!data || data.ok === false || !data.articles) throw new Error('static-bad-shape');
+      return data;
+    });
+  }
+
   function loadArticles(){
     const code = sharedCode();
     const box = document.getElementById('sharedStatusBox');
@@ -6854,12 +6876,14 @@
     btn.textContent = '조회 중...';
     showLoading('기사를 불러오는 중입니다', '식별코드 ' + code);
 
-    fetch(ARTICLES_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    })
-      .then(res => res.json())
+    loadArticlesFromStatic(code)
+      .catch(function (){
+        return fetch(ARTICLES_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        }).then(res => res.json());
+      })
       .then(data => {
         hideLoading();
         btn.disabled = false;
