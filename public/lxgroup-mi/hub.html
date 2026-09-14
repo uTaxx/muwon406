@@ -622,9 +622,13 @@
   #groupList .block label{margin-bottom:4px; font-size:12px;}
   #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
   #groupList .block textarea.g-keywords{min-height:56px;}
-  .co-tag-row{display:flex; flex-wrap:wrap; gap:6px;}
-  .co-tag{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:12px; cursor:pointer; font-weight:700; padding:5px 12px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
-  .co-tag.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
+  .co-tag-picker{display:flex; gap:8px; margin-bottom:8px;}
+  .co-tag-picker .co-tag-select{flex:1; min-width:0; margin-bottom:0; padding:9px 12px; font-size:13.5px; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--text);}
+  .co-tag-add{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:12.5px; cursor:pointer; font-weight:700; padding:0 14px; border-radius:10px; white-space:nowrap;}
+  .co-tag-add:hover{border-color:var(--green); color:var(--green-dark);}
+  .co-tag-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .co-tag-chip{display:inline-flex; align-items:center; gap:6px; background:var(--green-tint); border:1.5px solid var(--green); color:var(--green-dark); font-size:12px; font-weight:700; padding:5px 6px 5px 12px; border-radius:14px;}
+  .co-tag-rm{background:none; border:0; color:var(--green-dark); font-size:14px; font-weight:700; cursor:pointer; line-height:1; padding:2px 4px;}
   #groupList .block .word-hint{margin:-2px 0 0; font-size:11px; line-height:1.45;}
   .company-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
   .company-row input{margin-bottom:0;}
@@ -7356,6 +7360,20 @@
      빈 채로 늘어서고 저장할 때 그 칸으로 덮어써 watchlist 표시가 지워진다.
      조회할 때 떼어 뒀다가 제출할 때 그대로 다시 얹는다. */
   let 숨겨둔관심기업그룹 = [];
+
+  /* 드롭박스는 한 번에 하나만 고를 수 있어, 고른 뒤 '추가'를 누르면 칩으로
+     옮겨 쌓는다. 여러 계열사를 붙이는 그룹(예: 경쟁사 공통 그룹)이 있어
+     드롭박스 자체를 다중 선택으로 두지 않았다 — 목록이 길어지면 어떤 것을
+     이미 골랐는지 드롭박스 안에서는 한눈에 안 보인다. */
+  function 계열사칩추가(칩칸, k){
+    if (!k || 칩칸.querySelector('[data-co-tag="' + k + '"]')) return;
+    const 칩 = document.createElement('span');
+    칩.className = 'co-tag-chip';
+    칩.dataset.coTag = k;
+    칩.innerHTML = escapeHtml(k) + '<button type="button" class="co-tag-rm" aria-label="' + escapeHtml(k) + ' 빼기">×</button>';
+    칩칸.appendChild(칩);
+  }
+
   function addGroup(){
     groupCount++;
     const id = groupCount;
@@ -7383,17 +7401,31 @@
         ・<b>🤖 AI 제외</b>를 켜면 이 그룹은 AI가 평가하지 않습니다. 기사는 계속 모이고 &lsquo;키워드 뉴스&rsquo;에서 볼 수 있지만, 메일·텔레그램에는 나오지 않습니다.
       </details>
       <label>관련 계열사 (해당 있으면 고름 — 대시보드 계열사별 탭의 관련 뉴스에 나옵니다)</label>
-      <div class="co-tag-row"></div>
+      <div class="co-tag-picker">
+        <select class="co-tag-select">
+          <option value="">계열사 선택</option>
+        </select>
+        <button type="button" class="co-tag-add">＋ 추가</button>
+      </div>
+      <div class="co-tag-chips"></div>
     `;
     document.getElementById('groupList').appendChild(wrap);
-    const 계열사칸 = wrap.querySelector('.co-tag-row');
-    계열사칸.innerHTML = CO_ORDER.map(function (k){
-      return '<button type="button" class="co-tag" data-co-tag="' + escapeHtml(k) + '">' + escapeHtml(k) + '</button>';
-    }).join('');
-    계열사칸.addEventListener('click', function (e){
-      const b = e.target.closest('.co-tag');
+    const 선택박스 = wrap.querySelector('.co-tag-select');
+    CO_ORDER.forEach(function (k){
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = k;
+      선택박스.appendChild(o);
+    });
+    const 칩칸 = wrap.querySelector('.co-tag-chips');
+    wrap.querySelector('.co-tag-add').addEventListener('click', function (){
+      계열사칩추가(칩칸, 선택박스.value);
+      선택박스.value = '';
+    });
+    칩칸.addEventListener('click', function (e){
+      const b = e.target.closest('.co-tag-rm');
       if (!b) return;
-      b.classList.toggle('active');
+      b.closest('.co-tag-chip').remove();
     });
     wrap.querySelector('.rm').addEventListener('click', function(){
       document.getElementById('group-' + id).remove();
@@ -7542,7 +7574,7 @@
       const urgent = b.querySelector('.urgent-toggle').classList.contains('active');
       const googleEn = b.querySelector('.en-toggle').classList.contains('active');
       const noAi = b.querySelector('.noai-toggle').classList.contains('active');
-      const 계열사 = Array.prototype.slice.call(b.querySelectorAll('.co-tag.active'))
+      const 계열사 = Array.prototype.slice.call(b.querySelectorAll('.co-tag-chip'))
         .map(function (t){ return t.dataset.coTag; });
       if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent, googleEn, noAi, 계열사 });
     });
@@ -7602,10 +7634,8 @@
         lastBlock.querySelector('.urgent-toggle').classList.toggle('active', !!g.urgent);
         lastBlock.querySelector('.en-toggle').classList.toggle('active', !!g.googleEn);
         lastBlock.querySelector('.noai-toggle').classList.toggle('active', !!g.noAi);
-        const 계열사값 = g.계열사 || [];
-        lastBlock.querySelectorAll('.co-tag').forEach(function (t){
-          t.classList.toggle('active', 계열사값.indexOf(t.dataset.coTag) >= 0);
-        });
+        const 칩칸 = lastBlock.querySelector('.co-tag-chips');
+        (g.계열사 || []).forEach(function (k){ 계열사칩추가(칩칸, k); });
       });
     }
 
