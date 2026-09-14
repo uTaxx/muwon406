@@ -1765,8 +1765,9 @@
      파일로 미리 내보내 두고(LXGroup_기사_정적내보내기) 여기서는 그 파일을
      먼저 시도한다. 식별코드마다 파일이 따로 있고 파일 아이디는 새 고객이
      생길 때 이 표에 손으로 추가한다. 없는 코드는 그대로 n8n 경로로 간다. */
+  const ARTICLES_STATIC_API_KEY = 'AIzaSyDBmXWrU9G_yHGWD9DkOh9lY_TWkETqcTU';
   const ARTICLES_STATIC_MAP = {
-    'LXHOLDINGS': 'https://drive.google.com/uc?export=download&id=1qZ89cAX6t2W_o1IQvZspAjQ3W1Z8305y'
+    'LXHOLDINGS': 'https://www.googleapis.com/drive/v3/files/1qZ89cAX6t2W_o1IQvZspAjQ3W1Z8305y?alt=media&key=' + ARTICLES_STATIC_API_KEY
   };
   const ADHOC_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-adhoc-search';
   const FEEDBACK_URL = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-feedback';
