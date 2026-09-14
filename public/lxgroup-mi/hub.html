@@ -110,6 +110,7 @@
   }
 
   .tab-nav{display:flex; gap:6px; margin-bottom:10px;}
+  .tab-nav[hidden]{display:none;}
   .tab-btn{flex:1; background:var(--card); border:1.5px solid var(--line); color:var(--muted); border-radius:10px; padding:9px 6px; font-size:12.5px; font-weight:700; cursor:pointer; text-align:center; transition:border-color .15s, background .15s, color .15s; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
   .tab-btn.active{background:var(--green); border-color:var(--green); color:#fff;}
   .tab-panel{display:none;}
@@ -195,6 +196,18 @@
   .hi-v span{font-size:11px; font-weight:600; color:var(--muted); margin-left:2px;}
   .hi-c .chg{display:block; font-size:11.5px; font-weight:700; margin-top:2px; white-space:nowrap;}
   .hi-c .chg em{font-style:normal; font-weight:600; margin-left:4px;}
+
+  /* LX홀딩스 시장지표 첫 화면. 숫자와 그래프를 나란히 둔 2열을 한 짝으로
+     삼아 한 줄에 두 짝(넉 열)을 세운다 — 아침에 환율·금리·유가를 한눈에
+     보려는 자리라 카드를 펼쳐야 보이면 안 된다. 좁은 화면에서는 한 짝만
+     세워 두 줄로 접는다. */
+  .mkt-grid{display:grid; grid-template-columns:minmax(150px,230px) 1fr minmax(150px,230px) 1fr; gap:10px 16px; align-items:center; margin-top:8px;}
+  .mkt-nums{display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .mkt-chart{position:relative; height:56px; min-width:0;}
+  .mkt-chart svg{width:100%; height:100%; display:block;}
+  @media (max-width:900px){
+    .mkt-grid{grid-template-columns:minmax(120px,1fr) 1.3fr;}
+  }
 
   /* ── 자본시장 딜 ────────────────────────────────────────
      공시는 건수가 많다(60일에 900건 넘음). 그냥 쌓으면 못 읽으므로 구분·시장·
@@ -609,6 +622,9 @@
   #groupList .block label{margin-bottom:4px; font-size:12px;}
   #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
   #groupList .block textarea.g-keywords{min-height:56px;}
+  .co-tag-row{display:flex; flex-wrap:wrap; gap:6px;}
+  .co-tag{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:12px; cursor:pointer; font-weight:700; padding:5px 12px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
+  .co-tag.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
   #groupList .block .word-hint{margin:-2px 0 0; font-size:11px; line-height:1.45;}
   .company-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
   .company-row input{margin-bottom:0;}
@@ -1080,14 +1096,28 @@
     <!-- 좁은 화면에서는 가로 탭, 넓은 화면에서는 왼쪽에 세워 둔 메뉴가 된다.
          br 뒤의 빈칸은 일부러 둔 것이다 — 넓은 화면에서 br 을 숨기면
          그 빈칸이 단어 사이를 벌려 '키워드 뉴스'로 읽힌다. -->
-    <div class="tab-nav">
+    <div class="tab-nav" id="topNav">
       <button type="button" class="tab-btn active" data-tab="home">Home</button>
-      <button type="button" class="tab-btn" data-tab="search">키워드<br> 뉴스</button>
-      <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드<br> 검색</button>
-      <button type="button" class="tab-btn" data-tab="co">계열사<br> 현황</button>
-      <button type="button" class="tab-btn" data-tab="index">시장<br> 지표</button>
-      <button type="button" class="tab-btn" data-tab="deal">자본시장<br> 딜 현황</button>
-      <button type="button" class="tab-btn" data-tab="cal">주요<br> 일정</button>
+      <button type="button" class="tab-btn" data-top="holdings">LX홀딩스</button>
+      <button type="button" class="tab-btn" data-top="affiliate">계열사별</button>
+    </div>
+    <!-- LX홀딩스 4탭: 시장지표/자본시장정보/전체뉴스조회/주요일정. -->
+    <div class="tab-nav co-sub" id="holdingsSubNav" hidden>
+      <button type="button" class="tab-btn" data-tab="index">시장지표</button>
+      <button type="button" class="tab-btn" data-tab="deal">자본시장정보</button>
+      <button type="button" class="tab-btn" data-newsgroup="1">전체뉴스조회</button>
+      <button type="button" class="tab-btn" data-tab="cal">주요일정</button>
+    </div>
+    <!-- 전체뉴스조회 안의 세 갈래. 기존 키워드 뉴스·특정 키워드 검색·신청/변경 화면을
+         그대로 쓰되 이 줄로 묶는다. -->
+    <div class="tab-nav co-sub" id="newsSubNav" hidden>
+      <button type="button" class="tab-btn" data-tab="search">키워드 뉴스</button>
+      <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드 검색</button>
+      <button type="button" class="tab-btn" data-tab="apply">키워드 신청·변경</button>
+    </div>
+    <!-- 계열사별 하위 탭. -->
+    <div class="tab-nav co-sub" id="affiliateSubNav" hidden>
+      <button type="button" class="tab-btn" data-tab="co">계열사 현황</button>
     </div>
   </div>
 
@@ -1511,15 +1541,65 @@
     </section>
   </div>
 
-  <!-- 탭 6: 계열사 현황 — 하위 탭 줄을 없애고 계열사 선택을 오른쪽에 세웠다.
-       실무에서 화면을 여는 까닭은 대개 '하우시스가 요즘 어떤가'이므로,
-       계열사를 고르는 일이 화면의 중심이어야 한다. 「그룹 전체」면 계열사별
-       실적을, 계열사를 고르면 그 계열사의 경쟁사 성과와 리스크를 한 화면에
-       세로로 놓는다 — 예전처럼 탭을 한 번 더 누르게 하지 않는다. -->
+  <!-- 탭 6: 계열사별 — 회사를 먼저 고르고, 그 안에서 5개 하위 탭
+       (관련 뉴스·공시 / 주요 지표 / 실적 현황 / 경쟁사 현황 / 리스크 관리)을
+       오간다. 실적 현황만은 계열사를 가리지 않고 그룹 전체를 모아 보여준다 —
+       "그룹이 지금 어떤가"는 계열사 하나로 답할 질문이 아니기 때문이다. -->
   <div id="tab-co" class="tab-panel">
    <div class="co-layout">
     <div class="co-main">
 
+    <div class="tab-nav co-sub" id="coPaneNav"></div>
+
+    <!-- 관련 뉴스·공시. 위는 그 계열사 태그가 붙은 기사(신청/변경 탭에서
+         그룹에 계열사를 붙여야 여기 모인다), 아래는 기존 DART 공시 목록이다. -->
+    <div id="co-news" class="co-pane">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📰</span><span class="step-title" id="coNewsTitle">관련 뉴스</span></div>
+      <div class="step-desc" id="coNewsCount">불러오는 중…</div>
+      <div id="coNewsList"></div>
+      <div class="empty-note" id="coNewsEmpty" style="display:none;">이 계열사 태그가 붙은 기사가 아직 없습니다. 신청/변경 탭에서 그룹에 계열사를 붙이면 다음 수집부터 모입니다.</div>
+    </section>
+    <section class="card">
+      <div class="step-head"><span class="step-num">📄</span><span class="step-title" id="discHeadTitle">주요 공시</span></div>
+      <div class="step-desc" id="discHeadDesc"></div>
+      <div class="ind-asof" id="discAsOf">불러오는 중…</div>
+      <div class="dl-kinds" id="discKinds"></div>
+      <div class="dl-line">
+        <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
+        <select id="discCorp"><option value="">회사 전체</option></select>
+        <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사가 낸 것만</label>
+      </div>
+      <div class="step-desc" id="discCount"></div>
+      <div id="discList"></div>
+      <div class="empty-note" id="discEmpty" style="display:none;"></div>
+      <button type="button" class="home-more" id="discMore" style="display:none;"></button>
+    </section>
+    </div>
+
+    <!-- 주요 지표. 그 계열사에만 걸리는 지표다. 환율·금리 같은 공통 지표는
+         홀딩스의 시장지표 탭에 따로 있다 — 계열사를 가리지 않는 값을 여기
+         일곱 번 반복해 보여줄 까닭이 없다. -->
+    <div id="co-ind" class="co-pane">
+    <section class="card">
+      <div class="step-head"><span class="step-num" id="indHeadIcon">🏭</span><span class="step-title" id="indHeadTitle">지표</span></div>
+      <div class="step-desc" id="indHeadDesc"></div>
+      <div class="line-row">
+        <div class="ind-asof" id="indAsOf">불러오는 중…</div>
+        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀</button>
+        <button type="button" class="upd-btn" data-update="지표">↻ 업데이트</button>
+      </div>
+      <div class="upd-msg"></div>
+      <div class="ind-grid" id="indBody"></div>
+      <div class="empty-note" id="indEmpty" style="display:none;"></div>
+    </section>
+    <section class="card" id="indPendCard" style="display:none;">
+      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
+      <div class="ind-pend" id="indPend"></div>
+    </section>
+    </div>
+
+    <!-- 실적 현황. 계열사를 가리지 않고 그룹 회사만 모은다. -->
     <div id="co-group" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title">LX그룹 실적</span></div>
@@ -1535,6 +1615,8 @@
     </section>
     </div>
 
+    <!-- 경쟁사 현황. 진짜 경쟁사만 본다 — 우리 계열사 실적은 실적 현황
+         탭에 있다. -->
     <div id="co-comp" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num">🏁</span><span class="step-title" id="compHeadTitle">경쟁사 성과</span></div>
@@ -1545,28 +1627,6 @@
       </div>
       <div class="ind-grid" id="compBody"></div>
       <div class="empty-note" id="compEmpty" style="display:none;"></div>
-    </section>
-    </div>
-
-    <!-- 계열사와 그 경쟁사가 낸 DART 공시. 실적은 석 달에 한 번 갱신되지만
-         공시는 날마다 나온다 — 「요즘 이 회사에 무슨 일이 있나」는 여기서 본다.
-         자본시장 딜 현황이 시장 전체에서 딜만 고르는 것과 달리, 이쪽은 우리가
-         보는 회사가 낸 것이면 종류를 가리지 않는다. -->
-    <div id="co-disc" class="co-pane">
-    <section class="card">
-      <div class="step-head"><span class="step-num">📄</span><span class="step-title" id="discHeadTitle">주요 공시</span></div>
-      <div class="step-desc" id="discHeadDesc"></div>
-      <div class="ind-asof" id="discAsOf">불러오는 중…</div>
-      <div class="dl-kinds" id="discKinds"></div>
-      <div class="dl-line">
-        <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
-        <select id="discCorp"><option value="">회사 전체</option></select>
-        <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사가 낸 것만</label>
-      </div>
-      <div class="step-desc" id="discCount"></div>
-      <div id="discList"></div>
-      <div class="empty-note" id="discEmpty" style="display:none;"></div>
-      <button type="button" class="home-more" id="discMore" style="display:none;"></button>
     </section>
     </div>
 
@@ -1632,30 +1692,17 @@
    </div>
   </div>
 
-  <!-- 탭 7: 시장 지표 — 예전에는 계열사 현황 안의 하위 탭이었다. 계열사와
-       상관없이 환율·금리를 보러 오는 일이 잦아 왼쪽 메뉴로 올렸다. -->
+  <!-- 탭 7: 시장 지표(LX홀딩스) — 계열사를 가리지 않는 공통 지표만 보여준다.
+       계열사별 지표는 계열사별 탭의 주요 지표 하위 탭에 있다. -->
   <div id="tab-index" class="tab-panel">
-    <div class="tab-nav ind-nav" id="indTabs"></div>
-    <div id="co-index" class="co-pane on">
-    <!-- 그 계열사에만 걸리는 지표가 먼저다. 이 화면을 여는 까닭이 그것이기
-         때문이다. 환율·금리는 어느 계열사에나 똑같이 걸리므로 바로 아래에
-         따로 둔다 — 한 상자에 섞으면 '이게 우리 것인가 공통인가'를 지표마다
-         다시 가려야 한다. -->
     <section class="card">
-      <div class="step-head"><span class="step-num" id="indHeadIcon">🏭</span><span class="step-title" id="indHeadTitle">지표</span></div>
-      <div class="step-desc" id="indHeadDesc"></div>
-      <div class="line-row">
-        <div class="ind-asof" id="indAsOf">불러오는 중…</div>
-        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀</button>
-        <button type="button" class="upd-btn" data-update="지표">↻ 업데이트</button>
-      </div>
-      <div class="upd-msg"></div>
-      <div class="ind-grid" id="indBody"></div>
-      <div class="empty-note" id="indEmpty" style="display:none;"></div>
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">한눈에 보기</span></div>
+      <div class="step-desc" id="mktGridDesc">환율·금리·유가처럼 자주 확인하는 값만 간추렸습니다. 나머지 공통 지표는 아래 전체 목록에 있습니다.</div>
+      <div class="mkt-grid" id="mktGrid"></div>
     </section>
 
     <section class="card">
-      <div class="step-head"><span class="step-num">📊</span><span class="step-title">공통 지표</span></div>
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">공통 지표 전체</span></div>
       <div class="step-desc">환율·금리처럼 모든 계열사에 걸리는 값 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
       <div class="line-row">
         <div class="ind-asof" id="indCommonAsOf"></div>
@@ -1663,12 +1710,6 @@
       </div>
       <div class="ind-grid" id="indCommonBody"></div>
     </section>
-
-    <section class="card" id="indPendCard" style="display:none;">
-      <div class="step-head"><span class="step-num">⏳</span><span class="step-title">아직 값이 없는 지표</span></div>
-      <div class="ind-pend" id="indPend"></div>
-    </section>
-    </div>
   </div>
 
   <!-- 탭 8: 자본시장 딜 — 뉴스와 달리 회사가 직접 낸 공시라 추측이 섞이지 않는다.
@@ -1709,6 +1750,19 @@
         <div id="dealNewsList"></div>
         <div class="empty-note" id="dealNewsEmpty" style="display:none;"></div>
         <button type="button" class="home-more" id="dealNewsMore" style="display:none;"></button>
+
+        <!-- 관심 기업. 계열사·경쟁사 시트에 없는 회사도 이름만 적으면 다음
+             수집부터 관련 보도를 모은다. -->
+        <div class="cal-mgmt">
+          <div class="step-desc">관심 기업</div>
+          <div class="step-desc" style="margin-top:0; font-size:11px;">이름을 적어 두면 다음 수집부터 그 회사 관련 보도를 모읍니다. 계열사·경쟁사로 이미 등록된 회사는 따로 더하지 않아도 됩니다.</div>
+          <div class="dl-line">
+            <input type="text" id="watchlistInput" placeholder="예: 오리온">
+            <button type="button" class="upd-btn" id="watchlistAddBtn">＋ 추가</button>
+          </div>
+          <div class="upd-msg" id="watchlistMsg"></div>
+          <div class="cal-src-list" id="watchlistList"></div>
+        </div>
       </div>
     </section>
   </div>
@@ -1780,6 +1834,7 @@
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
   const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
   const CAL_SRC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-캘린더소스');
+  const WATCHLIST_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-관심기업');
   const DISC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-회사공시');
   const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
   const PAGE_SIZE = 50;
@@ -2298,11 +2353,12 @@
   }
 
   let coTab = 기억('lx-co') || '하우시스';
-  /* 계열사 현황 오른쪽 선택 줄에서 무엇을 골랐나. '그룹'이면 계열사별 실적을
-     한 화면에 놓고, 계열사 이름이면 그 계열사의 경쟁사 성과와 리스크를 세로로
-     놓는다. 예전에는 하위 탭 넷을 오갔지만, 실무에서 보는 순서가 늘
-     '어느 회사 → 그 회사의 무엇'이라 한 번 고르면 다 보이게 했다. */
-  let coPick = 기억('lx-co-pick') || '그룹';
+  /* 계열사별 화면은 늘 회사 하나를 보여준다. '그룹 전체'라는 별도 선택은
+     없앴다 — 그룹 전체 실적은 그 자체로 5탭 중 하나(실적 현황)이지,
+     계열사를 안 고른 상태가 아니다. 지금 보는 하위 탭은 이 값이 정한다. */
+  const CO_PANES = ['news', 'ind', 'perf', 'comp', 'risk'];
+  let coPane = 기억('lx-co-pane') || 'news';
+  if (CO_PANES.indexOf(coPane) < 0) coPane = 'news';
   /* 어느 계열사에 어떤 리스크를 따로 관리하는지는 설정 스프레드시트의
      「리스크」 시트가 정한다. 화면은 그 목록을 보고 그릴 뿐이라, 새 리스크를
      붙이는 일은 시트에 줄을 하나 보태는 것이지 코드를 고치는 일이 아니다. */
@@ -2360,29 +2416,58 @@
     return { 경쟁사: Object.keys(회사).length, 지표: 지표.length, 지표들: 지표 };
   }
 
+  /* 5탭 중 지금 것만 보인다. 탭을 바꾸는 것은 자료를 다시 부르는 일이
+     아니라서 coDraw() 전체를 다시 돌리지 않고 이 함수만 부른다. */
+  const CO_PANE_LABEL = { news: '관련 뉴스·공시', ind: '주요 지표', perf: '실적 현황', comp: '경쟁사 현황', risk: '리스크 관리' };
+  const CO_PANE_ELID = { news: 'co-news', ind: 'co-ind', perf: 'co-group', comp: 'co-comp', risk: 'co-risk' };
+
+  function coPane그리기(){
+    document.getElementById('coPaneNav').innerHTML = CO_PANES.map(function (p){
+      return '<button type="button" class="tab-btn' + (p === coPane ? ' active' : '') +
+        '" data-copane="' + p + '">' + escapeHtml(CO_PANE_LABEL[p]) + '</button>';
+    }).join('');
+    CO_PANES.forEach(function (p){
+      document.getElementById(CO_PANE_ELID[p]).classList.toggle('on', p === coPane);
+    });
+  }
+
+  /* 계열사 태그가 그 계열사를 가리키는 기사만 추린다. allArticles 는 검색
+     탭이 이미 받아 둔 것을 그대로 쓴다 — 여기서 또 불러오면 같은 자료를
+     두 번 받는다. 계열사 칸은 "하우시스, 글라스"처럼 쉼표로 이어진 문자열이다. */
+  function coNewsDraw(){
+    const list = document.getElementById('coNewsList');
+    if (!list) return;
+    const 골라냄 = allArticles.filter(function (a){
+      return String(a.계열사 || '').split(',').map(function (s){ return s.trim(); }).indexOf(coTab) >= 0;
+    });
+    const 보일것 = sortByDateDesc(골라냄).slice(0, 20);
+    document.getElementById('coNewsCount').textContent = allArticles.length
+      ? ('총 ' + 골라냄.length + '건')
+      : '불러오는 중…';
+    document.getElementById('coNewsEmpty').style.display = (allArticles.length && !보일것.length) ? 'block' : 'none';
+    list.innerHTML = 보일것.map(function (a){
+      const dir = getDirectionIcon(a.direction);
+      return '<div class="article-item">' +
+        '<div class="article-top"><span class="group-chip">' + getGroupEmoji(a.group) + ' ' + escapeHtml(a.group || '기타') + '</span>' +
+        '<span class="article-date">' + escapeHtml(a.pubDate || a.collectedAt || '') + '</span></div>' +
+        '<a class="article-title" href="' + escapeHtml(a.link) + '" target="_blank" rel="noopener">' + dir + escapeHtml(a.title) + '</a>' +
+        (a.reason ? '<div class="article-reason">💬 ' + escapeHtml(a.reason) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
   function coDraw(){
     설정보이기();
     const 목록 = co보임();
     if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '하우시스';
 
-    if (coPick !== '그룹' && 목록.indexOf(coPick) < 0) coPick = '그룹';
-
-    /* 맨 위가 「그룹 전체」다. 계열사를 아직 안 고른 사람에게 무엇이 있는지
-       먼저 보여 주는 자리라 여기가 기본값이다. */
-    const 칸들 = [{ k: '그룹', 이름: '그룹 전체', 빔: '' }].concat(목록.map(function (k){
+    document.getElementById('coTabs').innerHTML = 목록.map(function (k){
       const c = co셈(k);
-      return { k: k, 이름: k, 빔: (!c.경쟁사 && !c.지표) ? ' data-empty="1"' : '' };
-    }));
-    document.getElementById('coTabs').innerHTML = 칸들.map(function (x){
-      return '<button type="button" class="tab-btn' + (x.k === coPick ? ' active' : '') +
-        '" data-co="' + escapeHtml(x.k) + '"' + x.빔 + '>' + escapeHtml(x.이름) + '</button>';
+      return '<button type="button" class="tab-btn' + (k === coTab ? ' active' : '') +
+        '" data-co="' + escapeHtml(k) + '"' + ((!c.경쟁사 && !c.지표) ? ' data-empty="1"' : '') + '>' + escapeHtml(k) + '</button>';
     }).join('');
 
-    const 그룹이냐 = coPick === '그룹';
-    document.getElementById('co-group').classList.toggle('on', 그룹이냐);
-    document.getElementById('co-comp').classList.toggle('on', !그룹이냐);
-    document.getElementById('co-disc').classList.toggle('on', !그룹이냐);
-    document.getElementById('co-risk').classList.toggle('on', !그룹이냐);
+    coPane그리기();
 
     /* 리스크 관리: 등록된 것이 있으면 그 화면을, 없으면 자리만 보여 준다. */
     const 것들 = co리스크(coTab);
@@ -2408,56 +2493,39 @@
     loadComp(false);
     /* 리스크 등록표가 지표 웹훅에 실려 오므로 리스크 화면도 그것을 기다린다. */
     loadIndex(false);
-    /* 공시는 계열사를 고른 뒤에야 부른다 — 그룹 전체 화면에서는 쓰지 않는다. */
-    if (!그룹이냐){ discShown = DISC_STEP; loadDisc(coTab, false); }
-    if (!그룹이냐 && 지금){
+    discShown = DISC_STEP; loadDisc(coTab, false);
+    coNewsDraw();
+    if (지금){
       renderRiskDashboard();
       if (지금.사건원장) loadCases(false);
     }
     /* 이미 받아 뒀으면 그려 둔다. 안 그리면 계열사를 눌렀을 때 지난 계열사
        화면이 한 순간 비쳤다가 바뀐다. */
-    if (compData) compDraw();
+    if (compData) { compDraw(); groupDraw(); }
     if (indData) indDraw();
   }
 
-  /* 시장 지표 화면. 계열사 현황과 계열사 선택을 함께 쓴다 — 하우시스를 보다가
-     지표로 건너갔는데 다른 회사가 서 있으면 매번 다시 골라야 한다. */
-  function indTabsDraw(){
-    const 통 = document.getElementById('indTabs');
-    if (!통) return;
-    const 목록 = co보임();
-    if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '하우시스';
-    통.innerHTML = 목록.map(function (k){
-      const c = co셈(k);
-      return '<button type="button" class="tab-btn' + (k === coTab ? ' active' : '') +
-        '" data-ind-co="' + escapeHtml(k) + '"' + (c.지표 ? '' : ' data-empty="1"') +
-        '>' + escapeHtml(k) + '</button>';
-    }).join('');
-  }
-
+  /* 홀딩스의 시장지표(tab-index)는 이제 공통 지표만 보여준다. 계열사별
+     지표는 계열사별 탭의 주요지표 하위 탭(co-ind)이 coDraw() 에서 그린다. */
   function indPaneDraw(){
-    indTabsDraw();
     loadIndex(false);
-    if (indData) indDraw();
+    if (indData) indDraw(); else mktGridDraw();
   }
 
   document.getElementById('coTabs').addEventListener('click', function (e){
     const b = e.target.closest('button[data-co]');
     if (!b) return;
-    coPick = b.dataset.co;
-    기억('lx-co-pick', coPick);
-    /* 「그룹 전체」를 골라도 마지막에 보던 계열사는 그대로 둔다 — 시장 지표
-       화면이 그 값을 쓰고, 다시 계열사로 돌아올 때도 그 자리에서 이어진다. */
-    if (coPick !== '그룹'){ coTab = coPick; 기억('lx-co', coTab); }
+    coTab = b.dataset.co;
+    기억('lx-co', coTab);
     coDraw();
   });
 
-  document.getElementById('indTabs').addEventListener('click', function (e){
-    const b = e.target.closest('button[data-ind-co]');
+  document.getElementById('coPaneNav').addEventListener('click', function (e){
+    const b = e.target.closest('button[data-copane]');
     if (!b) return;
-    coTab = b.dataset.indCo;
-    기억('lx-co', coTab);
-    indPaneDraw();
+    coPane = b.dataset.copane;
+    기억('lx-co-pane', coPane);
+    coPane그리기();
   });
 
   document.getElementById('riskPick').addEventListener('click', function (e){
@@ -2467,24 +2535,46 @@
     coDraw();
   });
 
-  /* Home 에서 계열사 칸을 눌러 들어온다. 계열사를 집어 주면 그 계열사 화면
-     (경쟁사 성과 + 리스크)으로, 안 집어 주면 그룹 전체로 연다.
-     「지표」로 보내 달라고 하면 시장 지표 탭으로 건너간다 — 그 화면이 이제
-     계열사 현황 밖에 따로 서 있기 때문이다. */
+  /* Home 에서 계열사 칸을 눌러 들어온다. 리스크로 보내 달라고 하면 리스크
+     하위 탭을 바로 연다. 「지표」로 보내 달라고 하면 시장 지표 탭(홀딩스
+     공통 지표)으로 건너간다. */
   function co열기(k, 어디){
     if (k) { coTab = k; 기억('lx-co', coTab); }
     if (어디 === 'index'){ showTab('index'); return; }
-    coPick = k || '그룹';
-    기억('lx-co-pick', coPick);
+    coPane = 어디 === 'risk' ? 'risk' : 'news';
+    기억('lx-co-pane', coPane);
     showTab('co');
   }
 
   /* ---------- 탭 전환 ---------- */
   let applyAutoLoaded = false;
 
+  /* LX홀딩스/계열사별 두 갈래로 화면을 나눴다. 실제 탭은 예전 이름
+     그대로(index/deal/search/adhoc/apply/cal, co) 두고, 이 표로 어느 갈래에
+     속하는지만 따진다. knowledge/cfg 는 헤더 버튼으로 따로 열리는 화면이라
+     어느 갈래에도 안 넣는다 — 그 화면을 열어도 왼쪽 메뉴의 갈래 선택은
+     그대로 둔다. */
+  const TOP_GROUP_OF = { index: 'holdings', deal: 'holdings', search: 'holdings', adhoc: 'holdings', apply: 'holdings', cal: 'holdings', co: 'affiliate', home: 'home' };
+  /* 전체뉴스조회 안의 세 하위 탭. 하나를 열면 전체뉴스조회 버튼이 눌린
+     것처럼 보이고, newsSubNav 줄이 함께 뜬다. */
+  const NEWS_TABS = ['search', 'adhoc', 'apply'];
+
+  function topNav그리기(tabName){
+    const 갈래 = TOP_GROUP_OF[tabName];
+    if (갈래 === undefined) return; /* knowledge/cfg 등 — 갈래 선택을 건드리지 않는다 */
+    document.querySelectorAll('#topNav [data-top]').forEach(b => b.classList.toggle('active', b.dataset.top === 갈래));
+    document.getElementById('topNav').querySelector('[data-tab="home"]').classList.toggle('active', 갈래 === 'home');
+    document.getElementById('holdingsSubNav').hidden = 갈래 !== 'holdings';
+    document.getElementById('affiliateSubNav').hidden = 갈래 !== 'affiliate';
+    const 뉴스갈래냐 = NEWS_TABS.indexOf(tabName) >= 0;
+    document.getElementById('newsSubNav').hidden = !(갈래 === 'holdings' && 뉴스갈래냐);
+    document.getElementById('holdingsSubNav').querySelector('[data-newsgroup]').classList.toggle('active', 뉴스갈래냐);
+  }
+
   function showTab(tabName){
     document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+    topNav그리기(tabName);
     /* 탭을 옮길 때 주소에 ?tab= 을 써 넣지 않는다. 써 넣으면 주소창을 복사해
        건네준 링크가 「그 사람이 마지막에 보던 탭」으로 열린다 — 링크를 받은
        사람은 Home 부터 보고 싶어 한다. 주소에 ?tab= 이 적혀 들어온 경우
@@ -2500,7 +2590,7 @@
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
-    if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); }
+    if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); loadWatchlist(); }
     if (tabName === 'cal'){ loadCal(false); loadCalSources(); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
@@ -3167,7 +3257,7 @@
     /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
        아무 쓸모가 없으므로, 열자마자 맨 아래(최신)로 내려 둔다. 위로 밀면
        과거로 가는 것이 그래프를 왼쪽으로 훑는 것과 같은 동작이다. */
-    document.querySelectorAll('#co-index .ind-tbl-wrap').forEach(function(w){
+    document.querySelectorAll('#co-ind .ind-tbl-wrap').forEach(function(w){
       w.scrollTop = w.scrollHeight;
     });
 
@@ -3197,6 +3287,7 @@
 
     homeInd();   // 상황판이 열려 있는 채로 지표가 도착할 수 있다
     homeCo();
+    mktGridDraw();
   }
 
   function loadIndex(force){
@@ -3221,7 +3312,7 @@
         /* 리스크 등록표가 이 응답에 실려 온다. 리스크 화면을 보고 있는 채로
            자료가 도착하면 다시 그려야 한다 — 안 그러면 계열사에 리스크가
            등록돼 있는데도 '아직 없습니다'가 그대로 남는다. */
-        if (coPick !== '그룹' && document.getElementById('tab-co').classList.contains('active')) coDraw();
+        if (document.getElementById('tab-co').classList.contains('active')) coDraw();
       })
       .catch(() => {
         indLoading = false;
@@ -4385,7 +4476,7 @@
         const v = compVal(s.값, 지표);
         if (v !== null) m[s.칸] = v;
       });
-      if (Object.keys(m).length) 쓸것.push({ x: c.x, 이름: c.이름, 색: c.색, m: m });
+      if (Object.keys(m).length) 쓸것.push({ x: c.x, 이름: c.이름, 색: c.색, 점선: c.점선 || '', m: m });
     });
     if (!쓸것.length) return null;
     if (!창 || 창.length < 2) return null;
@@ -4439,7 +4530,7 @@
       return {
         지표: { 이름: c.이름, 단위: compUnit(c.x, 지표) },
         색: c.색,
-        점선: '',
+        점선: c.점선 || '',
         pts: pts
       };
     }).filter(function (s){ return s.pts.length >= 2; });
@@ -5162,6 +5253,152 @@
     '</div>';
   }
 
+  /* 경쟁사 현황 맨 위에 세우는 비교 그래프. compGroupBlock과 그리는 방법은
+     같고(compBuild·compChart·compBars), 견주는 대상만 다르다 —
+     compGroupBlock은 계열사끼리, 이것은 경쟁사끼리에 우리 계열사 한 줄을
+     점선으로 얹어 견준다. 우리 계열사 줄은 색과 점선으로 한 번에 알아볼 수
+     있게 경쟁사 색(COMP_색)과 겹치지 않는 색을 따로 쓴다. */
+  const COMP_우리편색 = '#A32B26';
+  function compVsOursBlock(compTab, 경쟁사줄들){
+    const 통 = {};
+    경쟁사줄들.forEach(function (x){
+      const 회사 = String(x.회사명 || '').trim();
+      if (!회사) return;
+      (통[회사] = 통[회사] || []).push(x);
+    });
+    const 경쟁사행 = Object.keys(통).map(function (회사){
+      const 부문들 = 통[회사];
+      return 부문들.length > 1 ? comp전사행(부문들) : 부문들[0];
+    }).filter(Boolean);
+
+    const 우리부문들 = ((compData && compData.실적) || []).filter(function (x){
+      return (x.계열사 || []).indexOf(compTab) >= 0 && x.우리편;
+    });
+    const 우리행 = 우리부문들.length > 1 ? comp전사행(우리부문들) : 우리부문들[0];
+
+    const 회사행 = 경쟁사행.concat(우리행 ? [우리행] : []);
+    if (회사행.length < 2) return '';
+
+    const 열쇠 = '경쟁사대비|' + compTab;
+    const 기간가능 = COMP_RANGES.filter(function (R){
+      return 회사행.some(function (x){ return compSeq(x, R).length; });
+    });
+    if (!기간가능.length) return '';
+    let 기간 = compRange[열쇠] || '연';
+    if (!기간가능.some(function (R){ return R.k === 기간; })) 기간 = 기간가능[0].k;
+    const R = compR(기간);
+    const 기간말 = R.k === '분' ? comp꼴이름() : R.이름;
+    const 칸눈 = R.k === '분' ? comp칸눈() : R.눈;
+    const 보기 = compView[열쇠] || '매출액';
+    const 펼침 = compOpen[열쇠] !== false;
+    const 표펼침 = compTable[열쇠] === true;
+
+    const 것들 = 회사행.slice().sort(function (a, b){
+      if (a === 우리행) return 1;
+      if (b === 우리행) return -1;
+      const x = compLatest(a, '매출액', R), y = compLatest(b, '매출액', R);
+      return (y ? y.v : -Infinity) - (x ? x.v : -Infinity);
+    });
+    let 경쟁사색차례 = 0;
+    const 골 = 것들.map(function (x){
+      if (x === 우리행) return { x: x, 이름: x.회사명 + ' (우리 계열사)', 색: COMP_우리편색, 점선: IND_DASH[1] };
+      const 항목 = { x: x, 이름: x.회사명, 색: COMP_색[경쟁사색차례 % COMP_색.length], 점선: '' };
+      경쟁사색차례++;
+      return 항목;
+    });
+
+    const 지표들 = [보기];
+    const 창 = (펼침 || 표펼침) ? compWindow(것들, 지표들, R) : null;
+    const 짝들 = (펼침 || 표펼침)
+      ? 지표들.map(function (k){
+          const g = compBuild(골, k, R, 창);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
+        })
+      : [];
+    짝들.forEach(function (p){ compGraph[p.열쇠] = p.g; });
+    const g합 = compMerge(짝들);
+    compGraph[열쇠] = g합;
+
+    const 주지표 = 보기;
+    const 목록 = 골.map(function (c){
+      const x = c.x;
+      const 끝 = compLatest(x, 주지표, R);
+      const 단위 = compUnit(x, 주지표);
+      return '<div class="ind-leg' + (끝 ? '' : ' off') + '">' +
+        indSwatch(c.색, c.점선) +
+        '<div class="ind-leg-b"><div class="ind-leg-t"><b>' + escapeHtml(c.이름) + '</b></div></div>' +
+        '<div class="ind-leg-v">' +
+          (끝
+            ? '<div class="val' + (끝.v < 0 ? ' neg' : '') + '">' + indNum(끝.v, 단위) +
+              '<span>' + escapeHtml(단위) + '</span></div>' +
+              compChgHtml(x, 주지표, R, 칸눈)
+            : '<span class="chg ind-flat">' + escapeHtml(기간말) + ' 자료 없음</span>') +
+        '</div></div>';
+    }).join('');
+
+    const 모양 = compShape[열쇠] || '선';
+    let 그래프 = '';
+    if (펼침){
+      const 있는 = 짝들.filter(function (p){ return p.g; });
+      const 모양선택 = '<div class="comp-shape"><div class="ind-pick">' +
+        ['막대', '선'].map(function (s){
+          return '<button type="button" data-shape="' + s + '"' +
+                 (모양 === s ? ' class="on"' : '') + '>' + s + '</button>';
+        }).join('') + '</div></div>';
+      if (!있는.length){
+        그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다.</div>';
+      } else if (모양 === '막대'){
+        const 민 = 지표들.map(function (k){
+          const g = compBuild(골, k, R, 창, true);
+          if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
+          return { 꼬리: k, g: g };
+        }).filter(function (p){ return p.g; });
+        그래프 = 모양선택 +
+          (민.length
+            ? compBars(민, 열쇠) + compAxisBars(민[0].g) +
+              '<div class="ind-note">막대는 <b>0에서</b> 올라옵니다.' +
+              (compHasLoss(민) ? ' <b>적자</b>는 0선 아래 붉은 구역으로 내려갑니다.' : '') +
+              '</div>'
+            : '<div class="ind-note">이 기간에는 막대로 그릴 값이 없습니다.</div>');
+      } else {
+        그래프 = 모양선택 + '<div class="comp-pair">' +
+          있는.map(function (p){ return compChart(p.g, p.열쇠, 있는.length > 1 ? p.꼬리 : ''); }).join('') +
+          compAxis(있는[있는.length - 1].g) +
+          compNote(있는) +
+        '</div>';
+      }
+    }
+
+    const 기간선택 = '<div class="ind-pick">' + COMP_RANGES.map(function (x){
+      const 됨 = 기간가능.some(function (y){ return y.k === x.k; });
+      const 말 = x.k === '분' ? comp꼴이름() : x.이름;
+      return '<button type="button" data-range="' + x.k + '"' +
+        (x.k === 기간 ? ' class="on"' : '') +
+        (됨 ? '' : ' disabled title="아직 ' + 말 + ' 자료가 없습니다"') +
+        '>' + 말 + '</button>';
+    }).join('') + '</div>';
+
+    const 선택버튼 = '<div class="ind-pick">' + COMP_VIEWS.map(function (m){
+      return '<button type="button" data-metric="' + m.k + '"' +
+             (보기 === m.k ? ' class="on"' : '') + '>' + m.이름 + '</button>';
+    }).join('') + '</div>';
+
+    const 수집기간 = comp수집기간(회사행);
+    return '<div class="ind-block comp-group-total" data-blk="' + escapeHtml(열쇠) + '">' +
+      '<div class="ind-bhead">' +
+        '<b>' + escapeHtml(co이름(compTab)) + ' 대 경쟁사 (전사 기준)</b>' +
+        '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') +
+          (우리행 ? '점선이 우리 계열사입니다 · ' : '') +
+          '부문을 더한 전사 합계로 견줍니다 · DART 공시</span>' +
+        기간선택 + 선택버튼 +
+        '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
+        '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
+      '</div>' +
+      그래프 + 목록 + (표펼침 && g합 ? indTableHtml(g합) : '') +
+    '</div>';
+  }
+
   /* 숫자가 하나도 없는 줄은 그리지 않는다. 서버는 '이 보고서는 읽었지만
      부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만 있고
      속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로 막아 둔다 —
@@ -5199,10 +5436,12 @@
        부문표가 없었다'를 표시 줄로 남기는데, 그것까지 블록으로 그리면 제목만
        있고 속이 빈 칸이 뜬다. 서버가 안 보내는 것이 낫지만, 화면도 스스로
        막아 둔다 — 빈 블록은 어느 쪽 잘못이든 읽는 사람에게는 고장이다. */
+    /* 경쟁사 현황은 진짜 경쟁사만 본다. 우리 계열사 실적은 실적 현황
+       탭에 따로 있다. */
     const 것들 = comp쓸것(실적.filter(function (x){
-      return (x.계열사 || []).indexOf(compTab) >= 0;
+      return (x.계열사 || []).indexOf(compTab) >= 0 && !x.우리편;
     }));
-    document.getElementById('compBody').innerHTML = compBlocks(것들, compTab);
+    document.getElementById('compBody').innerHTML = compVsOursBlock(compTab, 것들) + compBlocks(것들, compTab);
     document.querySelectorAll('#compBody .ind-tbl-wrap').forEach(function (w){
       w.scrollTop = w.scrollHeight;
     });
@@ -6205,6 +6444,120 @@
     }).catch(function (){});
   }
 
+  /* ---------- 관심 기업 ----------
+     계열사·경쟁사 시트에 없는 회사를 모니터링하고 싶을 때 쓴다. 그룹
+     키워드JSON에 watchlist:true 그룹을 하나 얹는 것이라, 다음 수집부터
+     바로 그 회사 이름으로 검색해 기사를 모은다. 인증은 캘린더 소스 관리와
+     같은 실행 PW 를 쓴다. */
+  let watchlist = [];
+
+  function watchlistCall(action, extra){
+    const code = sharedCode();
+    if (!code) return Promise.reject(new Error('식별코드를 먼저 확인해 주세요.'));
+
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('관심 기업을 관리합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return Promise.reject(new Error('취소했습니다.'));
+    }
+
+    const body = Object.assign({ code: code, pw: pw, action: action }, extra || {});
+    return fetch(WATCHLIST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (res){
+        return res.json().catch(function (){ return {}; })
+          .then(function (d){ return { ok: res.ok, d: d }; });
+      })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {}
+          throw new Error((r.d && r.d.message) || '요청을 처리하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        return r.d;
+      });
+  }
+
+  function watchlistListDraw(){
+    const 자리 = document.getElementById('watchlistList');
+    if (!watchlist.length){
+      자리.innerHTML = '<div class="empty-note">등록된 관심 기업이 없습니다.</div>';
+      return;
+    }
+    자리.innerHTML = watchlist.map(function (w){
+      return '<div class="cal-src-row">' +
+        '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(w.회사명) + '</div>' +
+        '<div class="cal-src-url">' + escapeHtml(w.등록일시 || '') + '</div></div>' +
+        '<div class="cal-src-actions">' +
+        '<button type="button" class="cal-src-rename" data-watchlist-remove="' + escapeHtml(w.회사명) + '">삭제</button>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function loadWatchlist(){
+    const code = sharedCode();
+    if (!code){
+      document.getElementById('watchlistList').innerHTML =
+        '<div class="empty-note">식별코드를 확인하면 등록된 관심 기업 목록을 볼 수 있습니다.</div>';
+      return;
+    }
+    watchlistCall('list').then(function (d){
+      watchlist = d.목록 || [];
+      watchlistListDraw();
+    }).catch(function (){
+      /* 못 가져와도 이전에 본 목록을 그대로 둔다 — 실행 PW 를 매번 다시
+         묻는 쪽보다 낫다. */
+    });
+  }
+
+  document.getElementById('watchlistAddBtn').addEventListener('click', function (){
+    const 칸 = document.getElementById('watchlistInput');
+    const 회사명 = 칸.value.trim();
+    const 알림 = document.getElementById('watchlistMsg');
+    if (!회사명){
+      알림.className = 'upd-msg bad';
+      알림.textContent = '회사 이름을 입력해 주세요.';
+      return;
+    }
+    알림.className = 'upd-msg';
+    알림.textContent = '추가하는 중…';
+    watchlistCall('add', { 회사명: 회사명 }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '추가했습니다.';
+      칸.value = '';
+      loadWatchlist();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '관심 기업 추가');
+    });
+  });
+
+  document.getElementById('watchlistInput').addEventListener('keydown', function (e){
+    if (e.key === 'Enter') document.getElementById('watchlistAddBtn').click();
+  });
+
+  document.addEventListener('click', function (e){
+    const b = e.target.closest('[data-watchlist-remove]');
+    if (!b) return;
+    const 회사명 = b.dataset.watchlistRemove;
+    if (!confirm('「' + 회사명 + '」을(를) 관심 기업에서 지울까요?')) return;
+    const 알림 = document.getElementById('watchlistMsg');
+    b.disabled = true;
+    알림.className = 'upd-msg';
+    알림.textContent = '지우는 중…';
+    watchlistCall('remove', { 회사명: 회사명 }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '지웠습니다.';
+      loadWatchlist();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '관심 기업 삭제');
+    }).then(function (){ b.disabled = false; });
+  });
+
   /* 링크는 사실상 비밀값이라 기본은 접어 두고, 버튼을 눌러야 입력칸이
      나온다. 추가에 성공하면 다시 접는다. */
   document.getElementById('calSrcAddOpenBtn').addEventListener('click', function (){
@@ -6561,6 +6914,40 @@
       : '<div class="empty-note">아직 값이 쌓인 주요 지표가 없습니다.</div>';
   }
 
+  /* LX홀딩스 시장지표 탭의 첫 카드. Home 의 주요 지표와 같은 묶음(HOME_IND)을
+     쓰되, 숫자 옆에 작은 그래프를 하나 더 그린다 — 얼마인지뿐 아니라 어느
+     쪽으로 움직여 왔는지까지 한 화면에서 보려는 자리다. 그래프는 카드를
+     펼쳐야 나오는 공통 지표 전체 목록과 달리 처음부터 그려 둔다. */
+  function mktGridDraw(){
+    const 통 = document.getElementById('mktGrid');
+    if (!통) return;
+    if (!indData){
+      통.innerHTML = '<div class="empty-note">' + (indLoading ? '불러오는 중…' : '지표를 불러오지 못했습니다.') + '</div>';
+      return;
+    }
+    const 것들 = indTabItems(indData.지표 || [], '공통');
+    const R = IND_RANGES.filter(function (r){ return r.k === IND_RANGE_기본; })[0];
+    const 찾기 = function (id){ return 것들.filter(function (x){ return x.id === id; })[0] || null; };
+
+    const 짝들 = HOME_IND.map(function (grp){
+      const items = grp.ids.map(찾기).filter(Boolean);
+      const 숫자칸 = items.map(function (x){
+        const b = x.범위 && x.범위[R.k];
+        if (!b || b.최신값 === null || b.최신값 === undefined) return '';
+        return '<div class="hi-c"><div class="hi-l">' + escapeHtml(x.이름) + '</div>' +
+          '<div class="hi-v">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위 || '') + '</span></div>' +
+          indChgHtml(b) + '</div>';
+      }).filter(Boolean);
+      if (!숫자칸.length) return '';
+      const g = indBuild(items, R, indStyles(items));
+      const 그래프 = g ? indPlot(g) : '<div class="empty-note" style="padding:0;">그래프 자료 없음</div>';
+      return '<div class="mkt-nums">' + 숫자칸.join('') + '</div>' +
+        '<div class="mkt-chart">' + 그래프 + '</div>';
+    }).filter(Boolean);
+
+    통.innerHTML = 짝들.length ? 짝들.join('') : '<div class="empty-note">아직 값이 쌓인 공통 지표가 없습니다.</div>';
+  }
+
   /* 계열사 칸. 이름만 늘어놓으면 누를 까닭이 없으므로, 들어가기 전에
      「무엇이 있고 무엇이 움직였나」를 한 줄씩 적어 준다.
 
@@ -6905,6 +7292,7 @@
         renderRiskDashboard();
         renderHome();
         dealNewsDraw();
+        coNewsDraw();
       })
       .catch(err => {
         hideLoading();
@@ -6963,6 +7351,11 @@
   }
 
   let groupCount = 0;
+  /* 관심 기업(watchlist:true) 그룹은 이 폼에 보이지 않는다. 자본시장정보
+     탭에서 따로 관리하는 것이라, 여기서 보여주면 이름·목적·키워드 칸이
+     빈 채로 늘어서고 저장할 때 그 칸으로 덮어써 watchlist 표시가 지워진다.
+     조회할 때 떼어 뒀다가 제출할 때 그대로 다시 얹는다. */
+  let 숨겨둔관심기업그룹 = [];
   function addGroup(){
     groupCount++;
     const id = groupCount;
@@ -6989,8 +7382,19 @@
         ・빼고 싶은 단어는 <b>-</b>로 붙입니다. 여러 개도 됩니다. (예: KCC-농구-감독)<br>
         ・<b>🤖 AI 제외</b>를 켜면 이 그룹은 AI가 평가하지 않습니다. 기사는 계속 모이고 &lsquo;키워드 뉴스&rsquo;에서 볼 수 있지만, 메일·텔레그램에는 나오지 않습니다.
       </details>
+      <label>관련 계열사 (해당 있으면 고름 — 대시보드 계열사별 탭의 관련 뉴스에 나옵니다)</label>
+      <div class="co-tag-row"></div>
     `;
     document.getElementById('groupList').appendChild(wrap);
+    const 계열사칸 = wrap.querySelector('.co-tag-row');
+    계열사칸.innerHTML = CO_ORDER.map(function (k){
+      return '<button type="button" class="co-tag" data-co-tag="' + escapeHtml(k) + '">' + escapeHtml(k) + '</button>';
+    }).join('');
+    계열사칸.addEventListener('click', function (e){
+      const b = e.target.closest('.co-tag');
+      if (!b) return;
+      b.classList.toggle('active');
+    });
     wrap.querySelector('.rm').addEventListener('click', function(){
       document.getElementById('group-' + id).remove();
     });
@@ -7138,9 +7542,13 @@
       const urgent = b.querySelector('.urgent-toggle').classList.contains('active');
       const googleEn = b.querySelector('.en-toggle').classList.contains('active');
       const noAi = b.querySelector('.noai-toggle').classList.contains('active');
-      if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent, googleEn, noAi });
+      const 계열사 = Array.prototype.slice.call(b.querySelectorAll('.co-tag.active'))
+        .map(function (t){ return t.dataset.coTag; });
+      if(name || purpose || keywords.length) groups.push({ name, purpose, keywords, urgent, googleEn, noAi, 계열사 });
     });
-    return groups;
+    /* 관심 기업 그룹은 이 폼이 모르는 채로 그대로 실어 보낸다 — 안 그러면
+       제출할 때마다 관심 기업 목록이 통째로 사라진다. */
+    return groups.concat(숨겨둔관심기업그룹);
   }
 
   function applyPrefillData(data){
@@ -7183,7 +7591,9 @@
     if (data.groups && data.groups.length > 0) {
       document.getElementById('groupList').innerHTML = '';
       groupCount = 0;
-      data.groups.forEach(function(g){
+      숨겨둔관심기업그룹 = data.groups.filter(function (g){ return g && g.watchlist === true; });
+      const 보일그룹 = data.groups.filter(function (g){ return !(g && g.watchlist === true); });
+      보일그룹.forEach(function(g){
         addGroup();
         const lastBlock = document.querySelector('#groupList .block:last-child');
         lastBlock.querySelector('.g-name').value = g.name || '';
@@ -7192,6 +7602,10 @@
         lastBlock.querySelector('.urgent-toggle').classList.toggle('active', !!g.urgent);
         lastBlock.querySelector('.en-toggle').classList.toggle('active', !!g.googleEn);
         lastBlock.querySelector('.noai-toggle').classList.toggle('active', !!g.noAi);
+        const 계열사값 = g.계열사 || [];
+        lastBlock.querySelectorAll('.co-tag').forEach(function (t){
+          t.classList.toggle('active', 계열사값.indexOf(t.dataset.coTag) >= 0);
+        });
       });
     }
 
@@ -7394,6 +7808,21 @@
       btn.addEventListener('click', () => showTab(btn.dataset.tab));
     });
 
+    /* LX홀딩스/계열사별 버튼은 화면 하나를 열지 않고 하위 탭 줄만 바꾼다.
+       처음 열 때는 그 갈래의 첫 하위 탭을 그대로 연다. */
+    document.querySelectorAll('#topNav [data-top]').forEach(btn => {
+      btn.addEventListener('click', function(){
+        const 첫탭 = btn.dataset.top === 'holdings' ? 'index' : 'co';
+        showTab(첫탭);
+      });
+    });
+
+    /* 전체뉴스조회는 화면 하나가 아니라 세 하위 탭(키워드 뉴스/특정 키워드
+       검색/신청·변경)의 묶음이다. 처음 열 때는 키워드 뉴스부터 보여준다. */
+    document.getElementById('holdingsSubNav').querySelector('[data-newsgroup]').addEventListener('click', function(){
+      showTab('search');
+    });
+
     document.getElementById('sharedLoadBtn').addEventListener('click', loadArticles);
     document.getElementById('sharedCode').addEventListener('keydown', function(e){
       if (e.key === 'Enter' && !isBusy()) loadArticles();
@@ -7569,8 +7998,8 @@
       /* 실리코시스는 하우시스에 걸린 리스크다. ?tab=risk 로 들어온 사람을
          엉뚱한 계열사의 빈 리스크 화면에 떨어뜨리지 않는다. */
       if (tabFromUrl === 'risk' && !coFromUrl){ coTab = '하우시스'; 기억('lx-co', coTab); }
-      coPick = coTab;
-      기억('lx-co-pick', coPick);
+      coPane = tabFromUrl === 'risk' ? 'risk' : 'comp';
+      기억('lx-co-pane', coPane);
     }
     /* 새로고침은 「보던 화면을 다시 그리는 일」이라 그 탭으로 돌아간다. 링크를
        타고 새로 들어온 것은 Home 부터 연다 — 링크를 받은 사람은 오늘 무슨 일이
