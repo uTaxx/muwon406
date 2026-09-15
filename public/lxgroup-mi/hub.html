@@ -34,7 +34,7 @@
   .cover .cover-btn{flex:none; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.28); color:#fff; padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; line-height:1.2; cursor:pointer; box-shadow:none; white-space:nowrap;}
   .cover .cover-btn:hover{background:rgba(255,255,255,0.26);}
   .cover .cover-btn.active{background:#fff; border-color:#fff; color:var(--green-dark);}
-  main{max-width:680px; margin:-24px auto 0; padding:0 16px 90px; position:relative;}
+  main{max-width:680px; margin:0 auto; padding:20px 16px 90px; position:relative;}
   section.card{background:var(--card); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
   /* 머리말과 그 아래 한 줄 설명은 따로 쌓지 않고 한 줄에 몬다. 상자마다 20px 쯤
      되는 빈 줄이 하나씩 사라진다. 둘 다 줄 안에 놓이는 상자라, 설명이 길어 남은
@@ -348,7 +348,7 @@
   @media (min-width:1024px){
     .cover{padding:20px 0 30px;}
     .cover-in{max-width:1320px; padding:0 24px;}
-    main{max-width:1320px; padding:0 24px 90px; display:grid;
+    main{max-width:1320px; padding:20px 24px 90px; display:grid;
       grid-template-columns:216px minmax(0,1fr); gap:20px; align-items:start;}
     .side{position:sticky; top:16px;}
     .side section.card{padding:14px 14px; margin-bottom:9px;}
@@ -1123,27 +1123,26 @@
       <button type="button" class="tab-btn" data-top="holdings">LX홀딩스</button>
       <button type="button" class="tab-btn" data-top="affiliate">계열사별</button>
     </div>
-    <!-- LX홀딩스 4탭: 시장지표/자본시장정보/전체뉴스조회/주요일정. -->
-    <div class="tab-nav co-sub" id="holdingsSubNav" hidden>
-      <button type="button" class="tab-btn" data-tab="index">시장지표</button>
-      <button type="button" class="tab-btn" data-tab="deal">자본시장정보</button>
-      <button type="button" class="tab-btn" data-newsgroup="1">전체뉴스조회</button>
-      <button type="button" class="tab-btn" data-tab="cal">주요일정</button>
-    </div>
-    <!-- 전체뉴스조회 안의 세 갈래. 기존 키워드 뉴스·특정 키워드 검색·신청/변경 화면을
-         그대로 쓰되 이 줄로 묶는다. -->
-    <div class="tab-nav co-sub" id="newsSubNav" hidden>
-      <button type="button" class="tab-btn" data-tab="search">키워드 뉴스</button>
-      <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드 검색</button>
-      <button type="button" class="tab-btn" data-tab="apply">키워드 신청·변경</button>
-    </div>
-    <!-- 계열사별 하위 탭. -->
-    <div class="tab-nav co-sub" id="affiliateSubNav" hidden>
-      <button type="button" class="tab-btn" data-tab="co">계열사 현황</button>
-    </div>
   </div>
 
   <div class="panes">
+
+  <!-- 하위 메뉴는 본문 위쪽에 둔다. 왼쪽 메뉴는 홈/홀딩스/계열사별 갈래만
+       고르는 자리이고, 그 갈래 안에서 어디로 갈지는 여기서 고른다. -->
+  <!-- LX홀딩스 4탭: 시장지표/자본시장정보/전체뉴스조회/주요일정. -->
+  <div class="tab-nav co-sub top-sub" id="holdingsSubNav" hidden>
+    <button type="button" class="tab-btn" data-tab="index">시장지표</button>
+    <button type="button" class="tab-btn" data-tab="deal">자본시장정보</button>
+    <button type="button" class="tab-btn" data-newsgroup="1">전체뉴스조회</button>
+    <button type="button" class="tab-btn" data-tab="cal">주요일정</button>
+  </div>
+  <!-- 전체뉴스조회 안의 세 갈래. 기존 키워드 뉴스·특정 키워드 검색·신청/변경 화면을
+       그대로 쓰되 이 줄로 묶는다. -->
+  <div class="tab-nav co-sub top-sub" id="newsSubNav" hidden>
+    <button type="button" class="tab-btn" data-tab="search">키워드 뉴스</button>
+    <button type="button" class="tab-btn" data-tab="adhoc">특정 키워드 검색</button>
+    <button type="button" class="tab-btn" data-tab="apply">키워드 신청·변경</button>
+  </div>
 
   <!-- 탭 0: Home -->
   <!-- 카드는 모두 이 div 의 직계 자식이다. 설정에서 정한 순서대로 JS 가 다시
@@ -2602,7 +2601,6 @@
     document.querySelectorAll('#topNav [data-top]').forEach(b => b.classList.toggle('active', b.dataset.top === 갈래));
     document.getElementById('topNav').querySelector('[data-tab="home"]').classList.toggle('active', 갈래 === 'home');
     document.getElementById('holdingsSubNav').hidden = 갈래 !== 'holdings';
-    document.getElementById('affiliateSubNav').hidden = 갈래 !== 'affiliate';
     const 뉴스갈래냐 = NEWS_TABS.indexOf(tabName) >= 0;
     document.getElementById('newsSubNav').hidden = !(갈래 === 'holdings' && 뉴스갈래냐);
     document.getElementById('holdingsSubNav').querySelector('[data-newsgroup]').classList.toggle('active', 뉴스갈래냐);
