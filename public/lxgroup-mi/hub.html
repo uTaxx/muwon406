@@ -942,20 +942,11 @@
   .co-sub .tab-btn{flex:0 0 auto; padding:7px 15px; font-size:12.5px; border-radius:999px;}
   .co-pane{display:none;}
   .co-pane.on{display:block;}
-  /* 계열사 현황: 본문 왼쪽, 계열사 선택 오른쪽. 왼쪽 메뉴와 마주 보게 두면
-     '메뉴 → 계열사'가 한 줄로 읽힌다. 좁은 화면에서는 위쪽 가로줄로 돌린다 —
-     세로 줄 두 개가 본문을 양쪽에서 조이면 표가 읽히지 않는다. */
-  .co-layout{display:flex; gap:14px; align-items:flex-start;}
-  .co-main{flex:1 1 0; min-width:0;}
-  .co-rail{flex:0 0 132px;}
-  .co-rail .tab-nav{flex-direction:column;}
-  .co-rail .tab-btn{flex:0 0 auto; width:100%; text-align:left; padding:9px 11px;}
-  @media (max-width: 900px){
-    .co-layout{flex-direction:column-reverse;}
-    .co-rail{flex:1 1 auto; width:100%;}
-    .co-rail .tab-nav{flex-direction:row;}
-    .co-rail .tab-btn{width:auto; text-align:center;}
-  }
+  /* 계열사 현황: 계열사 선택(어느 회사냐)을 맨 위, 그 아래 소메뉴
+     (무엇을 볼 것이냐)를 둔다. 예전에는 계열사 선택을 오른쪽 세로줄에
+     따로 뒀는데, 어디 있는지 찾기 어렵다는 지적을 받아 위쪽으로 올렸다. */
+  .co-layout{display:block;}
+  #coTabs{margin-bottom:10px;}
   /* 그 계열사에 딸린 다른 화면으로 건너가는 줄. 지금은 하우시스의 실리코시스
      하나뿐이지만, 계열사마다 붙는 것이 생기면 여기에 는다. */
   .co-jump{display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -1582,8 +1573,10 @@
        "그룹이 지금 어떤가"는 계열사 하나로 답할 질문이 아니기 때문이다. -->
   <div id="tab-co" class="tab-panel">
    <div class="co-layout">
-    <div class="co-main">
 
+    <!-- 계열사 선택. 이 화면 전체가 '어느 계열사 이야기냐'를 먼저 정하고
+         들어가므로 맨 위에 둔다. -->
+    <div class="tab-nav ind-nav" id="coTabs"></div>
     <div class="tab-nav co-sub" id="coPaneNav"></div>
 
     <!-- 관련 뉴스·공시. 위는 그 계열사 태그가 붙은 기사(신청/변경 탭에서
@@ -1720,10 +1713,6 @@
       </div>
     </div>
 
-    </div>
-   <!-- 계열사 선택. 왼쪽 메뉴의 반대쪽에 세워 두면 '메뉴 → 계열사'가 한 줄로
-        읽힌다. 좁은 화면에서는 CSS 가 위쪽 가로줄로 돌린다. -->
-   <div class="co-rail"><div class="tab-nav ind-nav" id="coTabs"></div></div>
    </div>
   </div>
 
@@ -2388,7 +2377,7 @@
     return null;
   }
 
-  let coTab = 기억('lx-co') || '하우시스';
+  let coTab = 기억('lx-co') || '인터';
   /* 계열사별 화면은 늘 회사 하나를 보여준다. '그룹 전체'라는 별도 선택은
      없앴다 — 그룹 전체 실적은 그 자체로 5탭 중 하나(실적 현황)이지,
      계열사를 안 고른 상태가 아니다. 지금 보는 하위 탭은 이 값이 정한다. */
@@ -2495,7 +2484,7 @@
   function coDraw(){
     설정보이기();
     const 목록 = co보임();
-    if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '하우시스';
+    if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '인터';
 
     document.getElementById('coTabs').innerHTML = 목록.map(function (k){
       const c = co셈(k);
