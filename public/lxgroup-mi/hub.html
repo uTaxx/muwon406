@@ -197,16 +197,14 @@
   .hi-c .chg{display:block; font-size:11.5px; font-weight:700; margin-top:2px; white-space:nowrap;}
   .hi-c .chg em{font-style:normal; font-weight:600; margin-left:4px;}
 
-  /* LX홀딩스 시장지표 첫 화면. 숫자와 그래프를 나란히 둔 2열을 한 짝으로
-     삼아 한 줄에 두 짝(넉 열)을 세운다 — 아침에 환율·금리·유가를 한눈에
-     보려는 자리라 카드를 펼쳐야 보이면 안 된다. 좁은 화면에서는 한 짝만
-     세워 두 줄로 접는다. */
-  .mkt-grid{display:grid; grid-template-columns:minmax(150px,230px) 1fr minmax(150px,230px) 1fr; gap:10px 16px; align-items:center; margin-top:8px;}
-  .mkt-nums{display:flex; flex-direction:column; gap:6px; min-width:0;}
-  .mkt-chart{position:relative; height:56px; min-width:0;}
-  .mkt-chart svg{width:100%; height:100%; display:block;}
+  /* LX홀딩스 시장지표 첫 화면. 환율·금리·유가처럼 묶어 보는 지표 하나하나를
+     테두리 있는 카드로 만들어, 숫자와 그래프가 한 상자 안에 들어가게 한다.
+     예전에는 숫자 칸만 테두리가 있고 그래프는 테두리 밖에 떠 있었다.
+     넓은 화면에서는 카드 둘을 한 줄에, 좁은 화면에서는 한 줄에 하나씩 둔다. */
+  .mkt-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:8px;}
+  #mktGrid .ind-chart{height:150px; margin-top:10px;}
   @media (max-width:900px){
-    .mkt-grid{grid-template-columns:minmax(120px,1fr) 1.3fr;}
+    .mkt-grid{grid-template-columns:1fr;}
   }
 
   /* ── 자본시장 딜 ────────────────────────────────────────
@@ -2955,6 +2953,42 @@
     return out + '</svg>';
   }
 
+  /* indPlot 에 최고점·최저점·현재값 표식을 더한 그림. 상황판의 시장지표
+     카드처럼 커서를 올리지 않고도 바로 눈에 띄어야 하는 자리에 쓴다.
+     세 점이 겹치면(자료가 두세 칸뿐이거나 계속 오르기만 한 경우) 같은
+     점에 글자를 두 번 적지 않는다. */
+  function indPlotMarked(g){
+    const W = IND_W, H = IND_H;
+    const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
+    const Y = function(v){ return ind높이비율(g, v) * H; };
+
+    let 표식 = '';
+    g.선들.forEach(function(s){
+      if (!s.pts.length) return;
+      let 최고 = s.pts[0], 최저 = s.pts[0];
+      s.pts.forEach(function(p){
+        if (p.y > 최고.y) 최고 = p;
+        if (p.y < 최저.y) 최저 = p;
+      });
+      const 현재 = s.pts[s.pts.length - 1];
+      const 찍을점 = [최고, 최저, 현재].filter(function(p, i, arr){
+        return arr.findIndex(function(q){ return q.j === p.j; }) === i;
+      });
+      찍을점.forEach(function(p){
+        const x = X(p.j), y = Y(p.y);
+        const 아래로 = y < H * 0.22;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
+        const ty = 아래로 ? y + 22 : y - 10;
+        표식 += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + s.색 +
+          '" stroke="#fff" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
+        표식 += '<text x="' + x.toFixed(1) + '" y="' + ty.toFixed(1) + '" font-size="17" text-anchor="middle" ' +
+          'font-weight="700" fill="' + s.색 + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
+          escapeHtml(indNum(p.v, g.단위)) + '</text>';
+      });
+    });
+    const svg = indPlot(g);
+    return svg.slice(0, -'</svg>'.length) + 표식 + '</svg>';
+  }
+
   /* 범례 표식도 그래프와 같은 선 모양으로 그린다. 그래프는 점선인데 범례는
      실선이면 짝을 못 짓는다. */
   function indSwatch(색, 점선){
@@ -5584,6 +5618,7 @@
   그래프커서(document.getElementById('indCommonBody'), indGraph);
   그래프커서(document.getElementById('compBody'), compGraph);
   그래프커서(document.getElementById('groupBody'), compGraph);
+  그래프커서(document.getElementById('mktGrid'), indGraph);
 
   /* 경쟁사 성과와 그룹 실적이 같은 블록을 쓰므로 누름도 같이 쓴다. 어느 쪽을
      다시 그릴지만 다르다. */
@@ -7164,7 +7199,7 @@
     const R = IND_RANGES.filter(function (r){ return r.k === IND_RANGE_기본; })[0];
     const 찾기 = function (id){ return 것들.filter(function (x){ return x.id === id; })[0] || null; };
 
-    const 짝들 = HOME_IND.map(function (grp){
+    const 카드들 = HOME_IND.map(function (grp, i){
       const items = grp.ids.map(찾기).filter(Boolean);
       const 숫자칸 = items.map(function (x){
         const b = x.범위 && x.범위[R.k];
@@ -7174,13 +7209,20 @@
           indChgHtml(b) + '</div>';
       }).filter(Boolean);
       if (!숫자칸.length) return '';
+      const 열쇠 = 'mkt' + i;
       const g = indBuild(items, R, indStyles(items));
-      const 그래프 = g ? indPlot(g) : '<div class="empty-note" style="padding:0;">그래프 자료 없음</div>';
-      return '<div class="mkt-nums">' + 숫자칸.join('') + '</div>' +
-        '<div class="mkt-chart">' + 그래프 + '</div>';
+      indGraph[열쇠] = g;   // 커서가 여기서 값을 꺼내 쓴다(그래프커서 참고)
+      const 그래프 = g
+        ? '<div class="ind-chart">' + indPlotMarked(g) +
+            '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
+          '</div>'
+        : '<div class="empty-note" style="padding:0;">그래프 자료 없음</div>';
+      return '<div class="ind-block" data-blk="' + 열쇠 + '">' +
+        '<div class="hi">' + 숫자칸.join('') + '</div>' + 그래프 +
+      '</div>';
     }).filter(Boolean);
 
-    통.innerHTML = 짝들.length ? 짝들.join('') : '<div class="empty-note">아직 값이 쌓인 공통 지표가 없습니다.</div>';
+    통.innerHTML = 카드들.length ? 카드들.join('') : '<div class="empty-note">아직 값이 쌓인 공통 지표가 없습니다.</div>';
   }
 
   /* 계열사 칸. 이름만 늘어놓으면 누를 까닭이 없으므로, 들어가기 전에
