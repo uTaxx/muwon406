@@ -418,7 +418,7 @@
   .range-row{display:flex; flex-wrap:wrap; gap:0 16px;}
   .range-row > .range-group{flex:1 1 170px; min-width:0; margin-bottom:12px;}
   /* 길지만 늘 필요하진 않은 안내는 접어 둔다. */
-  .hint-fold{font-size:12px; color:var(--muted); line-height:1.6; margin:-4px 0 12px;}
+  .hint-fold{font-size:12px; color:var(--muted); line-height:1.6; margin:-4px 0 8px;}
   .hint-fold > summary{cursor:pointer; font-weight:700; color:var(--green); list-style:none; padding:2px 0;}
   .hint-fold > summary::after{content:' ▾';}
   .hint-fold[open] > summary::after{content:' ▴';}
@@ -583,7 +583,7 @@
   /* 그룹 카드 맨 아래에 두는 삽입 버튼. 밑에서만 더할 수 있으면 위쪽에
      넣으려고 새로 만든 카드를 ▲로 여러 번 밀어 올려야 해서, 카드마다
      '바로 이 자리 아래' 를 골라 넣을 수 있게 했다. */
-  .group-insert-after{background:transparent; border:1.5px dashed var(--line); color:var(--muted); border-radius:8px; padding:6px; width:100%; font-size:11.5px; font-weight:700; cursor:pointer; margin-top:12px;}
+  .group-insert-after{background:transparent; border:1.5px dashed var(--line); color:var(--muted); border-radius:8px; padding:6px; width:100%; font-size:11.5px; font-weight:700; cursor:pointer; margin-top:8px;}
   .group-insert-after:hover{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
   .word-hint{font-size:12px; color:var(--muted); margin:-6px 0 14px; line-height:1.6;}
   .source-check-row{display:flex; gap:8px; flex-wrap:wrap;}
@@ -619,17 +619,28 @@
   /* 'AI 제외'는 켜는 게 아니라 끄는 스위치라, 켜졌을 때 초록이 아닌 색으로 구분한다. */
   .block .noai-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
   .block .noai-toggle.active{background:#F4E6DA; border-color:#9C5024; color:#9C5024;}
-  #groupList .block{padding:12px;}
+  #groupList .block{padding:12px; margin-bottom:10px;}
   #groupList .block .block-actions{top:12px; right:12px;}
+  /* 그룹명과 출력 라벨을 한 줄에 나란히 두면서, 출력 라벨 칸이 넓어져 오른쪽
+     위의 버튼 줄과 겹친다. 버튼 줄 높이만큼 위쪽 여백을 비워 피한다. */
+  #groupList .block{padding-top:40px;}
   /* 버튼이 네 개가 되면서 좁은 화면에서는 '그룹명' 글자를 덮는다.
      이럴 때는 겹치지 않게 제 줄로 내려서 오른쪽에 붙인다. */
   @media (max-width:560px){
+    #groupList .block{padding-top:12px;}
     #groupList .block .block-actions{position:static; justify-content:flex-end; margin-bottom:10px;}
   }
-  #groupList .block label{margin-bottom:4px; font-size:12px;}
-  #groupList .block input, #groupList .block textarea{margin-bottom:8px; padding:9px 12px; font-size:13.5px;}
-  #groupList .block textarea.g-keywords{min-height:56px;}
-  .co-tag-picker{display:flex; gap:8px; margin-bottom:8px;}
+  #groupList .block label{margin-bottom:3px; font-size:12px;}
+  #groupList .block input, #groupList .block textarea{margin-bottom:6px; padding:8px 12px; font-size:13.5px;}
+  #groupList .block textarea.g-purpose, #groupList .block textarea.g-keywords{min-height:44px;}
+  /* 그룹명·출력 라벨, AI 분석 목표·키워드를 각각 한 줄에 두 칸으로 놓아
+     스크롤을 줄인다. 화면이 좁으면(휴대폰 폭) 한 칸으로 다시 쌓는다. */
+  #groupList .g-2col{display:grid; grid-template-columns:1fr 1fr; gap:0 14px;}
+  #groupList .g-2col > div{min-width:0;}
+  @media (max-width:560px){
+    #groupList .g-2col{grid-template-columns:1fr;}
+  }
+  .co-tag-picker{display:flex; gap:8px; margin-bottom:6px;}
   .co-tag-picker .co-tag-select{flex:1; min-width:0; margin-bottom:0; padding:9px 12px; font-size:13.5px; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--text);}
   .co-tag-add{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:12.5px; cursor:pointer; font-weight:700; padding:0 14px; border-radius:10px; white-space:nowrap;}
   .co-tag-add:hover{border-color:var(--green); color:var(--green-dark);}
@@ -7636,12 +7647,28 @@
         <button type="button" class="noai-toggle" title="이 그룹은 AI 평가를 하지 않습니다. 기사는 그대로 모아 '키워드 뉴스'에서 볼 수 있지만, 점수가 없어 메일·텔레그램에는 나오지 않습니다. 양이 많고 대부분 참고용인 키워드(데이터센터, 모듈러 등)에 쓰세요.">🤖 AI 제외</button>
         <button type="button" class="rm">삭제</button>
       </div>
-      <label>그룹명</label>
-      <input type="text" class="g-name" placeholder="예: 경쟁사">
-      <label>AI 분석 목표(본 그룹의 AI 검색 지침)</label>
-      <textarea class="g-purpose" placeholder="AI Tool 사용할 때처럼 구체적일수록 좋음" style="margin-bottom:8px;"></textarea>
-      <label>키워드 (쉼표로 구분, 동의어/표기 변형 전부 입력)</label>
-      <textarea class="g-keywords" placeholder="예: LX홀딩스, LX 홀딩스, 재건축+압구정, KCC-농구" style="margin-bottom:6px;"></textarea>
+      <div class="g-2col">
+        <div>
+          <label>그룹명</label>
+          <input type="text" class="g-name" placeholder="예: 경쟁사">
+        </div>
+        <div>
+          <label>출력 라벨 (메일·텔레그램에 표시할 이름)</label>
+          <select class="g-label">
+            <option value="">그룹명 그대로 사용</option>
+          </select>
+        </div>
+      </div>
+      <div class="g-2col">
+        <div>
+          <label>AI 분석 목표(본 그룹의 AI 검색 지침)</label>
+          <textarea class="g-purpose" placeholder="AI Tool 사용할 때처럼 구체적일수록 좋음"></textarea>
+        </div>
+        <div>
+          <label>키워드 (쉼표로 구분, 동의어/표기 변형 전부 입력)</label>
+          <textarea class="g-keywords" placeholder="예: LX홀딩스, LX 홀딩스, 재건축+압구정, KCC-농구"></textarea>
+        </div>
+      </div>
       <details class="hint-fold">
         <summary>키워드 쓰는 법</summary>
         ・보통은 단어만 쓰면 됩니다. (예: LX홀딩스)<br>
@@ -7657,10 +7684,6 @@
         <button type="button" class="co-tag-add">＋ 추가</button>
       </div>
       <div class="co-tag-chips"></div>
-      <label>출력 라벨 (메일·텔레그램에 표시할 이름)</label>
-      <select class="g-label">
-        <option value="">그룹명 그대로 사용</option>
-      </select>
       <button type="button" class="group-insert-after">＋ 이 아래에 그룹 추가</button>
     `;
     const groupList = document.getElementById('groupList');
