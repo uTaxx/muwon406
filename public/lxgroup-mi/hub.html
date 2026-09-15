@@ -603,7 +603,9 @@
   .instant-summary{font-size:13.5px; font-weight:700; color:var(--green-dark); margin-bottom:8px; padding-bottom:10px; border-bottom:1px solid var(--line);}
 
   .block{background:var(--bg); border-radius:12px; padding:16px; margin-bottom:12px; position:relative; border:1px solid var(--line);}
-  .block .block-actions{position:absolute; top:12px; right:12px; display:flex; gap:8px;}
+  .block .block-actions{position:absolute; top:12px; right:12px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px;}
+  .block .move-up, .block .move-down{background:#fff; border:1px solid var(--line); color:var(--muted); font-size:12px; cursor:pointer; font-weight:700; padding:4px 9px; border-radius:14px; line-height:1;}
+  .block .move-up:disabled, .block .move-down:disabled{opacity:.35; cursor:not-allowed;}
   .block .rm{background:#fff; border:1px solid var(--line); color:var(--danger); font-size:11.5px; cursor:pointer; font-weight:600; padding:4px 10px; border-radius:14px;}
   .block .urgent-toggle{background:#fff; border:1.5px solid var(--line); color:var(--muted); font-size:11.5px; cursor:pointer; font-weight:700; padding:4px 10px; border-radius:14px; transition:background .15s, border-color .15s, color .15s;}
   .block .urgent-toggle.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark);}
@@ -6618,11 +6620,14 @@
     if (!라벨목록.length){
       자리.innerHTML = '<div class="empty-note">등록된 출력 라벨이 없습니다.</div>';
     } else {
-      자리.innerHTML = 라벨목록.map(function (l){
+      자리.innerHTML = 라벨목록.map(function (l, i){
         return '<div class="cal-src-row">' +
           '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(l.라벨명) + '</div>' +
           '<div class="cal-src-url">' + escapeHtml(l.등록일시 || '') + '</div></div>' +
           '<div class="cal-src-actions">' +
+          '<button type="button" class="move-up" data-label-move-up="' + escapeHtml(l.라벨명) + '"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button type="button" class="move-down" data-label-move-down="' + escapeHtml(l.라벨명) + '"' + (i === 라벨목록.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '<button type="button" class="cal-src-rename" data-label-rename="' + escapeHtml(l.라벨명) + '">이름 변경</button>' +
           '<button type="button" class="cal-src-rename" data-label-remove="' + escapeHtml(l.라벨명) + '">삭제</button>' +
           '</div></div>';
       }).join('');
@@ -6635,9 +6640,9 @@
     if (!code){
       document.getElementById('labelList').innerHTML =
         '<div class="empty-note">식별코드를 확인하면 등록된 출력 라벨 목록을 볼 수 있습니다.</div>';
-      return;
+      return Promise.resolve();
     }
-    labelCall('list').then(function (d){
+    return labelCall('list').then(function (d){
       라벨목록 = d.목록 || [];
       labelListDraw();
     }).catch(function (){
@@ -6719,6 +6724,69 @@
     }).catch(function (err){
       알림.className = 'upd-msg bad';
       알림.textContent = 오류메시지(err, '출력 라벨 삭제');
+    }).then(function (){ b.disabled = false; });
+  });
+
+  document.addEventListener('click', function (e){
+    const b = e.target.closest('[data-label-rename]');
+    if (!b) return;
+    const 기존이름 = b.dataset.labelRename;
+    const 새이름 = prompt('새 이름을 입력해 주세요.', 기존이름);
+    if (!새이름 || !새이름.trim() || 새이름.trim() === 기존이름) return;
+    const 알림 = document.getElementById('labelMsg');
+    b.disabled = true;
+    알림.className = 'upd-msg';
+    알림.textContent = '이름을 바꾸는 중…';
+    labelCall('rename', { 라벨명: 기존이름, 새라벨명: 새이름.trim() }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '이름을 바꿨습니다.';
+      return loadLabels().then(function (){
+        /* 이미 이 라벨을 고른 그룹의 선택 상자도 새 이름으로 옮겨 준다.
+           안 그러면 목록을 다시 그린 뒤에는 그 그룹이 '(목록에 없음)'으로
+           보여서, 이름만 바뀌었을 뿐인데 무언가 깨진 것처럼 보인다. */
+        document.querySelectorAll('#groupList .g-label').forEach(function (sel){
+          if (sel.value === 기존이름) sel.value = 새이름.trim();
+        });
+      });
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '출력 라벨 이름 변경');
+    }).then(function (){ b.disabled = false; });
+  });
+
+  /* 목록 순서가 곧 메일·텔레그램에서 그룹이 라벨을 고를 때 보이는 순서다.
+     캘린더소스처럼 id 로 맞추는 대신 라벨명으로 맞춘다 — 라벨은 이름
+     자체가 값이라 중복 이름을 허용하지 않는다(추가값 만들기가 막는다). */
+  function 라벨순서바꾸기(라벨명, 방향){
+    const idx = 라벨목록.findIndex(function (l){ return l && l.라벨명 === 라벨명; });
+    const 짝 = idx + 방향;
+    if (idx < 0 || 짝 < 0 || 짝 >= 라벨목록.length) return null;
+    const 새순서 = 라벨목록.slice();
+    const tmp = 새순서[idx];
+    새순서[idx] = 새순서[짝];
+    새순서[짝] = tmp;
+    return 새순서.map(function (l){ return l.라벨명; });
+  }
+
+  document.addEventListener('click', function (e){
+    const up = e.target.closest('[data-label-move-up]');
+    const down = e.target.closest('[data-label-move-down]');
+    const b = up || down;
+    if (!b) return;
+    const 라벨명 = up ? b.dataset.labelMoveUp : b.dataset.labelMoveDown;
+    const 새순서 = 라벨순서바꾸기(라벨명, up ? -1 : 1);
+    if (!새순서) return;
+    const 알림 = document.getElementById('labelMsg');
+    b.disabled = true;
+    알림.className = 'upd-msg';
+    알림.textContent = '순서를 바꾸는 중…';
+    labelCall('reorder', { 순서: 새순서 }).then(function (d){
+      알림.className = 'upd-msg ok';
+      알림.textContent = d.message || '순서를 바꿨습니다.';
+      loadLabels();
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '출력 라벨 순서 변경');
     }).then(function (){ b.disabled = false; });
   });
 
@@ -7525,6 +7593,20 @@
      옮겨 쌓는다. 여러 계열사를 붙이는 그룹(예: 경쟁사 공통 그룹)이 있어
      드롭박스 자체를 다중 선택으로 두지 않았다 — 목록이 길어지면 어떤 것을
      이미 골랐는지 드롭박스 안에서는 한눈에 안 보인다. */
+  /* 그룹이 뜨는 순서가 곧 메일·텔레그램 다이제스트에 그룹이 나오는 순서다
+     (검색어 만들기·이메일 메시지 조립·텔레그램메시지조립이 그룹키워드JSON에
+     적힌 순서를 그대로 따른다). collectGroups()는 이 화면에 놓인 순서
+     그대로 배열을 만들므로, 카드를 옮기면 그게 곧 발송 순서가 된다. */
+  function 그룹순서버튼갱신(){
+    const 블록들 = document.querySelectorAll('#groupList .block');
+    블록들.forEach(function (b, i){
+      const 위 = b.querySelector('.move-up');
+      const 아래 = b.querySelector('.move-down');
+      if (위) 위.disabled = (i === 0);
+      if (아래) 아래.disabled = (i === 블록들.length - 1);
+    });
+  }
+
   function 계열사칩추가(칩칸, k){
     if (!k || 칩칸.querySelector('[data-co-tag="' + k + '"]')) return;
     const 칩 = document.createElement('span');
@@ -7542,6 +7624,8 @@
     wrap.id = 'group-' + id;
     wrap.innerHTML = `
       <div class="block-actions">
+        <button type="button" class="move-up" title="이 그룹을 위로 옮깁니다 (메일·텔레그램에 나오는 순서가 바뀝니다)" aria-label="위로 이동">▲</button>
+        <button type="button" class="move-down" title="이 그룹을 아래로 옮깁니다 (메일·텔레그램에 나오는 순서가 바뀝니다)" aria-label="아래로 이동">▼</button>
         <button type="button" class="en-toggle" title="구글 뉴스 영문판도 함께 검색합니다 (해외 이슈 등 영어로만 보도되는 기사용)">🌐 영문</button>
         <button type="button" class="urgent-toggle" title="긴급 그룹: 매시간 확인해서 감지 즉시 텔레그램으로 알려드립니다 (정기 발송 시각과 무관)">🚨 긴급</button>
         <button type="button" class="noai-toggle" title="이 그룹은 AI 평가를 하지 않습니다. 기사는 그대로 모아 '키워드 뉴스'에서 볼 수 있지만, 점수가 없어 메일·텔레그램에는 나오지 않습니다. 양이 많고 대부분 참고용인 키워드(데이터센터, 모듈러 등)에 쓰세요.">🤖 AI 제외</button>
@@ -7594,6 +7678,17 @@
     });
     wrap.querySelector('.rm').addEventListener('click', function(){
       document.getElementById('group-' + id).remove();
+      그룹순서버튼갱신();
+    });
+    wrap.querySelector('.move-up').addEventListener('click', function(){
+      const 앞 = wrap.previousElementSibling;
+      if (앞) wrap.parentNode.insertBefore(wrap, 앞);
+      그룹순서버튼갱신();
+    });
+    wrap.querySelector('.move-down').addEventListener('click', function(){
+      const 뒤 = wrap.nextElementSibling;
+      if (뒤) wrap.parentNode.insertBefore(뒤, wrap);
+      그룹순서버튼갱신();
     });
     wrap.querySelector('.urgent-toggle').addEventListener('click', function(){
       this.classList.toggle('active');
@@ -7604,6 +7699,7 @@
     wrap.querySelector('.noai-toggle').addEventListener('click', function(){
       this.classList.toggle('active');
     });
+    그룹순서버튼갱신();
   }
 
   let companyCount = 0;
