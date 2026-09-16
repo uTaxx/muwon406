@@ -366,6 +366,12 @@
     border-radius:8px; padding:5px 8px; font-size:11px; font-weight:600; cursor:pointer;
     font-family:inherit; white-space:nowrap;}
   .disc-pick-btn:hover{background:var(--bg);}
+  .disc-batch-bar{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    flex-wrap:wrap; padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid var(--line);}
+  .disc-batch-left{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted);}
+  .disc-row-head{display:flex; align-items:flex-start; gap:8px;}
+  .disc-row-check{margin-top:3px; flex-shrink:0; width:15px; height:15px;}
+  .disc-row-body{flex:1; min-width:0;}
 
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
@@ -1502,7 +1508,7 @@
 
     <section class="card" id="discResultCard" style="display:none;">
       <div class="step-head"><span class="step-num">📋</span><span class="step-title">공시 목록</span></div>
-      <div class="step-desc">조회는 DART 원문 화면을 새 창으로 엽니다. XML 다운은 원본 문서를 내려받습니다. DART에서 열기는 DART 자체 다운로드 화면을 엽니다 — 정기공시는 DART가 자체 포맷(.dsd)으로만 문서를 갖고 있어 PDF가 아닐 수 있습니다. DB에 다운받기는 이 회사가 속한 계열사의 경쟁사 실적 폴더에 원문을 저장합니다.</div>
+      <div class="step-desc">조회는 DART 원문 화면을 새 창으로 엽니다. 원본 다운은 DART 자체 다운로드 화면을 엽니다 — 정기공시는 DART가 자체 포맷(.dsd)으로만 문서를 갖고 있어 PDF가 아닐 수 있습니다. 저장할 공시를 선택하고 「선택한 공시 저장」을 누르면 이 회사가 속한 계열사의 경쟁사 실적 폴더에 한 번에 저장합니다.</div>
       <div id="discResultList"></div>
     </section>
   </div>
@@ -6887,82 +6893,135 @@
       자리.innerHTML = '<div class="empty-note">해당 기간에 지정한 종류의 공시가 없습니다.</div>';
       return;
     }
-    자리.innerHTML = list.map(function (r, idx){
-      return '<div class="disc-row" data-idx="' + idx + '">' +
-        '<div class="disc-row-title">' + escapeHtml(r.보고서명) + '</div>' +
-        '<div class="disc-row-sub">' + escapeHtml(r.접수일) + (r.결산기 ? ' · ' + escapeHtml(r.결산기) : '') + '</div>' +
-        '<div class="disc-row-actions">' +
-          '<a href="' + r.조회URL + '" target="_blank" rel="noopener" class="small-btn">조회</a>' +
-          '<a href="' + r.XML다운URL + '" target="_blank" rel="noopener" class="small-btn">XML 다운</a>' +
-          '<a href="' + r.DART열기URL + '" target="_blank" rel="noopener" class="small-btn">DART에서 열기</a>' +
-          '<button type="button" class="upd-btn disc-save-btn">DB에 다운받기</button>' +
-        '</div>' +
-        '<div class="upd-msg disc-save-msg"></div>' +
-        '<div class="disc-company-pick" style="display:none;"></div>' +
-      '</div>';
-    }).join('');
+    자리.innerHTML =
+      '<div class="disc-batch-bar">' +
+        '<label class="disc-batch-left"><input type="checkbox" id="discSelectAll"> 전체 선택 (<span id="discSelectedCount">0</span>건)</label>' +
+        '<button type="button" class="upd-btn" id="discBatchSaveBtn">선택한 공시 저장</button>' +
+      '</div>' +
+      '<div class="upd-msg" id="discBatchStatus"></div>' +
+      '<div class="disc-company-pick" id="discBatchCompanyPick" style="display:none;"></div>' +
+      list.map(function (r, idx){
+        return '<div class="disc-row" data-idx="' + idx + '">' +
+          '<div class="disc-row-head">' +
+            '<input type="checkbox" class="disc-row-check" data-idx="' + idx + '">' +
+            '<div class="disc-row-body">' +
+              '<div class="disc-row-title">' + escapeHtml(r.보고서명) + '</div>' +
+              '<div class="disc-row-sub">' + escapeHtml(r.접수일) + (r.결산기 ? ' · ' + escapeHtml(r.결산기) : '') + '</div>' +
+              '<div class="disc-row-actions">' +
+                '<a href="' + r.조회URL + '" target="_blank" rel="noopener" class="small-btn">조회</a>' +
+                '<a href="' + r.DART열기URL + '" target="_blank" rel="noopener" class="small-btn">원본 다운</a>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
   }
 
-  document.getElementById('discResultList').addEventListener('click', function (e){
-    const btn = e.target.closest('.disc-save-btn');
-    if (!btn) return;
-    const row = btn.closest('.disc-row');
-    const idx = Number(row.dataset.idx);
-    discSaveRow(row, discCurrentResults[idx]);
+  function discSelectedIndexes(){
+    return Array.from(document.querySelectorAll('.disc-row-check:checked')).map(function (c){ return Number(c.dataset.idx); });
+  }
+
+  function discUpdateSelectedCount(){
+    const n = document.querySelectorAll('.disc-row-check:checked').length;
+    const 전체 = document.querySelectorAll('.disc-row-check').length;
+    document.getElementById('discSelectedCount').textContent = n;
+    document.getElementById('discSelectAll').checked = 전체 > 0 && n === 전체;
+  }
+
+  document.getElementById('discResultList').addEventListener('change', function (e){
+    if (e.target.id === 'discSelectAll'){
+      document.querySelectorAll('.disc-row-check').forEach(function (c){ c.checked = e.target.checked; });
+      discUpdateSelectedCount();
+      return;
+    }
+    if (e.target.classList.contains('disc-row-check')) discUpdateSelectedCount();
   });
 
-  function discSaveRow(row, item, 계열사){
+  document.getElementById('discResultList').addEventListener('click', function (e){
+    if (e.target.id === 'discBatchSaveBtn') discSaveSelected();
+  });
+
+  /* 저장 대상이 등록 안 된 새 회사면 서버가 needCompany 를 돌려준다.
+     같은 검색 결과는 전부 같은 회사이므로 계열사를 한 번만 물어보고,
+     선택 목록 전체에 같은 값을 적용해 이어서 저장한다. */
+  function discSaveSelected(){
+    const idxs = discSelectedIndexes();
+    const 상태 = document.getElementById('discBatchStatus');
+    if (!idxs.length){ 상태.className = 'upd-msg bad'; 상태.textContent = '저장할 공시를 먼저 선택해 주세요.'; return; }
     const code = sharedCode();
-    const msg = row.querySelector('.disc-save-msg');
-    /* className 을 통째로 바꾸면 다음번에 이 칸을 다시 찾을 때 쓰는
-       disc-save-msg 표시까지 지워진다 — 반드시 같이 적는다. */
-    if (!code){ msg.className = 'upd-msg disc-save-msg bad'; msg.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    if (!code){ 상태.className = 'upd-msg bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
     let pw = savedRunPw();
     if (!pw){
       pw = prompt('DB에 저장합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
       if (!pw) return;
     }
-    msg.className = 'upd-msg disc-save-msg';
-    msg.textContent = '저장하는 중…';
-    const body = Object.assign({
-      action: 'db저장', code: code, pw: pw,
-      corp_code: item.corp_code, 회사명: item.회사명,
-      접수번호: item.접수번호, 보고서명: item.보고서명, 접수일: item.접수일
-    }, 계열사 ? { 계열사: 계열사 } : {});
-    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (res){
-        return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; });
-      })
-      .then(function (r){
-        if (!r.ok || !r.d || r.d.ok !== true){
-          if (r.d && r.d.needCompany){
-            msg.textContent = '';
-            discShowCompanyPick(row, item);
-            return;
-          }
-          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
-          throw new Error((r.d && r.d.message) || '저장하지 못했습니다.');
-        }
-        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
-        msg.className = 'upd-msg disc-save-msg ok';
-        msg.textContent = r.d.message || '저장했습니다.';
-        row.querySelector('.disc-company-pick').style.display = 'none';
-      })
-      .catch(function (err){
-        msg.className = 'upd-msg disc-save-msg bad';
-        msg.textContent = 오류메시지(err, 'DB 저장');
-      });
+    document.getElementById('discBatchSaveBtn').disabled = true;
+    document.getElementById('discBatchCompanyPick').style.display = 'none';
+    discSaveBatchRun(idxs, code, pw, '');
   }
 
-  function discShowCompanyPick(row, item){
-    const 자리 = row.querySelector('.disc-company-pick');
+  function discSaveBatchRun(idxs, code, pw, 계열사){
+    const 상태 = document.getElementById('discBatchStatus');
+    let 성공 = 0, 실패 = 0, 남음 = idxs.slice();
+
+    function 다음(){
+      if (!남음.length){
+        document.getElementById('discBatchSaveBtn').disabled = false;
+        상태.className = 'upd-msg ' + (실패 ? 'bad' : 'ok');
+        상태.textContent = '저장 완료: 성공 ' + 성공 + '건' + (실패 ? ', 실패 ' + 실패 + '건' : '') + '.';
+        return;
+      }
+      const idx = 남음.shift();
+      const item = discCurrentResults[idx];
+      상태.className = 'upd-msg';
+      상태.textContent = '저장하는 중… (' + (성공 + 실패 + 1) + '/' + idxs.length + ')';
+      const body = Object.assign({
+        action: 'db저장', code: code, pw: pw,
+        corp_code: item.corp_code, 회사명: item.회사명,
+        접수번호: item.접수번호, 보고서명: item.보고서명, 접수일: item.접수일
+      }, 계열사 ? { 계열사: 계열사 } : {});
+      fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (res){
+          return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; });
+        })
+        .then(function (r){
+          if (!r.ok || !r.d || r.d.ok !== true){
+            if (r.d && r.d.needCompany && !계열사){
+              /* 이 항목을 다시 대기열 맨 앞에 되돌리고, 계열사를 고르면
+                 그 값을 나머지 전체에 적용해 이어서 저장한다. */
+              남음.unshift(idx);
+              document.getElementById('discBatchSaveBtn').disabled = false;
+              discShowBatchCompanyPick(남음, code, pw);
+              return;
+            }
+            if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+            throw new Error((r.d && r.d.message) || '저장하지 못했습니다.');
+          }
+          try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+          성공++;
+          다음();
+        })
+        .catch(function (err){
+          실패++;
+          상태.className = 'upd-msg bad';
+          상태.textContent = 오류메시지(err, 'DB 저장') + ' (' + item.보고서명 + ')';
+          다음();
+        });
+    }
+    다음();
+  }
+
+  function discShowBatchCompanyPick(남음, code, pw){
+    const 자리 = document.getElementById('discBatchCompanyPick');
     자리.style.display = '';
     자리.innerHTML = '<div class="word-hint" style="margin-top:0; flex-basis:100%;">등록되지 않은 회사입니다. 관련 계열사를 선택해 주세요.</div>' +
       '<select class="disc-co-select">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; }).join('') + '</select>' +
-      '<button type="button" class="small-btn disc-co-confirm">계열사 확정하고 저장</button>';
+      '<button type="button" class="small-btn disc-co-confirm">계열사 확정하고 이어서 저장</button>';
     자리.querySelector('.disc-co-confirm').addEventListener('click', function (){
       const 계열사 = 자리.querySelector('.disc-co-select').value;
-      discSaveRow(row, item, 계열사);
+      자리.style.display = 'none';
+      document.getElementById('discBatchSaveBtn').disabled = true;
+      discSaveBatchRun(남음, code, pw, 계열사);
     });
   }
 
