@@ -346,6 +346,27 @@
   .cal-evt-dots{display:flex; gap:2px; justify-content:center; margin-top:1px;}
   .cal-evt-dot{width:5px; height:5px; border-radius:50%; display:inline-block;}
 
+  /* 공시수집기 — 검색 결과 줄의 「등록됨」 표시, 공시 목록 줄. 캘린더 소스
+     목록과 같은 톤을 쓰되 버튼이 넷까지 붙을 수 있어 줄바꿈을 허용한다. */
+  .tag-ok{display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px;
+    background:var(--green-tint); color:var(--green); font-size:10.5px; font-weight:700;}
+  .disc-pick-row{cursor:pointer;}
+  .disc-pick-row:hover{background:var(--bg);}
+  .disc-row{padding:10px 0; border-bottom:1px solid var(--line);}
+  .disc-row:last-child{border-bottom:none;}
+  .disc-row-title{font-weight:700; color:var(--text); font-size:13px;}
+  .disc-row-sub{color:var(--muted); font-size:11.5px; margin-top:1px;}
+  .disc-row-actions{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .disc-row-actions .small-btn, .disc-row-actions .upd-btn{margin-left:0;}
+  .disc-company-pick{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px;}
+  /* cal-src-rename 을 그대로 쓰면 그 클래스에 걸린 전역 「이름 변경」
+     위임 리스너가 이 버튼 클릭에도 반응한다. 생김새만 그대로 가져오고
+     클래스는 새로 둔다. */
+  .disc-pick-btn{border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:8px; padding:5px 8px; font-size:11px; font-weight:600; cursor:pointer;
+    font-family:inherit; white-space:nowrap;}
+  .disc-pick-btn:hover{background:var(--bg);}
+
   /* ── 넓은 화면 ──────────────────────────────────────────
      이 화면은 처음부터 휴대폰 기준이라 본문이 680px 로 묶여 있었다. 데스크톱
      에서는 양옆이 통째로 비는데도 정작 정보는 탭 뒤에 숨어 있었다. 그래서
@@ -1102,6 +1123,7 @@
     <h1>LX Group MI</h1>
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="disclosure">📄 공시수집기</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
       <button type="button" class="tab-btn cover-btn" data-tab="cfg">🎛 대시보드 설정</button>
       <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
@@ -1424,6 +1446,65 @@
     <button type="button" class="submit-btn" id="submitBtn">제출하기</button>
     <div class="status" id="statusBox"></div>
 
+  </div>
+
+  <!-- 탭 2-1: 공시수집기. 기업을 검색해 DART 정기공시(사업·반기·분기·감사보고서)를
+       찾고, 원문을 바로 보거나 받거나(조회·XML다운·DART에서 열기), 경쟁사
+       실적 폴더에 저장한다(DB에 다운받기). 기업 검색은 서버를 거치지 않는다 —
+       상장/비상장 회사코드를 매달 구글 드라이브 공개 JSON 두 개로 미리
+       내보내 두고(LXGroup_DART회사코드마스터), 여기서 그 파일을 그대로 받아
+       화면에서 걸러낸다. 상장회사 파일은 작아서 즉시, 비상장회사 파일은
+       훨씬 커서 몇 초 걸릴 수 있다. -->
+  <div id="tab-disclosure" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">기업 검색</span></div>
+      <div class="step-desc">DART에 공시를 낸 기업을 찾습니다. 상장회사는 바로 찾아지고, 비상장회사는 목록이 커서 시간이 조금 더 걸립니다.</div>
+
+      <div class="opt-row">
+        <label class="check-option checked" id="discOptListed">
+          <input type="radio" name="discScope" id="discScopeListed" value="listed" checked>
+          <div><div class="opt-text">상장회사</div><div class="opt-sub">빠르게 찾습니다</div></div>
+        </label>
+        <label class="check-option" id="discOptUnlisted">
+          <input type="radio" name="discScope" id="discScopeUnlisted" value="unlisted">
+          <div><div class="opt-text">비상장회사</div><div class="opt-sub">시간이 걸릴 수 있습니다</div></div>
+        </label>
+      </div>
+
+      <div class="code-row" style="margin-top:4px;">
+        <input type="text" id="discSearchInput" placeholder="회사명으로 찾기 (예: 포스코인터내셔널)">
+      </div>
+      <div class="status" id="discSearchStatus"></div>
+      <div class="cal-src-list" id="discSearchResults"></div>
+      <button type="button" class="ghost-btn" id="discSearchUnlistedBtn" style="display:none; margin-top:8px;">비상장회사에서 찾기 (시간이 걸릴 수 있습니다)</button>
+    </section>
+
+    <section class="card" id="discPickedCard" style="display:none;">
+      <div class="step-head"><span class="step-num">📄</span><span class="step-title">선택한 기업</span></div>
+      <div id="discPicked" class="word-hint" style="margin-top:0;"></div>
+
+      <div class="field-row">
+        <div><label>시작일</label><input type="date" id="discStartDate"></div>
+        <div><label>종료일</label><input type="date" id="discEndDate"></div>
+      </div>
+      <div class="step-desc">비워 두면 최근 3년에서 찾습니다.</div>
+
+      <div class="opt-row" id="discTypeRow">
+        <label class="check-option checked"><input type="checkbox" class="disc-type" value="사업보고서" checked><div class="opt-text">사업보고서</div></label>
+        <label class="check-option checked"><input type="checkbox" class="disc-type" value="반기보고서" checked><div class="opt-text">반기보고서</div></label>
+        <label class="check-option checked"><input type="checkbox" class="disc-type" value="분기보고서" checked><div class="opt-text">분기보고서</div></label>
+        <label class="check-option checked"><input type="checkbox" class="disc-type" value="감사보고서" checked><div class="opt-text">감사보고서</div></label>
+      </div>
+
+      <button type="button" class="submit-btn" id="discCollectBtn">수집하기</button>
+      <div class="status" id="discCollectStatus"></div>
+    </section>
+
+    <section class="card" id="discResultCard" style="display:none;">
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">공시 목록</span></div>
+      <div class="step-desc">조회는 DART 원문 화면을 새 창으로 엽니다. XML 다운은 원본 문서를 내려받습니다. DART에서 열기는 DART 자체 다운로드 화면을 엽니다 — 정기공시는 DART가 자체 포맷(.dsd)으로만 문서를 갖고 있어 PDF가 아닐 수 있습니다. DB에 다운받기는 이 회사가 속한 계열사의 경쟁사 실적 폴더에 원문을 저장합니다.</div>
+      <div id="discResultList"></div>
+    </section>
   </div>
 
   <!-- 탭 3: 특정 키워드 검색 -->
@@ -1902,6 +1983,13 @@
   const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
   const CAL_SRC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-캘린더소스');
   const WATCHLIST_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-관심기업');
+  /* 공시수집기. 기업 검색은 이 웹훅을 거치지 않고 아래 두 정적 파일을 직접
+     받는다 — DART 상장/비상장 회사코드 전체를 LXGroup_DART회사코드마스터가
+     매달 구글 드라이브 공개 파일로 내보내 둔다. 파일 아이디는 손으로
+     채운다(운영설정 시트의 DART_LISTED_FILE_ID·DART_UNLISTED_FILE_ID와 같은 값). */
+  const DISCCOLL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-공시수집기');
+  const DART_LISTED_URL = 'https://www.googleapis.com/drive/v3/files/1YW3bleWHqmLlt4J52APqXlgWSiFO-pio?alt=media&key=' + ARTICLES_STATIC_API_KEY;
+  const DART_UNLISTED_URL = 'https://www.googleapis.com/drive/v3/files/1FD3NiCjGD0zNVDW7W_kR4YD0EsmwgU0H?alt=media&key=' + ARTICLES_STATIC_API_KEY;
   const LABEL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-라벨');
   const DISC_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-회사공시');
   const RUN_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실행');
@@ -2655,6 +2743,7 @@
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); loadLabels(); }
+    if (tabName === 'disclosure'){ discLoadRegistered(); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
@@ -6658,6 +6747,220 @@
       알림.textContent = 오류메시지(err, '관심 기업 삭제');
     }).then(function (){ b.disabled = false; });
   });
+
+  /* ---------- 공시수집기 ----------
+     기업 검색은 드라이브 정적 파일(상장/비상장)을 직접 받아 화면에서
+     거른다. 회사를 고른 뒤에야 n8n(공시검색)을 불러 DART 정기공시 목록과
+     세 가지 원문 링크(조회·XML다운·DART에서 열기)를 받는다. DB에 다운받기만
+     실행 비밀번호가 필요하다(경쟁사 시트·드라이브를 실제로 고치므로). */
+  let discRegistered = {};
+  let discListedCache = null, discUnlistedCache = null;
+  let discPicked = null;
+  let discCurrentResults = [];
+
+  function discLoadRegistered(){
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: '기업검색' }) })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        discRegistered = {};
+        (d.등록목록 || []).forEach(function (c){ discRegistered[c.corp_code] = c; });
+      })
+      .catch(function (){ /* 등록 표시만 못 하는 것이라 검색 자체는 그대로 된다 */ });
+  }
+
+  function discFetchList(scope){
+    if (scope === 'unlisted' && discUnlistedCache) return Promise.resolve(discUnlistedCache);
+    if (scope === 'listed' && discListedCache) return Promise.resolve(discListedCache);
+    const url = scope === 'unlisted' ? DART_UNLISTED_URL : DART_LISTED_URL;
+    return fetch(url).then(function (r){
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function (d){
+      const list = (d && d.list) || [];
+      if (scope === 'unlisted') discUnlistedCache = list; else discListedCache = list;
+      return list;
+    });
+  }
+
+  function discSearchResultsDraw(list){
+    const 자리 = document.getElementById('discSearchResults');
+    if (!list.length){
+      자리.innerHTML = '<div class="empty-note">검색 결과가 없습니다.</div>';
+      return;
+    }
+    자리.innerHTML = list.slice(0, 30).map(function (c){
+      const reg = discRegistered[c.corp_code];
+      return '<div class="cal-src-row disc-pick-row" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">' +
+        '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(c.회사명) +
+          (reg ? '<span class="tag-ok">등록됨 · ' + escapeHtml(reg.계열사.join(', ')) + '</span>' : '') +
+        '</div><div class="cal-src-url">' + escapeHtml(c.corp_code) + (c.종목코드 ? ' · ' + escapeHtml(c.종목코드) : '') + '</div></div>' +
+        '<div class="cal-src-actions"><button type="button" class="disc-pick-btn">선택</button></div></div>';
+    }).join('');
+  }
+
+  let discSearchTimer = null;
+  function discRunSearch(){
+    const 검색어 = document.getElementById('discSearchInput').value.trim();
+    const scope = document.querySelector('input[name="discScope"]:checked').value;
+    document.getElementById('discSearchUnlistedBtn').style.display = 'none';
+    const 알림 = document.getElementById('discSearchStatus');
+    if (!검색어){ document.getElementById('discSearchResults').innerHTML = ''; 알림.textContent = ''; return; }
+    알림.className = 'upd-msg';
+    알림.textContent = scope === 'unlisted' ? '비상장회사 목록을 받는 중… 시간이 걸릴 수 있습니다.' : '찾는 중…';
+    discFetchList(scope).then(function (list){
+      const found = list.filter(function (c){ return c.회사명.indexOf(검색어) >= 0; });
+      알림.textContent = '';
+      discSearchResultsDraw(found);
+      if (!found.length && scope === 'listed') document.getElementById('discSearchUnlistedBtn').style.display = '';
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '기업 목록 조회');
+    });
+  }
+
+  document.getElementById('discSearchInput').addEventListener('input', function (){
+    clearTimeout(discSearchTimer);
+    discSearchTimer = setTimeout(discRunSearch, 250);
+  });
+  document.querySelectorAll('input[name="discScope"]').forEach(function (r){
+    r.addEventListener('change', function (){
+      document.getElementById('discOptListed').classList.toggle('checked', document.getElementById('discScopeListed').checked);
+      document.getElementById('discOptUnlisted').classList.toggle('checked', document.getElementById('discScopeUnlisted').checked);
+      discRunSearch();
+    });
+  });
+  document.getElementById('discSearchUnlistedBtn').addEventListener('click', function (){
+    document.getElementById('discScopeUnlisted').checked = true;
+    document.getElementById('discOptListed').classList.remove('checked');
+    document.getElementById('discOptUnlisted').classList.add('checked');
+    discRunSearch();
+  });
+  document.getElementById('discSearchResults').addEventListener('click', function (e){
+    const row = e.target.closest('.disc-pick-row');
+    if (!row) return;
+    discPicked = { corp_code: row.dataset.corp, 회사명: row.dataset.name };
+    document.getElementById('discPickedCard').style.display = '';
+    document.getElementById('discResultCard').style.display = 'none';
+    document.getElementById('discPicked').textContent = discPicked.회사명 + ' (' + discPicked.corp_code + ')';
+  });
+
+  document.querySelectorAll('#discTypeRow .check-option').forEach(function (opt){
+    opt.querySelector('input').addEventListener('change', function (){
+      opt.classList.toggle('checked', this.checked);
+    });
+  });
+
+  document.getElementById('discCollectBtn').addEventListener('click', function (){
+    if (!discPicked) return;
+    const 유형 = Array.from(document.querySelectorAll('.disc-type:checked')).map(function (c){ return c.value; });
+    const body = {
+      action: '공시검색', corp_code: discPicked.corp_code,
+      시작일: (document.getElementById('discStartDate').value || '').replace(/-/g, ''),
+      종료일: (document.getElementById('discEndDate').value || '').replace(/-/g, ''),
+      유형: 유형
+    };
+    const 알림 = document.getElementById('discCollectStatus');
+    알림.className = 'upd-msg';
+    알림.textContent = '공시를 찾는 중…';
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        알림.textContent = '';
+        discResultsDraw(d.결과 || []);
+      })
+      .catch(function (err){
+        알림.className = 'upd-msg bad';
+        알림.textContent = 오류메시지(err, '공시 검색');
+      });
+  });
+
+  function discResultsDraw(list){
+    discCurrentResults = list;
+    const card = document.getElementById('discResultCard');
+    const 자리 = document.getElementById('discResultList');
+    card.style.display = '';
+    if (!list.length){
+      자리.innerHTML = '<div class="empty-note">해당 기간에 지정한 종류의 공시가 없습니다.</div>';
+      return;
+    }
+    자리.innerHTML = list.map(function (r, idx){
+      return '<div class="disc-row" data-idx="' + idx + '">' +
+        '<div class="disc-row-title">' + escapeHtml(r.보고서명) + '</div>' +
+        '<div class="disc-row-sub">' + escapeHtml(r.접수일) + (r.결산기 ? ' · ' + escapeHtml(r.결산기) : '') + '</div>' +
+        '<div class="disc-row-actions">' +
+          '<a href="' + r.조회URL + '" target="_blank" rel="noopener" class="small-btn">조회</a>' +
+          '<a href="' + r.XML다운URL + '" target="_blank" rel="noopener" class="small-btn">XML 다운</a>' +
+          '<a href="' + r.DART열기URL + '" target="_blank" rel="noopener" class="small-btn">DART에서 열기</a>' +
+          '<button type="button" class="upd-btn disc-save-btn">DB에 다운받기</button>' +
+        '</div>' +
+        '<div class="upd-msg disc-save-msg"></div>' +
+        '<div class="disc-company-pick" style="display:none;"></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  document.getElementById('discResultList').addEventListener('click', function (e){
+    const btn = e.target.closest('.disc-save-btn');
+    if (!btn) return;
+    const row = btn.closest('.disc-row');
+    const idx = Number(row.dataset.idx);
+    discSaveRow(row, discCurrentResults[idx]);
+  });
+
+  function discSaveRow(row, item, 계열사){
+    const code = sharedCode();
+    const msg = row.querySelector('.disc-save-msg');
+    /* className 을 통째로 바꾸면 다음번에 이 칸을 다시 찾을 때 쓰는
+       disc-save-msg 표시까지 지워진다 — 반드시 같이 적는다. */
+    if (!code){ msg.className = 'upd-msg disc-save-msg bad'; msg.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('DB에 저장합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+    msg.className = 'upd-msg disc-save-msg';
+    msg.textContent = '저장하는 중…';
+    const body = Object.assign({
+      action: 'db저장', code: code, pw: pw,
+      corp_code: item.corp_code, 회사명: item.회사명,
+      접수번호: item.접수번호, 보고서명: item.보고서명, 접수일: item.접수일
+    }, 계열사 ? { 계열사: 계열사 } : {});
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (res){
+        return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; });
+      })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.needCompany){
+            msg.textContent = '';
+            discShowCompanyPick(row, item);
+            return;
+          }
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '저장하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        msg.className = 'upd-msg disc-save-msg ok';
+        msg.textContent = r.d.message || '저장했습니다.';
+        row.querySelector('.disc-company-pick').style.display = 'none';
+      })
+      .catch(function (err){
+        msg.className = 'upd-msg disc-save-msg bad';
+        msg.textContent = 오류메시지(err, 'DB 저장');
+      });
+  }
+
+  function discShowCompanyPick(row, item){
+    const 자리 = row.querySelector('.disc-company-pick');
+    자리.style.display = '';
+    자리.innerHTML = '<div class="word-hint" style="margin-top:0; flex-basis:100%;">등록되지 않은 회사입니다. 관련 계열사를 선택해 주세요.</div>' +
+      '<select class="disc-co-select">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; }).join('') + '</select>' +
+      '<button type="button" class="small-btn disc-co-confirm">계열사 확정하고 저장</button>';
+    자리.querySelector('.disc-co-confirm').addEventListener('click', function (){
+      const 계열사 = 자리.querySelector('.disc-co-select').value;
+      discSaveRow(row, item, 계열사);
+    });
+  }
 
   /* ---------- 출력 라벨 관리 ----------
      메일·텔레그램에 그룹명 대신 표시할 이름의 목록이다. 식별코드 하나가
