@@ -7010,13 +7010,14 @@
 
   function discSaveBatchRun(idxs, code, pw, 계열사){
     const 상태 = document.getElementById('discBatchStatus');
-    let 성공 = 0, 실패 = 0, 남음 = idxs.slice();
+    let 성공 = 0, 실패 = 0, 남음 = idxs.slice(), 실패목록 = [];
 
     function 다음(){
       if (!남음.length){
         document.getElementById('discBatchSaveBtn').disabled = false;
         상태.className = 'upd-msg ' + (실패 ? 'bad' : 'ok');
-        상태.textContent = '저장 완료: 성공 ' + 성공 + '건' + (실패 ? ', 실패 ' + 실패 + '건' : '') + '.';
+        상태.textContent = '저장 완료: 성공 ' + 성공 + '건' + (실패 ? ', 실패 ' + 실패 + '건' : '') + '.' +
+          (실패목록.length ? ' ' + 실패목록.join(' ') : '');
         if (성공 > 0) discTriggerCompRefresh(code, pw, 상태);
         return;
       }
@@ -7053,8 +7054,7 @@
         })
         .catch(function (err){
           실패++;
-          상태.className = 'upd-msg bad';
-          상태.textContent = 오류메시지(err, 'DB 저장') + ' (' + item.보고서명 + ')';
+          실패목록.push('(' + item.보고서명 + ': ' + 오류메시지(err, 'DB 저장') + ')');
           다음();
         });
     }
