@@ -1529,7 +1529,7 @@
 
     <section class="card">
       <div class="step-head"><span class="step-num">🗂</span><span class="step-title">기업 관리</span></div>
-      <div class="step-desc">전체 수집 대상 기업의 계열사 그룹, 수집할 공시 종류, 알림 전송 여부를 한곳에서 관리합니다.</div>
+      <div class="step-desc">전체 수집 대상 기업의 계열사 그룹, 수집할 공시 종류, 키워드 뉴스 다이제스트 포함 여부, 자동수집 여부를 한곳에서 관리합니다.</div>
       <button type="button" class="ghost-btn" id="mgmtToggleBtn">기업 관리 열기</button>
 
       <div id="mgmtBody" style="display:none; margin-top:12px;">
@@ -7094,9 +7094,12 @@
   }
 
   /* ---------- 기업 관리 ----------
-     전체 수집 대상 기업(경쟁사 시트)의 계열사·수집유형·이메일/텔레그램 알림·
-     사용 여부를 공시수집기 탭 안에서 바로 바꾼다. 목록 조회는 인증이 필요
-     없고(읽기 전용), 저장·신규 등록은 db저장과 같은 실행 비밀번호를 쓴다. */
+     전체 수집 대상 기업(경쟁사 시트)의 계열사·수집유형·키워드 뉴스 다이제스트
+     포함 여부(이메일알림 컬럼)·자동수집(주단위) 여부를 공시수집기 탭 안에서
+     바로 바꾼다. 목록 조회는 인증이 필요 없고(읽기 전용), 저장·신규 등록은
+     db저장과 같은 실행 비밀번호를 쓴다.
+     텔레그램알림 컬럼은 예전에 쓰던 운영자 전용 알림 채널의 흔적이다. 지금은
+     안 읽고 안 쓴다 — 저장·신규 등록 요청에는 항상 false로 보낸다. */
   const 관리유형목록 = ['사업보고서', '반기보고서', '분기보고서', '감사보고서', '잠정실적발표'];
   let mgmtCompanies = [];
   let mgmtOpened = false;
@@ -7145,9 +7148,8 @@
         '</div>' +
         '<div class="opt-row" style="margin-top:6px;">' + mgmtCheckOptions('mgmt-type', c.수집유형) + '</div>' +
         '<div class="opt-row" style="margin-top:6px;">' +
-          '<label class="check-option' + (c.이메일알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-email"' + (c.이메일알림 ? ' checked' : '') + '><div class="opt-text">이메일 알림</div></label>' +
-          '<label class="check-option' + (c.텔레그램알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-telegram"' + (c.텔레그램알림 ? ' checked' : '') + '><div class="opt-text">텔레그램 알림</div></label>' +
-          '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">수집 사용</div></label>' +
+          '<label class="check-option' + (c.이메일알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-news"' + (c.이메일알림 ? ' checked' : '') + '><div class="opt-text">키워드 뉴스 포함</div></label>' +
+          '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">자동수집(주단위)</div></label>' +
         '</div>' +
         '<div class="disc-row-actions"><button type="button" class="upd-btn mgmt-save-btn">저장</button></div>' +
         '<div class="upd-msg mgmt-save-msg"></div>' +
@@ -7164,7 +7166,7 @@
   document.getElementById('mgmtFilterInput').addEventListener('input', function (){ mgmtListDraw(); });
 
   document.getElementById('mgmtList').addEventListener('change', function (e){
-    if (e.target.matches('.mgmt-type, .mgmt-email, .mgmt-telegram, .mgmt-use')){
+    if (e.target.matches('.mgmt-type, .mgmt-news, .mgmt-use')){
       const label = e.target.closest('.check-option');
       if (label) label.classList.toggle('checked', e.target.checked);
     }
@@ -7177,8 +7179,8 @@
     const row_number = Number(row.dataset.row);
     const 계열사 = row.querySelector('.mgmt-group-input').value.trim();
     const 수집유형 = Array.from(row.querySelectorAll('.mgmt-type:checked')).map(function (c){ return c.value; });
-    const 이메일알림 = row.querySelector('.mgmt-email').checked;
-    const 텔레그램알림 = row.querySelector('.mgmt-telegram').checked;
+    const 이메일알림 = row.querySelector('.mgmt-news').checked;
+    const 텔레그램알림 = false;
     const 사용 = row.querySelector('.mgmt-use').checked;
     const msg = row.querySelector('.mgmt-save-msg');
 
@@ -7285,8 +7287,7 @@
       '<label>계열사</label><select class="mgmt-add-group">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; }).join('') + '</select>' +
       '<div class="opt-row" style="margin-top:8px;">' + mgmtCheckOptions('mgmt-add-type', 기본유형) + '</div>' +
       '<div class="opt-row" style="margin-top:8px;">' +
-        '<label class="check-option"><input type="checkbox" class="mgmt-add-email"><div class="opt-text">이메일 알림</div></label>' +
-        '<label class="check-option"><input type="checkbox" class="mgmt-add-telegram"><div class="opt-text">텔레그램 알림</div></label>' +
+        '<label class="check-option"><input type="checkbox" class="mgmt-add-news"><div class="opt-text">키워드 뉴스 포함</div></label>' +
       '</div>' +
       '<button type="button" class="submit-btn" id="mgmtAddConfirmBtn" style="margin-top:10px;">등록</button>' +
       '<div class="upd-msg" id="mgmtAddStatus"></div>';
@@ -7309,8 +7310,8 @@
       }
       const 계열사 = 자리.querySelector('.mgmt-add-group').value;
       const 수집유형 = Array.from(자리.querySelectorAll('.mgmt-add-type:checked')).map(function (c){ return c.value; });
-      const 이메일알림 = 자리.querySelector('.mgmt-add-email').checked;
-      const 텔레그램알림 = 자리.querySelector('.mgmt-add-telegram').checked;
+      const 이메일알림 = 자리.querySelector('.mgmt-add-news').checked;
+      const 텔레그램알림 = false;
       알림.className = 'upd-msg';
       알림.textContent = '등록하는 중…';
       fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
