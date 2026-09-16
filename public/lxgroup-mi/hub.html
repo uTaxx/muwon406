@@ -240,9 +240,17 @@
   .dl-tag.mine{background:var(--green); border-color:var(--green); color:#fff;}
   .dl-tag.rival{background:#fff; border-color:var(--green); color:var(--green-dark);}
 
-  /* 주요 공시 / 관련 보도 두 하위 탭. 한 번에 하나만 보인다. */
-  .dl-pane{display:none;}
-  .dl-pane.on{display:block;}
+  /* 주요 공시 / 관련 보도를 좌우 2열로 한 화면에 같이 둔다. 예전에는 하위
+     탭으로 하나씩만 보여줘서, 공시를 보다가 보도를 보려면 다시 눌러야 했다. */
+  .dl-2col{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;}
+  @media (max-width:760px){ .dl-2col{grid-template-columns:1fr;} }
+  .dl-col-head{display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:6px;}
+  .dl-col-title{font-size:13.5px; font-weight:700; color:var(--text);}
+  .dl-fold-btn{background:none; border:none; color:var(--green-dark); font-size:11.5px;
+    font-weight:700; cursor:pointer; padding:2px 4px; font-family:inherit; white-space:nowrap;}
+  .dl-fold-btn:hover{text-decoration:underline;}
+  .dl-col-body[hidden]{display:none;}
 
   /* ── 주요 일정 ──────────────────────────────────────────
      팀원들이 iOS 캘린더의 공개 캘린더 링크로 올린 연간 주요 행사를 본다.
@@ -380,12 +388,10 @@
     #indBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
     #indBody .ind-block{margin-bottom:0;}
     /* 경쟁사도 두 칸으로. 회사가 열넷이라 한 줄로는 끝이 안 보인다. */
-    #compBody, #groupBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
-    #compBody .ind-block, #groupBody .ind-block{margin-bottom:0;}
-    /* 기사도 두 칸으로. 쉰 건을 한 줄로 쌓으면 일곱 화면이 넘어간다.
-       읽는 차례는 왼쪽에서 오른쪽, 그다음 아랫줄이다 — 신문 지면과 같다.
-       리스크 목록의 연도 구분선만 두 칸을 가로지른다. */
-    #articleList, #riskTimeline{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    #compBody, #groupBody, #coPerfBody, #hqPerfBody{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
+    #compBody .ind-block, #groupBody .ind-block, #coPerfBody .ind-block, #hqPerfBody .ind-block{margin-bottom:0;}
+    /* 리스크 목록은 두 칸으로. 연도 구분선만 두 칸을 가로지른다. */
+    #riskTimeline{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
       column-gap:26px; align-items:start;}
     #riskTimeline .risk-year{grid-column:1 / -1;}
     /* 딜 목록도 마찬가지다. 마흔 건을 한 줄로 쌓으면 화면 넷을 넘긴다. */
@@ -427,19 +433,21 @@
   .filter-row input, .filter-row select{margin-bottom:0;}
   .summary-line{font-size:12.5px; color:var(--muted); margin-top:9px;}
   #resultsSection{display:none;}
-  .article-item{padding:9px 0; border-bottom:1px solid var(--line);}
+  /* 1열로 바뀌면서 목록이 세로로 길어지므로, 기사 한 건이 차지하는 높이를
+     최대한 줄인다. 위아래 여백과 줄간격만 줄이고 글자 크기는 그대로 둔다. */
+  .article-item{padding:6px 0; border-bottom:1px solid var(--line);}
   .article-item:last-child{border-bottom:none;}
-  .article-top{display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap;}
-  .group-chip{font-size:10.5px; font-weight:700; color:var(--green-dark); background:var(--green-tint); padding:3px 9px; border-radius:10px; letter-spacing:0.02em;}
+  .article-top{display:flex; align-items:center; gap:8px; margin-bottom:1px; flex-wrap:wrap;}
+  .group-chip{font-size:10.5px; font-weight:700; color:var(--green-dark); background:var(--green-tint); padding:2px 8px; border-radius:10px; letter-spacing:0.02em;}
   .article-date{font-size:11.5px; color:var(--muted);}
   .score-badge{font-size:10.5px; color:var(--muted); margin-left:auto; white-space:nowrap;}
-  .article-title{font-size:14.5px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.4;}
+  .article-title{font-size:14.5px; font-weight:600; color:var(--text); text-decoration:none; line-height:1.3;}
   .article-title:hover{color:var(--green-dark);}
   .direction-icon{margin-right:2px; font-size:12px; font-weight:700;}
   .direction-icon.dir-up{color:#D32F2F;}
   .direction-icon.dir-down{color:#1565C0;}
   .stars{color:var(--green); font-size:12px; margin-left:2px;}
-  .article-reason{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .article-reason{font-size:12.5px; color:var(--muted); margin-top:1px;}
   .sel-bar{display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
   .line-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 12px; margin-top:9px;}
   .line-row > .summary-line{margin-top:0;}
@@ -1118,11 +1126,12 @@
 
   <!-- 하위 메뉴는 본문 위쪽에 둔다. 왼쪽 메뉴는 홈/홀딩스/계열사별 갈래만
        고르는 자리이고, 그 갈래 안에서 어디로 갈지는 여기서 고른다. -->
-  <!-- LX홀딩스 4탭: 시장지표/자본시장정보/전체뉴스조회/주요일정. -->
+  <!-- LX홀딩스 5탭: 시장지표/자본시장정보/전체뉴스조회/실적현황/주요일정. -->
   <div class="tab-nav co-sub top-sub" id="holdingsSubNav" hidden>
     <button type="button" class="tab-btn" data-tab="index">시장지표</button>
     <button type="button" class="tab-btn" data-tab="deal">자본시장정보</button>
     <button type="button" class="tab-btn" data-newsgroup="1">전체뉴스조회</button>
+    <button type="button" class="tab-btn" data-tab="grpperf">실적현황</button>
     <button type="button" class="tab-btn" data-tab="cal">주요일정</button>
   </div>
   <!-- 전체뉴스조회 안의 세 갈래. 기존 키워드 뉴스·특정 키워드 검색·신청/변경 화면을
@@ -1203,10 +1212,8 @@
 
   <!-- 탭 1: 키워드 뉴스 -->
   <div id="tab-search" class="tab-panel">
-    <!-- 그룹은 드롭박스가 아니라 맨 위에 늘어놓는다. 접혀 있으면 어떤 그룹이
-         있는지, 어디에 몇 건이 있는지를 열어 봐야만 알 수 있다. -->
-    <div class="tab-nav grp-nav" id="grpTabs"></div>
-
+    <!-- 그룹이 많아지면서 위쪽 그룹 선택 줄이 너무 길어져 없앴다. 그룹은
+         이제 목록 안 기사 하나하나에 붙은 태그로만 확인한다. -->
     <section class="card" id="resultsSection">
       <div class="step-head"><span class="step-num">🔍</span><span class="step-title">검색 · 필터</span></div>
       <div class="filter-row">
@@ -1581,25 +1588,30 @@
          그룹에 계열사를 붙여야 여기 모인다), 아래는 기존 DART 공시 목록이다. -->
     <div id="co-news" class="co-pane">
     <section class="card">
-      <div class="step-head"><span class="step-num">📰</span><span class="step-title" id="coNewsTitle">관련 뉴스</span></div>
+      <div class="step-head"><span class="step-num">📰</span><span class="step-title" id="coNewsTitle">관련 뉴스</span>
+        <button type="button" class="go-btn" id="coNewsFoldBtn">접기 ▴</button></div>
       <div class="step-desc" id="coNewsCount">불러오는 중…</div>
-      <div id="coNewsList"></div>
-      <div class="empty-note" id="coNewsEmpty" style="display:none;">이 계열사 태그가 붙은 기사가 아직 없습니다. 신청/변경 탭에서 그룹에 계열사를 붙이면 다음 수집부터 모입니다.</div>
+      <div id="coNewsBody">
+        <div id="coNewsList"></div>
+        <div class="empty-note" id="coNewsEmpty" style="display:none;">이 계열사 태그가 붙은 기사가 아직 없습니다. 신청/변경 탭에서 그룹에 계열사를 붙이면 다음 수집부터 모입니다.</div>
+      </div>
     </section>
     <section class="card">
-      <div class="step-head"><span class="step-num">📄</span><span class="step-title" id="discHeadTitle">주요 공시</span></div>
+      <div class="step-head"><span class="step-num">📄</span><span class="step-title" id="discHeadTitle">주요 공시</span>
+        <button type="button" class="go-btn" id="discFoldBtn">접기 ▴</button></div>
       <div class="step-desc" id="discHeadDesc"></div>
-      <div class="ind-asof" id="discAsOf">불러오는 중…</div>
-      <div class="dl-kinds" id="discKinds"></div>
-      <div class="dl-line">
-        <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
-        <select id="discCorp"><option value="">회사 전체</option></select>
-        <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사가 낸 것만</label>
+      <div id="discBody">
+        <div class="ind-asof" id="discAsOf">불러오는 중…</div>
+        <div class="dl-kinds" id="discKinds"></div>
+        <div class="dl-line">
+          <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
+          <select id="discCorp"><option value="">회사 전체</option></select>
+          <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사 공시만</label>
+        </div>
+        <div class="step-desc" id="discCount"></div>
+        <div id="discList"></div>
+        <div class="empty-note" id="discEmpty" style="display:none;"></div>
       </div>
-      <div class="step-desc" id="discCount"></div>
-      <div id="discList"></div>
-      <div class="empty-note" id="discEmpty" style="display:none;"></div>
-      <button type="button" class="home-more" id="discMore" style="display:none;"></button>
     </section>
     </div>
 
@@ -1625,19 +1637,19 @@
     </section>
     </div>
 
-    <!-- 실적 현황. 계열사를 가리지 않고 그룹 회사만 모은다. -->
+    <!-- 실적 현황. 지금 고른 그 계열사 실적만 본다. 계열사를 가리지 않는
+         전체 비교는 LX홀딩스 메뉴의 실적현황 탭에 있다. -->
     <div id="co-group" class="co-pane">
     <section class="card">
-      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">LX그룹 실적</span></div>
-      <div class="step-desc" id="groupHeadDesc"></div>
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title" id="coPerfTitle">실적</span></div>
+      <div class="step-desc" id="coPerfHeadDesc"></div>
       <div class="line-row">
-        <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
+        <div class="ind-asof" id="coPerfAsOf">불러오는 중…</div>
         <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
       </div>
       <div class="upd-msg"></div>
-      <div class="ind-grid" id="groupBody"></div>
-      <div class="empty-note" id="groupEmpty" style="display:none;"></div>
-      <div class="word-hint" id="groupGap" style="display:none;"></div>
+      <div class="ind-grid" id="coPerfBody"></div>
+      <div class="empty-note" id="coPerfEmpty" style="display:none;"></div>
     </section>
     </div>
 
@@ -1734,56 +1746,89 @@
     </section>
   </div>
 
+  <!-- 탭: 실적현황(LX홀딩스) — 계열사를 가리지 않는 그룹 전체 비교와 LX홀딩스
+       자체 실적을 여기 모은다. 계열사 하나만의 실적은 계열사별 탭의 실적
+       현황 하위 탭에 있다. -->
+  <div id="tab-grpperf" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏛</span><span class="step-title">LX홀딩스 실적</span></div>
+      <div class="step-desc">DART 공시의 부문별 매출·영업이익입니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="ind-asof" id="hqPerfAsOf">불러오는 중…</div>
+      <div class="ind-grid" id="hqPerfBody"></div>
+      <div class="empty-note" id="hqPerfEmpty" style="display:none;"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">전체 계열사 실적</span></div>
+      <div class="step-desc" id="groupHeadDesc"></div>
+      <div class="line-row">
+        <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
+        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
+      </div>
+      <div class="upd-msg"></div>
+      <div class="ind-grid" id="groupBody"></div>
+      <div class="empty-note" id="groupEmpty" style="display:none;"></div>
+      <div class="word-hint" id="groupGap" style="display:none;"></div>
+    </section>
+  </div>
+
   <!-- 탭 8: 자본시장 딜 — 뉴스와 달리 회사가 직접 낸 공시라 추측이 섞이지 않는다.
        대신 늦다. 「매각 검토」 단계는 기사에만 나오고, 여기 올라올 때는 이미
        이사회를 지난 뒤다. 둘을 같이 봐야 딜의 앞뒤가 맞는다. -->
   <div id="tab-deal" class="tab-panel">
     <section class="card">
-      <div class="step-head"><span class="step-num">💼</span><span class="step-title">자본시장 딜</span></div>
-      <div class="step-desc">회사가 직접 낸 <b>주요 공시</b>와, 같은 딜을 다룬 <b>관련 보도</b>를 한 화면에 둡니다. <a href="manual.html#deal" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="step-head"><span class="step-num">💼</span><span class="step-title">자본시장 정보</span></div>
+      <div class="step-desc">회사가 직접 낸 <b>주요 공시</b>와, 같은 딜을 다룬 <b>관련 보도</b>를 한 화면에 둡니다. 각각 최신 10건까지 보여줍니다. <a href="manual.html#deal" style="color:var(--green); font-weight:700;">자세히 →</a></div>
 
-      <div class="tab-nav grp-nav" id="dealTabs">
-        <button type="button" class="tab-btn active" data-deal="disc">📄 주요 공시</button>
-        <button type="button" class="tab-btn" data-deal="news">📰 관련 보도</button>
-      </div>
-
-      <div id="deal-disc" class="dl-pane on">
-        <div class="step-desc">DART 주요사항보고서를 매일 아침 시장 전체로 훑어, 지분 거래·합병·분할·영업양수도·유상증자·메자닌만 골라 모읍니다.</div>
-        <div class="ind-asof" id="dealAsOf">불러오는 중…</div>
-        <div class="dl-kinds" id="dealKinds"></div>
-        <div class="dl-line">
-          <input type="text" id="dealQ" placeholder="회사명·보고서명 검색">
-          <select id="dealMarket"><option value="">시장 전체</option></select>
-          <label class="dl-chk"><input type="checkbox" id="dealMine"> 계열사·경쟁사만</label>
-        </div>
-        <div class="step-desc" id="dealCount"></div>
-        <div id="dealList"></div>
-        <div class="empty-note" id="dealEmpty" style="display:none;"></div>
-        <button type="button" class="home-more" id="dealMore" style="display:none;"></button>
-      </div>
-
-      <div id="deal-news" class="dl-pane">
-        <div class="ind-asof" id="dealNewsAsOf">불러오는 중…</div>
-        <div class="dl-kinds" id="dealNewsGroups"></div>
-        <div class="dl-line">
-          <input type="text" id="dealNewsQ" placeholder="제목 검색">
-        </div>
-        <div class="step-desc" id="dealNewsCount"></div>
-        <div id="dealNewsList"></div>
-        <div class="empty-note" id="dealNewsEmpty" style="display:none;"></div>
-        <button type="button" class="home-more" id="dealNewsMore" style="display:none;"></button>
-
-        <!-- 관심 기업. 계열사·경쟁사 시트에 없는 회사도 이름만 적으면 다음
-             수집부터 관련 보도를 모은다. -->
-        <div class="cal-mgmt">
-          <div class="step-desc">관심 기업</div>
-          <div class="step-desc" style="margin-top:0; font-size:11px;">이름을 적어 두면 다음 수집부터 그 회사 관련 보도를 모읍니다. 계열사·경쟁사로 이미 등록된 회사는 따로 더하지 않아도 됩니다.</div>
-          <div class="dl-line">
-            <input type="text" id="watchlistInput" placeholder="예: 오리온">
-            <button type="button" class="upd-btn" id="watchlistAddBtn">＋ 추가</button>
+      <div class="dl-2col">
+        <div id="deal-disc">
+          <div class="dl-col-head">
+            <span class="dl-col-title">📄 주요 공시</span>
+            <button type="button" class="dl-fold-btn" id="dealDiscFoldBtn">접기 ▴</button>
           </div>
-          <div class="upd-msg" id="watchlistMsg"></div>
-          <div class="cal-src-list" id="watchlistList"></div>
+          <div id="dealDiscBody">
+            <div class="step-desc">DART 주요사항보고서를 매일 아침 시장 전체로 훑어, 지분 거래·합병·분할·영업양수도·유상증자·메자닌만 골라 모읍니다.</div>
+            <div class="ind-asof" id="dealAsOf">불러오는 중…</div>
+            <div class="dl-kinds" id="dealKinds"></div>
+            <div class="dl-line">
+              <input type="text" id="dealQ" placeholder="회사명·보고서명 검색">
+              <select id="dealMarket"><option value="">시장 전체</option></select>
+              <label class="dl-chk"><input type="checkbox" id="dealMine"> 계열사·경쟁사만</label>
+            </div>
+            <div class="step-desc" id="dealCount"></div>
+            <div id="dealList"></div>
+            <div class="empty-note" id="dealEmpty" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div id="deal-news">
+          <div class="dl-col-head">
+            <span class="dl-col-title">📰 관련 보도</span>
+            <button type="button" class="dl-fold-btn" id="dealNewsFoldBtn">접기 ▴</button>
+          </div>
+          <div id="dealNewsBody">
+            <div class="ind-asof" id="dealNewsAsOf">불러오는 중…</div>
+            <div class="dl-kinds" id="dealNewsGroups"></div>
+            <div class="dl-line">
+              <input type="text" id="dealNewsQ" placeholder="제목 검색">
+            </div>
+            <div class="step-desc" id="dealNewsCount"></div>
+            <div id="dealNewsList"></div>
+            <div class="empty-note" id="dealNewsEmpty" style="display:none;"></div>
+
+            <!-- 관심 기업. 계열사·경쟁사 시트에 없는 회사도 이름만 적으면 다음
+                 수집부터 관련 보도를 모은다. -->
+            <div class="cal-mgmt">
+              <div class="step-desc">관심 기업</div>
+              <div class="step-desc" style="margin-top:0; font-size:11px;">이름을 적어 두면 다음 수집부터 그 회사 관련 보도를 모읍니다. 계열사·경쟁사로 이미 등록된 회사는 따로 더하지 않아도 됩니다.</div>
+              <div class="dl-line">
+                <input type="text" id="watchlistInput" placeholder="예: 오리온">
+                <button type="button" class="upd-btn" id="watchlistAddBtn">＋ 추가</button>
+              </div>
+              <div class="upd-msg" id="watchlistMsg"></div>
+              <div class="cal-src-list" id="watchlistList"></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -2457,15 +2502,16 @@
   /* 계열사 태그가 그 계열사를 가리키는 기사만 추린다. allArticles 는 검색
      탭이 이미 받아 둔 것을 그대로 쓴다 — 여기서 또 불러오면 같은 자료를
      두 번 받는다. 계열사 칸은 "하우시스, 글라스"처럼 쉼표로 이어진 문자열이다. */
+  const CO_NEWS_SHOW = 5;
   function coNewsDraw(){
     const list = document.getElementById('coNewsList');
     if (!list) return;
     const 골라냄 = allArticles.filter(function (a){
       return String(a.계열사 || '').split(',').map(function (s){ return s.trim(); }).indexOf(coTab) >= 0;
     });
-    const 보일것 = sortByDateDesc(골라냄).slice(0, 20);
+    const 보일것 = sortByDateDesc(골라냄).slice(0, CO_NEWS_SHOW);
     document.getElementById('coNewsCount').textContent = allArticles.length
-      ? ('총 ' + 골라냄.length + '건')
+      ? ('총 ' + 골라냄.length + '건' + (골라냄.length > 보일것.length ? ' 중 최신 ' + 보일것.length + '건' : ''))
       : '불러오는 중…';
     document.getElementById('coNewsEmpty').style.display = (allArticles.length && !보일것.length) ? 'block' : 'none';
     list.innerHTML = 보일것.map(function (a){
@@ -2516,7 +2562,7 @@
     loadComp(false);
     /* 리스크 등록표가 지표 웹훅에 실려 오므로 리스크 화면도 그것을 기다린다. */
     loadIndex(false);
-    discShown = DISC_STEP; loadDisc(coTab, false);
+    loadDisc(coTab, false);
     coNewsDraw();
     if (지금){
       renderRiskDashboard();
@@ -2577,7 +2623,7 @@
      속하는지만 따진다. knowledge/cfg 는 헤더 버튼으로 따로 열리는 화면이라
      어느 갈래에도 안 넣는다 — 그 화면을 열어도 왼쪽 메뉴의 갈래 선택은
      그대로 둔다. */
-  const TOP_GROUP_OF = { index: 'holdings', deal: 'holdings', search: 'holdings', adhoc: 'holdings', apply: 'holdings', cal: 'holdings', co: 'affiliate', home: 'home' };
+  const TOP_GROUP_OF = { index: 'holdings', deal: 'holdings', search: 'holdings', adhoc: 'holdings', apply: 'holdings', grpperf: 'holdings', cal: 'holdings', co: 'affiliate', home: 'home' };
   /* 전체뉴스조회 안의 세 하위 탭. 하나를 열면 전체뉴스조회 버튼이 눌린
      것처럼 보이고, newsSubNav 줄이 함께 뜬다. */
   const NEWS_TABS = ['search', 'adhoc', 'apply'];
@@ -2613,6 +2659,7 @@
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
     if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); loadWatchlist(); }
+    if (tabName === 'grpperf'){ loadComp(false); }
     if (tabName === 'cal'){ loadCal(false); loadCalSources(); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
@@ -4176,8 +4223,6 @@
     return true;
   }
 
-  /* 그룹은 맨 위 탭으로 고른다. '' 은 전체. */
-  let grpTab = '';
   function artGroup(a){ return String(a.group || '').trim() || '기타'; }
 
   /* 그룹을 뺀 나머지 조건. 그룹 탭에 붙일 건수를 '이 탭을 누르면 몇 건이
@@ -4210,48 +4255,8 @@
     };
   }
 
-  /* 탭 줄은 **전체 기사** 기준으로 만들고, 건수만 지금 조건에 맞춰 센다.
-     조건에 걸려 0건이 된 그룹까지 탭에서 사라지면 그룹이 매번 나타났다
-     사라져 어디를 누르던 중이었는지 알 수 없게 된다. */
-  function renderGroupTabs(통과){
-    const 통 = document.getElementById('grpTabs');
-    if (!통) return;
-
-    const 있는그룹 = [];
-    const 봤나 = {};
-    allArticles.forEach(function(a){
-      const g = artGroup(a);
-      if (!봤나[g]){ 봤나[g] = 1; 있는그룹.push(g); }
-    });
-    /* 이름순으로 두되 '기타'는 맨 뒤로. 그룹이 없는 기사를 담는 칸이라
-       가나다순으로 앞에 서면 진짜 그룹인 것처럼 읽힌다. */
-    있는그룹.sort(function(x, y){
-      if (x === '기타') return 1;
-      if (y === '기타') return -1;
-      return x.localeCompare(y, 'ko');
-    });
-
-    /* 고른 그룹이 사라졌으면(다 지웠다든지) 조용히 전체로 돌아간다 */
-    if (grpTab && !봤나[grpTab]) grpTab = '';
-
-    const 셈 = {};
-    통과.forEach(function(a){ const g = artGroup(a); 셈[g] = (셈[g] || 0) + 1; });
-
-    const 버튼 = function(값, 이름, n){
-      return '<button type="button" class="tab-btn' + (grpTab === 값 ? ' active' : '') +
-        '" data-grp="' + escapeHtml(값) + '">' + escapeHtml(이름) +
-        '<i>' + n + '</i></button>';
-    };
-    통.innerHTML = 있는그룹.length
-      ? 버튼('', '전체', 통과.length) +
-        있는그룹.map(function(g){ return 버튼(g, getGroupEmoji(g) + ' ' + g, 셈[g] || 0); }).join('')
-      : '';
-  }
-
   function applyFilters(){
-    const 통과 = allArticles.filter(passExceptGroup());
-    renderGroupTabs(통과);
-    filtered = grpTab ? 통과.filter(function(a){ return artGroup(a) === grpTab; }) : 통과;
+    filtered = allArticles.filter(passExceptGroup());
     filtered = sortByDateDesc(filtered);
     shown = 0;
     renderList(true);
@@ -5581,9 +5586,64 @@
       '<a href="' + 경쟁사시트 + '" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">시트 열기 →</a>';
   }
 
+  /* ---------- 계열사 하나만의 실적 ----------
+     전사 비교(compGroupBlock)는 회사가 둘 이상이어야 그려지므로, 계열사
+     하나만 볼 때는 그 회사의 부문별 블록(compBlocks)만 쓴다. 계열사별
+     탭의 「실적 현황」과 LX홀딩스의 「LX홀딩스 실적」이 이 함수를 같이 쓴다. */
+  function 계열사실적것들(계열사키){
+    return comp쓸것(((compData && compData.실적) || []).filter(function (x){
+      return (x.계열사 || []).indexOf(계열사키) >= 0 && x.우리편;
+    }));
+  }
+
+  function coPerfDraw(){
+    if (!compData) return;
+    const 것들 = 계열사실적것들(compTab);
+
+    document.getElementById('coPerfTitle').textContent = co이름(compTab) + ' 실적';
+    document.getElementById('coPerfHeadDesc').innerHTML =
+      'DART 공시의 부문별 매출·영업이익입니다 ' +
+      '<a href="manual.html#co" target="_blank" rel="noopener" style="color:var(--green); font-weight:700;">자세히 →</a>';
+    document.getElementById('coPerfBody').innerHTML = compBlocks(것들, 'coPerf|' + compTab);
+    document.querySelectorAll('#coPerfBody .ind-tbl-wrap').forEach(function (w){
+      w.scrollTop = w.scrollHeight;
+    });
+
+    const 빈칸 = document.getElementById('coPerfEmpty');
+    빈칸.style.display = 것들.length ? 'none' : 'block';
+    빈칸.textContent = co이름(compTab) + ' 실적이 아직 쌓이지 않았습니다. ' +
+      '「경쟁사」 시트에 그 회사 줄이 있고 사용·우리편이 TRUE인지 확인하세요.';
+
+    const 분기있음 = 것들.some(function (x){ return (x.분기 || []).length; });
+    document.getElementById('coPerfAsOf').textContent = compData.asOf
+      ? compData.asOf + ' 기준 · 부문 ' + 것들.length + '개' +
+        (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '')
+      : '불러오는 중…';
+  }
+
+  function hqPerfDraw(){
+    if (!compData) return;
+    const 것들 = 계열사실적것들('홀딩스');
+    document.getElementById('hqPerfBody').innerHTML = compBlocks(것들, 'hqPerf');
+    document.querySelectorAll('#hqPerfBody .ind-tbl-wrap').forEach(function (w){
+      w.scrollTop = w.scrollHeight;
+    });
+
+    const 빈칸 = document.getElementById('hqPerfEmpty');
+    빈칸.style.display = 것들.length ? 'none' : 'block';
+    빈칸.textContent = 'LX홀딩스 실적이 아직 쌓이지 않았습니다. ' +
+      '「경쟁사」 시트에 LX홀딩스 줄이 있고 사용·우리편이 TRUE인지, 계열사 칸에 홀딩스가 들어 있는지 확인하세요.';
+
+    const 분기있음 = 것들.some(function (x){ return (x.분기 || []).length; });
+    document.getElementById('hqPerfAsOf').textContent = compData.asOf
+      ? compData.asOf + ' 기준 · 부문 ' + 것들.length + '개' +
+        (것들.length && !분기있음 ? ' · 분기 자료는 아직 없음' : '')
+      : '불러오는 중…';
+  }
+
   function loadComp(force){
     if (compLoading) return;
-    if (compData && !force){ compDraw(); groupDraw(); return; }
+    if (compData && !force){ compDraw(); groupDraw(); coPerfDraw(); hqPerfDraw(); return; }
     compLoading = true;
     document.getElementById('compAsOf').textContent = '불러오는 중…';
     document.getElementById('groupAsOf').textContent = '불러오는 중…';
@@ -5604,6 +5664,8 @@
         compData = d;
         compDraw();
         groupDraw();
+        coPerfDraw();
+        hqPerfDraw();
         homeCo();
       })
       .catch(() => {
@@ -5618,6 +5680,8 @@
   그래프커서(document.getElementById('indCommonBody'), indGraph);
   그래프커서(document.getElementById('compBody'), compGraph);
   그래프커서(document.getElementById('groupBody'), compGraph);
+  그래프커서(document.getElementById('coPerfBody'), compGraph);
+  그래프커서(document.getElementById('hqPerfBody'), compGraph);
   그래프커서(document.getElementById('mktGrid'), indGraph);
 
   /* 경쟁사 성과와 그룹 실적이 같은 블록을 쓰므로 누름도 같이 쓴다. 어느 쪽을
@@ -5649,6 +5713,8 @@
   }
   document.getElementById('compBody').addEventListener('click', function (e){ comp누름(e, compDraw); });
   document.getElementById('groupBody').addEventListener('click', function (e){ comp누름(e, groupDraw); });
+  document.getElementById('coPerfBody').addEventListener('click', function (e){ comp누름(e, coPerfDraw); });
+  document.getElementById('hqPerfBody').addEventListener('click', function (e){ comp누름(e, hqPerfDraw); });
 
 
   /* ---------- 자본시장 딜 ----------
@@ -5668,15 +5734,13 @@
   const DEAL_MNA = ['지분취득', '지분처분', '합병·분할', '영업·자산 양수도'];
   const DEAL_KINDS = DEAL_MNA.concat(['유상증자', '메자닌']);
   const DEAL_DAYS = 7;
-  /* 개별 공시 건수가 아니라 회사 수로 자른다. 공시 40건이 서로 다른 회사
-     40곳에서 하나씩 나오면 화면이 낯선 회사 이름으로 도배된다 — 최근에
-     낸 회사 열 곳까지만 펴 보이고 나머지는 펼치기로 넘긴다. */
-  const DEAL_COMPANY_STEP = 10;
+  /* 자본시장정보 화면은 좌우 2열로 공시와 보도를 한 번에 보여주므로, 한쪽이
+     너무 길어지지 않게 최신 10건까지만 보여준다. 더 볼 것은 시트에서 본다. */
+  const DEAL_SHOW = 10;
 
   let dealData = null;
   let dealLoading = false;
   let dealKind = '전체';
-  let dealCompanyExpanded = false;
 
   /* 시트에는 20260907 로 들어 있다. 사람이 읽는 자리에서는 늘 하이픈을 넣는다. */
   function 딜날짜(s){
@@ -5744,14 +5808,12 @@
     const 때 = document.getElementById('dealAsOf');
     const 셈칸 = document.getElementById('dealCount');
     const 빈칸 = document.getElementById('dealEmpty');
-    const 더 = document.getElementById('dealMore');
 
     if (!dealData){
       때.textContent = dealLoading ? '불러오는 중…' : '딜 공시를 불러오지 못했습니다.';
       목록.innerHTML = '';
       셈칸.textContent = '';
       빈칸.style.display = 'none';
-      더.style.display = 'none';
       return;
     }
 
@@ -5796,31 +5858,15 @@
     }
 
     const 것들 = 딜쓸것();
-    /* 회사가 처음 나온 순서 = 그 회사의 가장 최근 공시 순서(것들이 날짜
-       내림차순이므로). 그 순서대로 열 곳까지만 편다. */
-    const 회사순서 = [];
-    것들.forEach(function (x){
-      const 이름 = x.회사 || '';
-      if (회사순서.indexOf(이름) < 0) 회사순서.push(이름);
-    });
-    const 보일회사 = dealCompanyExpanded ? 회사순서 : 회사순서.slice(0, DEAL_COMPANY_STEP);
-    const 보일회사셋 = new Set(보일회사);
-    const 보일것 = 것들.filter(function (x){ return 보일회사셋.has(x.회사 || ''); });
+    const 보일것 = 것들.slice(0, DEAL_SHOW);
 
     셈칸.textContent = 것들.length
-      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건 · ' +
-        회사순서.length.toLocaleString() + '개 기업' +
-        (회사순서.length > 보일회사.length ? ' 중 ' + 보일회사.length.toLocaleString() + '개 기업' : '')
+      ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건' +
+        (것들.length > 보일것.length ? ' 중 최신 ' + 보일것.length.toLocaleString() + '건' : '')
       : '';
     목록.innerHTML = 보일것.map(딜줄).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
     if (!것들.length) 빈칸.textContent = '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.';
-    if (회사순서.length > 보일회사.length){
-      더.style.display = '';
-      더.textContent = '나머지 ' + (회사순서.length - 보일회사.length).toLocaleString() + '개 기업 펼치기 ▾';
-    } else {
-      더.style.display = 'none';
-    }
   }
 
   function loadDeal(force){
@@ -5849,9 +5895,7 @@
       });
   }
 
-  /* 조건을 바꾸면 「더보기」로 펼쳐 둔 것은 처음으로 되돌린다 — 그러지 않으면
-     좁혔는데도 사백 건이 그대로 깔려 있어 좁힌 티가 안 난다. */
-  function 딜다시(){ dealCompanyExpanded = false; dealDraw(); }
+  function 딜다시(){ dealDraw(); }
 
   document.getElementById('dealKinds').addEventListener('click', function (e){
     const b = e.target.closest('button[data-kind]');
@@ -5862,10 +5906,6 @@
   document.getElementById('dealQ').addEventListener('input', 딜다시);
   document.getElementById('dealMarket').addEventListener('change', 딜다시);
   document.getElementById('dealMine').addEventListener('change', 딜다시);
-  document.getElementById('dealMore').addEventListener('click', function (){
-    dealCompanyExpanded = true;
-    dealDraw();
-  });
 
   /* ---------- 관련 보도 ----------
      공시는 「이사회를 지났다」는 사실만 담는다. 누가 왜 파는지, 값이 어떻게
@@ -5879,9 +5919,7 @@
      날짜 범위는 공시(7일)와 달리 두지 않는다. 뉴스 수집은 주 1회라 이레로
      자르면 수집 직후가 아니면 빈 화면이 된다. 대신 머리글에 실제 기간을
      적어 무엇을 보고 있는지 밝힌다. */
-  const DEAL_NEWS_STEP = 20;
   let dealNewsGroup = null;        // null = 아직 안 정함, '' = 자본시장 계열 전체
-  let dealNewsShown = DEAL_NEWS_STEP;
 
   function 딜뉴스대상(){
     return (allArticles || []).filter(function (a){
@@ -5929,7 +5967,6 @@
     const 때 = document.getElementById('dealNewsAsOf');
     const 셈칸 = document.getElementById('dealNewsCount');
     const 빈칸 = document.getElementById('dealNewsEmpty');
-    const 더 = document.getElementById('dealNewsMore');
 
     const 그룹들 = 딜뉴스그룹들();
     if (dealNewsGroup === null){
@@ -5959,24 +5996,17 @@
           ? '자본시장 그룹으로 수집된 기사가 없습니다.'
           : '기사를 불러오는 중…');
 
-    const 보일것 = 것들.slice(0, dealNewsShown);
+    const 보일것 = 것들.slice(0, DEAL_SHOW);
     셈칸.textContent = 것들.length
       ? '조건에 맞는 기사 ' + 것들.length.toLocaleString() + '건' +
-        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+        (것들.length > 보일것.length ? ' 중 최신 ' + 보일것.length.toLocaleString() + '건' : '')
       : '';
     목록.innerHTML = 보일것.map(딜뉴스줄).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
     if (!것들.length) 빈칸.textContent = '조건에 맞는 기사가 없습니다. 그룹이나 검색어를 바꿔보세요.';
-    if (것들.length > 보일것.length){
-      더.style.display = '';
-      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
-        Math.min(DEAL_NEWS_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
-    } else {
-      더.style.display = 'none';
-    }
   }
 
-  function 딜뉴스다시(){ dealNewsShown = DEAL_NEWS_STEP; dealNewsDraw(); }
+  function 딜뉴스다시(){ dealNewsDraw(); }
 
   document.getElementById('dealNewsGroups').addEventListener('click', function (e){
     const b = e.target.closest('button[data-dnews]');
@@ -5985,10 +6015,6 @@
     딜뉴스다시();
   });
   document.getElementById('dealNewsQ').addEventListener('input', 딜뉴스다시);
-  document.getElementById('dealNewsMore').addEventListener('click', function (){
-    dealNewsShown += DEAL_NEWS_STEP;
-    dealNewsDraw();
-  });
 
   /* ---------- 계열사 주요 공시 ----------
      실적은 석 달에 한 번 갱신되지만 공시는 날마다 나온다. 「요즘 이 회사에 무슨
@@ -6000,14 +6026,12 @@
 
      받아 둔 것은 계열사별로 기억한다 — 계열사를 오갈 때마다 다시 부르면 그때마다
      몇 초씩 빈 화면이 된다. */
-  const DISC_STEP = 30;
   const DISC_KINDS = ['정기보고서', '감사보고서', '실적·전망', '주요사항',
                       '자금조달', '지분·주주', '지배구조', '기타'];
 
   let discData = {};       // 계열사 → 조회 웹훅이 준 덩어리
   let discLoading = {};    // 계열사 → 부르는 중인가
   let discKind = '전체';
-  let discShown = DISC_STEP;
 
   function 공시줄(x){
     const 관 = x.관련
@@ -6046,13 +6070,13 @@
     });
   }
 
+  const DISC_SHOW = 5;
   function discDraw(){
     const 목록 = document.getElementById('discList');
     if (!목록) return;
     const 때 = document.getElementById('discAsOf');
     const 셈칸 = document.getElementById('discCount');
     const 빈칸 = document.getElementById('discEmpty');
-    const 더 = document.getElementById('discMore');
     const 짐 = discData[coTab];
 
     document.getElementById('discHeadTitle').textContent = co이름(coTab) + ' 주요 공시';
@@ -6067,7 +6091,6 @@
       document.getElementById('discKinds').innerHTML = '';
       셈칸.textContent = '';
       빈칸.style.display = 'none';
-      더.style.display = 'none';
       return;
     }
 
@@ -6109,10 +6132,10 @@
     }
 
     const 것들 = 공시쓸것();
-    const 보일것 = 것들.slice(0, discShown);
+    const 보일것 = 것들.slice(0, DISC_SHOW);
     셈칸.textContent = 것들.length
       ? '조건에 맞는 공시 ' + 것들.length.toLocaleString() + '건' +
-        (것들.length > 보일것.length ? ' 중 ' + 보일것.length.toLocaleString() + '건' : '')
+        (것들.length > 보일것.length ? ' 중 최신 ' + 보일것.length.toLocaleString() + '건' : '')
       : '';
     목록.innerHTML = 보일것.map(공시줄).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
@@ -6120,13 +6143,6 @@
       빈칸.textContent = 짐.총건수
         ? '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.'
         : '이 계열사로 등록된 회사의 공시가 아직 없습니다. 「경쟁사」 시트에 corp_code 가 채워져 있는지 보세요.';
-    }
-    if (것들.length > 보일것.length){
-      더.style.display = '';
-      더.textContent = '나머지 ' + (것들.length - 보일것.length).toLocaleString() + '건 중 ' +
-        Math.min(DISC_STEP, 것들.length - 보일것.length) + '건 더보기 ▾';
-    } else {
-      더.style.display = 'none';
     }
   }
 
@@ -6155,8 +6171,7 @@
       });
   }
 
-  /* 조건을 바꾸면 「더보기」로 펼쳐 둔 것은 처음으로 되돌린다. */
-  function 공시다시(){ discShown = DISC_STEP; discDraw(); }
+  function 공시다시(){ discDraw(); }
 
   document.getElementById('discKinds').addEventListener('click', function (e){
     const b = e.target.closest('button[data-disc]');
@@ -6167,29 +6182,53 @@
   document.getElementById('discQ').addEventListener('input', 공시다시);
   document.getElementById('discCorp').addEventListener('change', 공시다시);
   document.getElementById('discMine').addEventListener('change', 공시다시);
-  document.getElementById('discMore').addEventListener('click', function (){
-    discShown += DISC_STEP;
-    discDraw();
-  });
 
-  /* 하위 탭. 공시는 웹훅에서, 보도는 이미 받아 둔 기사에서 오므로 켤 때마다
-     각각 한 번씩 그린다. */
-  let dealPick = 기억('lx-deal-pick') || 'disc';
-  function dealPaneDraw(){
-    if (dealPick !== 'news') dealPick = 'disc';
-    document.querySelectorAll('#dealTabs .tab-btn').forEach(function (b){
-      b.classList.toggle('active', b.dataset.deal === dealPick);
-    });
-    document.getElementById('deal-disc').classList.toggle('on', dealPick === 'disc');
-    document.getElementById('deal-news').classList.toggle('on', dealPick === 'news');
-    if (dealPick === 'news') dealNewsDraw(); else dealDraw();
+  /* 관련 뉴스·주요 공시 접기. 두 카드 다 계열사를 오갈 때마다 다시 그려지므로
+     접힌 상태만 기억해 두면 이름과 상관없이 그 상태를 이어 쓸 수 있다. */
+  function coNews접기그리기(){
+    const 접힘 = 기억('lx-co-news-fold') === '1';
+    document.getElementById('coNewsBody').hidden = 접힘;
+    document.getElementById('coNewsFoldBtn').textContent = 접힘 ? '펴기 ▾' : '접기 ▴';
   }
-  document.getElementById('dealTabs').addEventListener('click', function (e){
-    const b = e.target.closest('button[data-deal]');
-    if (!b) return;
-    dealPick = b.dataset.deal;
-    기억('lx-deal-pick', dealPick);
-    dealPaneDraw();
+  function disc접기그리기(){
+    const 접힘 = 기억('lx-disc-fold') === '1';
+    document.getElementById('discBody').hidden = 접힘;
+    document.getElementById('discFoldBtn').textContent = 접힘 ? '펴기 ▾' : '접기 ▴';
+  }
+  document.getElementById('coNewsFoldBtn').addEventListener('click', function (){
+    기억('lx-co-news-fold', 기억('lx-co-news-fold') === '1' ? '0' : '1');
+    coNews접기그리기();
+  });
+  document.getElementById('discFoldBtn').addEventListener('click', function (){
+    기억('lx-disc-fold', 기억('lx-disc-fold') === '1' ? '0' : '1');
+    disc접기그리기();
+  });
+  coNews접기그리기();
+  disc접기그리기();
+
+  /* 좌우 2열. 공시는 웹훅에서, 보도는 이미 받아 둔 기사에서 오므로 켤 때마다
+     둘 다 한 번씩 그린다. 접었다 폈다 하는 상태만 따로 기억한다. */
+  function 딜접기그리기(이름, 몸, 버튼){
+    const 접힘 = 기억('lx-deal-fold-' + 이름) === '1';
+    document.getElementById(몸).hidden = 접힘;
+    document.getElementById(버튼).textContent = 접힘 ? '펴기 ▾' : '접기 ▴';
+  }
+  function dealPaneDraw(){
+    딜접기그리기('disc', 'dealDiscBody', 'dealDiscFoldBtn');
+    딜접기그리기('news', 'dealNewsBody', 'dealNewsFoldBtn');
+    dealDraw();
+    dealNewsDraw();
+  }
+  function 딜접기토글(이름, 몸, 버튼){
+    const 접힘 = 기억('lx-deal-fold-' + 이름) === '1';
+    기억('lx-deal-fold-' + 이름, 접힘 ? '0' : '1');
+    딜접기그리기(이름, 몸, 버튼);
+  }
+  document.getElementById('dealDiscFoldBtn').addEventListener('click', function (){
+    딜접기토글('disc', 'dealDiscBody', 'dealDiscFoldBtn');
+  });
+  document.getElementById('dealNewsFoldBtn').addEventListener('click', function (){
+    딜접기토글('news', 'dealNewsBody', 'dealNewsFoldBtn');
   });
 
   /* ---------- 주요 일정 ----------
@@ -6514,8 +6553,11 @@
     const code = sharedCode();
     if (!code) return Promise.reject(new Error('식별코드를 먼저 확인해 주세요.'));
 
-    let pw = savedRunPw();
-    if (!pw){
+    /* list 는 다시 보기만 하는 읽기 전용이라 자본시장정보 탭을 열 때마다
+       실행 비밀번호를 묻지 않는다. 추가·삭제만 비밀번호가 필요하다. */
+    const 읽기전용 = action === 'list';
+    let pw = 읽기전용 ? '' : savedRunPw();
+    if (!읽기전용 && !pw){
       pw = prompt('관심 기업을 관리합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
       if (!pw) return Promise.reject(new Error('취소했습니다.'));
     }
@@ -6532,10 +6574,10 @@
       })
       .then(function (r){
         if (!r.ok || !r.d || r.d.ok !== true){
-          try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {}
+          if (!읽기전용) { try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
           throw new Error((r.d && r.d.message) || '요청을 처리하지 못했습니다.');
         }
-        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        if (!읽기전용) { try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {} }
         return r.d;
       });
   }
@@ -8175,9 +8217,12 @@
     });
 
     /* LX홀딩스/계열사별 버튼은 화면 하나를 열지 않고 하위 탭 줄만 바꾼다.
-       처음 열 때는 그 갈래의 첫 하위 탭을 그대로 연다. */
+       처음 열 때는 그 갈래의 첫 하위 탭을 그대로 연다. 계열사별은 지난번
+       보던 계열사가 아니라 늘 인터부터 보여준다 — 어느 계열사를 보고 있었는지
+       기억해 뒀다가 엉뚱한 회사로 열리면 그때마다 다시 골라야 한다. */
     document.querySelectorAll('#topNav [data-top]').forEach(btn => {
       btn.addEventListener('click', function(){
+        if (btn.dataset.top === 'affiliate'){ coTab = '인터'; 기억('lx-co', coTab); }
         const 첫탭 = btn.dataset.top === 'holdings' ? 'index' : 'co';
         showTab(첫탭);
       });
@@ -8197,12 +8242,6 @@
       document.getElementById('changeCodeLabel').textContent = sharedCode();
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
-    document.getElementById('grpTabs').addEventListener('click', function(e){
-      const b = e.target.closest('button[data-grp]');
-      if (!b) return;
-      grpTab = b.dataset.grp;
-      applyFilters();
-    });
     ['filterCollectedFrom','filterCollectedTo','filterPubFrom','filterPubTo'].forEach(function(id){
       document.getElementById(id).addEventListener('change', applyFilters);
     });
@@ -8315,13 +8354,15 @@
         if (열기){ const 짝 = 열기.dataset.coOpen.split('|'); co열기(짝[0], 짝[1]); return; }
         const b = e.target.closest('button[data-goto]');
         if (!b) return;
-        /* 딜 화면은 하위 탭이 둘이다. 어느 카드에서 눌렀는지에 따라 공시 쪽으로
-           갈지 보도 쪽으로 갈지가 다르므로 버튼이 그것을 들고 있게 한다. */
-        if (b.dataset.gotoDeal){
-          dealPick = b.dataset.gotoDeal;
-          기억('lx-deal-pick', dealPick);
-        }
         showTab(b.dataset.goto);
+        /* 자본시장정보는 공시·보도가 좌우 2열로 늘 같이 보인다. Home 카드가
+           가리킨 쪽만 접혀 있으면 펴서 보여준다. */
+        if (b.dataset.gotoDeal){
+          const 이름 = b.dataset.gotoDeal === 'news' ? 'news' : 'disc';
+          const 몸 = 이름 === 'news' ? 'dealNewsBody' : 'dealDiscBody';
+          const 버튼 = 이름 === 'news' ? 'dealNewsFoldBtn' : 'dealDiscFoldBtn';
+          if (기억('lx-deal-fold-' + 이름) === '1') 딜접기토글(이름, 몸, 버튼);
+        }
       });
     });
 
