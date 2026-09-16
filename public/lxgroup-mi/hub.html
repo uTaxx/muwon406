@@ -6953,7 +6953,7 @@
           '<div class="disc-row-head">' +
             '<input type="checkbox" class="disc-row-check" data-idx="' + idx + '">' +
             '<div class="disc-row-body">' +
-              '<div class="disc-row-title">' + escapeHtml(r.보고서명) + '</div>' +
+              '<div class="disc-row-title">' + escapeHtml(r.보고서명) + (r.DB파일보유 ? '<span class="tag-ok">DB 파일 보유중</span>' : '') + '</div>' +
               '<div class="disc-row-sub">' + escapeHtml(r.접수일) + (r.결산기 ? ' · ' + escapeHtml(r.결산기) : '') + '</div>' +
               '<div class="disc-row-actions">' +
                 '<a href="' + r.조회URL + '" target="_blank" rel="noopener" class="small-btn">조회</a>' +
