@@ -1526,6 +1526,39 @@
       <div class="step-desc">조회는 DART 원문 화면을 새 창으로 엽니다. 원본 다운은 DART 자체 다운로드 화면을 엽니다 — 정기공시는 DART가 자체 포맷(.dsd)으로만 문서를 갖고 있어 PDF가 아닐 수 있습니다. 저장할 공시를 선택하고 「선택한 공시 저장」을 누르면 이 회사가 속한 계열사의 경쟁사 실적 폴더에 한 번에 저장하고, 이어서 계열사·경쟁사 현황 화면의 실적 갱신도 함께 시작합니다(몇 분 걸릴 수 있습니다).</div>
       <div id="discResultList"></div>
     </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🗂</span><span class="step-title">기업 관리</span></div>
+      <div class="step-desc">전체 수집 대상 기업의 계열사 그룹, 수집할 공시 종류, 알림 전송 여부를 한곳에서 관리합니다.</div>
+      <button type="button" class="ghost-btn" id="mgmtToggleBtn">기업 관리 열기</button>
+
+      <div id="mgmtBody" style="display:none; margin-top:12px;">
+        <div class="code-row">
+          <input type="text" id="mgmtFilterInput" placeholder="등록된 기업 이름으로 찾기">
+        </div>
+        <div class="status" id="mgmtStatus"></div>
+        <div id="mgmtList"></div>
+
+        <div class="step-head" style="margin-top:16px;"><span class="step-num">＋</span><span class="step-title">새 기업 등록</span></div>
+        <div class="opt-row">
+          <label class="check-option checked" id="mgmtAddOptListed">
+            <input type="radio" name="mgmtAddScope" id="mgmtAddScopeListed" checked>
+            <div><div class="opt-text">상장회사</div><div class="opt-sub">빠르게 찾습니다</div></div>
+          </label>
+          <label class="check-option" id="mgmtAddOptUnlisted">
+            <input type="radio" name="mgmtAddScope" id="mgmtAddScopeUnlisted">
+            <div><div class="opt-text">비상장회사</div><div class="opt-sub">시간이 걸릴 수 있습니다</div></div>
+          </label>
+        </div>
+        <div class="code-row">
+          <input type="text" id="mgmtAddSearchInput" placeholder="회사명으로 찾기 (예: 삼성전자)">
+        </div>
+        <div class="status" id="mgmtAddSearchStatus"></div>
+        <div class="cal-src-list" id="mgmtAddSearchResults"></div>
+        <button type="button" class="ghost-btn" id="mgmtAddUnlistedBtn" style="display:none; margin-top:8px;">비상장회사에서 찾기 (시간이 걸릴 수 있습니다)</button>
+        <div id="mgmtAddForm" style="display:none; margin-top:10px;"></div>
+      </div>
+    </section>
   </div>
 
   <!-- 탭 3: 특정 키워드 검색 -->
@@ -7057,6 +7090,251 @@
       자리.style.display = 'none';
       document.getElementById('discBatchSaveBtn').disabled = true;
       discSaveBatchRun(남음, code, pw, 계열사);
+    });
+  }
+
+  /* ---------- 기업 관리 ----------
+     전체 수집 대상 기업(경쟁사 시트)의 계열사·수집유형·이메일/텔레그램 알림·
+     사용 여부를 공시수집기 탭 안에서 바로 바꾼다. 목록 조회는 인증이 필요
+     없고(읽기 전용), 저장·신규 등록은 db저장과 같은 실행 비밀번호를 쓴다. */
+  const 관리유형목록 = ['사업보고서', '반기보고서', '분기보고서', '감사보고서', '잠정실적발표'];
+  let mgmtCompanies = [];
+  let mgmtOpened = false;
+
+  function loadMgmt(){
+    const 알림 = document.getElementById('mgmtStatus');
+    알림.className = 'status';
+    알림.textContent = '불러오는 중…';
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: '기업목록' }) })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        mgmtCompanies = (d && d.목록) || [];
+        알림.textContent = '';
+        mgmtListDraw();
+      })
+      .catch(function (err){
+        알림.className = 'status bad';
+        알림.textContent = 오류메시지(err, '기업 목록 조회');
+      });
+  }
+
+  function mgmtCheckOptions(className, checkedList){
+    return 관리유형목록.map(function (t){
+      const 켜짐 = checkedList.indexOf(t) >= 0;
+      return '<label class="check-option' + (켜짐 ? ' checked' : '') + '"><input type="checkbox" class="' + className + '" value="' + t + '"' + (켜짐 ? ' checked' : '') + '><div class="opt-text">' + t + '</div></label>';
+    }).join('');
+  }
+
+  function mgmtListDraw(){
+    const 필터 = (document.getElementById('mgmtFilterInput').value || '').trim();
+    const 자리 = document.getElementById('mgmtList');
+    const 것들 = mgmtCompanies.filter(function (c){ return !필터 || c.회사명.indexOf(필터) >= 0; });
+    if (!것들.length){
+      자리.innerHTML = '<div class="empty-note">해당하는 기업이 없습니다.</div>';
+      return;
+    }
+    자리.innerHTML = 것들.map(function (c){
+      return '<div class="disc-row" data-row="' + c.row_number + '">' +
+        '<div class="disc-row-title">' + escapeHtml(c.회사명) +
+          (c.우리편 ? '<span class="tag-ok">계열사</span>' : '') +
+          (!c.사용 ? '<span class="tag-ok" style="background:#FDECEE;color:var(--danger);">사용 안 함</span>' : '') +
+        '</div>' +
+        '<div class="disc-row-sub">' + escapeHtml(c.corp_code) + (c.종목코드 ? ' · ' + escapeHtml(c.종목코드) : '') + '</div>' +
+        '<div class="code-row" style="margin-top:6px;">' +
+          '<input type="text" class="mgmt-group-input" value="' + escapeHtml(c.계열사) + '" placeholder="계열사">' +
+        '</div>' +
+        '<div class="opt-row" style="margin-top:6px;">' + mgmtCheckOptions('mgmt-type', c.수집유형) + '</div>' +
+        '<div class="opt-row" style="margin-top:6px;">' +
+          '<label class="check-option' + (c.이메일알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-email"' + (c.이메일알림 ? ' checked' : '') + '><div class="opt-text">이메일 알림</div></label>' +
+          '<label class="check-option' + (c.텔레그램알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-telegram"' + (c.텔레그램알림 ? ' checked' : '') + '><div class="opt-text">텔레그램 알림</div></label>' +
+          '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">수집 사용</div></label>' +
+        '</div>' +
+        '<div class="disc-row-actions"><button type="button" class="upd-btn mgmt-save-btn">저장</button></div>' +
+        '<div class="upd-msg mgmt-save-msg"></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  document.getElementById('mgmtToggleBtn').addEventListener('click', function (){
+    mgmtOpened = !mgmtOpened;
+    document.getElementById('mgmtBody').style.display = mgmtOpened ? '' : 'none';
+    this.textContent = mgmtOpened ? '기업 관리 닫기' : '기업 관리 열기';
+    if (mgmtOpened && !mgmtCompanies.length) loadMgmt();
+  });
+  document.getElementById('mgmtFilterInput').addEventListener('input', function (){ mgmtListDraw(); });
+
+  document.getElementById('mgmtList').addEventListener('change', function (e){
+    if (e.target.matches('.mgmt-type, .mgmt-email, .mgmt-telegram, .mgmt-use')){
+      const label = e.target.closest('.check-option');
+      if (label) label.classList.toggle('checked', e.target.checked);
+    }
+  });
+
+  document.getElementById('mgmtList').addEventListener('click', function (e){
+    const btn = e.target.closest('.mgmt-save-btn');
+    if (!btn) return;
+    const row = btn.closest('.disc-row');
+    const row_number = Number(row.dataset.row);
+    const 계열사 = row.querySelector('.mgmt-group-input').value.trim();
+    const 수집유형 = Array.from(row.querySelectorAll('.mgmt-type:checked')).map(function (c){ return c.value; });
+    const 이메일알림 = row.querySelector('.mgmt-email').checked;
+    const 텔레그램알림 = row.querySelector('.mgmt-telegram').checked;
+    const 사용 = row.querySelector('.mgmt-use').checked;
+    const msg = row.querySelector('.mgmt-save-msg');
+
+    const code = sharedCode();
+    if (!code){ msg.className = 'upd-msg mgmt-save-msg bad'; msg.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('기업 설정을 바꿉니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+    msg.className = 'upd-msg mgmt-save-msg';
+    msg.textContent = '저장하는 중…';
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      action: '기업설정변경', code: code, pw: pw, row_number: row_number,
+      계열사: 계열사, 수집유형: 수집유형, 이메일알림: 이메일알림, 텔레그램알림: 텔레그램알림, 사용: 사용
+    }) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '저장하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        msg.className = 'upd-msg mgmt-save-msg ok';
+        msg.textContent = r.d.message || '저장했습니다.';
+        const idx = mgmtCompanies.findIndex(function (c){ return c.row_number === row_number; });
+        if (idx >= 0){
+          mgmtCompanies[idx].계열사 = 계열사; mgmtCompanies[idx].수집유형 = 수집유형;
+          mgmtCompanies[idx].이메일알림 = 이메일알림; mgmtCompanies[idx].텔레그램알림 = 텔레그램알림; mgmtCompanies[idx].사용 = 사용;
+        }
+      })
+      .catch(function (err){
+        msg.className = 'upd-msg mgmt-save-msg bad';
+        msg.textContent = 오류메시지(err, '기업 설정 변경');
+      });
+  });
+
+  /* 새 기업 등록 — 공시수집기 기업 검색과 같은 정적 목록 검색(discFetchList)을
+     그대로 쓴다. 계열사를 고르면 그 계열사의 기존 드라이브 폴더 아래 새
+     폴더를 만들어 등록한다(참조할 폴더가 없으면 등록되지 않는다). */
+  let mgmtAddSearchTimer = null;
+
+  function mgmtAddSearchResultsDraw(list){
+    const 자리 = document.getElementById('mgmtAddSearchResults');
+    if (!list.length){ 자리.innerHTML = '<div class="empty-note">검색 결과가 없습니다.</div>'; return; }
+    자리.innerHTML = list.slice(0, 30).map(function (c){
+      return '<div class="cal-src-row disc-pick-row" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">' +
+        '<div class="cal-src-b"><div class="cal-src-name">' + escapeHtml(c.회사명) + '</div>' +
+        '<div class="cal-src-url">' + escapeHtml(c.corp_code) + (c.종목코드 ? ' · ' + escapeHtml(c.종목코드) : '') + '</div></div>' +
+        '<div class="cal-src-actions"><button type="button" class="disc-pick-btn">선택</button></div></div>';
+    }).join('');
+  }
+
+  function mgmtAddRunSearch(){
+    const 검색어 = document.getElementById('mgmtAddSearchInput').value.trim();
+    const scope = document.getElementById('mgmtAddScopeUnlisted').checked ? 'unlisted' : 'listed';
+    document.getElementById('mgmtAddUnlistedBtn').style.display = 'none';
+    const 알림 = document.getElementById('mgmtAddSearchStatus');
+    if (!검색어){ document.getElementById('mgmtAddSearchResults').innerHTML = ''; 알림.textContent = ''; return; }
+    알림.className = 'upd-msg';
+    알림.textContent = scope === 'unlisted' ? '비상장회사 목록을 받는 중… 시간이 걸릴 수 있습니다.' : '찾는 중…';
+    discFetchList(scope).then(function (list){
+      const found = list.filter(function (c){ return c.회사명.indexOf(검색어) >= 0; });
+      알림.textContent = '';
+      mgmtAddSearchResultsDraw(found);
+      if (!found.length && scope === 'listed') document.getElementById('mgmtAddUnlistedBtn').style.display = '';
+    }).catch(function (err){
+      알림.className = 'upd-msg bad';
+      알림.textContent = 오류메시지(err, '기업 목록 조회');
+    });
+  }
+
+  document.getElementById('mgmtAddSearchInput').addEventListener('input', function (){
+    clearTimeout(mgmtAddSearchTimer);
+    mgmtAddSearchTimer = setTimeout(mgmtAddRunSearch, 250);
+  });
+  document.querySelectorAll('input[name="mgmtAddScope"]').forEach(function (r){
+    r.addEventListener('change', function (){
+      document.getElementById('mgmtAddOptListed').classList.toggle('checked', document.getElementById('mgmtAddScopeListed').checked);
+      document.getElementById('mgmtAddOptUnlisted').classList.toggle('checked', document.getElementById('mgmtAddScopeUnlisted').checked);
+      mgmtAddRunSearch();
+    });
+  });
+  document.getElementById('mgmtAddUnlistedBtn').addEventListener('click', function (){
+    document.getElementById('mgmtAddScopeUnlisted').checked = true;
+    document.getElementById('mgmtAddOptListed').classList.remove('checked');
+    document.getElementById('mgmtAddOptUnlisted').classList.add('checked');
+    mgmtAddRunSearch();
+  });
+
+  document.getElementById('mgmtAddSearchResults').addEventListener('click', function (e){
+    const btn = e.target.closest('.disc-pick-btn');
+    if (!btn) return;
+    const row = btn.closest('.disc-pick-row');
+    mgmtAddFormDraw(row.dataset.name, row.dataset.corp);
+  });
+
+  function mgmtAddFormDraw(회사명, corp_code){
+    const 자리 = document.getElementById('mgmtAddForm');
+    자리.style.display = '';
+    const 기본유형 = ['사업보고서', '반기보고서', '분기보고서', '감사보고서'];
+    자리.innerHTML =
+      '<div class="word-hint" style="margin-top:0;">' + escapeHtml(회사명) + ' (' + escapeHtml(corp_code) + ')</div>' +
+      '<label>계열사</label><select class="mgmt-add-group">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; }).join('') + '</select>' +
+      '<div class="opt-row" style="margin-top:8px;">' + mgmtCheckOptions('mgmt-add-type', 기본유형) + '</div>' +
+      '<div class="opt-row" style="margin-top:8px;">' +
+        '<label class="check-option"><input type="checkbox" class="mgmt-add-email"><div class="opt-text">이메일 알림</div></label>' +
+        '<label class="check-option"><input type="checkbox" class="mgmt-add-telegram"><div class="opt-text">텔레그램 알림</div></label>' +
+      '</div>' +
+      '<button type="button" class="submit-btn" id="mgmtAddConfirmBtn" style="margin-top:10px;">등록</button>' +
+      '<div class="upd-msg" id="mgmtAddStatus"></div>';
+
+    자리.querySelectorAll('.check-option input[type="checkbox"]').forEach(function (inp){
+      inp.addEventListener('change', function (){
+        const label = this.closest('.check-option');
+        if (label) label.classList.toggle('checked', this.checked);
+      });
+    });
+
+    document.getElementById('mgmtAddConfirmBtn').addEventListener('click', function (){
+      const code = sharedCode();
+      const 알림 = document.getElementById('mgmtAddStatus');
+      if (!code){ 알림.className = 'upd-msg bad'; 알림.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+      let pw = savedRunPw();
+      if (!pw){
+        pw = prompt('새 기업을 등록합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+        if (!pw) return;
+      }
+      const 계열사 = 자리.querySelector('.mgmt-add-group').value;
+      const 수집유형 = Array.from(자리.querySelectorAll('.mgmt-add-type:checked')).map(function (c){ return c.value; });
+      const 이메일알림 = 자리.querySelector('.mgmt-add-email').checked;
+      const 텔레그램알림 = 자리.querySelector('.mgmt-add-telegram').checked;
+      알림.className = 'upd-msg';
+      알림.textContent = '등록하는 중…';
+      fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        action: '기업신규등록', code: code, pw: pw, corp_code: corp_code, 회사명: 회사명,
+        계열사: 계열사, 수집유형: 수집유형, 이메일알림: 이메일알림, 텔레그램알림: 텔레그램알림, 사용: true
+      }) })
+        .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+        .then(function (r){
+          if (!r.ok || !r.d || r.d.ok !== true){
+            if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+            throw new Error((r.d && r.d.message) || '등록하지 못했습니다.');
+          }
+          try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+          알림.className = 'upd-msg ok';
+          알림.textContent = r.d.message || '등록했습니다.';
+          document.getElementById('mgmtAddSearchInput').value = '';
+          document.getElementById('mgmtAddSearchResults').innerHTML = '';
+          자리.style.display = 'none';
+          loadMgmt();
+        })
+        .catch(function (err){
+          알림.className = 'upd-msg bad';
+          알림.textContent = 오류메시지(err, '기업 신규 등록');
+        });
     });
   }
 
