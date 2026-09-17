@@ -3149,8 +3149,11 @@
 
   /* indPlot 에 최고점·최저점·현재값 표식을 더한 그림. 상황판의 시장지표
      카드처럼 커서를 올리지 않고도 바로 눈에 띄어야 하는 자리에 쓴다.
-     세 점이 겹치면(자료가 두세 칸뿐이거나 계속 오르기만 한 경우) 같은
-     점에 글자를 두 번 적지 않는다. */
+     한 점이 여러 뜻을 가지면(자료가 두세 칸뿐이거나 계속 오르기만 한 경우)
+     "최고·현재"처럼 이름을 묶어 한 번만 적는다 — 안 그러면 같은 자리에
+     글자가 겹쳐 찍힌다. 이름표는 값보다 작고 옅은 색(--muted)으로 두어
+     숫자가 먼저 읽히게 한다. */
+  const IND_MUTED = '#726A61';
   function indPlotMarked(g){
     const W = IND_W, H = IND_H;
     const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
@@ -3165,22 +3168,48 @@
         if (p.y < 최저.y) 최저 = p;
       });
       const 현재 = s.pts[s.pts.length - 1];
-      const 찍을점 = [최고, 최저, 현재].filter(function(p, i, arr){
-        return arr.findIndex(function(q){ return q.j === p.j; }) === i;
+      const 자리들 = {};
+      [['최고', 최고], ['최저', 최저], ['현재', 현재]].forEach(function(짝){
+        const key = 짝[1].j;
+        if (!자리들[key]) 자리들[key] = { p: 짝[1], 이름들: [] };
+        자리들[key].이름들.push(짝[0]);
       });
-      찍을점.forEach(function(p){
+      Object.keys(자리들).forEach(function(key){
+        const 항목 = 자리들[key], p = 항목.p;
         const x = X(p.j), y = Y(p.y);
-        const 아래로 = y < H * 0.22;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
-        const ty = 아래로 ? y + 22 : y - 10;
+        const 아래로 = y < H * 0.3;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
+        const numY = 아래로 ? y + 22 : y - 10;
+        const capY = 아래로 ? y + 34 : y - 22;
+        /* 맨 왼쪽·맨 오른쪽 점은 글자를 가운데 정렬로 두면 그림 바깥으로
+           반쯤 삐져나간다. 카드를 나란히 붙여 두는 자리(경쟁사 비교 등)에서는
+           그 삐져나온 반쪽이 옆 카드 글자와 겹쳐 보인다. 양 끝만 안쪽으로
+           붙인다. */
+        const 정렬 = p.j === 0 ? 'start' : p.j === g.창.length - 1 ? 'end' : 'middle';
+        const tx = p.j === 0 ? x + 6 : p.j === g.창.length - 1 ? x - 6 : x;
         표식 += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + s.색 +
           '" stroke="#fff" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
-        표식 += '<text x="' + x.toFixed(1) + '" y="' + ty.toFixed(1) + '" font-size="17" text-anchor="middle" ' +
+        표식 += '<text x="' + tx.toFixed(1) + '" y="' + capY.toFixed(1) + '" font-size="10" text-anchor="' + 정렬 + '" ' +
+          'font-weight="600" fill="' + IND_MUTED + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
+          escapeHtml(항목.이름들.join('·')) + '</text>';
+        표식 += '<text x="' + tx.toFixed(1) + '" y="' + numY.toFixed(1) + '" font-size="17" text-anchor="' + 정렬 + '" ' +
           'font-weight="700" fill="' + s.색 + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
           escapeHtml(indNum(p.v, g.단위)) + '</text>';
       });
     });
     const svg = indPlot(g);
     return svg.slice(0, -'</svg>'.length) + 표식 + '</svg>';
+  }
+
+  /* 선이 셋 이상이면 indPlotMarked 를 안 쓴다. 표식은 선 하나에 최고·최저·현재
+     셋을 찍으므로 시장지표 카드(HOME_IND, 대부분 한두 선)에서는 읽히지만,
+     경쟁사를 여럿 겹친 그래프에 그대로 쓰면 선마다 표식이 붙어 값이 비슷한
+     자리에서 글자가 겹쳐 못 읽는다. 그럴 때는 표식 없는 기존 그림으로
+     돌아간다 — 호출한 쪽이 이 경우 위아래 축 눈금(ind-y hi/lo)을 다시 보여준다. */
+  function indMarkable(g){
+    return g.선들.length <= 2;
+  }
+  function indPlotAuto(g){
+    return indMarkable(g) ? indPlotMarked(g) : indPlot(g);
   }
 
   /* 범례 표식도 그래프와 같은 선 모양으로 그린다. 그래프는 점선인데 범례는
@@ -3378,7 +3407,8 @@
     let 그래프 = '';
     if (g && 펼침){
       /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
-         원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다. */
+         원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다.
+         이 눈금은 선이 셋 이상이라 최고·최저 표식을 못 찍을 때만 쓴다. */
       const 눈금 = function(v){ return g.여럿 ? String(Math.round(v)) : indNum(v) + (g.단위 || ''); };
       const 기준높이 = ind높이비율(g, 100) * 100;
       const 마지막 = g.창.length - 1;
@@ -3389,9 +3419,14 @@
                escapeHtml(R.눈(g.창[j])) + '</span>';
       }).join('');
       그래프 =
-        '<div class="ind-chart">' + indPlot(g) +
-          '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
-          '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
+        /* 축 위아래 눈금(ind-y hi/lo)은 선이 한둘일 때만 뺀다. 시장지표
+           카드와 같은 표식을 쓰면서부터 그 눈금이 있던 자리(그림 모서리)에
+           최고·최저 표식이 겹쳐 찍히는 경우가 흔했다 — 겹치면 둘 다 못
+           읽는다. 실제 값은 표식과 목록에 이미 있으니 잃는 것이 없다. */
+        '<div class="ind-chart">' + indPlotAuto(g) +
+          (indMarkable(g) ? '' :
+            '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
+            '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>') +
           (g.여럿 && 기준높이 > 6 && 기준높이 < 94
             ? '<span class="ind-y base" style="top:' + 기준높이.toFixed(1) + '%;">100</span>' : '') +
           '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
@@ -4519,8 +4554,13 @@
   let compOld = {};            // 블록마다 옛 부문까지 펼쳐 보는지
   let compGraph = {};          // 커서·표·엑셀이 값을 꺼내 쓰는 그래프
 
-  /* 한 블록 안의 부문을 가르는 색. 붉은색은 적자에만 쓰므로 여기엔 없다. */
-  const COMP_색 = ['#35566B', '#6E8CA0', '#4A6B5A', '#8A7B6B', '#9AAFBD', '#B0A090', '#5E6B7A'];
+  /* 한 블록 안의 부문을 가르는 색. 시장지표(IND_COLORS)와 같은 순서를 그대로
+     쓰되 맨 앞 붉은색만 뺐다 — 붉은색은 적자와 우리 계열사 강조(COMP_우리편색)
+     에만 쓰므로 여기 섞이면 안 된다. 두 화면이 서로 다른 팔레트를 쓰면 같은
+     회사를 시장지표에서 본 색과 경쟁사현황에서 본 색이 갈려 헷갈린다. 순서를
+     그대로 이어받은 것은 색각 이상에서도 이웃한 색이 갈리도록 짠 차례이기
+     때문이다(IND_COLORS 위 설명 참고). */
+  const COMP_색 = IND_COLORS.slice(1);
 
   /* 분기는 'YYYYQn' 한 가지 꼴로만 받는다. 글자 크기순 정렬이 곧 시간순이라
      날짜로 바꾸는 일이 없다. 축에는 '25.3Q'로 줄여 적는다 — 눈금이 예닐곱 개라
@@ -4852,9 +4892,13 @@
           (g.여럿 ? ' <em>· ' + escapeHtml(R눈(g, g.기준칸 || g.창[0])) + ' = 100</em>' : '') +
           '</div>'
         : '') +
-      '<div class="ind-chart" data-g="' + escapeHtml(그래프열쇠) + '">' + indPlot(g) +
-        '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
-        '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>' +
+      /* 축 위아래 눈금(ind-y hi/lo)은 선이 한둘일 때만 뺀다. indDraw 와
+         같은 까닭이다 — 셋 이상이면 표식을 안 찍으므로(indPlotAuto) 눈금이
+         그대로 있어야 그림의 크기를 가늠할 수 있다. */
+      '<div class="ind-chart" data-g="' + escapeHtml(그래프열쇠) + '">' + indPlotAuto(g) +
+        (indMarkable(g) ? '' :
+          '<span class="ind-y hi">' + escapeHtml(눈금(g.hi)) + '</span>' +
+          '<span class="ind-y lo">' + escapeHtml(눈금(g.lo)) + '</span>') +
         (영선 ? '<span class="comp-zero" style="top:' + 영높이.toFixed(1) + '%;"></span>' +
                 '<span class="ind-y base" style="top:' + 영높이.toFixed(1) + '%;">0</span>' +
                 '<span class="comp-loss" style="top:' + 영높이.toFixed(1) + '%;">적자</span>' : '') +
@@ -7935,7 +7979,7 @@
       const g = indBuild(items, R, indStyles(items));
       indGraph[열쇠] = g;   // 커서가 여기서 값을 꺼내 쓴다(그래프커서 참고)
       const 그래프 = g
-        ? '<div class="ind-chart">' + indPlotMarked(g) +
+        ? '<div class="ind-chart">' + indPlotAuto(g) +
             '<span class="ind-dots"></span><span class="ind-guide"></span><div class="ind-tip"></div>' +
           '</div>'
         : '<div class="empty-note" style="padding:0;">그래프 자료 없음</div>';
