@@ -787,6 +787,7 @@
   .ind-leg-t{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
   .ind-leg-t b{font-size:13px; font-weight:700; letter-spacing:-.02em;}
   .ind-leg-w{font-size:11px; color:var(--muted); line-height:1.45; margin-top:1px; opacity:.85;}
+  .ind-leg-meta{font-size:10.5px; color:var(--muted); line-height:1.4; margin-top:3px; opacity:.7;}
   .ind-leg-v{flex:none; text-align:right; padding-left:6px;}
   .ind-leg-v .val{font-size:19px; font-weight:800; letter-spacing:-.03em; line-height:1.2;}
   .ind-leg-v .val span{font-size:11.5px; font-weight:600; color:var(--muted); margin-left:2px;}
@@ -890,6 +891,9 @@
   .upd-msg{font-size:11px; font-weight:600; margin-top:6px; line-height:1.5;}
   .upd-msg.ok{color:var(--green);}
   .upd-msg.bad{color:var(--danger);}
+  /* line-row가 flex-wrap이라, 버튼 뒤에 붙는 이 안내는 flex-basis:100%로
+     늘 새 줄로 내려 버튼 폭에 눌려 잘리지 않게 한다. */
+  .upd-scope-note{flex-basis:100%; font-size:10.5px; color:var(--muted); line-height:1.4; opacity:.75;}
 
   .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
             padding-top:8px; border-top:1px solid var(--line);}
@@ -3345,6 +3349,22 @@
            (말 ? '<em>' + 말 + '</em>' : '') + '</span>';
   }
 
+  /* 지표마다 "출처·주기·수집기간·마지막 수집"을 한 줄로 보여준다. 서버가
+     새 필드를 보내지 않아도 되게, 이미 그래프가 쓰고 있는 시계열(x.범위[k].흐름)의
+     첫 점과 끝 점 날짜에서 수집기간·마지막 수집을 그대로 구한다.
+     주기처럼 지금 서버 응답에 아예 없는 값은 '확인 필요'라고 적는다 —
+     있는 척하지 않는다. */
+  function indPeriodLabel(x, R){
+    const b = x.범위 && x.범위[R.k];
+    const 흐름 = (b && b.흐름) || [];
+    const 출처 = x.출처 || '확인 필요';
+    const 주기 = x.주기 || '확인 필요';
+    if (!흐름.length) return 출처 + ' · ' + 주기;
+    const 시작 = 흐름[0].d;
+    const 끝 = b.최신일 || 흐름[흐름.length - 1].d;
+    return 출처 + ' · ' + 주기 + ' · 수집기간 ' + 시작 + '~' + 끝 + ' · 마지막 수집 ' + 끝;
+  }
+
   function indBlock(그룹명, items, 열쇠){
     /* 어떤 기간을 고를 수 있는지는 지표가 정한다. 기준금리는 한국은행이
        일 단위로 내주지 않아서 일별이 아예 없다 — 누를 수 있게 해놓고 빈
@@ -3411,6 +3431,7 @@
             (x.선행개월 > 0 ? '<span class="ind-lead">선행 ' + x.선행개월 + '개월</span>' : '') +
           '</div>' +
           (x.설명 ? '<div class="ind-leg-w">' + escapeHtml(x.설명) + '</div>' : '') +
+          '<div class="ind-leg-meta">' + escapeHtml(indPeriodLabel(x, R)) + '</div>' +
         '</div>' +
         '<div class="ind-leg-v">' +
           (b ? '<div class="val">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>' + indChgHtml(b)
@@ -3840,7 +3861,12 @@
       if (!pw) return;
     }
 
-    const 이름 = 대상 === '지표' ? '시장 지표' : '계열사·경쟁사 실적';
+    /* 이 요청에는 coTab(지금 보고 있는 계열사)이 안 실린다 — 그래서
+       "이 계열사만"이 아니라 대상(지표/경쟁사) 전체를 다시 받는 것으로
+       안내한다. 실제로 어느 시트부터 어디까지, 언제 시점부터 다시
+       받는지는 n8n 워크플로 로직을 확인해야 정확히 알 수 있다(아직 못
+       봤다 — Phase 1-C). */
+    const 이름 = 대상 === '지표' ? '시장 지표 마스터 시트 전체(공통·계열사 전부)' : '계열사·경쟁사 실적 시트 전체';
     /* 같은 대상 버튼이 화면 둘에 있다(그룹 실적·경쟁사 성과). 하나를 누르면
        둘 다 잠가야 두 번 돌리지 않는다. */
     const 같은것 = Array.prototype.slice.call(
@@ -3884,6 +3910,25 @@
   document.addEventListener('click', function (e){
     const b = e.target.closest('.upd-btn');
     if (b) 업데이트누름(b);
+  });
+
+  /* 「↻ 업데이트」 버튼이 정확히 무엇을 하는지 몰라 눌러도 불안하다는
+     지적이 있었다. 버튼이 실제로 보내는 요청(RUN_URL, {code, pw, 대상})에는
+     지금 보고 있는 계열사가 안 실리므로, 그 대상(지표/경쟁사) 전체를 다시
+     받는 것이다. 어느 시점부터 받는지는 n8n 워크플로를 읽어야 정확히 알 수
+     있어 지금은 "확인하지 못했다"고 그대로 적는다(Phase 1-C에서 확인 후
+     이 문구를 사실대로 바꾼다). */
+  const UPD_설명 = {
+    지표: '시장 지표 마스터 시트(공통·계열사 7개) 전체를 다시 받습니다. 어느 시점부터 다시 받는지는 아직 확인하지 못했습니다.',
+    경쟁사: '계열사·경쟁사 실적 시트 전체를 다시 받습니다. 어느 시점부터 다시 받는지는 아직 확인하지 못했습니다.'
+  };
+  document.querySelectorAll('.upd-btn').forEach(function (b){
+    const 설명 = UPD_설명[b.dataset.update];
+    if (!설명) return;
+    const 자리 = document.createElement('div');
+    자리.className = 'upd-scope-note';
+    자리.textContent = 설명;
+    b.insertAdjacentElement('afterend', 자리);
   });
 
   /* ---------- 소송 사건 원장 · 책임 배분 ---------- */
@@ -7212,11 +7257,29 @@
           '<label class="check-option' + (c.이메일알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-news"' + (c.이메일알림 ? ' checked' : '') + '><div class="opt-text">키워드 뉴스 포함</div></label>' +
           '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">자동수집(주단위)</div></label>' +
         '</div>' +
-        '<div class="disc-row-actions"><button type="button" class="upd-btn mgmt-save-btn">저장</button></div>' +
+        '<div class="disc-row-actions">' +
+          '<button type="button" class="upd-btn mgmt-save-btn">저장</button>' +
+          '<button type="button" class="ghost-btn mgmt-update-btn" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">업데이트 반영</button>' +
+        '</div>' +
         '<div class="upd-msg mgmt-save-msg"></div>' +
       '</div>';
     }).join('');
   }
+
+  /* 「업데이트 반영」은 위 「공시수집기」 검색·기간선택·저장 흐름을 그대로
+     빌린다. 회사를 이름으로 다시 찾게 하지 않고 discPicked를 바로 채워
+     같은 카드(discPickedCard→discResultCard)를 그 회사로 열어 준다. 새
+     컴포넌트를 만들지 않는다 — 기간선택·저장·중복 표시가 전부 이미 거기
+     있다. */
+  document.getElementById('mgmtList').addEventListener('click', function (e){
+    const btn = e.target.closest('.mgmt-update-btn');
+    if (!btn) return;
+    discPicked = { corp_code: btn.dataset.corp, 회사명: btn.dataset.name };
+    document.getElementById('discPickedCard').style.display = '';
+    document.getElementById('discResultCard').style.display = 'none';
+    document.getElementById('discPicked').textContent = discPicked.회사명 + ' (' + discPicked.corp_code + ')';
+    document.getElementById('discPickedCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   document.getElementById('mgmtToggleBtn').addEventListener('click', function (){
     mgmtOpened = !mgmtOpened;
