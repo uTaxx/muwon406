@@ -7,8 +7,10 @@ name: 매매 대상 종목 갱신
 # 매주 일요일 밤(한국시간 월요일 새벽)에 돌려 새 주가 시작되기 전에 갱신한다.
 
 on:
-  schedule:
-    - cron: "0 15 * * 0" # 일요일 15:00 UTC = 월요일 00:00 KST
+  # 자동 실행 중단(2026-09-21). 기존 트레이딩 시스템 전체를 멈췄다.
+  # workflow_dispatch는 남겨 뒀으므로 손으로는 언제든 돌릴 수 있다.
+  # schedule:
+  #   - cron: "0 15 * * 0" # 일요일 15:00 UTC = 월요일 00:00 KST
   workflow_dispatch:
     inputs:
       kind:
