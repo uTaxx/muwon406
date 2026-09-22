@@ -3208,7 +3208,11 @@
     const X = function(j){ return g.창.length > 1 ? (j / (g.창.length - 1)) * W : W / 2; };
     const Y = function(v){ return ind높이비율(g, v) * H; };
 
-    let 표식 = '';
+    /* 자리마다 쓸 표식 후보를 먼저 다 모은다. 정확히 같은 칸(j)이면 값도
+       같으니 이름만 합치고, 칸이 다르면 값도 다르니 합칠 수 없다 — 예를
+       들어 최고점 바로 다음 칸이 현재값이면 둘은 화면에서 거의 붙어
+       보이는데 숫자는 다르다. */
+    const 후보 = [];
     g.선들.forEach(function(s){
       if (!s.pts.length) return;
       let 최고 = s.pts[0], 최저 = s.pts[0];
@@ -3220,30 +3224,53 @@
       const 자리들 = {};
       [['최고', 최고], ['최저', 최저], ['현재', 현재]].forEach(function(짝){
         const key = 짝[1].j;
-        if (!자리들[key]) 자리들[key] = { p: 짝[1], 이름들: [] };
+        if (!자리들[key]) 자리들[key] = { p: 짝[1], 이름들: [], 색: s.색 };
         자리들[key].이름들.push(짝[0]);
       });
-      Object.keys(자리들).forEach(function(key){
-        const 항목 = 자리들[key], p = 항목.p;
-        const x = X(p.j), y = Y(p.y);
-        const 아래로 = y < H * 0.3;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
-        const numY = 아래로 ? y + 22 : y - 10;
-        const capY = 아래로 ? y + 34 : y - 22;
-        /* 맨 왼쪽·맨 오른쪽 점은 글자를 가운데 정렬로 두면 그림 바깥으로
-           반쯤 삐져나간다. 카드를 나란히 붙여 두는 자리(경쟁사 비교 등)에서는
-           그 삐져나온 반쪽이 옆 카드 글자와 겹쳐 보인다. 양 끝만 안쪽으로
-           붙인다. */
-        const 정렬 = p.j === 0 ? 'start' : p.j === g.창.length - 1 ? 'end' : 'middle';
-        const tx = p.j === 0 ? x + 6 : p.j === g.창.length - 1 ? x - 6 : x;
-        표식 += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + s.색 +
-          '" stroke="#fff" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
-        표식 += '<text x="' + tx.toFixed(1) + '" y="' + capY.toFixed(1) + '" font-size="10" text-anchor="' + 정렬 + '" ' +
-          'font-weight="600" fill="' + IND_MUTED + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
-          escapeHtml(항목.이름들.join('·')) + '</text>';
-        표식 += '<text x="' + tx.toFixed(1) + '" y="' + numY.toFixed(1) + '" font-size="17" text-anchor="' + 정렬 + '" ' +
-          'font-weight="700" fill="' + s.색 + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
-          escapeHtml(indNum(p.v, g.단위)) + '</text>';
-      });
+      Object.keys(자리들).forEach(function(key){ 후보.push(자리들[key]); });
+    });
+
+    /* 칸이 달라도 화면 위치(픽셀)가 가까우면 글자가 겹쳐 찍힌다. 뒤에
+       놓이는 표식을 한 단씩 세로로 밀어내 겹치지 않게 한다. 픽셀 자리는
+       한 번만 계산해 붙여 둔다. */
+    후보.forEach(function(항목){
+      항목.x = X(항목.p.j);
+      항목.y = Y(항목.p.y);
+    });
+    후보.sort(function(a, b){ return a.x - b.x; });
+    const 겹침거리 = 55;
+    후보.forEach(function(항목, i){
+      let 단 = 0;
+      for (let k = 0; k < i; k++){
+        const 먼저 = 후보[k];
+        if (Math.abs(먼저.x - 항목.x) < 겹침거리 && Math.abs(먼저.y - 항목.y) < 겹침거리){
+          단 = Math.max(단, (먼저.단 || 0) + 1);
+        }
+      }
+      항목.단 = 단;
+    });
+
+    let 표식 = '';
+    후보.forEach(function(항목){
+      const p = 항목.p, x = 항목.x, y = 항목.y;
+      const 아래로 = y < H * 0.3;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
+      const 밈 = 항목.단 * 24 * (아래로 ? 1 : -1);
+      const numY = (아래로 ? y + 22 : y - 10) + 밈;
+      const capY = (아래로 ? y + 34 : y - 22) + 밈;
+      /* 맨 왼쪽·맨 오른쪽 점은 글자를 가운데 정렬로 두면 그림 바깥으로
+         반쯤 삐져나간다. 카드를 나란히 붙여 두는 자리(경쟁사 비교 등)에서는
+         그 삐져나온 반쪽이 옆 카드 글자와 겹쳐 보인다. 양 끝만 안쪽으로
+         붙인다. */
+      const 정렬 = p.j === 0 ? 'start' : p.j === g.창.length - 1 ? 'end' : 'middle';
+      const tx = p.j === 0 ? x + 6 : p.j === g.창.length - 1 ? x - 6 : x;
+      표식 += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + 항목.색 +
+        '" stroke="#fff" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
+      표식 += '<text x="' + tx.toFixed(1) + '" y="' + capY.toFixed(1) + '" font-size="10" text-anchor="' + 정렬 + '" ' +
+        'font-weight="600" fill="' + IND_MUTED + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
+        escapeHtml(항목.이름들.join('·')) + '</text>';
+      표식 += '<text x="' + tx.toFixed(1) + '" y="' + numY.toFixed(1) + '" font-size="17" text-anchor="' + 정렬 + '" ' +
+        'font-weight="700" fill="' + 항목.색 + '" paint-order="stroke" stroke="#fff" stroke-width="3">' +
+        escapeHtml(indNum(p.v, g.단위)) + '</text>';
     });
     const svg = indPlot(g);
     return svg.slice(0, -'</svg>'.length) + 표식 + '</svg>';
