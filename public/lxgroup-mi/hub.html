@@ -1786,9 +1786,7 @@
       <div class="step-desc" id="coPerfHeadDesc"></div>
       <div class="line-row">
         <div class="ind-asof" id="coPerfAsOf">불러오는 중…</div>
-        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
       </div>
-      <div class="upd-msg"></div>
       <div class="ind-grid" id="coPerfBody"></div>
       <div class="empty-note" id="coPerfEmpty" style="display:none;"></div>
     </section>
@@ -1802,7 +1800,6 @@
       <div class="step-desc" id="compHeadDesc"></div>
       <div class="line-row">
         <div class="ind-asof" id="compAsOf">불러오는 중…</div>
-        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
       </div>
       <div class="ind-grid" id="compBody"></div>
       <div class="empty-note" id="compEmpty" style="display:none;"></div>
@@ -1921,9 +1918,7 @@
       <div class="step-desc" id="groupHeadDesc"></div>
       <div class="line-row">
         <div class="ind-asof" id="groupAsOf">불러오는 중…</div>
-        <button type="button" class="upd-btn" data-update="경쟁사">↻ 업데이트</button>
       </div>
-      <div class="upd-msg"></div>
       <div class="ind-grid" id="groupBody"></div>
       <div class="empty-note" id="groupEmpty" style="display:none;"></div>
       <div class="word-hint" id="groupGap" style="display:none;"></div>
@@ -3867,13 +3862,12 @@
     }
 
     /* 이 요청에는 coTab(지금 보고 있는 계열사)이 안 실린다 — 그래서
-       "이 계열사만"이 아니라 대상(지표/경쟁사) 전체를 다시 받는 것으로
-       안내한다. LXGroup_지표수집을 직접 확인했다(2026-09-17, Phase 1-C):
-       이미 값이 있는 지표는 최근 구간만 보충하고, 새로 등록된 지표만
-       전체 기간을 받는다. */
-    const 이름 = 대상 === '지표' ? '시장 지표(ECOS·FRED·관세청·KOSIS) 전체' : '계열사·경쟁사 실적 시트 전체';
-    /* 같은 대상 버튼이 화면 둘에 있다(그룹 실적·경쟁사 성과). 하나를 누르면
-       둘 다 잠가야 두 번 돌리지 않는다. */
+       "이 계열사만"이 아니라 대상 전체를 다시 받는 것으로 안내한다.
+       LXGroup_지표수집을 직접 확인했다(2026-09-17, Phase 1-C): 이미 값이
+       있는 지표는 최근 구간만 보충하고, 새로 등록된 지표만 전체 기간을
+       받는다. 경쟁사 실적은 2026-09-22에 이 버튼에서 빠지고 회사 블록별
+       「최신 공시 반영」 버튼으로 옮겼다(공시반영시작). */
+    const 이름 = '시장 지표(ECOS·FRED·관세청·KOSIS) 전체';
     const 같은것 = Array.prototype.slice.call(
       document.querySelectorAll('.upd-btn[data-update="' + 대상 + '"]'));
     같은것.forEach(function (b){ b.disabled = true; });
@@ -3919,16 +3913,15 @@
 
   /* 「↻ 업데이트」 버튼이 정확히 무엇을 하는지 몰라 눌러도 불안하다는
      지적이 있었다. 버튼이 실제로 보내는 요청(RUN_URL, {code, pw, 대상})에는
-     지금 보고 있는 계열사가 안 실리므로, 그 대상(지표/경쟁사) 전체를 다시
-     받는 것이다. 어느 시점부터 받는지는 n8n 워크플로를 읽어야 정확히 알 수
-     있어 지금은 "확인하지 못했다"고 그대로 적는다(Phase 1-C에서 확인 후
-     이 문구를 사실대로 바꾼다). */
+     지금 보고 있는 계열사가 안 실리므로, 그 대상 전체를 다시 받는 것이다.
+     지표는 유일하게 남은 대상이라 여기서 그대로 설명한다.
+     경쟁사 실적은 회사 블록마다 있는 「최신 공시 반영」 버튼으로 옮겼다
+     (2026-09-22) — 그 회사만 골라 처리하므로 전체를 다시 받을 필요가 없다. */
   /* 2026-09-17에 LXGroup_지표수집 워크플로를 직접 열어 확인한 내용이다.
      새 지표는 등록 즉시 전체 기간을 받고, 이미 값이 있는 지표는 최근
      구간만 채운다 — 그래서 "전체를 다시 받는다"고 안내하면 안 된다. */
   const UPD_설명 = {
-    지표: '시장 지표(ECOS·FRED·관세청·KOSIS) 전체를 다시 확인합니다. 이미 값이 있는 지표는 최근 구간만 보충하고, 처음 등록된 지표만 전체 기간을 받습니다. 매주 금요일 08:00에도 같은 방식으로 자동 실행됩니다.',
-    경쟁사: '계열사·경쟁사 실적 시트 전체를 다시 받습니다.'
+    지표: '시장 지표(ECOS·FRED·관세청·KOSIS) 전체를 다시 확인합니다. 이미 값이 있는 지표는 최근 구간만 보충하고, 처음 등록된 지표만 전체 기간을 받습니다. 매주 금요일 08:00에도 같은 방식으로 자동 실행됩니다.'
   };
   document.querySelectorAll('.upd-btn').forEach(function (b){
     const 설명 = UPD_설명[b.dataset.update];
