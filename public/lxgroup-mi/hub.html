@@ -2065,6 +2065,9 @@
      매달 구글 드라이브 공개 파일로 내보내 둔다. 파일 아이디는 손으로
      채운다(운영설정 시트의 DART_LISTED_FILE_ID·DART_UNLISTED_FILE_ID와 같은 값). */
   const DISCCOLL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-공시수집기');
+  /* 계열사·경쟁사 실적 블록의 「최신 공시 반영」 버튼. 서버가 공시검색·db저장·
+     실적추출을 그 회사분만 순서대로 다 하고 돌아온다 — 여기서는 부르기만 한다. */
+  const PERF_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실적반영');
   const DART_LISTED_URL = 'https://www.googleapis.com/drive/v3/files/1YW3bleWHqmLlt4J52APqXlgWSiFO-pio?alt=media&key=' + ARTICLES_STATIC_API_KEY;
   const DART_UNLISTED_URL = 'https://www.googleapis.com/drive/v3/files/1FD3NiCjGD0zNVDW7W_kR4YD0EsmwgU0H?alt=media&key=' + ARTICLES_STATIC_API_KEY;
   const LABEL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-라벨');
@@ -5395,8 +5398,9 @@
       ? '전사 합계 · 부문 ' + 실부문들.length + '개'
       : comp부문이름((실부문들[0] || {}).x || 것들[0]);
 
+    const corp_code = String((것들[0] || {}).corp_code || '').trim();
     return '<div class="ind-block" data-blk="' + escapeHtml(열쇠) + '"' +
-        ' data-hoesa="' + escapeHtml(회사) + '">' +
+        ' data-hoesa="' + escapeHtml(회사) + '" data-corp="' + escapeHtml(corp_code) + '">' +
       '<div class="ind-bhead">' +
         '<b>' + escapeHtml(회사) + '</b>' +
         '<span>' + escapeHtml(수집기간) + (수집기간 ? ' · ' : '') + escapeHtml(부문말) + ' · DART 공시</span>' +
@@ -5404,6 +5408,7 @@
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
         '<button type="button" class="xls-btn" data-xls="1">⬇ 원본 엑셀</button>' +
+        (corp_code ? '<button type="button" class="xls-btn comp-refresh-btn">🔄 최신 공시 반영</button>' : '') +
       '</div>' +
       그래프 + 목록 + 옛부문버튼 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
@@ -5945,6 +5950,9 @@
   /* 경쟁사 성과와 그룹 실적이 같은 블록을 쓰므로 누름도 같이 쓴다. 어느 쪽을
      다시 그릴지만 다르다. */
   function comp누름(e, 다시그리기){
+    const 새로고침 = e.target.closest('button.comp-refresh-btn');
+    if (새로고침){ 공시반영시작(새로고침); return; }
+
     const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls], button[data-old]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
@@ -7202,6 +7210,46 @@
       document.getElementById('discBatchSaveBtn').disabled = true;
       discSaveBatchRun(남음, code, pw, 계열사);
     });
+  }
+
+  /* 경쟁사 현황·실적 현황·그룹 실적 블록의 「최신 공시 반영」 버튼. 공시수집기
+     탭을 따로 열어 회사를 다시 찾고 기간을 고르는 대신, 지금 보고 있는 회사의
+     corp_code로 곧장 서버(LXGroup_실적반영)에 맡긴다. 서버가 공시검색·
+     db저장·그 회사만의 실적추출을 순서대로 다 하고 돌아오므로, 여기서는
+     요청만 보내고 몇 분 뒤 화면을 다시 불러온다. */
+  function 공시반영시작(버튼){
+    const 블록 = 버튼.closest('.ind-block');
+    const corp_code = 블록 ? 블록.dataset.corp : '';
+    const 회사명 = 블록 ? 블록.dataset.hoesa : '';
+    if (!corp_code || !회사명) return;
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt(회사명 + '의 최신 공시를 찾아 저장하고 반영합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+    const 원래 = 버튼.textContent;
+    버튼.disabled = true;
+    버튼.textContent = '반영 요청 중…';
+    fetch(PERF_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, pw: pw, corp_code: corp_code, 회사명: 회사명 }) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '반영 요청을 보내지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        alert(r.d.message || (회사명 + ' 최신 공시 반영을 시작했습니다.'));
+        /* 검색·저장·추출을 다 거치므로 기존 「전체 갱신」보다 여유를 둔다. */
+        setTimeout(function (){ 버튼.disabled = false; 버튼.textContent = 원래; loadComp(true); }, 120000);
+      })
+      .catch(function (err){
+        버튼.disabled = false;
+        버튼.textContent = 원래;
+        alert(오류메시지(err, '공시 반영'));
+      });
   }
 
   /* ---------- 기업 관리 ----------
