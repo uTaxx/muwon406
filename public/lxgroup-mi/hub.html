@@ -785,6 +785,10 @@
   /* 표식은 점이 아니라 선 조각이다. 아래 그래프의 선과 짝지으라는
      뜻이 점보다 훨씬 빨리 읽힌다. */
   .ind-leg > i{flex:none; width:16px; height:0; background:none; margin-top:9px;}
+  /* 항목 둘 이상인 목록에만 단다. 체크를 끄면 그 선만 그래프·표에서 빠지고
+     목록에는 그대로 남는다. */
+  .ind-leg-chk{flex:none; margin-top:5px; cursor:pointer;}
+  .ind-leg-chk input{display:block; width:15px; height:15px; margin:0; cursor:pointer; accent-color:var(--green);}
   .ind-leg-b{flex:1 1 190px; min-width:0;}
   .ind-leg-t{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
   .ind-leg-t b{font-size:13px; font-weight:700; letter-spacing:-.02em;}
@@ -3233,6 +3237,19 @@
     return indMarkable(g) ? indPlotMarked(g) : indPlot(g);
   }
 
+  /* 그래프 항목 보이기·숨기기. 목록 줄마다 체크박스를 달아, 끄면 그 줄의
+     값은 그래프(와 표)에서 빠지고 목록에는 그대로 남는다. 시장 지표·경쟁사
+     현황·실적 현황이 전부 이 하나의 상태를 같은 방식으로 쓴다. 블록 열쇠와
+     항목 이름을 묶은 값이 키다 — 항목 이름은 한 블록 안에서 겹치지 않는다
+     (목록 자체가 그 이름으로 사람이 항목을 구별하는 자리이기 때문이다). */
+  let 그래프숨김 = {};
+  function 그래프체크박스(열쇠, 이름){
+    const 키 = 열쇠 + '@' + 이름;
+    const 숨김 = 그래프숨김[키] === true;
+    return '<label class="ind-leg-chk" title="그래프에 표시"><input type="checkbox" class="graph-vis-chk" data-vis-key="' +
+      escapeHtml(키) + '"' + (숨김 ? '' : ' checked') + '></label>';
+  }
+
   /* 범례 표식도 그래프와 같은 선 모양으로 그린다. 그래프는 점선인데 범례는
      실선이면 짝을 못 짓는다. */
   function indSwatch(색, 점선){
@@ -3418,13 +3435,18 @@
     /* 선 모양은 접혀 있어도 미리 정한다. 범례 표식이 그래프를 펼치는 순간
        바뀌면 같은 지표를 다시 찾아야 한다. */
     const 스타일 = indStyles(items);
-    const g = (펼침 || 표펼침) ? indBuild(items, R, 스타일) : null;
+    /* 지표가 둘 이상이면 목록마다 체크박스를 달아 그래프에서 뺄 수 있게 한다.
+       지표 하나뿐인 블록은 뺄 대상이 없으므로 체크박스를 안 단다. */
+    const 여러개 = items.length > 1;
+    const 보일것 = 여러개 ? items.filter(function(x){ return !그래프숨김[열쇠 + '@' + x.이름]; }) : items;
+    const g = (펼침 || 표펼침) ? indBuild(보일것, R, 스타일) : null;
     indGraph[열쇠] = g;   // 커서·표·엑셀이 여기서 값을 꺼내 쓴다
 
     const 목록 = items.map(function(x, i){
       const b = x.범위 && x.범위[R.k];
       const st = 스타일.표[x.id] || { 색: IND_COLORS[i % IND_COLORS.length], 점선: '' };
       return '<div class="ind-leg' + (b ? '' : ' off') + '">' +
+        (여러개 ? 그래프체크박스(열쇠, x.이름) : '') +
         indSwatch(st.색, st.점선) +
         '<div class="ind-leg-b">' +
           '<div class="ind-leg-t"><b>' + escapeHtml(x.이름) + '</b>' +
@@ -3443,7 +3465,9 @@
     /* g 는 표만 켜도 만들어진다(표가 g 의 값을 쓴다). 그래서 그래프를 그릴지는
        g 가 있느냐가 아니라 그래프 토글이 켜졌느냐로 정해야 한다. */
     let 그래프 = '';
-    if (g && 펼침){
+    if (!g && 펼침 && 여러개 && !보일것.length){
+      그래프 = '<div class="ind-note">체크박스를 전부 꺼서 그릴 선이 없습니다.</div>';
+    } else if (g && 펼침){
       /* 지수는 소수점이 아무 뜻이 없다. 위아래 눈금은 여백까지 더한 경계라
          원래 소수 둘째 자리까지 나오는데, 읽는 사람에게는 잡음일 뿐이다.
          이 눈금은 선이 셋 이상이라 최고·최저 표식을 못 찍을 때만 쓴다. */
@@ -3659,6 +3683,12 @@
      건설수주는 연도별로 두고 싶은 것이 자연스럽다. */
   ['indBody', 'indCommonBody'].forEach(function (칸){
   document.getElementById(칸).addEventListener('click', function(e){
+    const 체크 = e.target.closest('input.graph-vis-chk');
+    if (체크){
+      그래프숨김[체크.dataset.visKey] = !체크.checked;
+      indDraw();
+      return;
+    }
     const b = e.target.closest('button[data-range], button[data-cur], button[data-view], button[data-xls]');
     if (!b || b.disabled) return;
     const 통 = b.closest('.ind-block');
@@ -5261,13 +5291,16 @@
     const 골 = (옛것.length && !옛펼침)
       ? 온골.filter(function (c){ return 옛것.indexOf(c) < 0; })
       : 온골;
-    const 보인것들 = 골.map(function (c){ return c.x; });
+    /* 체크박스로 뺀 부문은 목록에는 그대로 두고 그래프·표에서만 뺀다. */
+    const 여러개 = 골.length > 1;
+    const 보일골 = 여러개 ? 골.filter(function (c){ return !그래프숨김[열쇠 + '@' + c.이름]; }) : 골;
+    const 보인것들 = 보일골.map(function (c){ return c.x; });
 
     const 지표들 = [보기];
     const 창 = (펼침 || 표펼침) ? compWindow(보인것들, 지표들, R) : null;
     const 짝들 = (펼침 || 표펼침)
       ? 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창);
+          const g = compBuild(보일골, k, R, 창);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
         })
@@ -5284,6 +5317,7 @@
       const 끝 = compLatest(x, 주지표, R);
       const 단위 = compUnit(x, 주지표);
       return '<div class="ind-leg' + (끝 ? '' : ' off') + '">' +
+        (여러개 ? 그래프체크박스(열쇠, c.이름) : '') +
         indSwatch(c.색, '') +
         '<div class="ind-leg-b">' +
           '<div class="ind-leg-t"><b>' + escapeHtml(c.이름) + '</b></div>' +
@@ -5322,7 +5356,7 @@
         /* 막대는 실제 값이어야 한다(지수 막대는 높이가 아무 뜻도 없다).
            그래서 지표들을 민낯으로 한 번 더 만든다. */
         const 민 = 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창, true);
+          const g = compBuild(보일골, k, R, 창, true);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g };
         }).filter(function (p){ return p.g; });
@@ -5479,12 +5513,15 @@
     const 골 = 것들.map(function (x, i){
       return { x: x, 이름: x.회사명, 색: COMP_색[i % COMP_색.length] };
     });
+    /* 체크박스로 뺀 계열사는 목록에는 그대로 두고 그래프·표에서만 뺀다. */
+    const 여러개 = 골.length > 1;
+    const 보일골 = 여러개 ? 골.filter(function (c){ return !그래프숨김[열쇠 + '@' + c.이름]; }) : 골;
 
     const 지표들 = [보기];
-    const 창 = (펼침 || 표펼침) ? compWindow(것들, 지표들, R) : null;
+    const 창 = (펼침 || 표펼침) ? compWindow(보일골.map(function (c){ return c.x; }), 지표들, R) : null;
     const 짝들 = (펼침 || 표펼침)
       ? 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창);
+          const g = compBuild(보일골, k, R, 창);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
         })
@@ -5499,6 +5536,7 @@
       const 끝 = compLatest(x, 주지표, R);
       const 단위 = compUnit(x, 주지표);
       return '<div class="ind-leg' + (끝 ? '' : ' off') + '">' +
+        (여러개 ? 그래프체크박스(열쇠, c.이름) : '') +
         indSwatch(c.색, '') +
         '<div class="ind-leg-b"><div class="ind-leg-t"><b>' + escapeHtml(c.이름) + '</b></div></div>' +
         '<div class="ind-leg-v">' +
@@ -5524,7 +5562,7 @@
         그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다.</div>';
       } else if (모양 === '막대'){
         const 민 = 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창, true);
+          const g = compBuild(보일골, k, R, 창, true);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g };
         }).filter(function (p){ return p.g; });
@@ -5625,12 +5663,15 @@
       경쟁사색차례++;
       return 항목;
     });
+    /* 체크박스로 뺀 회사는 목록에는 그대로 두고 그래프·표에서만 뺀다. */
+    const 여러개 = 골.length > 1;
+    const 보일골 = 여러개 ? 골.filter(function (c){ return !그래프숨김[열쇠 + '@' + c.이름]; }) : 골;
 
     const 지표들 = [보기];
-    const 창 = (펼침 || 표펼침) ? compWindow(것들, 지표들, R) : null;
+    const 창 = (펼침 || 표펼침) ? compWindow(보일골.map(function (c){ return c.x; }), 지표들, R) : null;
     const 짝들 = (펼침 || 표펼침)
       ? 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창);
+          const g = compBuild(보일골, k, R, 창);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g, 열쇠: 열쇠 + '@' + k };
         })
@@ -5645,6 +5686,7 @@
       const 끝 = compLatest(x, 주지표, R);
       const 단위 = compUnit(x, 주지표);
       return '<div class="ind-leg' + (끝 ? '' : ' off') + '">' +
+        (여러개 ? 그래프체크박스(열쇠, c.이름) : '') +
         indSwatch(c.색, c.점선) +
         '<div class="ind-leg-b"><div class="ind-leg-t"><b>' + escapeHtml(c.이름) + '</b></div></div>' +
         '<div class="ind-leg-v">' +
@@ -5669,7 +5711,7 @@
         그래프 = '<div class="ind-note">이 기간에는 견줄 만한 자료가 아직 없습니다.</div>';
       } else if (모양 === '막대'){
         const 민 = 지표들.map(function (k){
-          const g = compBuild(골, k, R, 창, true);
+          const g = compBuild(보일골, k, R, 창, true);
           if (g){ g.칸눈 = 칸눈; g.기간이름 = 기간말; }
           return { 꼬리: k, g: g };
         }).filter(function (p){ return p.g; });
@@ -5945,6 +5987,13 @@
   function comp누름(e, 다시그리기){
     const 새로고침 = e.target.closest('button.comp-refresh-btn');
     if (새로고침){ 공시반영시작(새로고침); return; }
+
+    const 체크 = e.target.closest('input.graph-vis-chk');
+    if (체크){
+      그래프숨김[체크.dataset.visKey] = !체크.checked;
+      다시그리기();
+      return;
+    }
 
     const b = e.target.closest('button[data-range], button[data-metric], button[data-shape], button[data-view], button[data-xls], button[data-old]');
     if (!b || b.disabled) return;
