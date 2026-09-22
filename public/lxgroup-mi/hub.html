@@ -1775,7 +1775,7 @@
         <div class="dl-line">
           <input type="text" id="discQ" placeholder="회사명·보고서명 검색">
           <select id="discCorp"><option value="">회사 전체</option></select>
-          <label class="dl-chk"><input type="checkbox" id="discMine"> 계열사 공시만</label>
+          <label class="dl-chk"><input type="checkbox" id="discRival"> 경쟁사 공시 포함</label>
         </div>
         <div class="step-desc" id="discCount"></div>
         <div id="discList"></div>
@@ -6444,16 +6444,26 @@
       '</div><div class="dl-d">' + escapeHtml(딜날짜(x.일)) + '</div></div>';
   }
 
-  function 공시쓸것(){
+  /* 기본은 계열사 공시만 보여준다. 「경쟁사 공시 포함」을 켜야 등록된
+     경쟁사 공시까지 같이 보인다 — 범위(discRival)와 세부 조건(구분·회사·
+     검색어)을 나눈 것은, 위쪽 구분별 건수 버튼도 지금 범위(계열사만인지
+     경쟁사까지인지)는 따라야 하지만 지금 고른 구분·회사·검색어에 갇히면
+     안 되기 때문이다. */
+  function 공시범위(){
     const 짐 = discData[coTab];
     if (!짐) return [];
+    const 경쟁사포함 = !!(document.getElementById('discRival') || {}).checked;
+    return (짐.공시 || []).filter(function (x){
+      return 경쟁사포함 || x.관련 === '계열사';
+    });
+  }
+
+  function 공시쓸것(){
     const q = String((document.getElementById('discQ') || {}).value || '').trim().toLowerCase();
     const 회 = (document.getElementById('discCorp') || {}).value || '';
-    const 우리 = !!(document.getElementById('discMine') || {}).checked;
-    return (짐.공시 || []).filter(function (x){
+    return 공시범위().filter(function (x){
       if (discKind !== '전체' && x.구분 !== discKind) return false;
       if (회 && x.회사 !== 회) return false;
-      if (우리 && x.관련 !== '계열사') return false;
       if (q){
         const 글 = (String(x.회사 || '') + ' ' + String(x.보고서명 || '')).toLowerCase();
         if (글.indexOf(q) < 0) return false;
@@ -6475,7 +6485,8 @@
     /* 회사 이름을 「LX + 탭 이름」으로 지어 쓰지 않는다 — 시트에는 엘엑스판토스처럼
        적혀 있어 실제 이름과 어긋난다. */
     document.getElementById('discHeadDesc').textContent =
-      '이 계열사와 등록된 경쟁사가 DART 에 낸 공시입니다. 회사 이름을 누르면 공시 원문으로 갑니다.';
+      '이 계열사가 DART 에 낸 공시입니다. 「경쟁사 공시 포함」을 켜면 등록된 ' +
+      '경쟁사 공시도 같이 보입니다. 회사 이름을 누르면 공시 원문으로 갑니다.';
 
     if (!짐){
       때.textContent = discLoading[coTab] ? '불러오는 중…' : '공시를 불러오지 못했습니다.';
@@ -6486,15 +6497,22 @@
       return;
     }
 
-    때.textContent = 짐.총건수
-      ? 딜날짜(짐.처음) + ' ~ ' + 딜날짜(짐.마지막) + ' · ' +
-        (짐.총건수 || 0).toLocaleString() + '건' +
+    /* 위쪽 요약·구분별 건수·회사 선택은 전부 지금 범위(계열사만인지 경쟁사
+       포함인지)를 따른다. 서버가 준 총건수·구분별·회사별은 경쟁사까지 합친
+       값이라 그대로 쓰면 「경쟁사 공시 포함」을 꺼도 숫자가 안 줄어든다. */
+    const 범위 = 공시범위();
+    const 날짜들 = 범위.map(function (x){ return String(x.일 || '').trim(); }).filter(Boolean).sort();
+
+    때.textContent = 범위.length
+      ? 딜날짜(날짜들[0]) + ' ~ ' + 딜날짜(날짜들[날짜들.length - 1]) + ' · ' +
+        범위.length.toLocaleString() + '건' +
         (짐.asOf ? ' · ' + 짐.asOf + ' 기준' : '')
       : '아직 쌓인 공시가 없습니다.';
 
     /* 구분 버튼. 건수를 같이 적어 두면 어느 쪽을 눌러야 볼 것이 있는지
        누르기 전에 안다. 한 건도 없는 구분은 아예 세우지 않는다. */
-    const 셈 = 짐.구분별 || {};
+    const 셈 = {};
+    범위.forEach(function (x){ 셈[x.구분] = (셈[x.구분] || 0) + 1; });
     const 버튼 = function (k, n){
       return '<button type="button" class="dl-kind' + (discKind === k ? ' active' : '') +
         '" data-disc="' + escapeHtml(k) + '">' + escapeHtml(k) +
@@ -6502,14 +6520,15 @@
     };
     if (discKind !== '전체' && !셈[discKind]) discKind = '전체';
     document.getElementById('discKinds').innerHTML =
-      버튼('전체', 짐.총건수 || 0) +
+      버튼('전체', 범위.length) +
       DISC_KINDS.filter(function (k){ return 셈[k]; })
                 .map(function (k){ return 버튼(k, 셈[k]); }).join('');
 
-    /* 회사 선택은 받아온 것에 있는 회사만 넣는다. 고른 값은 다시 그려도
+    /* 회사 선택은 지금 범위에 있는 회사만 넣는다. 고른 값은 다시 그려도
        그대로 남아야 하므로 값이 그대로면 손대지 않는다. */
     const 회통 = document.getElementById('discCorp');
-    const 회셈 = 짐.회사별 || {};
+    const 회셈 = {};
+    범위.forEach(function (x){ if (x.회사) 회셈[x.회사] = (회셈[x.회사] || 0) + 1; });
     const 새것 = '<option value="">회사 전체</option>' +
       Object.keys(회셈).sort(function (a, b){ return 회셈[b] - 회셈[a]; })
         .map(function (m){
@@ -6532,7 +6551,7 @@
     목록.innerHTML = 보일것.map(공시줄).join('');
     빈칸.style.display = 것들.length ? 'none' : '';
     if (!것들.length){
-      빈칸.textContent = 짐.총건수
+      빈칸.textContent = 범위.length
         ? '조건에 맞는 공시가 없습니다. 구분이나 검색어를 바꿔보세요.'
         : '이 계열사로 등록된 회사의 공시가 아직 없습니다. 「경쟁사」 시트에 corp_code 가 채워져 있는지 보세요.';
     }
@@ -6573,7 +6592,7 @@
   });
   document.getElementById('discQ').addEventListener('input', 공시다시);
   document.getElementById('discCorp').addEventListener('change', 공시다시);
-  document.getElementById('discMine').addEventListener('change', 공시다시);
+  document.getElementById('discRival').addEventListener('change', 공시다시);
 
   /* 관련 뉴스·주요 공시 접기. 두 카드 다 계열사를 오갈 때마다 다시 그려지므로
      접힌 상태만 기억해 두면 이름과 상관없이 그 상태를 이어 쓸 수 있다. */
