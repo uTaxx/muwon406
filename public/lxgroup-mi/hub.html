@@ -1784,9 +1784,9 @@
     </section>
     </div>
 
-    <!-- 주요 지표. 그 계열사에만 걸리는 지표다. 환율·금리 같은 공통 지표는
-         홀딩스의 시장지표 탭에 따로 있다 — 계열사를 가리지 않는 값을 여기
-         일곱 번 반복해 보여줄 까닭이 없다. -->
+    <!-- 주요 지표. 전체 지표(시장지표 탭과 같은 목록) 중에서 이 계열사에
+         고른 것만 카드로 뜬다. 무엇을 고를지는 아래 「지표 선택」에서
+         체크한다 — 시트를 직접 열 필요가 없다. -->
     <div id="co-ind" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num" id="indHeadIcon">🏭</span><span class="step-title" id="indHeadTitle">지표</span></div>
@@ -1797,6 +1797,12 @@
         <button type="button" class="upd-btn" data-update="지표">↻ 업데이트</button>
       </div>
       <div class="upd-msg"></div>
+      <button type="button" class="ghost-btn" id="indPickToggleBtn">지표 선택 열기</button>
+      <div id="indPickBody" style="display:none; margin-top:10px;">
+        <div class="step-desc">전체 지표 중 이 계열사에 보일 것을 체크합니다. 지표 전체 목록은 LX홀딩스 › 시장지표에 있습니다.</div>
+        <div class="status" id="indPickStatus"></div>
+        <div id="indPickList"></div>
+      </div>
       <div class="ind-grid" id="indBody"></div>
       <div class="empty-note" id="indEmpty" style="display:none;"></div>
     </section>
@@ -1919,8 +1925,8 @@
     </section>
 
     <section class="card">
-      <div class="step-head"><span class="step-num">📋</span><span class="step-title">공통 지표 전체</span></div>
-      <div class="step-desc">환율·금리처럼 모든 계열사에 걸리는 값 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">지표 전체</span></div>
+      <div class="step-desc">수집 중인 지표 전체 목록입니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
       <div class="line-row">
         <div class="ind-asof" id="indCommonAsOf"></div>
         <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 공통 원본 엑셀</button>
@@ -2078,6 +2084,7 @@
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
+  const INDMEMBER_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표소속관리');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
   const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
@@ -3673,15 +3680,17 @@
       '수요·원가에 직접 걸리는 지표 · <b>선행 N개월</b>은 실적이 뒤따르는 시차 ' +
       '<a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a>';
 
-    /* 계열사 것과 공통 것을 상자 둘로 나눠 그린다. 공통은 어느 계열사를
-       보든 같은 자리에 그대로 있어야 한다 — 환율·금리는 계열사를 갈아도
-       바뀌지 않는 배경이기 때문이다. */
+    /* 계열사 화면은 그 계열사가 「지표 선택」에서 고른 것만 카드로 낸다
+       (소속 배열에 coTab이 있는 것). 시장지표 탭(indCommonBody)은
+       2026-09-23부터 공통뿐 아니라 전체 지표를 보여준다 — 계열사별로
+       흩어져 있던 지표를 한 곳에서 다 보고, 어디에 쓸지는 계열사 화면의
+       체크박스로 고른다. */
     const 것들 = indTabItems(지표, coTab);
-    const 공통것 = indTabItems(지표, '공통');
     document.getElementById('indBody').innerHTML = indBlocks(것들, '계|');
-    document.getElementById('indCommonBody').innerHTML = 공통것.length
-      ? indBlocks(공통것, '공|')
-      : '<div class="empty-note">공통 지표에 쌓인 값이 아직 없습니다.</div>';
+    document.getElementById('indCommonBody').innerHTML = 지표.length
+      ? indBlocks(지표, '공|')
+      : '<div class="empty-note">아직 쌓인 지표가 없습니다.</div>';
+    지표선택그리기(지표);
 
     /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
        아무 쓸모가 없으므로, 열자마자 맨 아래(최신)로 내려 둔다. 위로 밀면
@@ -3692,8 +3701,7 @@
 
     const 빈칸 = document.getElementById('indEmpty');
     빈칸.style.display = 것들.length ? 'none' : 'block';
-    빈칸.textContent = co이름(coTab) + '에 걸린 지표가 아직 없습니다. 시장지표 시트에 소속을 ' +
-      으로(coTab) + ' 넣으면 여기에 나옵니다. 아래 공통 지표는 그대로 보실 수 있습니다.';
+    빈칸.textContent = co이름(coTab) + '에 고른 지표가 아직 없습니다. 위 「지표 선택」을 열어 이 계열사에 보일 지표를 체크하세요.';
 
     /* 대기 목록은 지금 보고 있는 계열사 것만. 어느 계열사에도 안 걸린
        것(소속이 빈 것)은 어디서도 안 보이면 곤란하니 여기 함께 둔다. */
@@ -3712,12 +3720,85 @@
       indData.asOf + ' 기준 · ' + co이름(coTab) + ' 지표 ' + 것들.length + '개' +
       (이탭대기.length ? ' · 대기 ' + 이탭대기.length + '개' : '');
     document.getElementById('indCommonAsOf').textContent =
-      '어느 계열사에나 함께 걸리는 지표 ' + 공통것.length + '개';
+      indData.asOf + ' 기준 · 전체 지표 ' + 지표.length + '개';
 
     homeInd();   // 상황판이 열려 있는 채로 지표가 도착할 수 있다
     homeCo();
     mktGridDraw();
   }
+
+  /* 계열사별 지표 선택. 전체 지표(indData.지표, 시장지표 탭과 같은 목록)
+     중 이 계열사(coTab)의 위 카드에 보일 것을 체크한다. 체크·해제는 그
+     자리에서 시장지표 시트의 소속 칸을 고친다(LXGroup_지표소속관리) —
+     시트를 직접 열 필요가 없다. */
+  let 지표선택열림 = false;
+
+  function 지표선택그리기(지표들){
+    const 목록 = document.getElementById('indPickList');
+    if (!목록) return;
+    if (!지표들 || !지표들.length){
+      목록.innerHTML = '<div class="empty-note">아직 고를 지표가 없습니다.</div>';
+      return;
+    }
+    const 정렬됨 = 지표들.slice().sort(function(a, b){ return (a.정렬 || 999) - (b.정렬 || 999); });
+    목록.innerHTML = 정렬됨.map(function(x){
+      const 켜짐 = (x.소속 || []).indexOf(coTab) >= 0;
+      return '<label class="check-option' + (켜짐 ? ' checked' : '') + '">' +
+        '<input type="checkbox" class="ind-pick-chk" data-id="' + escapeHtml(x.id) + '"' + (켜짐 ? ' checked' : '') + '>' +
+        '<div><div class="opt-text">' + escapeHtml(x.이름) + '</div>' +
+          (x.그룹 ? '<div class="opt-sub">' + escapeHtml(x.그룹) + '</div>' : '') +
+        '</div>' +
+      '</label>';
+    }).join('');
+  }
+
+  document.getElementById('indPickToggleBtn').addEventListener('click', function(){
+    지표선택열림 = !지표선택열림;
+    document.getElementById('indPickBody').style.display = 지표선택열림 ? '' : 'none';
+    this.textContent = 지표선택열림 ? '지표 선택 닫기' : '지표 선택 열기';
+    if (지표선택열림 && indData) 지표선택그리기(indData.지표 || []);
+  });
+
+  document.getElementById('indPickList').addEventListener('change', function(e){
+    const chk = e.target.closest('input.ind-pick-chk');
+    if (!chk) return;
+    const id = chk.dataset.id;
+    const 넣을것 = chk.checked;
+    const 상태 = document.getElementById('indPickStatus');
+
+    const code = sharedCode();
+    if (!code){ chk.checked = !넣을것; 상태.className = 'status bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('지표 소속을 바꿉니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw){ chk.checked = !넣을것; return; }
+    }
+
+    chk.disabled = true;
+    상태.className = 'status';
+    상태.textContent = '반영하는 중…';
+    fetch(INDMEMBER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 계열사: coTab, 포함: 넣을것 }) })
+      .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(d){ return { ok: res.ok, d: d }; }); })
+      .then(function(r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '반영하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        상태.className = 'status ok';
+        상태.textContent = r.d.message || '반영했습니다.';
+        const idx = (indData.지표 || []).findIndex(function(x){ return x.id === id; });
+        if (idx >= 0) indData.지표[idx].소속 = r.d.소속 || indData.지표[idx].소속;
+        indDraw();
+      })
+      .catch(function(err){
+        chk.disabled = false;
+        chk.checked = !넣을것;
+        상태.className = 'status bad';
+        상태.textContent = 오류메시지(err, '지표 소속 반영');
+      });
+  });
 
   function loadIndex(force){
     if (indLoading) return;
