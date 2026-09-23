@@ -3740,11 +3740,20 @@
       목록.innerHTML = '<div class="empty-note">아직 고를 지표가 없습니다.</div>';
       return;
     }
+    /* indTabItems가 카드를 고를 때 쓰는 것과 같은 판정(T.맞나)을 써야 한다.
+       시트의 소속 값이 coTab보다 길 수 있어서(인터 탭인데 소속은 '인터내셔널')
+       coTab과 똑같은 글자인지만 보면 이미 걸린 지표도 체크가 꺼진 채로
+       보이고, 해제해도 실제 소속 글자와 안 맞아 하나도 안 빠졌다. */
+    const T = IND_TABS.filter(function(t){ return t.k === coTab; })[0];
     const 정렬됨 = 지표들.slice().sort(function(a, b){ return (a.정렬 || 999) - (b.정렬 || 999); });
     목록.innerHTML = 정렬됨.map(function(x){
-      const 켜짐 = (x.소속 || []).indexOf(coTab) >= 0;
+      const 일치 = T ? (x.소속 || []).filter(T.맞나) : [];
+      const 켜짐 = 일치.length > 0;
+      /* 뺄 때는 실제로 소속에 적힌 글자(일치[0])를 그대로 돌려줘야 지운다.
+         아직 없어서 새로 더할 때는 그런 글자가 없으니 coTab을 쓴다. */
+      const 계열사값 = 일치[0] || coTab;
       return '<label class="check-option' + (켜짐 ? ' checked' : '') + '">' +
-        '<input type="checkbox" class="ind-pick-chk" data-id="' + escapeHtml(x.id) + '"' + (켜짐 ? ' checked' : '') + '>' +
+        '<input type="checkbox" class="ind-pick-chk" data-id="' + escapeHtml(x.id) + '" data-match="' + escapeHtml(계열사값) + '"' + (켜짐 ? ' checked' : '') + '>' +
         '<div><div class="opt-text">' + escapeHtml(x.이름) + '</div>' +
           (x.그룹 ? '<div class="opt-sub">' + escapeHtml(x.그룹) + '</div>' : '') +
         '</div>' +
@@ -3763,6 +3772,7 @@
     const chk = e.target.closest('input.ind-pick-chk');
     if (!chk) return;
     const id = chk.dataset.id;
+    const 계열사값 = chk.dataset.match;
     const 넣을것 = chk.checked;
     const 상태 = document.getElementById('indPickStatus');
 
@@ -3778,7 +3788,7 @@
     상태.className = 'status';
     상태.textContent = '반영하는 중…';
     fetch(INDMEMBER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 계열사: coTab, 포함: 넣을것 }) })
+      body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 계열사: 계열사값, 포함: 넣을것 }) })
       .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(d){ return { ok: res.ok, d: d }; }); })
       .then(function(r){
         if (!r.ok || !r.d || r.d.ok !== true){
