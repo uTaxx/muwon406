@@ -1164,6 +1164,7 @@
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
       <button type="button" class="tab-btn cover-btn" data-tab="disclosure">📄 공시수집기</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="updatemgmt">🔄 업데이트 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
       <button type="button" class="tab-btn cover-btn" data-tab="cfg">🎛 대시보드 설정</button>
       <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
@@ -1593,6 +1594,48 @@
         <div id="mgmtAddForm" style="display:none; margin-top:10px;"></div>
       </div>
     </section>
+  </div>
+
+  <!-- 업데이트 관리 — 흩어져 있던 수집 버튼(계열사·경쟁사 실적 업데이트,
+       시장 지표 업데이트)을 한 곳에 모은다. 항목을 체크하고 한 번에
+       실행한다. 체크한 각 항목은 이미 있는 웹훅(회사는 lxgroup-실적반영,
+       시장 지표는 lxgroup-실행)을 그대로 쓰고, 순서대로 하나씩 요청을
+       보낸다. 한꺼번에 보내면 서버 쪽에 부담이 몰리기 때문이다. -->
+  <div id="tab-updatemgmt" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">🔄</span><span class="step-title">업데이트 관리</span></div>
+      <div class="step-desc">항목을 체크하고 아래 「선택 항목 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시·지표를 다시 받아 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다.</div>
+      <div class="status" id="updMgmtLoadStatus"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">그룹 관련 실적(계열사 실적)</span>
+        <button type="button" class="go-btn" id="updMgmtGroupAllBtn">전체 선택</button></div>
+      <div class="step-desc">계열사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
+      <div id="updMgmtGroupList"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏭</span><span class="step-title">경쟁사 실적</span>
+        <button type="button" class="go-btn" id="updMgmtRivalAllBtn">전체 선택</button></div>
+      <div class="step-desc">경쟁사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
+      <div id="updMgmtRivalList"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">시장지표</span></div>
+      <div class="step-desc">시장 지표(ECOS·FRED·관세청·KOSIS) 전체를 다시 확인합니다. 이미 값이 있는 지표는 최근 구간만 보충하고, 처음 등록된 지표만 전체 기간을 받습니다. 매주 금요일 08:00에도 같은 방식으로 자동 실행됩니다.</div>
+      <label class="check-option" id="updMgmtIndexOpt">
+        <input type="checkbox" id="updMgmtIndexChk">
+        <div class="opt-text">시장 지표 전체</div>
+      </label>
+    </section>
+
+    <div class="cfg-bar">
+      <div class="cfg-saved" id="updMgmtSummary">선택한 항목이 없습니다.</div>
+      <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 항목 업데이트 실행</button>
+    </div>
+    <div id="updMgmtRunLog"></div>
   </div>
 
   <!-- 탭 3: 특정 키워드 검색 -->
@@ -2858,6 +2901,7 @@
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); loadLabels(); }
     if (tabName === 'disclosure'){ discLoadRegistered(); }
+    if (tabName === 'updatemgmt'){ updMgmtOpen(); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
@@ -7754,6 +7798,180 @@
         });
     });
   }
+
+  /* ---------- 업데이트 관리 ----------
+     계열사·경쟁사 실적의 「최신 공시 반영」 버튼과 시장 지표의 「↻ 업데이트」
+     버튼이 화면 여러 곳에 흩어져 있었다. 여기서는 그 둘을 체크리스트로
+     모아 한 화면에서 고르고, 한 번에 실행한다. 회사 목록은 기업 관리 패널과
+     같은 것(기업목록)을 쓴다 — 목록을 따로 관리하는 곳을 늘리지 않는다.
+     실행은 항목마다 기존 웹훅을 그대로 부르되, 한꺼번에 보내면 서버 쪽에
+     부담이 몰리므로 하나씩 순서대로 보낸다. */
+  function updMgmtOpen(){
+    if (mgmtCompanies.length){ updMgmtDraw(); return; }
+    const 알림 = document.getElementById('updMgmtLoadStatus');
+    알림.className = 'status';
+    알림.textContent = '불러오는 중…';
+    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: '기업목록' }) })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        mgmtCompanies = (d && d.목록) || [];
+        알림.textContent = '';
+        updMgmtDraw();
+      })
+      .catch(function (err){
+        알림.className = 'status bad';
+        알림.textContent = 오류메시지(err, '기업 목록 조회');
+      });
+  }
+
+  function updMgmtRowHtml(c){
+    return '<label class="check-option" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">' +
+      '<input type="checkbox" class="upd-mgmt-chk">' +
+      '<div class="opt-text">' + escapeHtml(c.회사명) +
+        (!c.사용 ? '<span class="tag-ok" style="background:#FDECEE;color:var(--danger);">사용 안 함</span>' : '') +
+      '</div></label>';
+  }
+
+  function updMgmtDraw(){
+    const 계열사들 = mgmtCompanies.filter(function (c){ return c.우리편; });
+    const 경쟁사들 = mgmtCompanies.filter(function (c){ return !c.우리편; });
+    document.getElementById('updMgmtGroupList').innerHTML = 계열사들.length
+      ? 계열사들.map(updMgmtRowHtml).join('')
+      : '<div class="empty-note">등록된 계열사가 없습니다.</div>';
+    document.getElementById('updMgmtRivalList').innerHTML = 경쟁사들.length
+      ? 경쟁사들.map(updMgmtRowHtml).join('')
+      : '<div class="empty-note">등록된 경쟁사가 없습니다.</div>';
+    updMgmtSummaryDraw();
+  }
+
+  function updMgmtCheckedItems(){
+    const 항목 = [];
+    document.querySelectorAll('#updMgmtGroupList .upd-mgmt-chk:checked, #updMgmtRivalList .upd-mgmt-chk:checked').forEach(function (el){
+      const 줄 = el.closest('label');
+      항목.push({ 종류: '회사', corp_code: 줄.dataset.corp, 회사명: 줄.dataset.name });
+    });
+    if (document.getElementById('updMgmtIndexChk').checked){
+      항목.push({ 종류: '지표' });
+    }
+    return 항목;
+  }
+
+  function updMgmtSummaryDraw(){
+    const n = updMgmtCheckedItems().length;
+    document.getElementById('updMgmtSummary').textContent = n ? ('선택한 항목 ' + n + '건') : '선택한 항목이 없습니다.';
+    updMgmtAllBtnSync('updMgmtGroupList', 'updMgmtGroupAllBtn');
+    updMgmtAllBtnSync('updMgmtRivalList', 'updMgmtRivalAllBtn');
+  }
+
+  function updMgmtAllBtnSync(listId, btnId){
+    const 체크들 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk');
+    const 켜진것 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk:checked');
+    document.getElementById(btnId).textContent = (체크들.length && 켜진것.length === 체크들.length) ? '전체 해제' : '전체 선택';
+  }
+
+  ['updMgmtGroupList', 'updMgmtRivalList'].forEach(function (id){
+    document.getElementById(id).addEventListener('change', function (e){
+      if (!e.target.classList.contains('upd-mgmt-chk')) return;
+      e.target.closest('label').classList.toggle('checked', e.target.checked);
+      updMgmtSummaryDraw();
+    });
+  });
+  document.getElementById('updMgmtIndexChk').addEventListener('change', function (e){
+    document.getElementById('updMgmtIndexOpt').classList.toggle('checked', e.target.checked);
+    updMgmtSummaryDraw();
+  });
+
+  function updMgmtToggleAll(listId){
+    const 체크들 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk');
+    const 켤지 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk:checked').length < 체크들.length;
+    체크들.forEach(function (el){
+      el.checked = 켤지;
+      el.closest('label').classList.toggle('checked', 켤지);
+    });
+    updMgmtSummaryDraw();
+  }
+  document.getElementById('updMgmtGroupAllBtn').addEventListener('click', function (){ updMgmtToggleAll('updMgmtGroupList'); });
+  document.getElementById('updMgmtRivalAllBtn').addEventListener('click', function (){ updMgmtToggleAll('updMgmtRivalList'); });
+
+  /* 항목 하나를 실행한다. 회사는 기존 「최신 공시 반영」(공시반영시작)과
+     같은 요청이고, 지표는 기존 「↻ 업데이트」(업데이트누름)와 같은
+     요청이다. fetch가 돌아오면 그 항목은 "시작했다"는 뜻이고, 실제
+     수집·반영은 서버 쪽에서 뒤이어 돈다 — 그 끝을 여기서 기다리지 않는다. */
+  function updMgmtRunLabel(항목){
+    return 항목.종류 === '지표' ? '시장 지표 전체' : 항목.회사명;
+  }
+
+  function updMgmtRunOne(항목, code, pw){
+    const url = 항목.종류 === '지표' ? RUN_URL : PERF_URL;
+    const body = 항목.종류 === '지표'
+      ? { code: code, pw: pw, 대상: '지표' }
+      : { code: code, pw: pw, corp_code: 항목.corp_code, 회사명: 항목.회사명 };
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '요청을 보내지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        return r.d.message || '시작했습니다.';
+      });
+  }
+
+  let updMgmtRunning = false;
+
+  function updMgmtRun(){
+    if (updMgmtRunning) return;
+    const 항목들 = updMgmtCheckedItems();
+    if (!항목들.length){ alert('먼저 항목을 하나 이상 체크해 주세요.'); return; }
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('선택한 ' + 항목들.length + '건의 업데이트를 하나씩 순서대로 실행합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+
+    const 로그자리 = document.getElementById('updMgmtRunLog');
+    로그자리.innerHTML = 항목들.map(function (항목, i){
+      return '<div class="upd-msg" id="updMgmtRow' + i + '">대기 중 · ' + escapeHtml(updMgmtRunLabel(항목)) + '</div>';
+    }).join('');
+
+    const 버튼 = document.getElementById('updMgmtRunBtn');
+    updMgmtRunning = true;
+    버튼.disabled = true;
+    버튼.textContent = '실행 중…';
+
+    let i = 0;
+    function 다음(){
+      if (i >= 항목들.length){
+        updMgmtRunning = false;
+        버튼.disabled = false;
+        버튼.textContent = '선택 항목 업데이트 실행';
+        return;
+      }
+      const idx = i;
+      const 항목 = 항목들[idx];
+      const 줄 = document.getElementById('updMgmtRow' + idx);
+      줄.textContent = '요청 중… · ' + updMgmtRunLabel(항목);
+      updMgmtRunOne(항목, code, pw)
+        .then(function (메시지){
+          줄.className = 'upd-msg ok';
+          줄.textContent = '시작함 · ' + updMgmtRunLabel(항목) + ' — ' + 메시지;
+        })
+        .catch(function (err){
+          줄.className = 'upd-msg bad';
+          줄.textContent = '실패 · ' + updMgmtRunLabel(항목) + ' — ' + 오류메시지(err, '업데이트 요청');
+        })
+        .then(function (){
+          i += 1;
+          setTimeout(다음, 1500);
+        });
+    }
+    다음();
+  }
+
+  document.getElementById('updMgmtRunBtn').addEventListener('click', updMgmtRun);
 
   /* ---------- 관리항목(지표·리스크) 마스터 설정 ----------
      "LX Group MI_관리항목 마스터(지표·리스크)" 구글 시트를 리스크 관리 탭에서
