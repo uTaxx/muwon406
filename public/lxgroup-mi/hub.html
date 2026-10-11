@@ -5046,51 +5046,18 @@
     if (!쓸것.length) return null;
     if (!창 || 창.length < 2) return null;
 
-    /* 경쟁사는 덩치 차가 크다 — 롯데케미칼 20조와 대한유화 2조를 한 축에
-       그대로 얹으면 작은 쪽이 바닥에 붙은 직선이 된다. 그럴 때만 기준칸을
-       100 으로 맞춰 '움직인 폭'을 견준다. 비율(%)은 애초에 견줄 수 있으니 그대로 둔다.
-
-       값에 0 이하가 섞이면 지수로 안 바꾼다. 적자가 난 해를 100 기준으로 나누면
-       -180 같은 수가 나오는데, 이건 '적자가 깊어졌다'가 아니라 그냥 읽을 수
-       없는 숫자다. 그럴 때는 실제 값 그대로 두고 0 선을 그어 준다. */
-    /* 막대는 0에서 올라오는 그림이라 지수로 바꾸면 안 된다. '2021 = 100' 짜리
-       막대는 높이가 아무 뜻도 없고, 매출 막대 안에 이익 막대를 겹칠 수도 없다.
-       그래서 막대용으로 부를 때는 민낯(실제 값)만 만든다. */
-    let 여럿 = !민낯 && 지표 !== '영업이익률' && 쓸것.length > 1;
-    if (여럿 && 쓸것.some(function (c){
-      return 창.some(function (k){ return c.m[k] !== undefined && c.m[k] <= 0; });
-    })) 여럿 = false;
-    if (여럿){
-      const 대표 = 쓸것.map(function (c){
-        const vs = 창.map(function (k){ return c.m[k]; })
-                    .filter(function (v){ return v !== undefined; })
-                    .map(Math.abs).sort(function (a, b){ return a - b; });
-        return vs.length ? vs[Math.floor(vs.length / 2)] : 0;
-      }).filter(function (v){ return v > 0; });
-      if (대표.length === 쓸것.length){
-        const 큰 = Math.max.apply(null, 대표), 작은 = Math.min.apply(null, 대표);
-        if (큰 / 작은 <= 3) 여럿 = false;
-      }
-    }
-    /* 지수로 맞출 때는 모두가 값을 가진 가장 이른 칸을 기준으로 삼는다.
-       회사마다 첫 해가 다르면 각자 제 첫 해가 100 이 되어 서로 다른 잣대가 된다. */
-    let 기준칸 = null;
-    if (여럿){
-      for (const c of 창){
-        if (쓸것.every(function (s){ return s.m[c] !== undefined; })) { 기준칸 = c; break; }
-      }
-    }
-
+    /* 예전에는 덩치 차가 큰 부문·회사를 100 기준 지수로 바꿔 '움직인 폭'을
+       견주게 했다. 매출액·영업이익은 원래 같은 단위(원)라서 지수로 바꾸면
+       실제 금액이 안 보이고, 보는 사람이 상대 지표인 줄 모르고 절대 금액으로
+       착각하기 쉽다. 그래서 항상 실제 값 그대로 그린다(2026-10-11). 막대는
+       애초에 실제 값만 쓴다 — 매출 막대 안에 이익 막대를 겹치는 그림이라
+       지수로는 그릴 수 없다. */
     const 선들 = 쓸것.map(function (c){
-      const 기준 = (여럿 && 기준칸 !== null) ? c.m[기준칸] : null;
-      let 첫값 = null;
       const pts = [];
       창.forEach(function (칸, j){
         const v = c.m[칸];
         if (v === undefined) return;
-        if (첫값 === null) 첫값 = v;
-        const b = 기준 !== null ? 기준 : 첫값;
-        pts.push({ j: j, y: 여럿 ? (b ? (v / b) * 100 : 100) : v, v: v });
+        pts.push({ j: j, y: v, v: v });
       });
       return {
         지표: { 이름: c.이름, 단위: compUnit(c.x, 지표) },
@@ -5107,11 +5074,16 @@
       if (p.y < lo) lo = p.y;
       if (p.y > hi) hi = p.y;
     }); });
-    if (여럿){ lo = Math.min(lo, 100); hi = Math.max(hi, 100); }
+    /* 적자가 실제로 하나도 없으면 아래 여백을 줘도 0 밑으로 안 내려간다.
+       안 그러면 compChart 가 0선과 '적자' 표를 그려, 흑자뿐인 회사가 적자인
+       것처럼 보인다(2026-10-11, 지수 제거하면서 드러남 — 이전에는 지수값이
+       0 밑으로 거의 안 내려가서 안 보이던 문제다). */
+    const 실제최저 = lo;
     const 폭 = (hi - lo) || Math.abs(hi) || 1;
     lo -= 폭 * 0.1; hi += 폭 * 0.1;
+    if (실제최저 >= 0) lo = Math.max(lo, 0);
 
-    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: 여럿, 기준칸: 기준칸,
+    return { 창: 창, 선들: 선들, lo: lo, hi: hi, 여럿: false, 기준칸: null,
              R: R, 나라구분: true, 지표이름: 지표, 칸눈: R.눈,
              단위: (선들[0] || {}).지표 ? 선들[0].지표.단위 : '' };
   }
