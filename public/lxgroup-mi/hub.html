@@ -1190,7 +1190,7 @@
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
       <button type="button" class="tab-btn cover-btn" data-tab="disclosure">📄 공시수집기</button>
-      <button type="button" class="tab-btn cover-btn" data-tab="updatemgmt">🔄 업데이트 관리</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="perfmgmt">🏢 실적 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="indmgmt">📐 지표 마스터 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
       <button type="button" class="tab-btn cover-btn" data-tab="cfg">🎛 대시보드 설정</button>
@@ -1623,15 +1623,17 @@
     </section>
   </div>
 
-  <!-- 업데이트 관리 — 흩어져 있던 수집 버튼(계열사·경쟁사 실적 업데이트,
-       시장 지표 업데이트)을 한 곳에 모은다. 항목을 체크하고 한 번에
-       실행한다. 체크한 각 항목은 이미 있는 웹훅(회사는 lxgroup-실적반영,
-       시장 지표는 lxgroup-실행)을 그대로 쓰고, 순서대로 하나씩 요청을
-       보낸다. 한꺼번에 보내면 서버 쪽에 부담이 몰리기 때문이다. -->
-  <div id="tab-updatemgmt" class="tab-panel">
+  <!-- 실적 관리 — 계열사·경쟁사 실적 업데이트는 이 탭에서만 한다. 조회
+       화면(경쟁사 현황·실적현황·계열사 탭)에는 업데이트 버튼을 두지 않는다.
+       시장 지표 업데이트는 지표 마스터 관리 탭이 맡는다(2026-10-12에
+       여기서 뺐다. 두 탭이 같은 일을 하고 있었다). 회사를 체크하고 한 번에
+       실행하면 회사마다 lxgroup-실적반영 웹훅을 순서대로 하나씩 호출한다.
+       한꺼번에 보내면 서버 쪽에 부담이 몰리기 때문이다. -->
+  <div id="tab-perfmgmt" class="tab-panel">
     <section class="card">
-      <div class="step-head"><span class="step-num">🔄</span><span class="step-title">업데이트 관리</span></div>
-      <div class="step-desc">항목을 체크하고 아래 「선택 항목 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시·지표를 다시 받아 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다.</div>
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">실적 관리</span></div>
+      <div class="step-desc">회사를 체크하고 아래 「선택 회사 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시를 찾아 저장하고 실적에 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다. 실적 업데이트는 이 탭에서만 하고, 조회 화면에는 업데이트 버튼이 없습니다. 시장 지표 업데이트는 지표 마스터 관리 탭에서 합니다.</div>
+      <div class="ind-asof" id="updMgmtAsOf"></div>
       <div class="status" id="updMgmtLoadStatus"></div>
     </section>
 
@@ -1649,18 +1651,9 @@
       <div id="updMgmtRivalList"></div>
     </section>
 
-    <section class="card">
-      <div class="step-head"><span class="step-num">📊</span><span class="step-title">시장지표</span></div>
-      <div class="step-desc">시장 지표(ECOS·FRED·관세청·KOSIS) 전체를 다시 확인합니다. 이미 값이 있는 지표는 최근 구간만 보충하고, 처음 등록된 지표만 전체 기간을 받습니다. 매주 금요일 08:00에도 같은 방식으로 자동 실행됩니다.</div>
-      <label class="check-option" id="updMgmtIndexOpt">
-        <input type="checkbox" id="updMgmtIndexChk">
-        <div class="opt-text">시장 지표 전체</div>
-      </label>
-    </section>
-
     <div class="cfg-bar">
-      <div class="cfg-saved" id="updMgmtSummary">선택한 항목이 없습니다.</div>
-      <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 항목 업데이트 실행</button>
+      <div class="cfg-saved" id="updMgmtSummary">선택한 회사가 없습니다.</div>
+      <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 회사 업데이트 실행</button>
     </div>
     <div id="updMgmtRunLog"></div>
   </div>
@@ -2948,7 +2941,7 @@
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); loadLabels(); }
     if (tabName === 'disclosure'){ discLoadRegistered(); }
-    if (tabName === 'updatemgmt'){ updMgmtOpen(); }
+    if (tabName === 'perfmgmt'){ updMgmtOpen(); }
     if (tabName === 'indmgmt'){ loadIndex(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
@@ -4345,8 +4338,8 @@
        "이 계열사만"이 아니라 대상 전체를 다시 받는 것으로 안내한다.
        LXGroup_지표수집을 직접 확인했다(2026-09-17, Phase 1-C): 이미 값이
        있는 지표는 최근 구간만 보충하고, 새로 등록된 지표만 전체 기간을
-       받는다. 경쟁사 실적은 2026-09-22에 이 버튼에서 빠지고 회사 블록별
-       「최신 공시 반영」 버튼으로 옮겼다(공시반영시작). */
+       받는다. 경쟁사 실적은 2026-09-22에 이 버튼에서 빠졌고, 2026-10-12부터는
+       실적 관리 탭(updMgmtRunOne)에서만 돌린다. */
     const 부분 = !!(지표ID목록 && 지표ID목록.length);
     const 이름 = 부분
       ? ('선택한 지표 ' + 지표ID목록.length + '개')
@@ -4425,8 +4418,8 @@
      지적이 있었다. 버튼이 실제로 보내는 요청(RUN_URL, {code, pw, 대상})에는
      지금 보고 있는 계열사가 안 실리므로, 그 대상 전체를 다시 받는 것이다.
      지표는 유일하게 남은 대상이라 여기서 그대로 설명한다.
-     경쟁사 실적은 회사 블록마다 있는 「최신 공시 반영」 버튼으로 옮겼다
-     (2026-09-22) — 그 회사만 골라 처리하므로 전체를 다시 받을 필요가 없다. */
+     계열사·경쟁사 실적은 실적 관리 탭에서 회사를 골라 돌린다(2026-10-12).
+     그 회사만 처리하므로 전체를 다시 받을 필요가 없다. */
   /* 2026-09-17에 LXGroup_지표수집 워크플로를 직접 열어 확인한 내용이다.
      새 지표는 등록 즉시 전체 기간을 받고, 이미 값이 있는 지표는 최근
      구간만 채운다 — 그래서 "전체를 다시 받는다"고 안내하면 안 된다. */
@@ -5887,7 +5880,6 @@
         '<button type="button" class="ind-toggle' + (펼침 ? ' on' : '') + '" data-view="graph">그래프</button>' +
         '<button type="button" class="ind-toggle' + (표펼침 ? ' on' : '') + '" data-view="table">표</button>' +
         '<button type="button" class="xls-btn" data-xls="1">⬇ 원본 엑셀</button>' +
-        (corp_code ? '<button type="button" class="xls-btn comp-refresh-btn">🔄 최신 공시 반영</button>' : '') +
       '</div>' +
       그래프 + 목록 + 옛부문버튼 + (표펼침 && g합 ? indTableHtml(g합) : '') +
     '</div>';
@@ -6417,6 +6409,8 @@
         coPerfDraw();
         hqPerfDraw();
         homeCo();
+        /* 실적 관리 탭이 열려 있으면 회사별 최근 공시 칸을 새로 적는다. */
+        if (mgmtCompanies.length && document.getElementById('tab-perfmgmt').classList.contains('active')) updMgmtDraw();
       })
       .catch(() => {
         compLoading = false;
@@ -6437,9 +6431,6 @@
   /* 경쟁사 성과와 그룹 실적이 같은 블록을 쓰므로 누름도 같이 쓴다. 어느 쪽을
      다시 그릴지만 다르다. */
   function comp누름(e, 다시그리기){
-    const 새로고침 = e.target.closest('button.comp-refresh-btn');
-    if (새로고침){ 공시반영시작(새로고침); return; }
-
     const 체크 = e.target.closest('input.graph-vis-chk');
     if (체크){
       그래프숨김[체크.dataset.visKey] = !체크.checked;
@@ -7695,9 +7686,9 @@
 
   /* 저장까지는 끝났지만 경쟁사 현황·실적현황 화면은 「경쟁사실적」 시트를
      따로 읽는다. 그 시트는 LXGroup_경쟁사_실적추출이 채우므로, 저장 뒤에
-     같은 실행 비밀번호로 그 갱신을 불러 세운다(대시보드의 「↻ 업데이트」
-     버튼과 같은 길, RUN_URL). 갱신은 몇 분 걸릴 수 있어 먼저 응답만 받고
-     기다렸다가 화면 자료를 한 번 더 받아온다. */
+     같은 실행 비밀번호로 그 갱신을 불러 세운다(RUN_URL, 대상 '경쟁사').
+     갱신은 몇 분 걸릴 수 있어 먼저 응답만 받고 기다렸다가 화면 자료를 한 번
+     더 받아온다. */
   function discTriggerCompRefresh(code, pw, 상태){
     fetch(RUN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, pw: pw, 대상: '경쟁사' }) })
       .then(function (res){ return res.json().catch(function (){ return {}; }); })
@@ -7708,7 +7699,7 @@
         }
       })
       .catch(function (){ /* 저장은 이미 끝났다. 실적 갱신 호출만 못 보낸 것이므로
-        따로 알리지 않는다 — 경쟁사 현황 탭의 「↻ 업데이트」로 다시 부를 수 있다. */ });
+        따로 알리지 않는다. 실적 관리 탭에서 그 회사를 골라 다시 부를 수 있다. */ });
   }
 
   function discShowBatchCompanyPick(남음, code, pw){
@@ -7725,45 +7716,10 @@
     });
   }
 
-  /* 경쟁사 현황·실적 현황·그룹 실적 블록의 「최신 공시 반영」 버튼. 공시수집기
-     탭을 따로 열어 회사를 다시 찾고 기간을 고르는 대신, 지금 보고 있는 회사의
-     corp_code로 곧장 서버(LXGroup_실적반영)에 맡긴다. 서버가 공시검색·
-     db저장·그 회사만의 실적추출을 순서대로 다 하고 돌아오므로, 여기서는
-     요청만 보내고 몇 분 뒤 화면을 다시 불러온다. */
-  function 공시반영시작(버튼){
-    const 블록 = 버튼.closest('.ind-block');
-    const corp_code = 블록 ? 블록.dataset.corp : '';
-    const 회사명 = 블록 ? 블록.dataset.hoesa : '';
-    if (!corp_code || !회사명) return;
-    const code = sharedCode();
-    if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
-    let pw = savedRunPw();
-    if (!pw){
-      pw = prompt(회사명 + '의 최신 공시를 찾아 저장하고 반영합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
-      if (!pw) return;
-    }
-    const 원래 = 버튼.textContent;
-    버튼.disabled = true;
-    버튼.textContent = '반영 요청 중…';
-    fetch(PERF_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code, pw: pw, corp_code: corp_code, 회사명: 회사명 }) })
-      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
-      .then(function (r){
-        if (!r.ok || !r.d || r.d.ok !== true){
-          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
-          throw new Error((r.d && r.d.message) || '반영 요청을 보내지 못했습니다.');
-        }
-        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
-        alert(r.d.message || (회사명 + ' 최신 공시 반영을 시작했습니다.'));
-        /* 검색·저장·추출을 다 거치므로 기존 「전체 갱신」보다 여유를 둔다. */
-        setTimeout(function (){ 버튼.disabled = false; 버튼.textContent = 원래; loadComp(true); }, 120000);
-      })
-      .catch(function (err){
-        버튼.disabled = false;
-        버튼.textContent = 원래;
-        alert(오류메시지(err, '공시 반영'));
-      });
-  }
+  /* 회사 블록마다 있던 「최신 공시 반영」 버튼(공시반영시작)은 2026-10-12에
+     뺐다. 회사별 실적 업데이트는 실적 관리 탭(updMgmtRunOne)에서만 한다.
+     조회 화면에 실행 버튼이 흩어져 있으면 어디서 무엇을 돌렸는지 알 수
+     없기 때문이다. */
 
   /* ---------- 기업 관리 ----------
      전체 수집 대상 기업(경쟁사 시트)의 계열사·수집유형·키워드 뉴스 다이제스트
@@ -8029,14 +7985,21 @@
     });
   }
 
-  /* ---------- 업데이트 관리 ----------
-     계열사·경쟁사 실적의 「최신 공시 반영」 버튼과 시장 지표의 「↻ 업데이트」
-     버튼이 화면 여러 곳에 흩어져 있었다. 여기서는 그 둘을 체크리스트로
-     모아 한 화면에서 고르고, 한 번에 실행한다. 회사 목록은 기업 관리 패널과
-     같은 것(기업목록)을 쓴다 — 목록을 따로 관리하는 곳을 늘리지 않는다.
-     실행은 항목마다 기존 웹훅을 그대로 부르되, 한꺼번에 보내면 서버 쪽에
-     부담이 몰리므로 하나씩 순서대로 보낸다. */
+  /* ---------- 실적 관리 ----------
+     계열사·경쟁사 실적 업데이트를 체크리스트로 모아 한 화면에서 고르고 한
+     번에 실행한다. 전에는 회사 블록마다 「최신 공시 반영」 버튼이 있었고
+     이 탭에 시장 지표 항목도 같이 있었는데, 2026-10-12에 둘 다 정리했다.
+     조회 화면의 버튼은 뺐고 시장 지표는 지표 마스터 관리 탭이 맡는다.
+     회사 목록은 기업 관리 패널과 같은 것(기업목록)을 쓴다. 목록을 따로
+     관리하는 곳을 늘리지 않는다. 실행은 회사마다 lxgroup-실적반영 웹훅을
+     그대로 호출하되, 한꺼번에 보내면 서버 쪽에 부담이 몰리므로 하나씩
+     순서대로 보낸다.
+     회사마다 지금 화면에 반영된 가장 최근 공시(compData의 근거 칸)를 같이
+     적는다. 지표 마스터 관리가 지표마다 최근 날짜를 적는 것과 같은 뜻이다.
+     실적 자료를 아직 안 불러왔으면 여기서 불러오고, 다 받으면 loadComp가
+     이 표를 다시 그린다. */
   function updMgmtOpen(){
+    if (!compData && !compLoading) loadComp(false);
     if (mgmtCompanies.length){ updMgmtDraw(); return; }
     const 알림 = document.getElementById('updMgmtLoadStatus');
     알림.className = 'status';
@@ -8054,23 +8017,65 @@
       });
   }
 
-  function updMgmtRowHtml(c){
+  /* 회사마다 화면에 반영된 가장 최근 공시. compData.실적의 근거 칸은
+     「반기보고서 2026Q2」 꼴이라 뒤의 기간 글자로 가장 늦은 것을 고른다.
+     연간(2025)과 분기(2026Q2)가 섞여 있어 글자 비교로는 순서가 안 맞으므로
+     연도와 분기를 숫자로 바꿔 비교한다. */
+  function updMgmt최근근거(){
+    const 표 = {};
+    function 점수(근거){
+      const m = /(\d{4})(?:Q([1-4]))?\s*$/.exec(String(근거 || '').trim());
+      if (!m) return 0;
+      return Number(m[1]) * 10 + (m[2] ? Number(m[2]) : 5);
+    }
+    ((compData && compData.실적) || []).forEach(function (x){
+      const 회사 = String(x.회사명 || '').trim();
+      if (!회사 || !x.근거) return;
+      const p = 점수(x.근거);
+      if (!표[회사] || p > 표[회사].점수) 표[회사] = { 점수: p, 근거: String(x.근거).trim() };
+    });
+    return 표;
+  }
+
+  function updMgmtRowHtml(c, 최근){
+    const 근거 = 최근 && 최근[String(c.회사명 || '').trim()];
+    const 보조 = !compData ? '' : (근거 ? '반영된 최근 공시 ' + escapeHtml(근거.근거) : '반영된 실적 없음');
     return '<label class="check-option" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">' +
       '<input type="checkbox" class="upd-mgmt-chk">' +
       '<div class="opt-text">' + escapeHtml(c.회사명) +
         (!c.사용 ? '<span class="tag-ok" style="background:#FDECEE;color:var(--danger);">사용 안 함</span>' : '') +
+        (보조 ? '<div class="opt-sub">' + 보조 + '</div>' : '') +
       '</div></label>';
   }
 
   function updMgmtDraw(){
     const 계열사들 = mgmtCompanies.filter(function (c){ return c.우리편; });
     const 경쟁사들 = mgmtCompanies.filter(function (c){ return !c.우리편; });
+    const 최근 = updMgmt최근근거();
+    const 전체 = Object.keys(최근).map(function (k){ return 최근[k]; })
+      .sort(function (a, b){ return b.점수 - a.점수; })[0];
+    document.getElementById('updMgmtAsOf').textContent = !compData
+      ? '반영된 실적을 불러오는 중…'
+      : (전체 ? '화면에 반영된 가장 최근 공시 ' + 전체.근거 + ' (대략적인 기준입니다)' : '반영된 실적이 아직 없습니다.');
+    /* 체크 상태는 다시 그릴 때 유지한다. 실적 자료가 뒤늦게 도착해 표를 다시
+       그릴 때 고른 회사가 풀리면 안 된다. */
+    const 켜진 = {};
+    document.querySelectorAll('#updMgmtGroupList .upd-mgmt-chk:checked, #updMgmtRivalList .upd-mgmt-chk:checked').forEach(function (el){
+      켜진[el.closest('label').dataset.corp] = true;
+    });
+    const updMgmtRowHtml2 = function (c){ return updMgmtRowHtml(c, 최근); };
     document.getElementById('updMgmtGroupList').innerHTML = 계열사들.length
-      ? 계열사들.map(updMgmtRowHtml).join('')
+      ? 계열사들.map(updMgmtRowHtml2).join('')
       : '<div class="empty-note">등록된 계열사가 없습니다.</div>';
     document.getElementById('updMgmtRivalList').innerHTML = 경쟁사들.length
-      ? 경쟁사들.map(updMgmtRowHtml).join('')
+      ? 경쟁사들.map(updMgmtRowHtml2).join('')
       : '<div class="empty-note">등록된 경쟁사가 없습니다.</div>';
+    document.querySelectorAll('#updMgmtGroupList label, #updMgmtRivalList label').forEach(function (줄){
+      if (!켜진[줄.dataset.corp]) return;
+      줄.classList.add('checked');
+      const chk = 줄.querySelector('.upd-mgmt-chk');
+      if (chk) chk.checked = true;
+    });
     updMgmtSummaryDraw();
   }
 
@@ -8080,15 +8085,12 @@
       const 줄 = el.closest('label');
       항목.push({ 종류: '회사', corp_code: 줄.dataset.corp, 회사명: 줄.dataset.name });
     });
-    if (document.getElementById('updMgmtIndexChk').checked){
-      항목.push({ 종류: '지표' });
-    }
     return 항목;
   }
 
   function updMgmtSummaryDraw(){
     const n = updMgmtCheckedItems().length;
-    document.getElementById('updMgmtSummary').textContent = n ? ('선택한 항목 ' + n + '건') : '선택한 항목이 없습니다.';
+    document.getElementById('updMgmtSummary').textContent = n ? ('선택한 회사 ' + n + '곳') : '선택한 회사가 없습니다.';
     updMgmtAllBtnSync('updMgmtGroupList', 'updMgmtGroupAllBtn');
     updMgmtAllBtnSync('updMgmtRivalList', 'updMgmtRivalAllBtn');
   }
@@ -8106,11 +8108,6 @@
       updMgmtSummaryDraw();
     });
   });
-  document.getElementById('updMgmtIndexChk').addEventListener('change', function (e){
-    document.getElementById('updMgmtIndexOpt').classList.toggle('checked', e.target.checked);
-    updMgmtSummaryDraw();
-  });
-
   function updMgmtToggleAll(listId){
     const 체크들 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk');
     const 켤지 = document.querySelectorAll('#' + listId + ' .upd-mgmt-chk:checked').length < 체크들.length;
@@ -8123,19 +8120,17 @@
   document.getElementById('updMgmtGroupAllBtn').addEventListener('click', function (){ updMgmtToggleAll('updMgmtGroupList'); });
   document.getElementById('updMgmtRivalAllBtn').addEventListener('click', function (){ updMgmtToggleAll('updMgmtRivalList'); });
 
-  /* 항목 하나를 실행한다. 회사는 기존 「최신 공시 반영」(공시반영시작)과
-     같은 요청이고, 지표는 기존 「↻ 업데이트」(업데이트누름)와 같은
-     요청이다. fetch가 돌아오면 그 항목은 "시작했다"는 뜻이고, 실제
-     수집·반영은 서버 쪽에서 뒤이어 돈다 — 그 끝을 여기서 기다리지 않는다. */
+  /* 회사 하나를 실행한다. 서버(LXGroup_실적반영)가 그 회사의 공시검색·
+     db저장·실적추출을 순서대로 다 한다. fetch가 돌아오면 그 회사는
+     "시작했다"는 뜻이고, 실제 수집·반영은 서버 쪽에서 뒤이어 돈다. 그 끝을
+     여기서 기다리지 않는다. */
   function updMgmtRunLabel(항목){
-    return 항목.종류 === '지표' ? '시장 지표 전체' : 항목.회사명;
+    return 항목.회사명;
   }
 
   function updMgmtRunOne(항목, code, pw){
-    const url = 항목.종류 === '지표' ? RUN_URL : PERF_URL;
-    const body = 항목.종류 === '지표'
-      ? { code: code, pw: pw, 대상: '지표' }
-      : { code: code, pw: pw, corp_code: 항목.corp_code, 회사명: 항목.회사명 };
+    const url = PERF_URL;
+    const body = { code: code, pw: pw, corp_code: 항목.corp_code, 회사명: 항목.회사명 };
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
       .then(function (r){
@@ -8153,12 +8148,12 @@
   function updMgmtRun(){
     if (updMgmtRunning) return;
     const 항목들 = updMgmtCheckedItems();
-    if (!항목들.length){ alert('먼저 항목을 하나 이상 체크해 주세요.'); return; }
+    if (!항목들.length){ alert('먼저 회사를 하나 이상 체크해 주세요.'); return; }
     const code = sharedCode();
     if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
     let pw = savedRunPw();
     if (!pw){
-      pw = prompt('선택한 ' + 항목들.length + '건의 업데이트를 하나씩 순서대로 실행합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      pw = prompt('선택한 회사 ' + 항목들.length + '곳의 실적 업데이트를 하나씩 순서대로 실행합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
       if (!pw) return;
     }
 
@@ -8177,7 +8172,10 @@
       if (i >= 항목들.length){
         updMgmtRunning = false;
         버튼.disabled = false;
-        버튼.textContent = '선택 항목 업데이트 실행';
+        버튼.textContent = '선택 회사 업데이트 실행';
+        /* 서버가 검색·저장·추출을 다 거치므로 넉넉히 기다렸다가 화면 자료를
+           다시 받아 이 표의 최근 공시 칸도 새로 적는다. */
+        setTimeout(function (){ loadComp(true); }, 120000);
         return;
       }
       const idx = i;
