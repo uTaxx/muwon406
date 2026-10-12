@@ -654,6 +654,11 @@
   .hig-chip{display:inline-flex; align-items:center; gap:6px; padding:5px 8px 5px 11px; font-size:12px; border-radius:999px; background:#fff; border:1px solid var(--line);}
   .hig-chip button{border:none; background:none; color:var(--muted); font-size:14px; line-height:1; cursor:pointer; padding:0 2px;}
   .hig-chip button:hover{color:var(--danger);}
+  .hig-chip .hig-solo{font-size:10px; padding:2px 6px; border:1px solid var(--line); border-radius:999px; line-height:1.2;}
+  .hig-chip .hig-solo:hover{color:var(--green); border-color:var(--green);}
+  .hig-foot{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .hig-foot button{font-size:11px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); cursor:pointer;}
+  .hig-foot .hig-delgroup{color:var(--danger);}
   .hig-add{width:100%; margin-top:8px; padding:6px 9px; font-size:12px; border:1.5px dashed var(--line); border-radius:8px; background:#fff; color:var(--muted);}
   .hig-hint{font-size:11px; color:var(--muted); margin-top:6px; line-height:1.4;}
   /* 새 묶음 만들기 상자. 아직 지표가 없는 묶음은 서버에 없으므로 화면에만 있다가
@@ -1701,7 +1706,7 @@
          있는지 한눈에 안 보였고 글자가 한 자라도 다르면 다른 묶음이 됐다. -->
     <section class="card">
       <div class="step-head"><span class="step-num">🗂</span><span class="step-title">한눈에 보기 묶음</span></div>
-      <div class="step-desc">상황판 「한눈에 보기」에 나오는 카드입니다. 한 카드에 지표 둘을 나란히 두려면(한국·미국 기준금리처럼) 「새 묶음 만들기」로 이름을 적고 지표를 고르거나, 있는 카드에 이름을 적고 「지표 넣기」로 고릅니다. 지표 옆 ×는 그 카드에서 빼는 것입니다. 바꾸면 그 자리에서 반영됩니다.</div>
+      <div class="step-desc">상황판 「한눈에 보기」에 나오는 카드입니다. 한 카드에 지표 둘을 나란히 두려면(한국·미국 기준금리처럼) 「새 묶음 만들기」로 이름을 적고 지표를 고르거나, 있는 카드에 이름을 적고 「지표 넣기」로 고릅니다. 지표 옆 「단독」은 묶음에서 빼서 따로 두는 것이고 ×는 한눈에 보기에서 빼는 것입니다. 「묶음 풀기」는 식구를 전부 단독 카드로, 「묶음 전체 빼기」는 전부 한눈에 보기에서 뺍니다. 바꾸면 그 자리에서 반영됩니다.</div>
       <div class="hig-wrap" id="indMgmtGroups"></div>
     </section>
     <div id="indMgmtBody"></div>
@@ -3087,6 +3092,13 @@
     { k: '연', 이름: '연도별', 환산: '그 해', 축: function(d){ return d.slice(0, 4); },  눈: function(d){ return d.slice(0, 4); } }
   ];
   const IND_RANGE_기본 = '월';
+  /* 처음 보여 줄 기간. 일별 값이 있는 지표(환율·금리·운임·브렌트유)는 일별로
+     시작한다. 전에는 전부 월별로 시작해서, 환율 카드가 9월 말 값을 들고 있고
+     10월에 들어온 값은 기간을 바꿔야만 보였다. 업데이트를 돌려도 숫자가 안
+     바뀐다는 지적이 그래서 나왔다(2026-10-12). 월별 값만 있는 지표는 그대로다. */
+  function 기본범위(items){
+    return (items || []).some(function (x){ return x && x.범위 && x.범위.일; }) ? '일' : IND_RANGE_기본;
+  }
   let indRange = {};   // 그래프마다 지금 고른 기간
   let indCur = {};     // 그래프마다 지금 고른 돈($ 또는 원)
   let indOpen = {};    // 그래프마다 펼쳐져 있는지
@@ -3587,7 +3599,7 @@
       return items.some(function(x){ return x.범위 && x.범위[R.k]; });
     });
     if (!가능.length) return '';
-    let 지금 = indRange[열쇠] || IND_RANGE_기본;
+    let 지금 = indRange[열쇠] || 기본범위(items);
     if (!가능.some(function(R){ return R.k === 지금; })) 지금 = 가능[가능.length - 1].k;
     const R = IND_RANGES.filter(function(x){ return x.k === 지금; })[0];
 
@@ -3970,17 +3982,20 @@
       return;
     }
 
-    /* 「최근 업데이트」는 정확한 수집 시각이 아니라 지표들이 가진 값 중
-       가장 최근 날짜다. 대략적인 기준이라고 화면에도 그렇게 적는다. */
+    /* 「최근 업데이트」는 둘을 같이 적는다. 마지막으로 수집한 시각(서버가
+       시장지표값의 수집일시에서 가장 늦은 것을 보내 준다)과, 지표들이 가진
+       값 중 가장 최근 기준일이다. 전에는 기준일만 적어서, 업데이트를 돌려도
+       새 기준일이 없으면 아무것도 안 바뀐 것처럼 보였다(2026-10-12). */
     let 전체최신 = '';
     지표들.forEach(function (x){
       const d = 지표최신일(x);
       if (d && d > 전체최신) 전체최신 = d;
     });
     const asOf = document.getElementById('indMgmtAsOf');
-    if (asOf) asOf.textContent = 전체최신
-      ? ('지표 값 중 가장 최근 날짜 ' + 전체최신 + ' (대략적인 기준입니다)')
-      : '아직 지표 값이 없습니다.';
+    const 수집최신 = String(indData.수집최신 || '').trim();
+    if (asOf) asOf.textContent = (수집최신 ? ('마지막 수집 ' + 수집최신 + ' · ') : '') + (전체최신
+      ? ('지표 값 중 가장 최근 기준일 ' + 전체최신)
+      : '아직 지표 값이 없습니다.');
 
     const 그룹모음 = {};
     const 그룹순서 = [];
@@ -4024,7 +4039,8 @@
           '<label class="indmgmt-upd-pick"><input type="checkbox" class="indmgmt-upd-chk" data-id="' + escapeHtml(x.id) + '"' + (고른업데이트[x.id] ? ' checked' : '') + '> 업데이트 대상</label>' +
           '<div class="indmgmt-row-t">' + escapeHtml(x.이름) + '</div>' +
           '<div class="indmgmt-row-sub">' + escapeHtml(x.id) + ' · ' + escapeHtml(x.출처) +
-            ' · 공시 숫자 최근 날짜 ' + escapeHtml(최신일 || '없음') + '</div>' +
+            ' · 최근 기준일 ' + escapeHtml(최신일 || '없음') +
+            (x.수집최신 ? ' · 마지막 수집 ' + escapeHtml(String(x.수집최신)) : '') + '</div>' +
           '<div class="indmgmt-chips">' + 소속칩 + '</div>' +
           '<div class="indmgmt-home">' +
             '<label class="source-check' + (한눈에켜짐 ? ' checked' : '') + '">' +
@@ -4097,11 +4113,20 @@
       const 식구 = g.ids.map(찾기).filter(Boolean);
       const 이름있음 = 식구.some(function (x){ return String(x.한눈에묶음 || '').trim(); });
       const 묶음명 = 이름있음 ? g.이름 : '';
+      /* 지표 옆 단추 둘. 「단독」은 묶음에서 빼서 단독 카드로 두는 것이고
+         ×는 한눈에 보기에서 아예 빼는 것이다. 전에는 ×가 묶음에서만 빼서
+         "지표를 지우는 단추가 없다"는 말을 들었다(2026-10-12). */
       const 칩 = 식구.map(function (x){
         return '<span class="hig-chip">' + escapeHtml(x.이름) +
-          '<button type="button" class="hig-x" data-id="' + escapeHtml(x.id) + '" data-named="' + (이름있음 ? '1' : '0') + '" title="' +
-            (이름있음 ? '이 묶음에서 빼기(단독 카드가 됩니다)' : '한눈에 보기에서 빼기') + '">×</button></span>';
+          (이름있음 ? '<button type="button" class="hig-solo" data-id="' + escapeHtml(x.id) + '" title="이 묶음에서 빼서 단독 카드로 둡니다">단독</button>' : '') +
+          '<button type="button" class="hig-x" data-id="' + escapeHtml(x.id) + '" title="한눈에 보기에서 빼기">×</button></span>';
       }).join('');
+      const 바닥 = 이름있음
+        ? '<div class="hig-foot">' +
+            '<button type="button" class="hig-ungroup" data-ids="' + escapeHtml(g.ids.join(',')) + '" data-name="' + escapeHtml(묶음명) + '">묶음 풀기</button>' +
+            '<button type="button" class="hig-delgroup" data-ids="' + escapeHtml(g.ids.join(',')) + '" data-name="' + escapeHtml(묶음명) + '">묶음 전체 빼기</button>' +
+          '</div>'
+        : '';
       const 후보 = 전부.filter(function (x){ return g.ids.indexOf(x.id) < 0; })
         .sort(function (a, b){ return (a.정렬 || 999) - (b.정렬 || 999); });
       const 넣기 = 이름있음
@@ -4115,7 +4140,7 @@
       return '<div class="hig-box' + (이름있음 ? ' named' : '') + '">' +
         '<input type="text" class="hig-name" data-ids="' + escapeHtml(g.ids.join(',')) + '" data-old="' + escapeHtml(묶음명) + '" value="' + escapeHtml(묶음명) + '" placeholder="' + escapeHtml(g.이름) + ' (단독 카드 · 묶음 이름을 적으면 묶음이 됩니다)">' +
         '<div class="hig-chips">' + 칩 + '</div>' +
-        넣기 +
+        넣기 + 바닥 +
       '</div>';
     }).join('') + indMgmt새묶음상자(전부);
     if (새묶음초안){ const 입력 = 통.querySelector('.hig-new-name'); if (입력 && !새묶음초안.이름) 입력.focus(); }
@@ -4218,15 +4243,38 @@
       indMgmt묶음그리기(indData && indData.지표 || []);
       return;
     }
+    const 찾기 = function (id){ return (indData && indData.지표 || []).filter(function (y){ return y.id === id; })[0]; };
+    const ids로 = function (b){ return String(b.dataset.ids || '').split(',').filter(Boolean); };
+
+    /* 묶음 풀기: 식구 전부를 단독 카드로. 한눈에 보기에는 그대로 남는다. */
+    const ungroup = e.target.closest('button.hig-ungroup');
+    if (ungroup){
+      const 할일 = ids로(ungroup).map(function (id){ return { id: id, 한눈에보기: true, 묶음: '' }; });
+      indMgmt묶음바꾸기(할일, '「' + ungroup.dataset.name + '」 묶음 풀기');
+      return;
+    }
+    /* 묶음 전체 빼기: 식구 전부를 한눈에 보기에서 뺀다. 묶음 이름은 남겨 두어
+       나중에 「한눈에 보기」를 다시 켜면 같은 묶음으로 돌아온다. */
+    const delgroup = e.target.closest('button.hig-delgroup');
+    if (delgroup){
+      const ids = ids로(delgroup);
+      if (!confirm('「' + delgroup.dataset.name + '」 묶음의 지표 ' + ids.length + '개를 한눈에 보기에서 전부 뺍니다.\n지표 자체는 지워지지 않고, 아래 지표 줄에서 다시 켤 수 있습니다.')) return;
+      const 할일 = ids.map(function (id){ const 지표 = 찾기(id); return { id: id, 한눈에보기: false, 묶음: 지표 ? (지표.한눈에묶음 || '') : '' }; });
+      indMgmt묶음바꾸기(할일, '「' + delgroup.dataset.name + '」 묶음 전체 빼기');
+      return;
+    }
+    const solo = e.target.closest('button.hig-solo');
+    if (solo){
+      const 지표 = 찾기(solo.dataset.id);
+      const 이름 = 지표 ? 지표.이름 : solo.dataset.id;
+      indMgmt묶음바꾸기([{ id: solo.dataset.id, 한눈에보기: true, 묶음: '' }], '「' + 이름 + '」' + 을를(이름) + ' 묶음에서 빼기');
+      return;
+    }
     const x = e.target.closest('button.hig-x');
     if (!x) return;
-    const 지표 = (indData && indData.지표 || []).filter(function (y){ return y.id === x.dataset.id; })[0];
+    const 지표 = 찾기(x.dataset.id);
     const 이름 = 지표 ? 지표.이름 : x.dataset.id;
-    if (x.dataset.named === '1'){
-      indMgmt묶음바꾸기([{ id: x.dataset.id, 한눈에보기: true, 묶음: '' }], '「' + 이름 + '」' + 을를(이름) + ' 묶음에서 빼기');
-    } else {
-      indMgmt묶음바꾸기([{ id: x.dataset.id, 한눈에보기: false, 묶음: 지표 ? (지표.한눈에묶음 || '') : '' }], '「' + 이름 + '」' + 을를(이름) + ' 한눈에 보기에서 빼기');
-    }
+    indMgmt묶음바꾸기([{ id: x.dataset.id, 한눈에보기: false, 묶음: 지표 ? (지표.한눈에묶음 || '') : '' }], '「' + 이름 + '」' + 을를(이름) + ' 한눈에 보기에서 빼기');
   });
 
   document.getElementById('indMgmtGroups').addEventListener('change', function (e){
@@ -4633,6 +4681,8 @@
 
     const 본문 = { code: code, pw: pw, 대상: 대상 };
     if (부분) 본문.지표ID목록 = 지표ID목록;
+    /* 누르기 전의 마지막 수집 시각. 갱신이 끝났는지는 이 값이 바뀌는지로 안다. */
+    const 기준수집 = indData ? String(indData.수집최신 || '') : '';
 
     fetch(RUN_URL, {
       method: 'POST',
@@ -4653,7 +4703,8 @@
         }
         try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
         알림.className = 'upd-msg ok';
-        알림.textContent = r.d.message || (이름 + ' 갱신을 시작했습니다.');
+        알림.textContent = 이름 + ' 갱신을 시작했습니다. 새 값이 들어오면 화면을 다시 그립니다.';
+        갱신기다리기(알림, 기준수집, 이름);
       })
       .catch(function (){
         알림.className = 'upd-msg bad';
@@ -4664,6 +4715,58 @@
            잠깐 잠가 둔다. */
         setTimeout(function (){ 같은것.forEach(function (b){ b.disabled = false; }); }, 20000);
       });
+  }
+
+  /* 업데이트를 부른 뒤 새 값이 들어왔는지 화면이 스스로 확인한다. 15초마다
+     조회를 다시 받아 서버의 수집최신(시장지표값의 마지막 수집일시)이 누르기
+     전과 달라지면 화면을 다시 그리고 끝났다고 적는다. 4분 안에 안 바뀌면
+     원천 기관에 새 자료가 없었을 수 있다고 적는다. 전에는 "몇 분 뒤
+     새로고침하세요"만 적어서 끝난 시점을 알 길이 없었고, 새로고침을 안 하면
+     옛 숫자가 그대로 보였다(2026-10-12). */
+  function 지표다시받기(){
+    return fetch(INDEX_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS' }) })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        if (!d || d.ok === false) return null;
+        indData = d;
+        indDraw();
+        한눈에다시그리기();
+        if (document.getElementById('tab-co').classList.contains('active')) coDraw();
+        return d;
+      });
+  }
+  function 갱신기다리기(알림, 기준수집, 이름){
+    const 간격 = 15000, 최대 = 16;
+    const 시작 = Date.now();
+    let 번 = 0;
+    function 한번(){
+      번++;
+      지표다시받기().then(function (d){
+        const 지금수집 = d ? String(d.수집최신 || '') : '';
+        if (d && 지금수집 && 지금수집 !== 기준수집){
+          알림.className = 'upd-msg ok';
+          알림.textContent = 이름 + ' 갱신이 끝났습니다. 마지막 수집 ' + 지금수집 + '. 화면을 다시 그렸습니다.';
+          return;
+        }
+        if (번 >= 최대){
+          알림.className = 'upd-msg';
+          알림.textContent = 이름 + ' 갱신을 불렀지만 4분 동안 새로 쌓인 값이 없습니다. 원천 기관에 새 자료가 없었거나 아직 진행 중일 수 있습니다. (마지막 수집 ' + (기준수집 || '없음') + ')';
+          return;
+        }
+        알림.className = 'upd-msg';
+        알림.textContent = 이름 + ' 갱신 중… ' + Math.round((Date.now() - 시작) / 1000) + '초 경과. 새 값이 들어오면 화면을 다시 그립니다.';
+        setTimeout(한번, 간격);
+      }).catch(function (){
+        if (번 >= 최대){
+          알림.className = 'upd-msg';
+          알림.textContent = '갱신 결과를 확인하지 못했습니다. 새로고침해 주세요.';
+          return;
+        }
+        setTimeout(한번, 간격);
+      });
+    }
+    setTimeout(한번, 간격);
   }
 
   document.addEventListener('click', function (e){
@@ -9342,7 +9445,8 @@
     };
     const 묶음 = homeIndGroups().map(function (g){
       const 칸들 = g.ids.map(찾기).filter(Boolean).map(function (x){
-        const b = (x.범위 && (x.범위['월'] || x.범위['일'] || x.범위['연'])) || null;
+        /* 일별 값이 있으면 그것(전일 대비), 없으면 월별. 시장지표 첫 카드와 같다. */
+        const b = (x.범위 && (x.범위['일'] || x.범위['월'] || x.범위['연'])) || null;
         if (!b || b.최신값 === null || b.최신값 === undefined) return '';
         return '<div class="hi-c">' +
           '<div class="hi-l">' + escapeHtml(x.이름) + '</div>' +
@@ -9375,11 +9479,12 @@
       return;
     }
     const 것들 = indTabItems(indData.지표 || [], '공통');
-    const R = IND_RANGES.filter(function (r){ return r.k === IND_RANGE_기본; })[0];
     const 찾기 = function (id){ return 것들.filter(function (x){ return x.id === id; })[0] || null; };
 
     const 카드들 = homeIndGroups().map(function (grp, i){
       const items = grp.ids.map(찾기).filter(Boolean);
+      /* 카드마다 기간을 정한다. 일별 값이 있으면 일별(전일 대비), 없으면 월별. */
+      const R = IND_RANGES.filter(function (r){ return r.k === 기본범위(items); })[0];
       const 숫자칸 = items.map(function (x){
         const b = x.범위 && x.범위[R.k];
         if (!b || b.최신값 === null || b.최신값 === undefined) return '';
