@@ -1005,12 +1005,9 @@
     border:1px solid var(--green); color:var(--green); border-radius:8px; padding:6px 10px;
     font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;}
   .upd-mgmt-data-btn:hover{background:var(--green-tint);}
-  .dm-overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.45); display:none;
-    align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto;}
-  .dm-overlay.show{display:flex;}
-  .dm-panel{background:var(--card); color:var(--text); border-radius:14px; width:100%; max-width:860px;
-    padding:16px; box-shadow:0 10px 40px rgba(0,0,0,.3);}
   .dm-head{display:flex; align-items:center; gap:8px;}
+  .dm-co{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; font-size:12.5px;}
+  .dm-co select{padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font-family:inherit;}
   .dm-title{font-size:16px; font-weight:800; flex:1; min-width:0;}
   .dm-close{background:none; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--muted); padding:2px 8px;}
   .dm-sub{font-size:12px; color:var(--muted); margin-top:4px;}
@@ -1033,7 +1030,6 @@
   .dm-st-sub{display:block; font-size:11px; color:var(--muted); margin-top:2px;}
   .dm-table a{color:var(--green); font-weight:700;}
   @media (max-width:600px){
-    .dm-panel{padding:12px;}
     .dm-table{min-width:0; font-size:12px;}
     .dm-table th, .dm-table td{padding:6px 4px;}
     .dm-table .dm-date{display:none;}
@@ -1277,7 +1273,6 @@
     <h1>LX Group MI</h1>
     <div class="cover-acts">
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
-      <button type="button" class="tab-btn cover-btn" data-tab="disclosure">📄 공시수집기</button>
       <button type="button" class="tab-btn cover-btn" data-tab="perfmgmt">🏢 실적 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="indmgmt">📐 지표 마스터 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
@@ -1619,17 +1614,54 @@
 
   </div>
 
-  <!-- 탭 2-1: 공시수집기. 기업을 검색해 DART 정기공시(사업·반기·분기·감사보고서)를
-       찾고, 원문을 바로 보거나 받거나(조회·XML다운·DART에서 열기), 경쟁사
-       실적 폴더에 저장한다(DB에 다운받기). 기업 검색은 서버를 거치지 않는다 —
-       상장/비상장 회사코드를 매달 구글 드라이브 공개 JSON 두 개로 미리
-       내보내 두고(LXGroup_DART회사코드마스터), 여기서 그 파일을 그대로 받아
-       화면에서 걸러낸다. 상장회사 파일은 작아서 즉시, 비상장회사 파일은
-       훨씬 커서 몇 초 걸릴 수 있다. -->
-  <div id="tab-disclosure" class="tab-panel">
+  <!-- 실적 관리 — 계열사·경쟁사 실적 업데이트는 이 탭에서만 한다. 조회
+       화면(경쟁사 현황·실적현황·계열사 탭)에는 업데이트 버튼을 두지 않는다.
+       시장 지표 업데이트는 지표 마스터 관리 탭이 맡는다(2026-10-12에
+       여기서 뺐다. 두 탭이 같은 일을 하고 있었다). 회사를 체크하고 한 번에
+       실행하면 회사마다 lxgroup-실적반영 웹훅을 순서대로 하나씩 호출한다.
+       한꺼번에 보내면 서버 쪽에 부담이 몰리기 때문이다. -->
+  <div id="tab-perfmgmt" class="tab-panel">
     <section class="card">
-      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">기업 검색</span></div>
-      <div class="step-desc">DART에 공시를 낸 기업을 찾습니다. 상장회사는 바로 찾아지고, 비상장회사는 목록이 커서 시간이 조금 더 걸립니다.</div>
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">실적 관리</span></div>
+      <div class="step-desc">회사를 체크하고 아래 「선택 회사 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시를 찾아 저장하고 실적에 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다. 각 회사 오른쪽의 「수집 data」를 누르면 그 회사의 DART 보고서별 저장·추출 현황과 누락이 보이고, 누락을 체크해 저장하면 원문 저장, 실적 추출, 비용 추출이 한 번에 이어집니다. 등록되지 않은 기업은 아래 「다른 기업 찾기」에서 고르면 됩니다. 실적 업데이트는 이 탭에서만 하고, 조회 화면에는 업데이트 버튼이 없습니다. 시장 지표 업데이트는 지표 마스터 관리 탭에서 합니다.</div>
+      <div class="ind-asof" id="updMgmtAsOf"></div>
+      <div class="status" id="updMgmtLoadStatus"></div>
+    </section>
+
+    <!-- 「수집 data」 조회 화면. 회사 줄의 버튼이나 아래 「다른 기업 찾기」에서 고른 회사의
+         DART 정기보고서마다 원문 저장 · 실적 추출 · 비용 추출 상태를 보여 주고, 누락을
+         체크해 저장하면 서버(LXGroup_수집저장)가 원문 저장부터 실적·비용 추출까지 이어서 한다. -->
+    <section class="card" id="dmCard" style="display:none;">
+      <div class="dm-head"><div class="dm-title" id="dmTitle">수집 data</div>
+        <button type="button" class="dm-close" id="dmClose" aria-label="닫기">×</button></div>
+      <div class="dm-sub" id="dmSub"></div>
+      <div class="status" id="dmStatus"></div>
+      <div id="dmBody"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">그룹 관련 실적(계열사 실적)</span>
+        <button type="button" class="go-btn" id="updMgmtGroupAllBtn">전체 선택</button></div>
+      <div class="step-desc">계열사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
+      <div id="updMgmtGroupList"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🏭</span><span class="step-title">경쟁사 실적</span>
+        <button type="button" class="go-btn" id="updMgmtRivalAllBtn">전체 선택</button></div>
+      <div class="step-desc">경쟁사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
+      <div id="updMgmtRivalList"></div>
+    </section>
+
+    <div class="cfg-bar">
+      <div class="cfg-saved" id="updMgmtSummary">선택한 회사가 없습니다.</div>
+      <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 회사 업데이트 실행</button>
+    </div>
+    <div id="updMgmtRunLog"></div>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">🔍</span><span class="step-title">다른 기업 찾기</span></div>
+      <div class="step-desc">등록되지 않은 기업도 DART에서 찾아 보고서별 수집 현황을 볼 수 있습니다. 고르면 위의 「수집 data」 화면이 열립니다. 상장회사는 바로 찾아지고, 비상장회사는 목록이 커서 시간이 조금 더 걸립니다.</div>
 
       <div class="opt-row">
         <label class="check-option checked" id="discOptListed">
@@ -1650,32 +1682,6 @@
       <button type="button" class="ghost-btn" id="discSearchUnlistedBtn" style="display:none; margin-top:8px;">비상장회사에서 찾기 (시간이 걸릴 수 있습니다)</button>
     </section>
 
-    <section class="card" id="discPickedCard" style="display:none;">
-      <div class="step-head"><span class="step-num">📄</span><span class="step-title">선택한 기업</span></div>
-      <div id="discPicked" class="word-hint" style="margin-top:0;"></div>
-
-      <div class="field-row">
-        <div><label>시작일</label><input type="date" id="discStartDate"></div>
-        <div><label>종료일</label><input type="date" id="discEndDate"></div>
-      </div>
-      <div class="step-desc">비워 두면 최근 3년에서 찾습니다.</div>
-
-      <div class="opt-row" id="discTypeRow">
-        <label class="check-option checked"><input type="checkbox" class="disc-type" value="사업보고서" checked><div class="opt-text">사업보고서</div></label>
-        <label class="check-option checked"><input type="checkbox" class="disc-type" value="반기보고서" checked><div class="opt-text">반기보고서</div></label>
-        <label class="check-option checked"><input type="checkbox" class="disc-type" value="분기보고서" checked><div class="opt-text">분기보고서</div></label>
-        <label class="check-option checked"><input type="checkbox" class="disc-type" value="감사보고서" checked><div class="opt-text">감사보고서</div></label>
-      </div>
-
-      <button type="button" class="submit-btn" id="discCollectBtn">수집하기</button>
-      <div class="status" id="discCollectStatus"></div>
-    </section>
-
-    <section class="card" id="discResultCard" style="display:none;">
-      <div class="step-head"><span class="step-num">📋</span><span class="step-title">공시 목록</span></div>
-      <div class="step-desc">조회는 DART 원문 화면을 새 창으로 엽니다. 원본 다운은 DART 자체 다운로드 화면을 엽니다 — 정기공시는 DART가 자체 포맷(.dsd)으로만 문서를 갖고 있어 PDF가 아닐 수 있습니다. 저장할 공시를 선택하고 「선택한 공시 저장」을 누르면 이 회사가 속한 계열사의 경쟁사 실적 폴더에 한 번에 저장하고, 이어서 계열사·경쟁사 현황 화면의 실적 갱신도 함께 시작합니다(몇 분 걸릴 수 있습니다).</div>
-      <div id="discResultList"></div>
-    </section>
 
     <section class="card">
       <div class="step-head"><span class="step-num">🗂</span><span class="step-title">기업 관리</span></div>
@@ -1709,53 +1715,7 @@
         <div id="mgmtAddForm" style="display:none; margin-top:10px;"></div>
       </div>
     </section>
-  </div>
 
-  <!-- 실적 관리 — 계열사·경쟁사 실적 업데이트는 이 탭에서만 한다. 조회
-       화면(경쟁사 현황·실적현황·계열사 탭)에는 업데이트 버튼을 두지 않는다.
-       시장 지표 업데이트는 지표 마스터 관리 탭이 맡는다(2026-10-12에
-       여기서 뺐다. 두 탭이 같은 일을 하고 있었다). 회사를 체크하고 한 번에
-       실행하면 회사마다 lxgroup-실적반영 웹훅을 순서대로 하나씩 호출한다.
-       한꺼번에 보내면 서버 쪽에 부담이 몰리기 때문이다. -->
-  <div id="tab-perfmgmt" class="tab-panel">
-    <section class="card">
-      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">실적 관리</span></div>
-      <div class="step-desc">회사를 체크하고 아래 「선택 회사 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시를 찾아 저장하고 실적에 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다. 각 회사 오른쪽의 「수집 data」를 누르면 그 회사의 DART 보고서별 저장·추출 현황과 누락이 보이고, 누락을 체크해 DB에 저장할 수 있습니다. 실적 업데이트는 이 탭에서만 하고, 조회 화면에는 업데이트 버튼이 없습니다. 시장 지표 업데이트는 지표 마스터 관리 탭에서 합니다.</div>
-      <div class="ind-asof" id="updMgmtAsOf"></div>
-      <div class="status" id="updMgmtLoadStatus"></div>
-    </section>
-
-    <section class="card">
-      <div class="step-head"><span class="step-num">🏢</span><span class="step-title">그룹 관련 실적(계열사 실적)</span>
-        <button type="button" class="go-btn" id="updMgmtGroupAllBtn">전체 선택</button></div>
-      <div class="step-desc">계열사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
-      <div id="updMgmtGroupList"></div>
-    </section>
-
-    <section class="card">
-      <div class="step-head"><span class="step-num">🏭</span><span class="step-title">경쟁사 실적</span>
-        <button type="button" class="go-btn" id="updMgmtRivalAllBtn">전체 선택</button></div>
-      <div class="step-desc">경쟁사의 최신 공시를 다시 찾아 저장하고 실적에 반영합니다.</div>
-      <div id="updMgmtRivalList"></div>
-    </section>
-
-    <div class="cfg-bar">
-      <div class="cfg-saved" id="updMgmtSummary">선택한 회사가 없습니다.</div>
-      <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 회사 업데이트 실행</button>
-    </div>
-    <div id="updMgmtRunLog"></div>
-
-    <!-- 회사 줄의 「수집 data」 조회 화면. 그 회사의 DART 정기보고서마다 원문 저장 ·
-         실적 추출 · 비용 추출이 됐는지 보여 주고, 누락을 체크해 DB에 저장한다. -->
-    <div class="dm-overlay" id="dmOverlay" role="dialog" aria-modal="true" aria-labelledby="dmTitle">
-      <div class="dm-panel">
-        <div class="dm-head"><div class="dm-title" id="dmTitle">수집 data</div>
-          <button type="button" class="dm-close" id="dmClose" aria-label="닫기">×</button></div>
-        <div class="dm-sub" id="dmSub"></div>
-        <div class="status" id="dmStatus"></div>
-        <div id="dmBody"></div>
-      </div>
-    </div>
   </div>
 
   <!-- 지표 마스터 관리 — 지표마다 어느 계열사에 보일지(소속)와 상황판 「한눈에
@@ -3061,6 +3021,8 @@
   }
 
   function showTab(tabName){
+    /* 공시수집기 탭은 실적 관리로 합쳤다. 예전 주소·저장된 탭 이름이 와도 그리로 보낸다. */
+    if (tabName === 'disclosure') tabName = 'perfmgmt';
     document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
     topNav그리기(tabName);
@@ -3076,8 +3038,7 @@
        loadIndex 는 이미 받아 뒀으면 다시 부르지 않는다. */
     if (tabName === 'home'){ renderHome(); loadIndex(false); loadComp(false); loadDeal(false); }
     if (tabName === 'apply'){ maybeAutoLoadApply(); loadLabels(); }
-    if (tabName === 'disclosure'){ discLoadRegistered(); }
-    if (tabName === 'perfmgmt'){ updMgmtOpen(); }
+    if (tabName === 'perfmgmt'){ updMgmtOpen(); discLoadRegistered(); }
     if (tabName === 'indmgmt'){ loadIndex(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
@@ -8023,8 +7984,6 @@
      실행 비밀번호가 필요하다(경쟁사 시트·드라이브를 실제로 고치므로). */
   let discRegistered = {};
   let discListedCache = null, discUnlistedCache = null;
-  let discPicked = null;
-  let discCurrentResults = [];
 
   function discLoadRegistered(){
     fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: '기업검색' }) })
@@ -8106,202 +8065,8 @@
   document.getElementById('discSearchResults').addEventListener('click', function (e){
     const row = e.target.closest('.disc-pick-row');
     if (!row) return;
-    discPicked = { corp_code: row.dataset.corp, 회사명: row.dataset.name };
-    document.getElementById('discPickedCard').style.display = '';
-    document.getElementById('discResultCard').style.display = 'none';
-    document.getElementById('discPicked').textContent = discPicked.회사명 + ' (' + discPicked.corp_code + ')';
+    dmOpen(row.dataset.corp, row.dataset.name);
   });
-
-  document.querySelectorAll('#discTypeRow .check-option').forEach(function (opt){
-    opt.querySelector('input').addEventListener('change', function (){
-      opt.classList.toggle('checked', this.checked);
-    });
-  });
-
-  document.getElementById('discCollectBtn').addEventListener('click', function (){
-    if (!discPicked) return;
-    const 유형 = Array.from(document.querySelectorAll('.disc-type:checked')).map(function (c){ return c.value; });
-    const body = {
-      action: '공시검색', corp_code: discPicked.corp_code,
-      시작일: (document.getElementById('discStartDate').value || '').replace(/-/g, ''),
-      종료일: (document.getElementById('discEndDate').value || '').replace(/-/g, ''),
-      유형: 유형
-    };
-    const 알림 = document.getElementById('discCollectStatus');
-    알림.className = 'upd-msg';
-    알림.textContent = '공시를 찾는 중…';
-    fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r){ return r.json(); })
-      .then(function (d){
-        알림.textContent = '';
-        discResultsDraw(d.결과 || []);
-      })
-      .catch(function (err){
-        알림.className = 'upd-msg bad';
-        알림.textContent = 오류메시지(err, '공시 검색');
-      });
-  });
-
-  function discResultsDraw(list){
-    discCurrentResults = list;
-    const card = document.getElementById('discResultCard');
-    const 자리 = document.getElementById('discResultList');
-    card.style.display = '';
-    if (!list.length){
-      자리.innerHTML = '<div class="empty-note">해당 기간에 지정한 종류의 공시가 없습니다.</div>';
-      return;
-    }
-    자리.innerHTML =
-      '<div class="disc-batch-bar">' +
-        '<label class="disc-batch-left"><input type="checkbox" id="discSelectAll"> 전체 선택 (<span id="discSelectedCount">0</span>건)</label>' +
-        '<button type="button" class="upd-btn" id="discBatchSaveBtn">선택한 공시 저장</button>' +
-      '</div>' +
-      '<div class="upd-msg" id="discBatchStatus"></div>' +
-      '<div class="disc-company-pick" id="discBatchCompanyPick" style="display:none;"></div>' +
-      list.map(function (r, idx){
-        return '<div class="disc-row" data-idx="' + idx + '">' +
-          '<div class="disc-row-head">' +
-            '<input type="checkbox" class="disc-row-check" data-idx="' + idx + '">' +
-            '<div class="disc-row-body">' +
-              '<div class="disc-row-title">' + escapeHtml(r.보고서명) + (r.DB파일보유 ? '<span class="tag-ok">DB 파일 보유중</span>' : '') + '</div>' +
-              '<div class="disc-row-sub">' + escapeHtml(r.접수일) + (r.결산기 ? ' · ' + escapeHtml(r.결산기) : '') + '</div>' +
-              '<div class="disc-row-actions">' +
-                '<a href="' + r.조회URL + '" target="_blank" rel="noopener" class="small-btn">조회</a>' +
-                '<a href="' + r.DART열기URL + '" target="_blank" rel="noopener" class="small-btn">원본 다운</a>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-  }
-
-  function discSelectedIndexes(){
-    return Array.from(document.querySelectorAll('.disc-row-check:checked')).map(function (c){ return Number(c.dataset.idx); });
-  }
-
-  function discUpdateSelectedCount(){
-    const n = document.querySelectorAll('.disc-row-check:checked').length;
-    const 전체 = document.querySelectorAll('.disc-row-check').length;
-    document.getElementById('discSelectedCount').textContent = n;
-    document.getElementById('discSelectAll').checked = 전체 > 0 && n === 전체;
-  }
-
-  document.getElementById('discResultList').addEventListener('change', function (e){
-    if (e.target.id === 'discSelectAll'){
-      document.querySelectorAll('.disc-row-check').forEach(function (c){ c.checked = e.target.checked; });
-      discUpdateSelectedCount();
-      return;
-    }
-    if (e.target.classList.contains('disc-row-check')) discUpdateSelectedCount();
-  });
-
-  document.getElementById('discResultList').addEventListener('click', function (e){
-    if (e.target.id === 'discBatchSaveBtn') discSaveSelected();
-  });
-
-  /* 저장 대상이 등록 안 된 새 회사면 서버가 needCompany 를 돌려준다.
-     같은 검색 결과는 전부 같은 회사이므로 계열사를 한 번만 물어보고,
-     선택 목록 전체에 같은 값을 적용해 이어서 저장한다. */
-  function discSaveSelected(){
-    const idxs = discSelectedIndexes();
-    const 상태 = document.getElementById('discBatchStatus');
-    if (!idxs.length){ 상태.className = 'upd-msg bad'; 상태.textContent = '저장할 공시를 먼저 선택해 주세요.'; return; }
-    const code = sharedCode();
-    if (!code){ 상태.className = 'upd-msg bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
-    let pw = savedRunPw();
-    if (!pw){
-      pw = prompt('DB에 저장합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
-      if (!pw) return;
-    }
-    document.getElementById('discBatchSaveBtn').disabled = true;
-    document.getElementById('discBatchCompanyPick').style.display = 'none';
-    discSaveBatchRun(idxs, code, pw, '');
-  }
-
-  function discSaveBatchRun(idxs, code, pw, 계열사){
-    const 상태 = document.getElementById('discBatchStatus');
-    let 성공 = 0, 실패 = 0, 남음 = idxs.slice(), 실패목록 = [];
-
-    function 다음(){
-      if (!남음.length){
-        document.getElementById('discBatchSaveBtn').disabled = false;
-        상태.className = 'upd-msg ' + (실패 ? 'bad' : 'ok');
-        상태.textContent = '저장 완료: 성공 ' + 성공 + '건' + (실패 ? ', 실패 ' + 실패 + '건' : '') + '.' +
-          (실패목록.length ? ' ' + 실패목록.join(' ') : '');
-        if (성공 > 0) discTriggerCompRefresh(code, pw, 상태);
-        return;
-      }
-      const idx = 남음.shift();
-      const item = discCurrentResults[idx];
-      상태.className = 'upd-msg';
-      상태.textContent = '저장하는 중… (' + (성공 + 실패 + 1) + '/' + idxs.length + ')';
-      const body = Object.assign({
-        action: 'db저장', code: code, pw: pw,
-        corp_code: item.corp_code, 회사명: item.회사명,
-        접수번호: item.접수번호, 보고서명: item.보고서명, 접수일: item.접수일,
-        결산기: item.결산기 || ''
-      }, 계열사 ? { 계열사: 계열사 } : {});
-      fetch(DISCCOLL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        .then(function (res){
-          return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; });
-        })
-        .then(function (r){
-          if (!r.ok || !r.d || r.d.ok !== true){
-            if (r.d && r.d.needCompany && !계열사){
-              /* 이 항목을 다시 대기열 맨 앞에 되돌리고, 계열사를 고르면
-                 그 값을 나머지 전체에 적용해 이어서 저장한다. */
-              남음.unshift(idx);
-              document.getElementById('discBatchSaveBtn').disabled = false;
-              discShowBatchCompanyPick(남음, code, pw);
-              return;
-            }
-            if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
-            throw new Error((r.d && r.d.message) || '저장하지 못했습니다.');
-          }
-          try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
-          성공++;
-          다음();
-        })
-        .catch(function (err){
-          실패++;
-          실패목록.push('(' + item.보고서명 + ': ' + 오류메시지(err, 'DB 저장') + ')');
-          다음();
-        });
-    }
-    다음();
-  }
-
-  /* 저장까지는 끝났지만 경쟁사 현황·실적현황 화면은 「경쟁사실적」 시트를
-     따로 읽는다. 그 시트는 LXGroup_경쟁사_실적추출이 채우므로, 저장 뒤에
-     같은 실행 비밀번호로 그 갱신을 불러 세운다(RUN_URL, 대상 '경쟁사').
-     갱신은 몇 분 걸릴 수 있어 먼저 응답만 받고 기다렸다가 화면 자료를 한 번
-     더 받아온다. */
-  function discTriggerCompRefresh(code, pw, 상태){
-    fetch(RUN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, pw: pw, 대상: '경쟁사' }) })
-      .then(function (res){ return res.json().catch(function (){ return {}; }); })
-      .then(function (d){
-        if (d && d.ok){
-          상태.textContent += ' 계열사·경쟁사 실적 갱신도 시작했습니다. 몇 분 뒤 경쟁사 현황·실적현황 탭에서 확인하세요.';
-          setTimeout(function (){ loadComp(true); }, 90000);
-        }
-      })
-      .catch(function (){ /* 저장은 이미 끝났다. 실적 갱신 호출만 못 보낸 것이므로
-        따로 알리지 않는다. 실적 관리 탭에서 그 회사를 골라 다시 부를 수 있다. */ });
-  }
-
-  function discShowBatchCompanyPick(남음, code, pw){
-    const 자리 = document.getElementById('discBatchCompanyPick');
-    자리.style.display = '';
-    자리.innerHTML = '<div class="word-hint" style="margin-top:0; flex-basis:100%;">등록되지 않은 회사입니다. 관련 계열사를 선택해 주세요.</div>' +
-      '<select class="disc-co-select">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; }).join('') + '</select>' +
-      '<button type="button" class="small-btn disc-co-confirm">계열사 확정하고 이어서 저장</button>';
-    자리.querySelector('.disc-co-confirm').addEventListener('click', function (){
-      const 계열사 = 자리.querySelector('.disc-co-select').value;
-      자리.style.display = 'none';
-      document.getElementById('discBatchSaveBtn').disabled = true;
-      discSaveBatchRun(남음, code, pw, 계열사);
-    });
-  }
 
   /* 회사 블록마다 있던 「최신 공시 반영」 버튼(공시반영시작)은 2026-10-12에
      뺐다. 회사별 실적 업데이트는 실적 관리 탭(updMgmtRunOne)에서만 한다.
@@ -8368,33 +8133,26 @@
         '</div>' +
         '<div class="disc-row-actions">' +
           '<button type="button" class="upd-btn mgmt-save-btn">저장</button>' +
-          '<button type="button" class="ghost-btn mgmt-update-btn" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">업데이트 반영</button>' +
+          '<button type="button" class="ghost-btn mgmt-update-btn" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">수집 data 보기</button>' +
         '</div>' +
         '<div class="upd-msg mgmt-save-msg"></div>' +
       '</div>';
     }).join('');
   }
 
-  /* 「업데이트 반영」은 위 「공시수집기」 검색·기간선택·저장 흐름을 그대로
-     빌린다. 회사를 이름으로 다시 찾게 하지 않고 discPicked를 바로 채워
-     같은 카드(discPickedCard→discResultCard)를 그 회사로 열어 준다. 새
-     컴포넌트를 만들지 않는다 — 기간선택·저장·중복 표시가 전부 이미 거기
-     있다. */
+  /* 기업 관리 줄의 「수집 data 보기」는 실적 관리 맨 위의 수집 data 화면을 그 회사로 연다. */
   document.getElementById('mgmtList').addEventListener('click', function (e){
     const btn = e.target.closest('.mgmt-update-btn');
     if (!btn) return;
-    discPicked = { corp_code: btn.dataset.corp, 회사명: btn.dataset.name };
-    document.getElementById('discPickedCard').style.display = '';
-    document.getElementById('discResultCard').style.display = 'none';
-    document.getElementById('discPicked').textContent = discPicked.회사명 + ' (' + discPicked.corp_code + ')';
-    document.getElementById('discPickedCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    dmOpen(btn.dataset.corp, btn.dataset.name);
   });
 
   document.getElementById('mgmtToggleBtn').addEventListener('click', function (){
     mgmtOpened = !mgmtOpened;
     document.getElementById('mgmtBody').style.display = mgmtOpened ? '' : 'none';
     this.textContent = mgmtOpened ? '기업 관리 닫기' : '기업 관리 열기';
-    if (mgmtOpened && !mgmtCompanies.length) loadMgmt();
+    /* 실적 관리 탭도 같은 목록(mgmtCompanies)을 받아 두므로, 이미 있으면 다시 받지 않고 그리기만 한다. */
+    if (mgmtOpened){ if (mgmtCompanies.length) mgmtListDraw(); else loadMgmt(); }
   });
   document.getElementById('mgmtFilterInput').addEventListener('input', function (){ mgmtListDraw(); });
 
@@ -8791,15 +8549,16 @@
   document.getElementById('updMgmtRunBtn').addEventListener('click', updMgmtRun);
 
   /* ---------- 수집 data 조회 화면 ----------
-     회사 줄 오른쪽 「수집 data」 버튼. 그 회사의 DART 정기보고서마다
-     원문 저장 · 실적 추출 · 비용 추출이 됐는지 보여 주고, 누락된 보고서를 체크해
-     DB(드라이브)에 저장한다. 조회는 lxgroup-수집현황, 저장은 lxgroup-수집저장.
-     저장은 서버가 응답을 먼저 주고 뒤에서 돌기 때문에, 시작한 뒤 이 화면이
-     20초마다 현황을 다시 받아 표를 갱신한다. 비용 추출은 이 화면에서 시작하지
-     못하고 금요일 자동 수집이 맡는다(대기로 표시). */
+     실적 관리 맨 위의 카드. 회사 줄의 「수집 data」나 아래 「다른 기업 찾기」에서 고른
+     회사의 DART 정기보고서마다 원문 저장 · 실적 추출 · 비용 추출이 됐는지 보여 주고,
+     누락을 체크해 저장한다. 조회는 lxgroup-수집현황, 저장은 lxgroup-수집저장이다.
+     저장 한 번이면 서버가 원문 저장 → 실적 추출 → 비용 추출을 이어서 하므로 사람이
+     단계마다 누를 것이 없다. 서버는 응답을 먼저 주고 뒤에서 돌기 때문에, 시작한 뒤에는
+     20초마다 현황을 다시 받아 표를 갱신하고, 끝나면 화면 자료(경쟁사 현황·실적현황)도
+     다시 받는다. 등록되지 않은 회사는 계열사를 골라야 저장되고, 그때 경쟁사 시트에 등록된다. */
   const COLLSTAT_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-수집현황');
   const COLLSAVE_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-수집저장');
-  const dm = { corp: '', name: '', data: null, 선택: {}, 누락만: false, 폴링: null, 저장중: false, 요청번호: 0 };
+  const dm = { corp: '', name: '', 등록: true, 계열사: '', data: null, 선택: {}, 누락만: false, 폴링: null, 저장중: false, 요청번호: 0 };
 
   function dmStatus(문구, 종류){
     const el = document.getElementById('dmStatus');
@@ -8807,21 +8566,28 @@
     el.textContent = 문구 || '';
   }
 
+  function dmShown(){ return document.getElementById('dmCard').style.display !== 'none'; }
+
   function dmClose(){
     if (dm.폴링){ clearInterval(dm.폴링); dm.폴링 = null; }
     dm.요청번호 += 1;
-    document.getElementById('dmOverlay').classList.remove('show');
-    document.body.style.overflow = '';
+    dm.저장중 = false;
+    document.getElementById('dmCard').style.display = 'none';
   }
+
+  function dm코드8(c){ const t = String(c == null ? '' : c).trim(); return t ? t.padStart(8, '0') : ''; }
 
   function dmOpen(corp, name){
     if (dm.폴링){ clearInterval(dm.폴링); dm.폴링 = null; }
-    dm.corp = corp; dm.name = name; dm.data = null; dm.선택 = {}; dm.누락만 = false; dm.저장중 = false;
+    corp = dm코드8(corp);
+    dm.corp = corp; dm.name = name; dm.계열사 = ''; dm.data = null; dm.선택 = {}; dm.누락만 = false; dm.저장중 = false;
+    dm.등록 = !!discRegistered[corp] || mgmtCompanies.some(function (c){ return dm코드8(c.corp_code) === corp; });
     document.getElementById('dmTitle').textContent = name + ' 수집 data';
     document.getElementById('dmSub').textContent = '';
     document.getElementById('dmBody').innerHTML = '';
-    document.getElementById('dmOverlay').classList.add('show');
-    document.body.style.overflow = 'hidden';
+    const 카드 = document.getElementById('dmCard');
+    카드.style.display = '';
+    카드.scrollIntoView({ behavior: 'smooth', block: 'start' });
     dmLoad(false);
   }
 
@@ -8862,7 +8628,7 @@
     const d = dm.data;
     if (!d) return;
     const 요 = d.요약 || {};
-    document.getElementById('dmSub').textContent = '확인 시각 ' + (d.확인시각 || '') + ' · DART 정기보고서·감사보고서 최근 40건 기준';
+    document.getElementById('dmSub').textContent = '확인 시각 ' + (d.확인시각 || '') + ' · DART 정기보고서·감사보고서 2020년 이후 최근 40건 기준' + (dm.등록 ? '' : ' · 등록되지 않은 기업');
     const 줄들 = (d.보고서 || []).filter(function (r){ return !dm.누락만 || r.누락; });
     const 칩 = [
       '<span class="dm-chip">전체 ' + (요.전체 || 0) + '건</span>',
@@ -8879,7 +8645,7 @@
         ? '<a href="' + escapeHtml(r.조회URL) + '" target="_blank" rel="noopener">' + escapeHtml(r.보고서명) + '</a>'
         : escapeHtml(r.보고서명);
       const 실적부가 = r.실적 === '완료' ? (r.실적줄수 + '행 · ' + r.실적연도) : '';
-      const 비용부가 = r.비용 === '완료' ? (r.비용줄수 + '행') : (r.비용 === '대기' ? '금요일 자동 수집' : '');
+      const 비용부가 = r.비용 === '완료' ? (r.비용줄수 + '행') : (r.비용 === '대기' ? '저장 때 함께 추출' : '');
       return '<tr class="' + (r.누락 ? 'miss' : '') + '"><td>' + 체크 + '</td>' +
         '<td>' + 링크 + '<span class="dm-st-sub">접수번호 ' + escapeHtml(r.접수번호) + '</span></td>' +
         '<td class="dm-date">' + escapeHtml(r.접수일) + '</td>' +
@@ -8887,17 +8653,20 @@
         '<td>' + dm배지(r.실적, 실적부가) + '</td>' +
         '<td>' + dm배지(r.비용, 비용부가) + '</td></tr>';
     }).join('');
+    const 계열사고르기 = dm.등록 ? '' :
+      '<div class="dm-co"><span>등록되지 않은 기업입니다. 저장하면 이 계열사 아래에 등록됩니다.</span>' +
+      '<select id="dmCo">' + CO_ORDER.map(function (k){ return '<option value="' + escapeHtml(k) + '"' + (k === dm.계열사 ? ' selected' : '') + '>' + escapeHtml(k) + '</option>'; }).join('') + '</select></div>';
     document.getElementById('dmBody').innerHTML =
       '<div class="dm-chips">' + 칩 + '</div>' +
       '<div class="dm-note">누락은 ① DART 원문이 DB(드라이브)에 없는 보고서, ② 원문은 있는데 실적이 아직 추출되지 않았거나 파서 개선으로 다시 읽을 보고서입니다. ' +
-      '체크하고 저장하면 ①은 원문을 받아 저장한 뒤 실적까지 추출합니다. 비용 추출은 이 화면에서 시작할 수 없고 매주 금요일 자동 수집이 맡습니다.</div>' +
+      '체크하고 저장하면 원문 저장, 실적 추출, 비용 추출을 서버가 이어서 하고 화면 자료도 갱신합니다.</div>' +
       '<div class="dm-tools"><label><input type="checkbox" id="dmOnlyMiss"' + (dm.누락만 ? ' checked' : '') + '> 누락만 보기</label>' +
       '<button type="button" class="go-btn" id="dmAllMiss" style="margin-left:0;">누락 전체 선택</button>' +
       '<button type="button" class="go-btn" id="dmReload">새로고침</button></div>' +
       '<div class="dm-wrap"><table class="dm-table"><thead><tr><th></th><th>보고서</th><th class="dm-date">접수일</th><th>원문 저장</th><th>실적 추출</th><th>비용 추출</th></tr></thead><tbody>' +
       (본문 || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">표시할 보고서가 없습니다.</td></tr>') +
       '</tbody></table></div>' +
-      '<div class="dm-foot"><button type="button" class="submit-btn" id="dmSave"></button></div>';
+      '<div class="dm-foot">' + 계열사고르기 + '<button type="button" class="submit-btn" id="dmSave"></button></div>';
     dmSaveBtnSync();
   }
 
@@ -8906,7 +8675,7 @@
     if (!버튼) return;
     const n = Object.keys(dm.선택).filter(function (k){ return dm.선택[k]; }).length;
     버튼.disabled = dm.저장중 || n === 0;
-    버튼.textContent = dm.저장중 ? '저장 진행 중…' : (n ? '선택한 누락 ' + n + '건 DB 저장' : '저장할 누락 항목을 체크해 주세요');
+    버튼.textContent = dm.저장중 ? '저장 진행 중…' : (n ? '선택한 누락 ' + n + '건 저장 (원문·실적·비용 한 번에)' : '저장할 누락 항목을 체크해 주세요');
   }
 
   function dmSave(){
@@ -8915,9 +8684,12 @@
     if (!고른.length) return;
     const code = sharedCode();
     if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
+    const 계열사칸 = document.getElementById('dmCo');
+    const 계열사 = dm.등록 ? '' : (dm.계열사 || (계열사칸 ? 계열사칸.value : ''));
+    if (!dm.등록 && !계열사){ alert('소속 계열사를 먼저 골라 주세요.'); return; }
     let pw = savedRunPw();
     if (!pw){
-      pw = prompt(dm.name + '의 누락 ' + 고른.length + '건을 DB에 저장합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      pw = prompt(dm.name + '의 누락 ' + 고른.length + '건을 저장하고 실적·비용까지 추출합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
       if (!pw) return;
     }
     dm.저장중 = true;
@@ -8926,8 +8698,9 @@
     const 항목 = 고른.map(function (r){
       return { 접수번호: r.접수번호, 보고서명: r.보고서명, 접수일: r.접수일, 결산기: r.결산기, 원문저장필요: r.원문 === '누락' };
     });
-    fetch(COLLSAVE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code, pw: pw, corp_code: dm.corp, 회사명: dm.name, 항목: 항목 }) })
+    const 본문 = { code: code, pw: pw, corp_code: dm.corp, 회사명: dm.name, 항목: 항목 };
+    if (계열사) 본문.계열사 = 계열사;
+    fetch(COLLSAVE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(본문) })
       .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
       .then(function (r){
         if (!r.ok || !r.d || r.d.ok !== true){
@@ -8935,6 +8708,8 @@
           throw new Error((r.d && r.d.message) || '저장 요청을 보내지 못했습니다.');
         }
         try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        dm.등록 = true;          // 이 요청으로 등록된다. 다시 그릴 때 계열사 선택을 없앤다.
+        discRegistered[dm.corp] = { 회사명: dm.name, corp_code: dm.corp, 계열사: [계열사] };
         dmFollow(항목.map(function (x){ return x.접수번호; }), r.d.message || '저장을 시작했습니다.');
       })
       .catch(function (err){
@@ -8946,30 +8721,34 @@
 
   /* 저장을 시작한 뒤 20초마다 현황을 다시 받는다. 고른 보고서가 모두 누락에서
      빠지면 끝낸다. 15분 안에 안 끝나면 서버가 아직 돌거나 실패한 것이므로
-     그대로 말하고 멈춘다 — 끝난 척하지 않는다. */
+     그대로 말하고 멈춘다 — 끝난 척하지 않는다. 비용 추출은 실적 추출 뒤에 도는데
+     이 화면의 누락 판정에는 안 들어가므로, 끝난 뒤 표에 비용 완료가 늘었는지로 본다. */
   function dmFollow(번호들, 시작메시지){
     const 시작 = Date.now();
     const 이름 = dm.name;
-    dmStatus(시작메시지 + ' 완료되면 표가 저절로 갱신됩니다.', '');
+    dmStatus(시작메시지 + ' 완료되면 표와 화면 자료가 저절로 갱신됩니다.', '');
     if (dm.폴링) clearInterval(dm.폴링);
     dm.폴링 = setInterval(function (){
-      if (dm.name !== 이름 || !document.getElementById('dmOverlay').classList.contains('show')){
+      if (dm.name !== 이름 || !dmShown()){
         clearInterval(dm.폴링); dm.폴링 = null; return;
       }
       dmLoad(true).then(function (ok){
         if (!ok || !dm.data) return;
         const 남음 = (dm.data.보고서 || []).filter(function (r){ return 번호들.indexOf(r.접수번호) >= 0 && r.누락; });
+        const 비용대기 = (dm.data.보고서 || []).filter(function (r){ return 번호들.indexOf(r.접수번호) >= 0 && r.비용 === '대기'; });
         const 지남 = Date.now() - 시작;
-        if (!남음.length){
+        if (!남음.length && !비용대기.length){
           clearInterval(dm.폴링); dm.폴링 = null; dm.저장중 = false; dm.선택 = {};
-          dmStatus('선택한 보고서의 저장이 끝났습니다. 추출된 실적은 경쟁사 실적 화면을 새로 불러오면 보입니다.', 'ok');
+          dmStatus('선택한 보고서의 원문 저장, 실적 추출, 비용 추출이 끝났습니다. 화면 자료를 새로 받습니다.', 'ok');
           dmDraw();
+          loadComp(true);
         } else if (지남 > 15 * 60 * 1000){
           clearInterval(dm.폴링); dm.폴링 = null; dm.저장중 = false;
-          dmStatus('15분이 지나도 ' + 남음.length + '건이 아직 누락으로 남아 있습니다. 서버가 아직 처리 중이거나 실패했을 수 있으니 잠시 뒤 새로고침해 확인해 주세요.', 'bad');
+          dmStatus('15분이 지나도 누락 ' + 남음.length + '건, 비용 대기 ' + 비용대기.length + '건이 남아 있습니다. 서버가 아직 처리 중이거나 실패했을 수 있으니 잠시 뒤 새로고침해 확인해 주세요.', 'bad');
           dmDraw();
+          loadComp(true);
         } else {
-          dmStatus('저장 진행 중… 아직 ' + 남음.length + '건이 남았습니다. (경과 ' + Math.round(지남 / 1000) + '초)', '');
+          dmStatus('저장 진행 중… 누락 ' + 남음.length + '건, 비용 추출 대기 ' + 비용대기.length + '건이 남았습니다. (경과 ' + Math.round(지남 / 1000) + '초)', '');
         }
       });
     }, 20000);
@@ -8985,12 +8764,9 @@
     });
   });
   document.getElementById('dmClose').addEventListener('click', dmClose);
-  document.getElementById('dmOverlay').addEventListener('click', function (e){ if (e.target === this) dmClose(); });
-  document.addEventListener('keydown', function (e){
-    if (e.key === 'Escape' && document.getElementById('dmOverlay').classList.contains('show')) dmClose();
-  });
   document.getElementById('dmBody').addEventListener('change', function (e){
     if (e.target.id === 'dmOnlyMiss'){ dm.누락만 = e.target.checked; dmDraw(); return; }
+    if (e.target.id === 'dmCo'){ dm.계열사 = e.target.value; return; }
     if (e.target.classList.contains('dm-chk')){ dm.선택[e.target.dataset.no] = e.target.checked; dmSaveBtnSync(); }
   });
   document.getElementById('dmBody').addEventListener('click', function (e){
