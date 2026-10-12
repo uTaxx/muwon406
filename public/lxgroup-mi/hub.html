@@ -521,13 +521,13 @@
   .risk-bar{width:100%; background:var(--green-tint); border:1px solid var(--green); border-radius:4px 4px 0 0; min-height:2px;}
   .risk-bar.peak{background:var(--green);}
   .risk-bar-n{font-size:10.5px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;}
-  .risk-bar-m{font-size:10px; color:var(--muted); white-space:nowrap;}
+  .risk-bar-m{font-size:15px; color:var(--muted); white-space:nowrap;}
 
   .risk-year{display:flex; align-items:baseline; justify-content:space-between; gap:8px;
     margin:18px 0 2px; padding-bottom:7px; border-bottom:2px solid var(--green);
     font-size:13.5px; font-weight:700; color:var(--green-dark);}
   .risk-year:first-child{margin-top:6px;}
-  .risk-year-n{font-size:11px; font-weight:600; color:var(--muted);}
+  .risk-year-n{font-size:15px; font-weight:600; color:var(--muted);}
   .risk-item{padding:8px 0; border-bottom:1px solid var(--line);}
   .risk-item:last-child{border-bottom:none;}
   .risk-item-top{display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap;}
@@ -863,16 +863,19 @@
   .ind-svg{display:block; width:100%; height:100%; overflow:visible;}
   /* 눈금은 왼쪽에 둔다. 오른쪽 끝은 가장 최근 값이 찍히는 자리라
      거기에 글자를 얹으면 제일 봐야 할 곳을 가린다. */
-  .ind-y{position:absolute; left:0; font-size:10.5px; color:var(--muted); font-weight:600;
+  /* 그래프 안 글자·숫자는 2026-10-12에 1.5배로 키웠다. 10~11px는 그래프
+     위에서 읽히지 않는다는 지적을 받았다. 눈금·x축·표식·값 상자·적자 표시가
+     전부 같은 비율로 커진다. */
+  .ind-y{position:absolute; left:0; font-size:16px; color:var(--muted); font-weight:600;
          background:var(--card); padding:0 3px; border-radius:3px; pointer-events:none;}
   .ind-y.hi{top:0;}
   .ind-y.lo{bottom:0;}
   /* 기준선 표시는 선 '위로' 올린다. 가운데 맞추면 100 언저리에서 끝나는
      선을 덮는다. */
-  .ind-y.base{left:auto; right:0; transform:translateY(-115%); font-size:10px; opacity:.75;}
+  .ind-y.base{left:auto; right:0; transform:translateY(-115%); font-size:15px; opacity:.75;}
   /* x축 눈금 — 처음과 끝만 있으면 가운데가 언제인지 감이 안 온다.
      칸 위치에 맞춰 세워야 하므로 flex 가 아니라 자리를 직접 잡는다. */
-  .ind-xax{position:relative; height:14px; font-size:10.5px; color:var(--muted); margin-top:4px;}
+  .ind-xax{position:relative; height:21px; font-size:16px; color:var(--muted); margin-top:5px;}
   .ind-xax span{position:absolute; top:0; transform:translateX(-50%); white-space:nowrap;}
   .ind-xax span.first{transform:none; left:0;}
   .ind-xax span.last{transform:translateX(-100%);}
@@ -896,9 +899,9 @@
   .ind-mark i{position:absolute; left:0; top:0; width:9px; height:9px; margin:-4.5px 0 0 -4.5px;
               border-radius:50%; border:1.6px solid #fff; box-sizing:border-box;}
   .ind-mark-txt{position:absolute; display:flex; flex-direction:column; gap:1px; white-space:nowrap;}
-  .ind-mark-txt b{font-size:5px; font-weight:600; color:var(--muted); font-style:normal;
+  .ind-mark-txt b{font-size:8px; font-weight:600; color:var(--muted); font-style:normal;
       text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 2px #fff,0 0 2px #fff;}
-  .ind-mark-txt strong{font-size:9px; font-weight:700; font-style:normal;
+  .ind-mark-txt strong{font-size:14px; font-weight:700; font-style:normal;
       text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 2px #fff,0 0 2px #fff;}
   .ind-mark-txt.al-start{left:6px; text-align:left; align-items:flex-start;}
   .ind-mark-txt.al-end{right:6px; text-align:right; align-items:flex-end;}
@@ -909,9 +912,9 @@
              opacity:.4; pointer-events:none; display:none;}
   .ind-tip{position:absolute; top:6px; z-index:3; pointer-events:none; display:none;
            background:var(--card); border:1px solid var(--line); border-radius:8px;
-           padding:7px 9px; font-size:11px; line-height:1.55; white-space:nowrap;
+           padding:8px 11px; font-size:15px; line-height:1.55; white-space:nowrap;
            box-shadow:0 4px 16px rgba(0,0,0,0.12);}
-  .ind-tip b{display:block; font-size:10.5px; color:var(--muted); font-weight:700;
+  .ind-tip b{display:block; font-size:14px; color:var(--muted); font-weight:700;
              margin-bottom:4px;}
   .ind-tip div{display:flex; align-items:center; gap:6px;}
   .ind-tip i{flex:none; width:14px; height:0; background:none;}
@@ -1023,7 +1026,7 @@
      적자가 있다'는 말이고, 거기 내려간 막대가 적자다. */
   /* 0선 오른쪽 끝, 선 바로 아래. 왼쪽에 두면 아래 눈금 글자와 겹쳐 둘 다
      못 읽는다('적자'와 '-6,000억원'이 한 자리에서 만난다). */
-  .comp-loss{position:absolute; right:0; font-size:10px; font-weight:800; color:#B3453F;
+  .comp-loss{position:absolute; right:0; font-size:15px; font-weight:800; color:#B3453F;
              opacity:.85; padding:1px 3px; pointer-events:none;}
 
   /* 매출과 영업이익은 자릿수가 열 배 넘게 차이 난다. 한 축에 겹치면 영업이익이
@@ -1037,7 +1040,7 @@
   .comp-shape .ind-pick{margin-left:0;}
   /* 막대는 선보다 조금 높게 — 회사가 여럿이면 한 칸에 막대가 서넛씩 선다. */
   .ind-chart.comp-bars{height:220px;}
-  .comp-cap{font-size:11px; font-weight:700; color:var(--text); margin-top:12px;}
+  .comp-cap{font-size:14px; font-weight:700; color:var(--text); margin-top:12px;}
   .comp-cap em{font-style:normal; font-weight:600; color:var(--muted);}
   /* 적자가 섞이면 지수로 못 바꾼다. 대신 0 선을 그어 어디부터가 손실인지 보인다. */
   .comp-zero{position:absolute; left:0; right:0; height:0; pointer-events:none;
@@ -3373,7 +3376,7 @@
       항목.y = Y(항목.p.y);
     });
     후보.sort(function(a, b){ return a.x - b.x; });
-    const 겹침거리 = 55;
+    const 겹침거리 = 70;   // 글자를 1.5배 키우면서 겹침으로 보는 거리도 같이 늘렸다
     후보.forEach(function(항목, i){
       let 단 = 0;
       for (let k = 0; k < i; k++){
@@ -3393,7 +3396,7 @@
     후보.forEach(function(항목){
       const p = 항목.p, x = 항목.x, y = 항목.y;
       const 아래로 = y < H * 0.3;   // 그래프 맨 위 근처면 글자를 점 아래로 내린다(잘림 방지)
-      const 간격 = 8 + 항목.단 * 15;   // 겹치는 표식은 한 단씩 더 밀어낸다
+      const 간격 = 9 + 항목.단 * 24;   // 겹치는 표식은 한 단씩 더 밀어낸다(글자 두 줄 높이만큼)
       const 정렬 = p.j === 0 ? 'al-start' : p.j === g.창.length - 1 ? 'al-end' : 'al-middle';
       /* 점에 가까운 줄이 값, 먼 줄이 이름표다 — 아래로 내릴 때는 값이 위,
          위로 올릴 때는 값이 아래(점 바로 위)가 되도록 줄 순서를 바꾼다. */
