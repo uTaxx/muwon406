@@ -634,6 +634,16 @@
   .check-option input{width:18px; height:18px; margin-top:1px; accent-color:var(--green); flex-shrink:0;}
   .check-option .opt-text{font-size:14px; font-weight:600;}
   .check-option .opt-sub{font-size:12px; color:var(--muted); font-weight:400; margin-top:2px;}
+  .indmgmt-grp{margin-bottom:18px;}
+  .indmgmt-grp-t{font-size:13px; font-weight:700; color:var(--muted); margin-bottom:8px;}
+  .indmgmt-row{border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:8px;}
+  .indmgmt-row-t{font-size:14px; font-weight:700;}
+  .indmgmt-row-sub{font-size:12px; color:var(--muted); margin-top:1px;}
+  .indmgmt-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .indmgmt-chips .source-check{flex:0 0 auto; padding:5px 11px; font-size:12px;}
+  .indmgmt-home{display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .indmgmt-home .source-check{background:var(--bg2, #f3f0ea); flex:0 0 auto; padding:5px 11px; font-size:12px;}
+  .indmgmt-home input[type="text"]{flex:1 1 160px; max-width:220px; padding:6px 10px; font-size:12px; border:1.5px solid var(--line); border-radius:8px;}
   .submit-btn{width:100%; background:var(--green); color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; box-shadow:0 4px 14px rgba(11,61,145,0.3);}
   .submit-btn:hover{background:var(--green-dark);}
   .submit-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none;}
@@ -1180,6 +1190,7 @@
       <button type="button" class="tab-btn cover-btn" data-tab="apply">⚙️ 키워드 신청/변경</button>
       <button type="button" class="tab-btn cover-btn" data-tab="disclosure">📄 공시수집기</button>
       <button type="button" class="tab-btn cover-btn" data-tab="updatemgmt">🔄 업데이트 관리</button>
+      <button type="button" class="tab-btn cover-btn" data-tab="indmgmt">📐 지표 마스터 관리</button>
       <button type="button" class="tab-btn cover-btn" data-tab="knowledge">🧠 AI 학습 데이터</button>
       <button type="button" class="tab-btn cover-btn" data-tab="cfg">🎛 대시보드 설정</button>
       <a href="./manual.html" class="excel-link" style="display:inline-flex;">📖 사용 매뉴얼</a>
@@ -1651,6 +1662,20 @@
       <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 항목 업데이트 실행</button>
     </div>
     <div id="updMgmtRunLog"></div>
+  </div>
+
+  <!-- 지표 마스터 관리 — 지표마다 어느 계열사에 보일지(소속)와 상황판 「한눈에
+       보기」에 넣을지를 한곳에서 고른다. 전에는 소속은 계열사 탭을 하나씩
+       열어야 바꿀 수 있었고, 한눈에 보기는 코드에 박혀 있어 사람이 못
+       건드렸다. 체크하면 바로 시트에 반영된다(소속은 LXGroup_지표소속관리,
+       한눈에 보기는 LXGroup_지표한눈에관리). -->
+  <div id="tab-indmgmt" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📐</span><span class="step-title">지표 마스터 관리</span></div>
+      <div class="step-desc">지표마다 어느 계열사 화면에 띄울지(소속), 상황판의 「한눈에 보기」 카드에 넣을지를 고릅니다. 체크하면 그 자리에서 반영됩니다. 시트를 직접 열 필요가 없습니다.</div>
+      <div class="status" id="indMgmtStatus"></div>
+    </section>
+    <div id="indMgmtBody"></div>
   </div>
 
   <!-- 탭 3: 특정 키워드 검색 -->
@@ -2143,6 +2168,7 @@
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
   const INDMEMBER_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표소속관리');
+  const INDHOME_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표한눈에관리');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
   const DEAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-딜');
   const CAL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-일정');
@@ -2917,6 +2943,7 @@
     if (tabName === 'apply'){ maybeAutoLoadApply(); loadLabels(); }
     if (tabName === 'disclosure'){ discLoadRegistered(); }
     if (tabName === 'updatemgmt'){ updMgmtOpen(); }
+    if (tabName === 'indmgmt'){ loadIndex(false); }
     if (tabName === 'knowledge'){ loadKnowledge(false); }
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
@@ -3341,7 +3368,7 @@
   }
 
   /* 선이 셋 이상이면 indPlotMarked 를 안 쓴다. 표식은 선 하나에 최고·최저·현재
-     셋을 찍으므로 시장지표 카드(HOME_IND, 대부분 한두 선)에서는 읽히지만,
+     셋을 찍으므로 시장지표 카드(한눈에 보기, 대부분 한두 선)에서는 읽히지만,
      경쟁사를 여럿 겹친 그래프에 그대로 쓰면 선마다 표식이 붙어 값이 비슷한
      자리에서 글자가 겹쳐 못 읽는다. 그럴 때는 표식 없는 기존 그림으로
      돌아간다 — 호출한 쪽이 이 경우 위아래 축 눈금(ind-y hi/lo)을 다시 보여준다. */
@@ -3779,6 +3806,7 @@
     homeInd();   // 상황판이 열려 있는 채로 지표가 도착할 수 있다
     homeCo();
     mktGridDraw();
+    indMgmtDraw();   // 지표 마스터 관리 탭이 열려 있는 채로 자료가 도착할 수 있다
   }
 
   /* 계열사별 지표 선택. 전체 지표(indData.지표, 시장지표 탭과 같은 목록)
@@ -3862,6 +3890,166 @@
         상태.className = 'status bad';
         상태.textContent = 오류메시지(err, '지표 소속 반영');
       });
+  });
+
+  /* ---------- 지표 마스터 관리 ----------
+     지표마다 소속(어느 계열사 화면에 보일지)과 한눈에 보기(상황판 첫 카드에
+     넣을지)를 한곳에서 고른다. 소속은 계열사 탭의 「지표 선택」과 같은 자료
+     (indData.지표)와 같은 규칙(IND_TABS.맞나)을 쓴다 — 여기서 체크해도
+     그 탭에서 체크해도 결과가 같아야 한다. */
+  function indMgmtDraw(){
+    const 통 = document.getElementById('indMgmtBody');
+    if (!통) return;
+    if (!indData){
+      통.innerHTML = '<div class="empty-note">' + (indLoading ? '불러오는 중…' : '아직 지표를 불러오지 못했습니다.') + '</div>';
+      return;
+    }
+    const 지표들 = (indData.지표 || []).slice().sort(function (a, b){ return (a.정렬 || 999) - (b.정렬 || 999); });
+    if (!지표들.length){
+      통.innerHTML = '<div class="empty-note">아직 쌓인 지표가 없습니다.</div>';
+      return;
+    }
+
+    const 그룹모음 = {};
+    const 그룹순서 = [];
+    지표들.forEach(function (x){
+      const g = x.그룹 || '그 외';
+      if (!그룹모음[g]){ 그룹모음[g] = []; 그룹순서.push(g); }
+      그룹모음[g].push(x);
+    });
+
+    통.innerHTML = 그룹순서.map(function (g){
+      const 줄들 = 그룹모음[g].map(function (x){
+        const 소속칩 = IND_TABS.map(function (T){
+          const 일치 = (x.소속 || []).filter(T.맞나);
+          const 켜짐 = 일치.length > 0;
+          /* 뺄 때는 실제로 소속에 적힌 글자를 그대로 돌려줘야 지운다.
+             아직 없어서 새로 더할 때는 그런 글자가 없으니 탭 키를 쓴다. */
+          const 계열사값 = 일치[0] || T.k;
+          return '<label class="source-check' + (켜짐 ? ' checked' : '') + '">' +
+            '<input type="checkbox" class="indmgmt-aff-chk" data-id="' + escapeHtml(x.id) + '" data-match="' + escapeHtml(계열사값) + '"' + (켜짐 ? ' checked' : '') + '>' +
+            escapeHtml(T.이름) + '</label>';
+        }).join('');
+
+        const 한눈에켜짐 = !!x.한눈에보기;
+        const 묶음값 = x.한눈에묶음 || '';
+        return '<div class="indmgmt-row" data-id="' + escapeHtml(x.id) + '">' +
+          '<div class="indmgmt-row-t">' + escapeHtml(x.이름) + '</div>' +
+          '<div class="indmgmt-row-sub">' + escapeHtml(x.id) + ' · ' + escapeHtml(x.출처) + '</div>' +
+          '<div class="indmgmt-chips">' + 소속칩 + '</div>' +
+          '<div class="indmgmt-home">' +
+            '<label class="source-check' + (한눈에켜짐 ? ' checked' : '') + '">' +
+              '<input type="checkbox" class="indmgmt-home-chk" data-id="' + escapeHtml(x.id) + '"' + (한눈에켜짐 ? ' checked' : '') + '>' +
+              '한눈에 보기</label>' +
+            '<input type="text" class="indmgmt-home-txt" data-id="' + escapeHtml(x.id) + '" placeholder="묶음 이름(예: 국채 3년)" value="' + escapeHtml(묶음값) + '" style="' + (한눈에켜짐 ? '' : 'display:none;') + '">' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="indmgmt-grp"><div class="indmgmt-grp-t">' + escapeHtml(g) + '</div>' + 줄들 + '</div>';
+    }).join('');
+  }
+
+  /* 한눈에 보기 체크·묶음 글자를 서버에 반영한다. 소속 체크(지표소속관리)와
+     같은 비밀번호·식별코드를 쓰되 다른 웹훅(지표한눈에관리)으로 보낸다 —
+     소속과 한눈에 보기는 시트의 다른 칸이라 섞어 두면 어느 쪽이 실패했는지
+     알 수 없다. */
+  function indMgmt한눈에저장(id, 한눈에보기, 묶음, 토글){
+    const 상태 = document.getElementById('indMgmtStatus');
+    const code = sharedCode();
+    if (!code){ 토글.checked = !한눈에보기; 상태.className = 'status bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt('한눈에 보기 설정을 바꿉니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw){ 토글.checked = !한눈에보기; return; }
+    }
+    토글.disabled = true;
+    상태.className = 'status';
+    상태.textContent = '반영하는 중…';
+    fetch(INDHOME_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 한눈에보기: 한눈에보기, 한눈에묶음: 묶음 }) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        토글.disabled = false;
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e){} }
+          throw new Error((r.d && r.d.message) || '반영하지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e){}
+        상태.className = 'status ok';
+        상태.textContent = r.d.message || '반영했습니다.';
+        const idx = (indData.지표 || []).findIndex(function (x){ return x.id === id; });
+        if (idx >= 0){ indData.지표[idx].한눈에보기 = r.d.한눈에보기; indData.지표[idx].한눈에묶음 = r.d.한눈에묶음; }
+        homeInd();   // 상황판 첫 카드에도 바로 반영되는 것을 보여준다
+        mktGridDraw();
+      })
+      .catch(function (err){
+        토글.disabled = false;
+        토글.checked = !한눈에보기;
+        상태.className = 'status bad';
+        상태.textContent = 오류메시지(err, '한눈에 보기 반영');
+      });
+  }
+
+  document.getElementById('indMgmtBody').addEventListener('change', function (e){
+    const affChk = e.target.closest('input.indmgmt-aff-chk');
+    if (affChk){
+      const id = affChk.dataset.id;
+      const 계열사값 = affChk.dataset.match;
+      const 넣을것 = affChk.checked;
+      const 상태 = document.getElementById('indMgmtStatus');
+      const code = sharedCode();
+      if (!code){ affChk.checked = !넣을것; 상태.className = 'status bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+      let pw = savedRunPw();
+      if (!pw){
+        pw = prompt('지표 소속을 바꿉니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+        if (!pw){ affChk.checked = !넣을것; return; }
+      }
+      affChk.disabled = true;
+      상태.className = 'status';
+      상태.textContent = '반영하는 중…';
+      fetch(INDMEMBER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 계열사: 계열사값, 포함: 넣을것 }) })
+        .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+        .then(function (r){
+          if (!r.ok || !r.d || r.d.ok !== true){
+            if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e){} }
+            throw new Error((r.d && r.d.message) || '반영하지 못했습니다.');
+          }
+          try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e){}
+          상태.className = 'status ok';
+          상태.textContent = r.d.message || '반영했습니다.';
+          const idx = (indData.지표 || []).findIndex(function (x){ return x.id === id; });
+          if (idx >= 0) indData.지표[idx].소속 = r.d.소속 || indData.지표[idx].소속;
+          indDraw();
+        })
+        .catch(function (err){
+          affChk.disabled = false;
+          affChk.checked = !넣을것;
+          상태.className = 'status bad';
+          상태.textContent = 오류메시지(err, '지표 소속 반영');
+        });
+      return;
+    }
+
+    const homeChk = e.target.closest('input.indmgmt-home-chk');
+    if (homeChk){
+      const row = homeChk.closest('.indmgmt-row');
+      const txt = row.querySelector('.indmgmt-home-txt');
+      txt.style.display = homeChk.checked ? '' : 'none';
+      indMgmt한눈에저장(homeChk.dataset.id, homeChk.checked, txt.value, homeChk);
+      return;
+    }
+
+    /* 체크는 그대로 둔 채 묶음 글자만 고쳤을 때(입력칸에서 벗어날 때 change가
+       뜬다). 꺼진 지표의 글자를 고치는 것은 저장할 것이 없다 — 다시 켤 때
+       쓸 자리일 뿐이다. */
+    const homeTxt = e.target.closest('input.indmgmt-home-txt');
+    if (homeTxt){
+      const row = homeTxt.closest('.indmgmt-row');
+      const chk = row.querySelector('.indmgmt-home-chk');
+      if (!chk.checked) return;
+      indMgmt한눈에저장(homeTxt.dataset.id, true, homeTxt.value, chk);
+    }
   });
 
   function loadIndex(force){
@@ -8761,14 +8949,26 @@
         : '<div class="empty-note">최근 30일 안에 눈여겨볼 보도가 없습니다.</div>');
   }
 
-  /* Home 에 세울 주요 지표. 시트의 지표ID로 집으므로 표시명을 바꿔도 안 깨진다.
-     시트에 없는 ID 는 조용히 빠지고, 한 묶음이 통째로 비면 그 줄도 안 선다. */
-  const HOME_IND = [
-    { 이름: '환율',      ids: ['FX_USDKRW'] },
-    { 이름: '기준금리',  ids: ['RATE_BASE', 'RATE_US_BASE'] },
-    { 이름: '국채 3년',  ids: ['RATE_KTB3', 'RATE_US_T3'] },
-    { 이름: '유가',      ids: ['OIL_DUBAI', 'OIL_BRENT'] }
-  ];
+  /* Home 에 세울 주요 지표. 「지표 마스터 관리」 탭에서 고른 지표(한눈에보기)만
+     모은다. 시트의 한눈에묶음 글자가 같은 지표끼리 한 카드에 묶인다 — 한국
+     기준금리는 미국 기준금리와 나란해야 금리차가 보이고, 국채 3년은 10년과
+     따로 둬야 표식(최고·최저·현재)이 겹치지 않는다. 카드 순서는 묶음 안에서
+     가장 작은 정렬값을 따른다. 전에는 이 묶음을 코드에 박아 뒀는데, 그러면
+     지표를 추가·제외할 때마다 코드를 고쳐야 했다. */
+  function homeIndGroups(){
+    const 지표 = (indData && indData.지표) || [];
+    const 통 = {};
+    const 순서 = [];
+    지표.forEach(function (x){
+      if (!x.한눈에보기) return;
+      const 이름 = x.한눈에묶음 || x.이름;
+      if (!통[이름]){ 통[이름] = { 이름: 이름, ids: [], 정렬: x.정렬 == null ? 999 : x.정렬 }; 순서.push(이름); }
+      통[이름].ids.push(x.id);
+      if ((x.정렬 == null ? 999 : x.정렬) < 통[이름].정렬) 통[이름].정렬 = x.정렬;
+    });
+    return 순서.map(function (이름){ return 통[이름]; })
+      .sort(function (a, b){ return a.정렬 - b.정렬; });
+  }
 
   function homeInd(){
     const 말 = document.getElementById('homeIndDesc');
@@ -8788,7 +8988,7 @@
     const 찾기 = function (id){
       return 것들.filter(function (x){ return x.id === id; })[0] || null;
     };
-    const 묶음 = HOME_IND.map(function (g){
+    const 묶음 = homeIndGroups().map(function (g){
       const 칸들 = g.ids.map(찾기).filter(Boolean).map(function (x){
         const b = (x.범위 && (x.범위['월'] || x.범위['일'] || x.범위['연'])) || null;
         if (!b || b.최신값 === null || b.최신값 === undefined) return '';
@@ -8811,7 +9011,7 @@
       : '<div class="empty-note">아직 값이 쌓인 주요 지표가 없습니다.</div>';
   }
 
-  /* LX홀딩스 시장지표 탭의 첫 카드. Home 의 주요 지표와 같은 묶음(HOME_IND)을
+  /* LX홀딩스 시장지표 탭의 첫 카드. Home 의 주요 지표와 같은 묶음(homeIndGroups)을
      쓰되, 숫자 옆에 작은 그래프를 하나 더 그린다 — 얼마인지뿐 아니라 어느
      쪽으로 움직여 왔는지까지 한 화면에서 보려는 자리다. 그래프는 카드를
      펼쳐야 나오는 공통 지표 전체 목록과 달리 처음부터 그려 둔다. */
@@ -8826,7 +9026,7 @@
     const R = IND_RANGES.filter(function (r){ return r.k === IND_RANGE_기본; })[0];
     const 찾기 = function (id){ return 것들.filter(function (x){ return x.id === id; })[0] || null; };
 
-    const 카드들 = HOME_IND.map(function (grp, i){
+    const 카드들 = homeIndGroups().map(function (grp, i){
       const items = grp.ids.map(찾기).filter(Boolean);
       const 숫자칸 = items.map(function (x){
         const b = x.범위 && x.범위[R.k];
