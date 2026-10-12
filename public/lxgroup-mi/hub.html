@@ -636,6 +636,20 @@
   .check-option .opt-sub{font-size:12px; color:var(--muted); font-weight:400; margin-top:2px;}
   .indmgmt-grp{margin-bottom:18px;}
   .indmgmt-grp-t{font-size:13px; font-weight:700; color:var(--muted); margin-bottom:8px;}
+  /* 분류 하위 탭(환율·금리 / 건설·부동산 / 물류 / 원재료·원가 / 제품·수요·경기).
+     지표가 많아져 한 화면에 다 나열하면 찾기 어려워서 시장지표 전체 목록과
+     지표 마스터 관리 두 곳에 붙였다. 숨기는 쪽은 다시 그리지 않고 가리기만 한다 —
+     다시 그리면 골라 둔 「업데이트 대상」 체크와 펼침 상태가 풀린다. */
+  .cat-tabs{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 14px;}
+  .cat-tabs:empty{display:none;}
+  .cat-tab{background:var(--card); border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; transition:border-color .15s, background .15s, color .15s;}
+  .cat-tab:hover{border-color:var(--green);}
+  .cat-tab.active{background:var(--green); border-color:var(--green); color:#fff;}
+  .cat-tab .n{font-weight:600; opacity:.75; margin-left:6px; font-size:12px;}
+  .cat-tab .pick{margin-left:6px; background:var(--green-tint); color:var(--green-dark); border-radius:8px; padding:1px 7px; font-size:11px; font-weight:700;}
+  .cat-tab.active .pick{background:#fff; color:var(--green);}
+  .ind-cat-wrap{display:contents;}
+  .ind-cat-wrap.off, .indmgmt-grp.off{display:none;}
   .indmgmt-row{border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:8px; position:relative;}
   .indmgmt-upd-pick{position:absolute; top:12px; right:14px; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); cursor:pointer;}
   .indmgmt-row-t{font-size:14px; font-weight:700; padding-right:90px;}
@@ -1694,7 +1708,7 @@
   <div id="tab-indmgmt" class="tab-panel">
     <section class="card">
       <div class="step-head"><span class="step-num">📐</span><span class="step-title">지표 마스터 관리</span></div>
-      <div class="step-desc">지표마다 어느 계열사 화면에 띄울지(소속), 상황판의 「한눈에 보기」 카드에 넣을지를 고릅니다. 체크하면 그 자리에서 반영됩니다. 시트를 직접 열 필요가 없습니다. 지표 값을 다시 받는 것도 이 탭에서만 합니다. 계열사·시장지표 조회 화면에는 업데이트 버튼을 두지 않습니다.</div>
+      <div class="step-desc">지표마다 어느 계열사 화면에 띄울지(소속), 상황판의 「한눈에 보기」 카드에 넣을지를 고릅니다. 체크하면 그 자리에서 반영됩니다. 시트를 직접 열 필요가 없습니다. 지표 값을 다시 받는 것도 이 탭에서만 합니다. 계열사·시장지표 조회 화면에는 업데이트 버튼을 두지 않습니다. 지표 줄은 아래 분류 탭으로 좁혀 볼 수 있고, 탭을 바꿔도 골라 둔 「업데이트 대상」은 그대로 남습니다(탭의 「선택 N」이 그 개수입니다).</div>
       <div class="line-row">
         <div class="ind-asof" id="indMgmtAsOf">불러오는 중…</div>
         <button type="button" class="upd-btn" data-update="지표" id="indMgmtUpdAllBtn">↻ 전체 업데이트</button>
@@ -1713,6 +1727,7 @@
       <div class="step-desc">상황판 「한눈에 보기」에 나오는 카드입니다. 한 카드에 지표 둘을 나란히 두려면(한국·미국 기준금리처럼) 「새 묶음 만들기」로 이름을 적고 지표를 고르거나, 있는 카드에 이름을 적고 「지표 넣기」로 고릅니다. 지표 옆 「단독」은 묶음에서 빼서 따로 두는 것이고 ×는 한눈에 보기에서 빼는 것입니다. 「묶음 풀기」는 식구를 전부 단독 카드로, 「묶음 전체 빼기」는 전부 한눈에 보기에서 뺍니다. 바꾸면 그 자리에서 반영됩니다.</div>
       <div class="hig-wrap" id="indMgmtGroups"></div>
     </section>
+    <div class="cat-tabs" id="indMgmtCats"></div>
     <div id="indMgmtBody"></div>
   </div>
 
@@ -2071,11 +2086,12 @@
 
     <section class="card">
       <div class="step-head"><span class="step-num">📋</span><span class="step-title">지표 전체</span></div>
-      <div class="step-desc">수집 중인 지표 전체 목록입니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="step-desc">수집 중인 지표 전체 목록입니다. 아래 분류 탭으로 좁혀 볼 수 있습니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
       <div class="line-row">
         <div class="ind-asof" id="indCommonAsOf"></div>
         <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 원본 엑셀(전체 통합)</button>
       </div>
+      <div class="cat-tabs" id="indCommonCats"></div>
       <div class="ind-grid" id="indCommonBody"></div>
     </section>
   </div>
@@ -3121,6 +3137,92 @@
     { k: '세미콘', 이름: '세미콘', 맞나: function(s){ return s.indexOf('세미콘') === 0; } },
     { k: 'MMA',    이름: 'MMA',    맞나: function(s){ return s.toUpperCase().indexOf('MMA') === 0; } }
   ];
+  /* 지표를 큰 분류로 묶는 하위 탭. 분류는 시트 「그룹」 글자로 정한다 —
+     그룹은 작게 나뉘어 있어(원가·자원·원자재처럼) 탭으로 쓰기에는 너무 많다.
+     어느 규칙에도 안 걸리는 그룹은 「기타」 탭으로 간다. 그래야 새 그룹을 시트에
+     더해도 그 지표가 어느 탭에도 안 나와 조용히 사라지는 일이 없다. */
+  const IND_분류 = [
+    { k: '환율·금리',       맞나: function (g){ return g === '환율·금리'; } },
+    { k: '건설·부동산',     맞나: function (g){ return /^국내 B/.test(g) || g === '미국'; } },
+    { k: '물류',            맞나: function (g){ return g === '물동량' || g === '운임'; } },
+    { k: '원재료·원가',     맞나: function (g){ return g === '원가' || g === '자원' || g === '원자재'; } },
+    { k: '제품·수요·경기',  맞나: function (g){ return ['판가', '수출입', '전방수요', '경기'].indexOf(g) >= 0; } }
+  ];
+  function 지표분류(x){
+    const g = String((x && x.그룹) || '').trim();
+    for (let i = 0; i < IND_분류.length; i++) if (IND_분류[i].맞나(g)) return IND_분류[i].k;
+    return '기타';
+  }
+  /* 저장해 둔 분류가 지금 목록에 없으면(지표가 빠졌거나 이름이 바뀜) 전체로 돌린다. */
+  function 분류유효(k, 지표들){
+    if (!k || k === '전체') return '전체';
+    return (지표들 || []).some(function (x){ return 지표분류(x) === k; }) ? k : '전체';
+  }
+  function 분류칩HTML(지표들, 현재, 고른수){
+    const 셈 = { '전체': (지표들 || []).length };
+    (지표들 || []).forEach(function (x){ const k = 지표분류(x); 셈[k] = (셈[k] || 0) + 1; });
+    const 순서 = ['전체'].concat(IND_분류.map(function (c){ return c.k; }), ['기타']);
+    return 순서.filter(function (k){ return 셈[k]; }).map(function (k){
+      return '<button type="button" class="cat-tab' + (k === 현재 ? ' active' : '') + '" data-cat="' + escapeHtml(k) + '">' +
+        escapeHtml(k) + '<span class="n">' + 셈[k] + '</span>' +
+        (고른수 && 고른수[k] ? '<span class="pick">선택 ' + 고른수[k] + '</span>' : '') + '</button>';
+    }).join('');
+  }
+  /* 가리기만 한다. 줄을 다시 그리지 않는다(위 CSS 설명). */
+  function 분류가리기(통, 선택자, 현재){
+    if (!통) return;
+    통.querySelectorAll(선택자).forEach(function (el){
+      el.classList.toggle('off', 현재 !== '전체' && el.dataset.cat !== 현재);
+    });
+  }
+  let indCommonCat = 기억('lx-ind-cat-common') || '전체';
+  let indMgmtCat = 기억('lx-ind-cat-mgmt') || '전체';
+
+  function indCommon분류그리기(){
+    const 지표 = (indData && indData.지표) || [];
+    indCommonCat = 분류유효(indCommonCat, 지표);
+    const 칩 = document.getElementById('indCommonCats');
+    if (칩) 칩.innerHTML = 분류칩HTML(지표, indCommonCat);
+    분류가리기(document.getElementById('indCommonBody'), '.ind-cat-wrap', indCommonCat);
+  }
+  function indMgmt분류그리기(){
+    const 지표 = (indData && indData.지표) || [];
+    indMgmtCat = 분류유효(indMgmtCat, 지표);
+    /* 「업데이트 대상」으로 골라 둔 것을 분류별로 센다. 다른 탭에서 고른 것이
+       안 보이는 채로 「선택한 지표만 업데이트」를 누르는 일을 막으려는 표시다. */
+    const 고른수 = {};
+    document.querySelectorAll('#indMgmtBody .indmgmt-upd-chk:checked').forEach(function (c){
+      const 줄 = c.closest('.indmgmt-grp');
+      const k = 줄 ? 줄.dataset.cat : '';
+      if (k) 고른수[k] = (고른수[k] || 0) + 1;
+    });
+    const 칩 = document.getElementById('indMgmtCats');
+    if (칩) 칩.innerHTML = 분류칩HTML(지표, indMgmtCat, 고른수);
+    분류가리기(document.getElementById('indMgmtBody'), '.indmgmt-grp', indMgmtCat);
+  }
+  (function 분류칩연결(){
+    const 공통 = document.getElementById('indCommonCats');
+    if (공통) 공통.addEventListener('click', function (e){
+      const b = e.target.closest('.cat-tab');
+      if (!b) return;
+      indCommonCat = b.dataset.cat;
+      기억('lx-ind-cat-common', indCommonCat);
+      indCommon분류그리기();
+    });
+    const 관리 = document.getElementById('indMgmtCats');
+    if (관리) 관리.addEventListener('click', function (e){
+      const b = e.target.closest('.cat-tab');
+      if (!b) return;
+      indMgmtCat = b.dataset.cat;
+      기억('lx-ind-cat-mgmt', indMgmtCat);
+      indMgmt분류그리기();
+    });
+    const 관리몸 = document.getElementById('indMgmtBody');
+    if (관리몸) 관리몸.addEventListener('change', function (e){
+      if (e.target && e.target.classList && e.target.classList.contains('indmgmt-upd-chk')) indMgmt분류그리기();
+    });
+  })();
+
   /* 지금 보고 있는 계열사. 경쟁사와 시장지표가 이 하나를 같이 본다 —
      둘을 따로 기억하면 화면 위에서는 하우시스를 보면서 아래에서는 글라스
      지표를 읽는 일이 생긴다. */
@@ -3768,7 +3870,7 @@
 
      열쇠에 세로막대를 쓰는 이유는 그룹 이름에 띄어쓰기가 들어가기 때문이다
      ('국내 B2C · 리모델링'). 띄어쓰기로 나누면 이름이 잘린다. */
-  function indBlocks(지표들, 접두){
+  function indBlocks(지표들, 접두, 분류로감싸기){
     const 순서 = [], 통 = {}, 그룹단위 = {};
     const 앞 = 접두 || '';
     지표들.forEach(function(x){
@@ -3782,7 +3884,11 @@
     return 순서.map(function(k){
       const t = 통[k];
       const 여러단위 = Object.keys(그룹단위[t.그룹]).length > 1;
-      return indBlock(여러단위 && t.단위 ? t.그룹 + ' · ' + t.단위 : t.그룹, t.것들, k);
+      const 블록 = indBlock(여러단위 && t.단위 ? t.그룹 + ' · ' + t.단위 : t.그룹, t.것들, k);
+      /* 분류 탭이 가릴 수 있게 한 벌 감싼다. display:contents 라 배치는 그대로다. */
+      return 분류로감싸기
+        ? '<div class="ind-cat-wrap" data-cat="' + escapeHtml(지표분류(t.것들[0])) + '">' + 블록 + '</div>'
+        : 블록;
     }).join('');
   }
 
@@ -3836,8 +3942,9 @@
     const 것들 = indTabItems(지표, coTab);
     document.getElementById('indBody').innerHTML = indBlocks(것들, '계|');
     document.getElementById('indCommonBody').innerHTML = 지표.length
-      ? indBlocks(지표, '공|')
+      ? indBlocks(지표, '공|', true)
       : '<div class="empty-note">아직 쌓인 지표가 없습니다.</div>';
+    indCommon분류그리기();
     지표선택그리기(지표);
 
     /* 표는 그래프와 같이 옛것이 위다. 그대로 두면 첫 화면이 두 해 전이라
@@ -4066,8 +4173,9 @@
           '</div>' +
         '</div>';
       }).join('');
-      return '<div class="indmgmt-grp"><div class="indmgmt-grp-t">' + escapeHtml(g) + '</div>' + 줄들 + '</div>';
+      return '<div class="indmgmt-grp" data-cat="' + escapeHtml(지표분류(그룹모음[g][0])) + '"><div class="indmgmt-grp-t">' + escapeHtml(g) + '</div>' + 줄들 + '</div>';
     }).join('');
+    indMgmt분류그리기();
     indMgmt묶음그리기(지표들);
   }
 
