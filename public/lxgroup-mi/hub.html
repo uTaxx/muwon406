@@ -644,7 +644,18 @@
   .indmgmt-chips .source-check{flex:0 0 auto; padding:5px 11px; font-size:12px;}
   .indmgmt-home{display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); flex-wrap:wrap;}
   .indmgmt-home .source-check{background:var(--bg2, #f3f0ea); flex:0 0 auto; padding:5px 11px; font-size:12px;}
-  .indmgmt-home input[type="text"]{flex:1 1 160px; max-width:220px; padding:6px 10px; font-size:12px; border:1.5px solid var(--line); border-radius:8px;}
+  .indmgmt-home select{flex:1 1 160px; max-width:240px; padding:6px 10px; font-size:12px; border:1.5px solid var(--line); border-radius:8px; background:#fff;}
+  /* 한눈에 보기 묶음 카드. 상황판 카드와 같은 순서·같은 묶음으로 늘어놓는다. */
+  .hig-wrap{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; margin-top:6px;}
+  .hig-box{border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--bg2, #f9f7f3);}
+  .hig-box.named{border-color:var(--green);}
+  .hig-name{width:100%; padding:6px 9px; font-size:13px; font-weight:700; border:1.5px solid var(--line); border-radius:8px; background:#fff;}
+  .hig-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .hig-chip{display:inline-flex; align-items:center; gap:6px; padding:5px 8px 5px 11px; font-size:12px; border-radius:999px; background:#fff; border:1px solid var(--line);}
+  .hig-chip button{border:none; background:none; color:var(--muted); font-size:14px; line-height:1; cursor:pointer; padding:0 2px;}
+  .hig-chip button:hover{color:var(--danger);}
+  .hig-add{width:100%; margin-top:8px; padding:6px 9px; font-size:12px; border:1.5px dashed var(--line); border-radius:8px; background:#fff; color:var(--muted);}
+  .hig-hint{font-size:11px; color:var(--muted); margin-top:6px; line-height:1.4;}
   .submit-btn{width:100%; background:var(--green); color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; box-shadow:0 4px 14px rgba(11,61,145,0.3);}
   .submit-btn:hover{background:var(--green-dark);}
   .submit-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none;}
@@ -1675,6 +1686,15 @@
       <div class="step-desc" style="font-size:12px; margin-top:2px;">선택한 지표만 업데이트는 아래 각 지표 줄 오른쪽 위의 「업데이트 대상」 체크박스로 고른 지표만 다시 받습니다. 하나도 안 고르면 눌러도 요청을 보내지 않습니다.</div>
       <div class="upd-msg" id="indMgmtUpdMsg"></div>
       <div class="status" id="indMgmtStatus"></div>
+    </section>
+    <!-- 한눈에 보기 묶음. 상황판과 시장지표 첫 카드가 그리는 카드를 그대로
+         보여 주고, 여기서 지표를 묶음에 넣고 빼고 이름을 바꾼다. 전에는 지표
+         줄마다 묶음 이름을 글자로 적어야 했는데, 어느 지표가 어느 묶음에
+         있는지 한눈에 안 보였고 글자가 한 자라도 다르면 다른 묶음이 됐다. -->
+    <section class="card">
+      <div class="step-head"><span class="step-num">🗂</span><span class="step-title">한눈에 보기 묶음</span></div>
+      <div class="step-desc">상황판 「한눈에 보기」에 나오는 카드입니다. 한 카드에 지표 둘을 나란히 두려면(한국·미국 기준금리처럼) 카드에 이름을 적고 「지표 넣기」로 고릅니다. 지표 옆 ×는 그 카드에서 빼는 것입니다. 바꾸면 그 자리에서 반영됩니다.</div>
+      <div class="hig-wrap" id="indMgmtGroups"></div>
     </section>
     <div id="indMgmtBody"></div>
   </div>
@@ -3961,6 +3981,11 @@
       if (!그룹모음[g]){ 그룹모음[g] = []; 그룹순서.push(g); }
       그룹모음[g].push(x);
     });
+    const 묶음이름들 = 한눈에묶음이름들(지표들);
+    /* 다시 그릴 때 「업데이트 대상」 체크는 유지한다. 묶음을 바꿀 때마다
+       지표 줄을 새로 그리는데, 그때 골라 둔 것이 풀리면 안 된다. */
+    const 고른업데이트 = {};
+    통.querySelectorAll('.indmgmt-upd-chk:checked').forEach(function (c){ 고른업데이트[c.dataset.id] = true; });
 
     통.innerHTML = 그룹순서.map(function (g){
       const 줄들 = 그룹모음[g].map(function (x){
@@ -3978,8 +4003,17 @@
         const 한눈에켜짐 = !!x.한눈에보기;
         const 묶음값 = x.한눈에묶음 || '';
         const 최신일 = 지표최신일(x);
+        /* 묶음은 글자를 적는 대신 있는 묶음 가운데서 고른다. 글자가 한 자라도
+           다르면 다른 묶음이 돼 버려서, 위 묶음 카드와 같은 목록을 쓴다. */
+        const 묶음선택 = '<select class="indmgmt-home-sel" data-id="' + escapeHtml(x.id) + '" style="' + (한눈에켜짐 ? '' : 'display:none;') + '">' +
+          '<option value=""' + (묶음값 ? '' : ' selected') + '>단독 카드</option>' +
+          묶음이름들.map(function (n){
+            return '<option value="' + escapeHtml(n) + '"' + (n === 묶음값 ? ' selected' : '') + '>묶음: ' + escapeHtml(n) + '</option>';
+          }).join('') +
+          '<option value="__new__">새 묶음 만들기…</option>' +
+        '</select>';
         return '<div class="indmgmt-row" data-id="' + escapeHtml(x.id) + '">' +
-          '<label class="indmgmt-upd-pick"><input type="checkbox" class="indmgmt-upd-chk" data-id="' + escapeHtml(x.id) + '"> 업데이트 대상</label>' +
+          '<label class="indmgmt-upd-pick"><input type="checkbox" class="indmgmt-upd-chk" data-id="' + escapeHtml(x.id) + '"' + (고른업데이트[x.id] ? ' checked' : '') + '> 업데이트 대상</label>' +
           '<div class="indmgmt-row-t">' + escapeHtml(x.이름) + '</div>' +
           '<div class="indmgmt-row-sub">' + escapeHtml(x.id) + ' · ' + escapeHtml(x.출처) +
             ' · 공시 숫자 최근 날짜 ' + escapeHtml(최신일 || '없음') + '</div>' +
@@ -3988,11 +4022,65 @@
             '<label class="source-check' + (한눈에켜짐 ? ' checked' : '') + '">' +
               '<input type="checkbox" class="indmgmt-home-chk" data-id="' + escapeHtml(x.id) + '"' + (한눈에켜짐 ? ' checked' : '') + '>' +
               '한눈에 보기</label>' +
-            '<input type="text" class="indmgmt-home-txt" data-id="' + escapeHtml(x.id) + '" placeholder="묶음 이름(예: 국채 3년)" value="' + escapeHtml(묶음값) + '" style="' + (한눈에켜짐 ? '' : 'display:none;') + '">' +
+            묶음선택 +
           '</div>' +
         '</div>';
       }).join('');
       return '<div class="indmgmt-grp"><div class="indmgmt-grp-t">' + escapeHtml(g) + '</div>' + 줄들 + '</div>';
+    }).join('');
+    indMgmt묶음그리기(지표들);
+  }
+
+  /* 시트에 적힌 묶음 이름을 정렬 순서대로 모은다. 한눈에 보기가 꺼진 지표의
+     묶음 글자도 센다 — 다시 켤 때 그 묶음으로 돌아가야 하기 때문이다. */
+  function 한눈에묶음이름들(지표들){
+    const 본 = {};
+    const 순서 = [];
+    (지표들 || []).forEach(function (x){
+      const n = String(x.한눈에묶음 || '').trim();
+      if (!n || 본[n]) return;
+      본[n] = 1; 순서.push(n);
+    });
+    return 순서;
+  }
+
+  /* 한눈에 보기 묶음 카드. homeIndGroups()와 같은 묶음·같은 순서라 상황판에
+     나오는 모습 그대로다. 이름이 적힌 묶음에는 「지표 넣기」 고르기가 붙고,
+     단독 카드는 이름을 적는 순간 묶음이 돼 다른 지표를 받을 수 있다. */
+  function indMgmt묶음그리기(지표들){
+    const 통 = document.getElementById('indMgmtGroups');
+    if (!통) return;
+    const 전부 = 지표들 || [];
+    const 찾기 = function (id){ return 전부.filter(function (x){ return x.id === id; })[0] || null; };
+    const 묶음들 = homeIndGroups();
+    if (!묶음들.length){
+      통.innerHTML = '<div class="empty-note">한눈에 보기에 넣은 지표가 없습니다. 아래 지표 줄에서 「한눈에 보기」를 체크하세요.</div>';
+      return;
+    }
+    통.innerHTML = 묶음들.map(function (g){
+      const 식구 = g.ids.map(찾기).filter(Boolean);
+      const 이름있음 = 식구.some(function (x){ return String(x.한눈에묶음 || '').trim(); });
+      const 묶음명 = 이름있음 ? g.이름 : '';
+      const 칩 = 식구.map(function (x){
+        return '<span class="hig-chip">' + escapeHtml(x.이름) +
+          '<button type="button" class="hig-x" data-id="' + escapeHtml(x.id) + '" data-named="' + (이름있음 ? '1' : '0') + '" title="' +
+            (이름있음 ? '이 묶음에서 빼기(단독 카드가 됩니다)' : '한눈에 보기에서 빼기') + '">×</button></span>';
+      }).join('');
+      const 후보 = 전부.filter(function (x){ return g.ids.indexOf(x.id) < 0; })
+        .sort(function (a, b){ return (a.정렬 || 999) - (b.정렬 || 999); });
+      const 넣기 = 이름있음
+        ? '<select class="hig-add" data-group="' + escapeHtml(묶음명) + '">' +
+            '<option value="">＋ 지표 넣기…</option>' +
+            후보.map(function (x){
+              return '<option value="' + escapeHtml(x.id) + '">' + escapeHtml(x.이름) + (x.한눈에보기 ? '' : ' (한눈에 보기도 켭니다)') + '</option>';
+            }).join('') +
+          '</select>'
+        : '<div class="hig-hint">이름을 적으면 묶음이 되어 다른 지표를 넣을 수 있습니다.</div>';
+      return '<div class="hig-box' + (이름있음 ? ' named' : '') + '">' +
+        '<input type="text" class="hig-name" data-ids="' + escapeHtml(g.ids.join(',')) + '" data-old="' + escapeHtml(묶음명) + '" value="' + escapeHtml(묶음명) + '" placeholder="' + escapeHtml(g.이름) + ' (단독 카드 · 묶음 이름을 적으면 묶음이 됩니다)">' +
+        '<div class="hig-chips">' + 칩 + '</div>' +
+        넣기 +
+      '</div>';
     }).join('');
   }
 
@@ -4000,34 +4088,51 @@
      같은 비밀번호·식별코드를 쓰되 다른 웹훅(지표한눈에관리)으로 보낸다 —
      소속과 한눈에 보기는 시트의 다른 칸이라 섞어 두면 어느 쪽이 실패했는지
      알 수 없다. */
-  function indMgmt한눈에저장(id, 한눈에보기, 묶음, 토글){
-    const 상태 = document.getElementById('indMgmtStatus');
+  /* 지표 하나의 한눈에 보기·묶음을 서버에 보낸다. 성공하면 indData에 반영하고
+     그 값을 돌려준다. 비밀번호는 한 번 물어 세션에 둔다. 묶음 카드에서 여러
+     지표를 잇달아 바꿀 때(이름 바꾸기) 이 함수를 차례로 부른다. */
+  function 한눈에요청(id, 한눈에보기, 묶음){
     const code = sharedCode();
-    if (!code){ 토글.checked = !한눈에보기; 상태.className = 'status bad'; 상태.textContent = '식별코드를 먼저 확인해 주세요.'; return; }
+    if (!code) return Promise.reject(new Error('식별코드를 먼저 확인해 주세요.'));
     let pw = savedRunPw();
     if (!pw){
       pw = prompt('한눈에 보기 설정을 바꿉니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
-      if (!pw){ 토글.checked = !한눈에보기; return; }
+      if (!pw) return Promise.reject(new Error('취소했습니다.'));
     }
-    토글.disabled = true;
-    상태.className = 'status';
-    상태.textContent = '반영하는 중…';
-    fetch(INDHOME_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    return fetch(INDHOME_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: code, pw: pw, 지표ID: id, 한눈에보기: 한눈에보기, 한눈에묶음: 묶음 }) })
       .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
       .then(function (r){
-        토글.disabled = false;
         if (!r.ok || !r.d || r.d.ok !== true){
           if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e){} }
           throw new Error((r.d && r.d.message) || '반영하지 못했습니다.');
         }
         try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e){}
-        상태.className = 'status ok';
-        상태.textContent = r.d.message || '반영했습니다.';
         const idx = (indData.지표 || []).findIndex(function (x){ return x.id === id; });
         if (idx >= 0){ indData.지표[idx].한눈에보기 = r.d.한눈에보기; indData.지표[idx].한눈에묶음 = r.d.한눈에묶음; }
-        homeInd();   // 상황판 첫 카드에도 바로 반영되는 것을 보여준다
-        mktGridDraw();
+        return r.d;
+      });
+  }
+
+  /* 바뀐 뒤 같은 자료를 보는 세 자리를 다시 그린다. 상황판 첫 카드,
+     시장지표 첫 카드, 지표 마스터 관리(묶음 카드와 지표 줄). */
+  function 한눈에다시그리기(){
+    homeInd();
+    mktGridDraw();
+    indMgmtDraw();
+  }
+
+  function indMgmt한눈에저장(id, 한눈에보기, 묶음, 토글){
+    const 상태 = document.getElementById('indMgmtStatus');
+    토글.disabled = true;
+    상태.className = 'status';
+    상태.textContent = '반영하는 중…';
+    한눈에요청(id, 한눈에보기, 묶음)
+      .then(function (d){
+        토글.disabled = false;
+        상태.className = 'status ok';
+        상태.textContent = d.message || '반영했습니다.';
+        한눈에다시그리기();
       })
       .catch(function (err){
         토글.disabled = false;
@@ -4036,6 +4141,70 @@
         상태.textContent = 오류메시지(err, '한눈에 보기 반영');
       });
   }
+
+  /* 묶음 카드에서 여러 지표를 바꾼다. 이름 바꾸기는 식구 전부에게 같은
+     이름을 보내야 하므로 차례로 보낸다. 중간에 실패하면 거기서 멈추고 알린다.
+     그래도 앞서 바뀐 것은 이미 반영된 뒤라 화면을 다시 그려 지금 상태를 보여준다. */
+  function indMgmt묶음바꾸기(할일들, 말){
+    const 상태 = document.getElementById('indMgmtStatus');
+    상태.className = 'status';
+    상태.textContent = 말 + ' 반영하는 중…';
+    let i = 0;
+    function 다음(){
+      if (i >= 할일들.length){
+        상태.className = 'status ok';
+        상태.textContent = 말 + ' 반영했습니다.';
+        한눈에다시그리기();
+        return;
+      }
+      const t = 할일들[i++];
+      한눈에요청(t.id, t.한눈에보기, t.묶음).then(다음).catch(function (err){
+        상태.className = 'status bad';
+        상태.textContent = 오류메시지(err, 말);
+        한눈에다시그리기();
+      });
+    }
+    다음();
+  }
+
+  /* 묶음 카드의 손잡이 셋. 지표 빼기(×), 지표 넣기(고르기), 이름 바꾸기(글자). */
+  document.getElementById('indMgmtGroups').addEventListener('click', function (e){
+    const x = e.target.closest('button.hig-x');
+    if (!x) return;
+    const 지표 = (indData && indData.지표 || []).filter(function (y){ return y.id === x.dataset.id; })[0];
+    const 이름 = 지표 ? 지표.이름 : x.dataset.id;
+    if (x.dataset.named === '1'){
+      indMgmt묶음바꾸기([{ id: x.dataset.id, 한눈에보기: true, 묶음: '' }], '「' + 이름 + '」' + 을를(이름) + ' 묶음에서 빼기');
+    } else {
+      indMgmt묶음바꾸기([{ id: x.dataset.id, 한눈에보기: false, 묶음: 지표 ? (지표.한눈에묶음 || '') : '' }], '「' + 이름 + '」' + 을를(이름) + ' 한눈에 보기에서 빼기');
+    }
+  });
+
+  document.getElementById('indMgmtGroups').addEventListener('change', function (e){
+    const add = e.target.closest('select.hig-add');
+    if (add){
+      const id = add.value;
+      if (!id) return;
+      const 묶음 = add.dataset.group;
+      add.disabled = true;
+      indMgmt묶음바꾸기([{ id: id, 한눈에보기: true, 묶음: 묶음 }], '「' + 묶음 + '」 묶음에 넣기');
+      return;
+    }
+    const name = e.target.closest('input.hig-name');
+    if (name){
+      const 새이름 = String(name.value || '').trim();
+      const 옛이름 = String(name.dataset.old || '');
+      if (새이름 === 옛이름) return;
+      /* change가 두 번 올 수 있다(입력 뒤 포커스가 빠질 때 한 번 더). 같은
+         이름을 두 번 보내지 않도록 바로 옛 이름을 갱신한다. */
+      name.dataset.old = 새이름;
+      const ids = String(name.dataset.ids || '').split(',').filter(Boolean);
+      /* 이미 있는 다른 묶음 이름을 적으면 그 묶음에 합쳐진다. 그것이 뜻한
+         바일 수도 있어 막지 않고, 결과를 글로 알린다. */
+      const 할일 = ids.map(function (id){ return { id: id, 한눈에보기: true, 묶음: 새이름 }; });
+      indMgmt묶음바꾸기(할일, 새이름 ? ('묶음 이름을 「' + 새이름 + '」으로') : '묶음 이름을 지워 단독 카드로');
+    }
+  });
 
   document.getElementById('indMgmtBody').addEventListener('change', function (e){
     const affChk = e.target.closest('input.indmgmt-aff-chk');
@@ -4081,21 +4250,30 @@
     const homeChk = e.target.closest('input.indmgmt-home-chk');
     if (homeChk){
       const row = homeChk.closest('.indmgmt-row');
-      const txt = row.querySelector('.indmgmt-home-txt');
-      txt.style.display = homeChk.checked ? '' : 'none';
-      indMgmt한눈에저장(homeChk.dataset.id, homeChk.checked, txt.value, homeChk);
+      const sel = row.querySelector('.indmgmt-home-sel');
+      sel.style.display = homeChk.checked ? '' : 'none';
+      const 묶음 = sel.value === '__new__' ? '' : sel.value;
+      indMgmt한눈에저장(homeChk.dataset.id, homeChk.checked, 묶음, homeChk);
       return;
     }
 
-    /* 체크는 그대로 둔 채 묶음 글자만 고쳤을 때(입력칸에서 벗어날 때 change가
-       뜬다). 꺼진 지표의 글자를 고치는 것은 저장할 것이 없다 — 다시 켤 때
-       쓸 자리일 뿐이다. */
-    const homeTxt = e.target.closest('input.indmgmt-home-txt');
-    if (homeTxt){
-      const row = homeTxt.closest('.indmgmt-row');
+    /* 체크는 그대로 둔 채 묶음만 바꿨을 때. 「새 묶음 만들기…」는 이름을
+       물어서 그 이름으로 보낸다. 이름을 안 적으면 원래 값으로 되돌린다. */
+    const homeSel = e.target.closest('select.indmgmt-home-sel');
+    if (homeSel){
+      const row = homeSel.closest('.indmgmt-row');
       const chk = row.querySelector('.indmgmt-home-chk');
-      if (!chk.checked) return;
-      indMgmt한눈에저장(homeTxt.dataset.id, true, homeTxt.value, chk);
+      const 지표 = (indData && indData.지표 || []).filter(function (y){ return y.id === homeSel.dataset.id; })[0];
+      let 묶음 = homeSel.value;
+      if (묶음 === '__new__'){
+        묶음 = String(prompt('새 묶음 이름을 적어 주세요. 같은 이름을 적은 지표끼리 한 카드에 나옵니다. (예: 국채 3년)') || '').trim();
+        if (!묶음){ homeSel.value = 지표 ? (지표.한눈에묶음 || '') : ''; return; }
+      }
+      if (!chk.checked){
+        /* 꺼진 지표는 켜면서 묶음을 정하는 뜻으로 본다. */
+        chk.checked = true;
+      }
+      indMgmt한눈에저장(homeSel.dataset.id, true, 묶음, chk);
     }
   });
 
@@ -5199,6 +5377,12 @@
     const c = 끝.charCodeAt(0);
     if (!(c >= 0xAC00 && c <= 0xD7A3)) return '은(는)';
     return ((c - 0xAC00) % 28) ? '은' : '는';
+  }
+  function 을를(말){
+    const 끝 = String(말 || '').slice(-1);
+    const c = 끝.charCodeAt(0);
+    if (!(c >= 0xAC00 && c <= 0xD7A3)) return '을(를)';
+    return ((c - 0xAC00) % 28) ? '을' : '를';
   }
 
   function compR(k){
