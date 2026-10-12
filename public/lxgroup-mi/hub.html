@@ -998,6 +998,52 @@
      늘 새 줄로 내려 버튼 폭에 눌려 잘리지 않게 한다. */
   .upd-scope-note{flex-basis:100%; font-size:10.5px; color:var(--muted); line-height:1.4; opacity:.75;}
 
+  /* 실적 관리 탭: 회사 줄 오른쪽 「수집 data」 버튼과 조회 화면.
+     버튼은 label 안에 있어 눌러도 체크가 바뀌지 않게 JS에서 막는다. */
+  #tab-perfmgmt .check-option .opt-text{flex:1; min-width:0;}
+  .upd-mgmt-data-btn{margin-left:auto; align-self:center; flex-shrink:0; background:var(--card);
+    border:1px solid var(--green); color:var(--green); border-radius:8px; padding:6px 10px;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .upd-mgmt-data-btn:hover{background:var(--green-tint);}
+  .dm-overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.45); display:none;
+    align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto;}
+  .dm-overlay.show{display:flex;}
+  .dm-panel{background:var(--card); color:var(--text); border-radius:14px; width:100%; max-width:860px;
+    padding:16px; box-shadow:0 10px 40px rgba(0,0,0,.3);}
+  .dm-head{display:flex; align-items:center; gap:8px;}
+  .dm-title{font-size:16px; font-weight:800; flex:1; min-width:0;}
+  .dm-close{background:none; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--muted); padding:2px 8px;}
+  .dm-sub{font-size:12px; color:var(--muted); margin-top:4px;}
+  .dm-chips{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 4px;}
+  .dm-chip{font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--green-tint); color:var(--green);}
+  .dm-chip.bad{background:#FDECEE; color:var(--danger);}
+  .dm-note{font-size:11.5px; color:var(--muted); line-height:1.6; margin:8px 0;}
+  .dm-tools{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0;}
+  .dm-tools label{font-size:12.5px; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .dm-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+  .dm-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:560px;}
+  .dm-table th{background:var(--green-tint); text-align:left; padding:8px; font-weight:700; white-space:nowrap;}
+  .dm-table td{padding:8px; border-top:1px solid var(--line); vertical-align:top;}
+  .dm-table tr.miss td{background:rgba(220,60,60,.05);}
+  .dm-st{display:inline-block; padding:1px 8px; border-radius:999px; font-size:11.5px; font-weight:700; white-space:nowrap;}
+  .dm-st.ok{background:var(--green-tint); color:var(--green);}
+  .dm-st.bad{background:#FDECEE; color:var(--danger);}
+  .dm-st.wait{background:#FFF4E0; color:#9A5B00;}
+  .dm-st.na{background:var(--line); color:var(--muted);}
+  .dm-st-sub{display:block; font-size:11px; color:var(--muted); margin-top:2px;}
+  .dm-table a{color:var(--green); font-weight:700;}
+  @media (max-width:600px){
+    .dm-panel{padding:12px;}
+    .dm-table{min-width:0; font-size:12px;}
+    .dm-table th, .dm-table td{padding:6px 4px;}
+    .dm-table .dm-date{display:none;}
+    .dm-st{font-size:10.5px; padding:1px 5px;}
+    .dm-st-sub{font-size:10px;}
+    .upd-mgmt-data-btn{padding:5px 8px; font-size:11px;}
+  }
+  .dm-foot{margin-top:12px;}
+  .dm-foot .submit-btn{margin-top:0;}
+
   .ind-note{font-size:11px; color:var(--muted); line-height:1.6; margin-top:9px;
             padding-top:8px; border-top:1px solid var(--line);}
   .ind-note b{color:var(--text); font-weight:700;}
@@ -1674,7 +1720,7 @@
   <div id="tab-perfmgmt" class="tab-panel">
     <section class="card">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title">실적 관리</span></div>
-      <div class="step-desc">회사를 체크하고 아래 「선택 회사 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시를 찾아 저장하고 실적에 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다. 실적 업데이트는 이 탭에서만 하고, 조회 화면에는 업데이트 버튼이 없습니다. 시장 지표 업데이트는 지표 마스터 관리 탭에서 합니다.</div>
+      <div class="step-desc">회사를 체크하고 아래 「선택 회사 업데이트 실행」을 누르면 하나씩 순서대로 최신 공시를 찾아 저장하고 실적에 반영합니다. 자동 수집은 그대로 계속되며, 이 화면은 그 사이에 손으로 한 번 더 받을 때 씁니다. 각 회사 오른쪽의 「수집 data」를 누르면 그 회사의 DART 보고서별 저장·추출 현황과 누락이 보이고, 누락을 체크해 DB에 저장할 수 있습니다. 실적 업데이트는 이 탭에서만 하고, 조회 화면에는 업데이트 버튼이 없습니다. 시장 지표 업데이트는 지표 마스터 관리 탭에서 합니다.</div>
       <div class="ind-asof" id="updMgmtAsOf"></div>
       <div class="status" id="updMgmtLoadStatus"></div>
     </section>
@@ -1698,6 +1744,18 @@
       <button type="button" class="submit-btn" id="updMgmtRunBtn">선택 회사 업데이트 실행</button>
     </div>
     <div id="updMgmtRunLog"></div>
+
+    <!-- 회사 줄의 「수집 data」 조회 화면. 그 회사의 DART 정기보고서마다 원문 저장 ·
+         실적 추출 · 비용 추출이 됐는지 보여 주고, 누락을 체크해 DB에 저장한다. -->
+    <div class="dm-overlay" id="dmOverlay" role="dialog" aria-modal="true" aria-labelledby="dmTitle">
+      <div class="dm-panel">
+        <div class="dm-head"><div class="dm-title" id="dmTitle">수집 data</div>
+          <button type="button" class="dm-close" id="dmClose" aria-label="닫기">×</button></div>
+        <div class="dm-sub" id="dmSub"></div>
+        <div class="status" id="dmStatus"></div>
+        <div id="dmBody"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 지표 마스터 관리 — 지표마다 어느 계열사에 보일지(소속)와 상황판 「한눈에
@@ -8574,7 +8632,9 @@
       '<div class="opt-text">' + escapeHtml(c.회사명) +
         (!c.사용 ? '<span class="tag-ok" style="background:#FDECEE;color:var(--danger);">사용 안 함</span>' : '') +
         (보조 ? '<div class="opt-sub">' + 보조 + '</div>' : '') +
-      '</div></label>';
+      '</div>' +
+      '<button type="button" class="upd-mgmt-data-btn" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">수집 data</button>' +
+      '</label>';
   }
 
   function updMgmtDraw(){
@@ -8729,6 +8789,217 @@
   }
 
   document.getElementById('updMgmtRunBtn').addEventListener('click', updMgmtRun);
+
+  /* ---------- 수집 data 조회 화면 ----------
+     회사 줄 오른쪽 「수집 data」 버튼. 그 회사의 DART 정기보고서마다
+     원문 저장 · 실적 추출 · 비용 추출이 됐는지 보여 주고, 누락된 보고서를 체크해
+     DB(드라이브)에 저장한다. 조회는 lxgroup-수집현황, 저장은 lxgroup-수집저장.
+     저장은 서버가 응답을 먼저 주고 뒤에서 돌기 때문에, 시작한 뒤 이 화면이
+     20초마다 현황을 다시 받아 표를 갱신한다. 비용 추출은 이 화면에서 시작하지
+     못하고 금요일 자동 수집이 맡는다(대기로 표시). */
+  const COLLSTAT_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-수집현황');
+  const COLLSAVE_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-수집저장');
+  const dm = { corp: '', name: '', data: null, 선택: {}, 누락만: false, 폴링: null, 저장중: false, 요청번호: 0 };
+
+  function dmStatus(문구, 종류){
+    const el = document.getElementById('dmStatus');
+    el.className = 'status' + (종류 ? ' ' + 종류 : '');
+    el.textContent = 문구 || '';
+  }
+
+  function dmClose(){
+    if (dm.폴링){ clearInterval(dm.폴링); dm.폴링 = null; }
+    dm.요청번호 += 1;
+    document.getElementById('dmOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  function dmOpen(corp, name){
+    if (dm.폴링){ clearInterval(dm.폴링); dm.폴링 = null; }
+    dm.corp = corp; dm.name = name; dm.data = null; dm.선택 = {}; dm.누락만 = false; dm.저장중 = false;
+    document.getElementById('dmTitle').textContent = name + ' 수집 data';
+    document.getElementById('dmSub').textContent = '';
+    document.getElementById('dmBody').innerHTML = '';
+    document.getElementById('dmOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    dmLoad(false);
+  }
+
+  function dmLoad(조용히){
+    const code = sharedCode();
+    if (!code){ dmStatus('식별코드를 먼저 확인해 주세요.', 'bad'); return Promise.resolve(false); }
+    const 번호 = ++dm.요청번호;
+    if (!조용히) dmStatus('DART 공시 목록과 저장 상태를 확인하는 중입니다. 10초 안팎 걸립니다…', '');
+    return fetch(COLLSTAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, corp_code: dm.corp, 회사명: dm.name }) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        if (번호 !== dm.요청번호) return false;     // 그 사이 닫았거나 다른 회사를 열었다
+        if (!r.ok || !r.d || r.d.ok !== true) throw new Error((r.d && r.d.message) || '현황을 불러오지 못했습니다.');
+        dm.data = r.d;
+        if (!dm.저장중) dmStatus('', '');
+        dmDraw();
+        return true;
+      })
+      .catch(function (err){
+        if (번호 !== dm.요청번호) return false;
+        dmStatus(오류메시지(err, '수집 현황 조회'), 'bad');
+        return false;
+      });
+  }
+
+  function dm배지(값, 부가){
+    const 틀 = {
+      '저장': ['ok', '저장'], '완료': ['ok', '완료'], '누락': ['bad', '누락'],
+      '재시도대기': ['wait', '재추출 대기'], '대기': ['wait', '대기'],
+      '부문표없음': ['na', '부문표 없음'], '원문필요': ['na', '원문 필요'], '해당없음': ['na', '해당 없음']
+    }[값] || ['na', 값 || '—'];
+    return '<span class="dm-st ' + 틀[0] + '">' + escapeHtml(틀[1]) + '</span>' +
+      (부가 ? '<span class="dm-st-sub">' + escapeHtml(부가) + '</span>' : '');
+  }
+
+  function dmDraw(){
+    const d = dm.data;
+    if (!d) return;
+    const 요 = d.요약 || {};
+    document.getElementById('dmSub').textContent = '확인 시각 ' + (d.확인시각 || '') + ' · DART 정기보고서·감사보고서 최근 40건 기준';
+    const 줄들 = (d.보고서 || []).filter(function (r){ return !dm.누락만 || r.누락; });
+    const 칩 = [
+      '<span class="dm-chip">전체 ' + (요.전체 || 0) + '건</span>',
+      '<span class="dm-chip">원문 저장 ' + (요.원문저장 || 0) + '</span>',
+      '<span class="dm-chip">실적 완료 ' + (요.실적완료 || 0) + '</span>',
+      '<span class="dm-chip">비용 완료 ' + (요.비용완료 || 0) + '</span>',
+      (요.저장가능 ? '<span class="dm-chip bad">누락 ' + 요.저장가능 + '건</span>' : '<span class="dm-chip">누락 없음</span>')
+    ].join('');
+    const 본문 = 줄들.map(function (r){
+      const 체크 = r.누락
+        ? '<input type="checkbox" class="dm-chk" data-no="' + escapeHtml(r.접수번호) + '"' + (dm.선택[r.접수번호] ? ' checked' : '') + '>'
+        : '';
+      const 링크 = /^https:\/\/dart\.fss\.or\.kr\//.test(r.조회URL || '')
+        ? '<a href="' + escapeHtml(r.조회URL) + '" target="_blank" rel="noopener">' + escapeHtml(r.보고서명) + '</a>'
+        : escapeHtml(r.보고서명);
+      const 실적부가 = r.실적 === '완료' ? (r.실적줄수 + '행 · ' + r.실적연도) : '';
+      const 비용부가 = r.비용 === '완료' ? (r.비용줄수 + '행') : (r.비용 === '대기' ? '금요일 자동 수집' : '');
+      return '<tr class="' + (r.누락 ? 'miss' : '') + '"><td>' + 체크 + '</td>' +
+        '<td>' + 링크 + '<span class="dm-st-sub">접수번호 ' + escapeHtml(r.접수번호) + '</span></td>' +
+        '<td class="dm-date">' + escapeHtml(r.접수일) + '</td>' +
+        '<td>' + dm배지(r.원문) + '</td>' +
+        '<td>' + dm배지(r.실적, 실적부가) + '</td>' +
+        '<td>' + dm배지(r.비용, 비용부가) + '</td></tr>';
+    }).join('');
+    document.getElementById('dmBody').innerHTML =
+      '<div class="dm-chips">' + 칩 + '</div>' +
+      '<div class="dm-note">누락은 ① DART 원문이 DB(드라이브)에 없는 보고서, ② 원문은 있는데 실적이 아직 추출되지 않았거나 파서 개선으로 다시 읽을 보고서입니다. ' +
+      '체크하고 저장하면 ①은 원문을 받아 저장한 뒤 실적까지 추출합니다. 비용 추출은 이 화면에서 시작할 수 없고 매주 금요일 자동 수집이 맡습니다.</div>' +
+      '<div class="dm-tools"><label><input type="checkbox" id="dmOnlyMiss"' + (dm.누락만 ? ' checked' : '') + '> 누락만 보기</label>' +
+      '<button type="button" class="go-btn" id="dmAllMiss" style="margin-left:0;">누락 전체 선택</button>' +
+      '<button type="button" class="go-btn" id="dmReload">새로고침</button></div>' +
+      '<div class="dm-wrap"><table class="dm-table"><thead><tr><th></th><th>보고서</th><th class="dm-date">접수일</th><th>원문 저장</th><th>실적 추출</th><th>비용 추출</th></tr></thead><tbody>' +
+      (본문 || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">표시할 보고서가 없습니다.</td></tr>') +
+      '</tbody></table></div>' +
+      '<div class="dm-foot"><button type="button" class="submit-btn" id="dmSave"></button></div>';
+    dmSaveBtnSync();
+  }
+
+  function dmSaveBtnSync(){
+    const 버튼 = document.getElementById('dmSave');
+    if (!버튼) return;
+    const n = Object.keys(dm.선택).filter(function (k){ return dm.선택[k]; }).length;
+    버튼.disabled = dm.저장중 || n === 0;
+    버튼.textContent = dm.저장중 ? '저장 진행 중…' : (n ? '선택한 누락 ' + n + '건 DB 저장' : '저장할 누락 항목을 체크해 주세요');
+  }
+
+  function dmSave(){
+    if (dm.저장중 || !dm.data) return;
+    const 고른 = (dm.data.보고서 || []).filter(function (r){ return dm.선택[r.접수번호] && r.누락; });
+    if (!고른.length) return;
+    const code = sharedCode();
+    if (!code){ alert('식별코드를 먼저 확인해 주세요.'); return; }
+    let pw = savedRunPw();
+    if (!pw){
+      pw = prompt(dm.name + '의 누락 ' + 고른.length + '건을 DB에 저장합니다.\n「설정」 시트의 실행 비밀번호를 입력해 주세요.');
+      if (!pw) return;
+    }
+    dm.저장중 = true;
+    dmSaveBtnSync();
+    dmStatus('저장을 요청하는 중입니다…', '');
+    const 항목 = 고른.map(function (r){
+      return { 접수번호: r.접수번호, 보고서명: r.보고서명, 접수일: r.접수일, 결산기: r.결산기, 원문저장필요: r.원문 === '누락' };
+    });
+    fetch(COLLSAVE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, pw: pw, corp_code: dm.corp, 회사명: dm.name, 항목: 항목 }) })
+      .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
+      .then(function (r){
+        if (!r.ok || !r.d || r.d.ok !== true){
+          if (r.d && r.d.error === 'auth'){ try { sessionStorage.removeItem(RUN_PW_KEY); } catch (e) {} }
+          throw new Error((r.d && r.d.message) || '저장 요청을 보내지 못했습니다.');
+        }
+        try { sessionStorage.setItem(RUN_PW_KEY, pw); } catch (e) {}
+        dmFollow(항목.map(function (x){ return x.접수번호; }), r.d.message || '저장을 시작했습니다.');
+      })
+      .catch(function (err){
+        dm.저장중 = false;
+        dmSaveBtnSync();
+        dmStatus(오류메시지(err, '수집 저장 요청'), 'bad');
+      });
+  }
+
+  /* 저장을 시작한 뒤 20초마다 현황을 다시 받는다. 고른 보고서가 모두 누락에서
+     빠지면 끝낸다. 15분 안에 안 끝나면 서버가 아직 돌거나 실패한 것이므로
+     그대로 말하고 멈춘다 — 끝난 척하지 않는다. */
+  function dmFollow(번호들, 시작메시지){
+    const 시작 = Date.now();
+    const 이름 = dm.name;
+    dmStatus(시작메시지 + ' 완료되면 표가 저절로 갱신됩니다.', '');
+    if (dm.폴링) clearInterval(dm.폴링);
+    dm.폴링 = setInterval(function (){
+      if (dm.name !== 이름 || !document.getElementById('dmOverlay').classList.contains('show')){
+        clearInterval(dm.폴링); dm.폴링 = null; return;
+      }
+      dmLoad(true).then(function (ok){
+        if (!ok || !dm.data) return;
+        const 남음 = (dm.data.보고서 || []).filter(function (r){ return 번호들.indexOf(r.접수번호) >= 0 && r.누락; });
+        const 지남 = Date.now() - 시작;
+        if (!남음.length){
+          clearInterval(dm.폴링); dm.폴링 = null; dm.저장중 = false; dm.선택 = {};
+          dmStatus('선택한 보고서의 저장이 끝났습니다. 추출된 실적은 경쟁사 실적 화면을 새로 불러오면 보입니다.', 'ok');
+          dmDraw();
+        } else if (지남 > 15 * 60 * 1000){
+          clearInterval(dm.폴링); dm.폴링 = null; dm.저장중 = false;
+          dmStatus('15분이 지나도 ' + 남음.length + '건이 아직 누락으로 남아 있습니다. 서버가 아직 처리 중이거나 실패했을 수 있으니 잠시 뒤 새로고침해 확인해 주세요.', 'bad');
+          dmDraw();
+        } else {
+          dmStatus('저장 진행 중… 아직 ' + 남음.length + '건이 남았습니다. (경과 ' + Math.round(지남 / 1000) + '초)', '');
+        }
+      });
+    }, 20000);
+  }
+
+  ['updMgmtGroupList', 'updMgmtRivalList'].forEach(function (id){
+    document.getElementById(id).addEventListener('click', function (e){
+      const 버튼 = e.target.closest('.upd-mgmt-data-btn');
+      if (!버튼) return;
+      e.preventDefault();      // label 안이라 막지 않으면 체크가 바뀐다
+      e.stopPropagation();
+      dmOpen(버튼.dataset.corp, 버튼.dataset.name);
+    });
+  });
+  document.getElementById('dmClose').addEventListener('click', dmClose);
+  document.getElementById('dmOverlay').addEventListener('click', function (e){ if (e.target === this) dmClose(); });
+  document.addEventListener('keydown', function (e){
+    if (e.key === 'Escape' && document.getElementById('dmOverlay').classList.contains('show')) dmClose();
+  });
+  document.getElementById('dmBody').addEventListener('change', function (e){
+    if (e.target.id === 'dmOnlyMiss'){ dm.누락만 = e.target.checked; dmDraw(); return; }
+    if (e.target.classList.contains('dm-chk')){ dm.선택[e.target.dataset.no] = e.target.checked; dmSaveBtnSync(); }
+  });
+  document.getElementById('dmBody').addEventListener('click', function (e){
+    if (e.target.id === 'dmAllMiss'){
+      (dm.data.보고서 || []).forEach(function (r){ if (r.누락) dm.선택[r.접수번호] = true; });
+      dmDraw();
+    } else if (e.target.id === 'dmReload'){ dmLoad(false); }
+    else if (e.target.id === 'dmSave'){ dmSave(); }
+  });
 
   /* ---------- 관리항목(지표·리스크) 마스터 설정 ----------
      "LX Group MI_관리항목 마스터(지표·리스크)" 구글 시트를 리스크 관리 탭에서
