@@ -640,6 +640,10 @@
   .indmgmt-upd-pick{position:absolute; top:12px; right:14px; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); cursor:pointer;}
   .indmgmt-row-t{font-size:14px; font-weight:700; padding-right:90px;}
   .indmgmt-row-sub{font-size:12px; color:var(--muted); margin-top:1px;}
+  /* 출처 기관과 공공/민간. 지표 이름 오른쪽에 회색 작은 글씨로 붙는다(2026-10-12).
+     시트 시장지표 탭의 원천기관·공공민간 칸에서 온다. */
+  .src-tag{font-size:10.5px; font-weight:400; color:#8a8a8a; margin-left:6px; white-space:nowrap; letter-spacing:0;}
+  .hi-l .src-tag{display:block; margin-left:0; font-size:10px; white-space:normal;}
   .indmgmt-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
   .indmgmt-chips .source-check{flex:0 0 auto; padding:5px 11px; font-size:12px;}
   .indmgmt-home{display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); flex-wrap:wrap;}
@@ -1910,7 +1914,7 @@
       <div class="step-desc" id="indHeadDesc"></div>
       <div class="line-row">
         <div class="ind-asof" id="indAsOf">불러오는 중…</div>
-        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀</button>
+        <button type="button" class="xls-btn" id="indXlsBtn">⬇ 원본 엑셀(전체 통합)</button>
       </div>
       <button type="button" class="ghost-btn" id="indPickToggleBtn">지표 선택 열기</button>
       <div id="indPickBody" style="display:none; margin-top:10px;">
@@ -2070,7 +2074,7 @@
       <div class="step-desc">수집 중인 지표 전체 목록입니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
       <div class="line-row">
         <div class="ind-asof" id="indCommonAsOf"></div>
-        <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 공통 원본 엑셀</button>
+        <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 원본 엑셀(전체 통합)</button>
       </div>
       <div class="ind-grid" id="indCommonBody"></div>
     </section>
@@ -3674,7 +3678,7 @@
         '<div class="ind-item-row">' +
           (여러개 ? 그래프체크박스(열쇠, x.이름) : '') +
           indSwatch(st.색, st.점선) +
-          '<div class="ind-item-title"><b>' + escapeHtml(x.이름) + '</b></div>' +
+          '<div class="ind-item-title"><b>' + escapeHtml(x.이름) + '</b>' + 출처표(x) + '</div>' +
           '<div class="ind-item-v">' +
             (b ? '<div class="val">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위) + '</span></div>'
                : '<span class="chg ind-flat">' + escapeHtml(R.이름) + ' 자료 없음</span>') +
@@ -3969,6 +3973,15 @@
     return (r && r.최신일) ? String(r.최신일) : '';
   }
 
+  /* 지표 이름 오른쪽에 붙는 출처 기관과 공공/민간. 시트의 원천기관·공공민간 칸이
+     비어 있으면 수집 창구(ECOS·FRED 등)라도 적는다. 회색 작은 글씨다. */
+  function 출처표(x){
+    const 기관 = String((x && x.원천기관) || '').trim() || String((x && x.출처) || '').trim();
+    const 구분 = String((x && x.공공민간) || '').trim();
+    if (!기관 && !구분) return '';
+    return '<span class="src-tag">' + escapeHtml(기관) + (구분 ? ' · ' + escapeHtml(구분) : '') + '</span>';
+  }
+
   function indMgmtDraw(){
     const 통 = document.getElementById('indMgmtBody');
     if (!통) return;
@@ -3993,7 +4006,9 @@
     });
     const asOf = document.getElementById('indMgmtAsOf');
     const 수집최신 = String(indData.수집최신 || '').trim();
-    if (asOf) asOf.textContent = (수집최신 ? ('마지막 수집 ' + 수집최신 + ' · ') : '') + (전체최신
+    const 조회최신 = String(indData.조회최신 || '').trim();
+    if (asOf) asOf.textContent = (조회최신 ? ('마지막 조회 ' + 조회최신 + ' · ') : '') +
+      (수집최신 ? ('새 값 들어온 때 ' + 수집최신 + ' · ') : '') + (전체최신
       ? ('지표 값 중 가장 최근 기준일 ' + 전체최신)
       : '아직 지표 값이 없습니다.');
 
@@ -4037,10 +4052,11 @@
         '</select>';
         return '<div class="indmgmt-row" data-id="' + escapeHtml(x.id) + '">' +
           '<label class="indmgmt-upd-pick"><input type="checkbox" class="indmgmt-upd-chk" data-id="' + escapeHtml(x.id) + '"' + (고른업데이트[x.id] ? ' checked' : '') + '> 업데이트 대상</label>' +
-          '<div class="indmgmt-row-t">' + escapeHtml(x.이름) + '</div>' +
+          '<div class="indmgmt-row-t">' + escapeHtml(x.이름) + 출처표(x) + '</div>' +
           '<div class="indmgmt-row-sub">' + escapeHtml(x.id) + ' · ' + escapeHtml(x.출처) +
             ' · 최근 기준일 ' + escapeHtml(최신일 || '없음') +
-            (x.수집최신 ? ' · 마지막 수집 ' + escapeHtml(String(x.수집최신)) : '') + '</div>' +
+            (x.조회시각 ? ' · 마지막 조회 ' + escapeHtml(String(x.조회시각)) + ' (' + escapeHtml(String(x.조회결과 || '')) + (x.원천최신일 ? ', 원천 최신 ' + escapeHtml(String(x.원천최신일)) : '') + ')' : ' · 조회 기록 없음') +
+            (x.수집최신 ? ' · 새 값 들어온 때 ' + escapeHtml(String(x.수집최신)) : '') + '</div>' +
           '<div class="indmgmt-chips">' + 소속칩 + '</div>' +
           '<div class="indmgmt-home">' +
             '<label class="source-check' + (한눈에켜짐 ? ' checked' : '') + '">' +
@@ -4436,10 +4452,12 @@
      카드 머리에 하나씩 — 계열사 것과 공통 것이 드라이브에서도 서로 다른
      파일이라 버튼도 둘이다. */
   document.getElementById('indXlsBtn').addEventListener('click', function (){
-    원본받기('지표', coTab, this);
+    /* 2026-10-12부터 지표 원본은 계열사 구분 없이 「시장지표 마스터」 한 파일이다.
+       지표 목록·월별·일별·연도별 탭에 전체 계열사 지표가 들어 있고 (소속) 줄로 거른다. */
+    원본받기('지표', '전체', this);
   });
   document.getElementById('indCommonXlsBtn').addEventListener('click', function (){
-    원본받기('지표', '공통', this);
+    원본받기('지표', '전체', this);
   });
 
   /* 기간·통화·펼침은 그래프마다 따로 기억한다 — 환율은 일별로 보면서
@@ -4682,7 +4700,7 @@
     const 본문 = { code: code, pw: pw, 대상: 대상 };
     if (부분) 본문.지표ID목록 = 지표ID목록;
     /* 누르기 전의 마지막 수집 시각. 갱신이 끝났는지는 이 값이 바뀌는지로 안다. */
-    const 기준수집 = indData ? String(indData.수집최신 || '') : '';
+    const 기준수집 = indData ? String(indData.조회최신 || indData.수집최신 || '') : '';
 
     fetch(RUN_URL, {
       method: 'POST',
@@ -4743,15 +4761,21 @@
     function 한번(){
       번++;
       지표다시받기().then(function (d){
-        const 지금수집 = d ? String(d.수집최신 || '') : '';
+        /* 끝났는지는 수집이 남긴 「마지막 조회」 시각이 바뀌었는지로 안다. 새 값이
+           없어도 조회는 했으므로 이 값은 바뀐다. 새로 쌓인 값은 그 조회에서 지표마다
+           적어 둔 새로쌓은수를 더한다. */
+        const 지금수집 = d ? String(d.조회최신 || d.수집최신 || '') : '';
         if (d && 지금수집 && 지금수집 !== 기준수집){
+          let 새값 = 0;
+          (d.지표 || []).forEach(function (x){ if (String(x.조회시각 || '') === String(d.조회최신 || '')) 새값 += Number(x.새로쌓은수) || 0; });
           알림.className = 'upd-msg ok';
-          알림.textContent = 이름 + ' 갱신이 끝났습니다. 마지막 수집 ' + 지금수집 + '. 화면을 다시 그렸습니다.';
+          알림.textContent = 이름 + ' 갱신이 끝났습니다(조회 ' + 지금수집 + '). ' +
+            (새값 ? '새로 들어온 값 ' + 새값 + '개를 화면에 반영했습니다.' : '조회는 끝났지만 새로 들어온 값은 없습니다. 원천 기관이 아직 새 자료를 내지 않은 것입니다.');
           return;
         }
         if (번 >= 최대){
           알림.className = 'upd-msg';
-          알림.textContent = 이름 + ' 갱신을 불렀지만 4분 동안 새로 쌓인 값이 없습니다. 원천 기관에 새 자료가 없었거나 아직 진행 중일 수 있습니다. (마지막 수집 ' + (기준수집 || '없음') + ')';
+          알림.textContent = 이름 + ' 갱신을 불렀지만 4분 동안 조회 기록이 바뀌지 않았습니다. 수집이 아직 진행 중이거나 실패했을 수 있습니다. (마지막 조회 ' + (기준수집 || '없음') + ')';
           return;
         }
         알림.className = 'upd-msg';
@@ -9449,7 +9473,7 @@
         const b = (x.범위 && (x.범위['일'] || x.범위['월'] || x.범위['연'])) || null;
         if (!b || b.최신값 === null || b.최신값 === undefined) return '';
         return '<div class="hi-c">' +
-          '<div class="hi-l">' + escapeHtml(x.이름) + '</div>' +
+          '<div class="hi-l">' + escapeHtml(x.이름) + 출처표(x) + '</div>' +
           '<div class="hi-v">' + indNum(b.최신값, x.단위) +
             '<span>' + escapeHtml(x.단위 || '') + '</span></div>' +
           indChgHtml(b) + '</div>';
@@ -9488,7 +9512,7 @@
       const 숫자칸 = items.map(function (x){
         const b = x.범위 && x.범위[R.k];
         if (!b || b.최신값 === null || b.최신값 === undefined) return '';
-        return '<div class="hi-c"><div class="hi-l">' + escapeHtml(x.이름) + '</div>' +
+        return '<div class="hi-c"><div class="hi-l">' + escapeHtml(x.이름) + 출처표(x) + '</div>' +
           '<div class="hi-v">' + indNum(b.최신값, x.단위) + '<span>' + escapeHtml(x.단위 || '') + '</span></div>' +
           indChgHtml(b) + '</div>';
       }).filter(Boolean);
