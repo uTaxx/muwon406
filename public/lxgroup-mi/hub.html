@@ -1207,21 +1207,21 @@
          그 빈칸이 단어 사이를 벌려 '키워드 뉴스'로 읽힌다. -->
     <div class="tab-nav" id="topNav">
       <button type="button" class="tab-btn active" data-tab="home">Home</button>
-      <button type="button" class="tab-btn" data-top="holdings">LX홀딩스</button>
-      <button type="button" class="tab-btn" data-top="affiliate">계열사별</button>
+      <button type="button" class="tab-btn" data-top="holdings">주요정보</button>
+      <button type="button" class="tab-btn" data-top="affiliate">그룹 계열사</button>
     </div>
   </div>
 
   <div class="panes">
 
-  <!-- 하위 메뉴는 본문 위쪽에 둔다. 왼쪽 메뉴는 홈/홀딩스/계열사별 갈래만
+  <!-- 하위 메뉴는 본문 위쪽에 둔다. 왼쪽 메뉴는 홈/주요정보/그룹 계열사 갈래만
        고르는 자리이고, 그 갈래 안에서 어디로 갈지는 여기서 고른다. -->
-  <!-- LX홀딩스 5탭: 시장지표/자본시장정보/전체뉴스조회/실적현황/주요일정. -->
+  <!-- 주요정보 4탭: 시장지표/자본시장정보/전체뉴스조회/주요일정. LX홀딩스
+       실적현황은 2026-10-12에 그룹 계열사 갈래의 맨 왼쪽으로 옮겼다. -->
   <div class="tab-nav co-sub top-sub" id="holdingsSubNav" hidden>
     <button type="button" class="tab-btn" data-tab="index">시장지표</button>
     <button type="button" class="tab-btn" data-tab="deal">자본시장정보</button>
     <button type="button" class="tab-btn" data-newsgroup="1">전체뉴스조회</button>
-    <button type="button" class="tab-btn" data-tab="grpperf">실적현황</button>
     <button type="button" class="tab-btn" data-tab="cal">주요일정</button>
   </div>
   <!-- 전체뉴스조회 안의 세 갈래. 기존 키워드 뉴스·특정 키워드 검색·신청/변경 화면을
@@ -1881,7 +1881,7 @@
       </div>
       <button type="button" class="ghost-btn" id="indPickToggleBtn">지표 선택 열기</button>
       <div id="indPickBody" style="display:none; margin-top:10px;">
-        <div class="step-desc">전체 지표 중 이 계열사에 보일 것을 체크합니다. 지표 전체 목록은 LX홀딩스 › 시장지표에 있습니다.</div>
+        <div class="step-desc">전체 지표 중 이 계열사에 보일 것을 체크합니다. 지표 전체 목록은 주요정보 › 시장지표에 있습니다.</div>
         <div class="status" id="indPickStatus"></div>
         <div id="indPickList"></div>
       </div>
@@ -1895,7 +1895,7 @@
     </div>
 
     <!-- 실적 현황. 지금 고른 그 계열사 실적만 본다. 계열사를 가리지 않는
-         전체 비교는 LX홀딩스 메뉴의 실적현황 탭에 있다. -->
+         전체 비교는 회사 선택 줄 맨 왼쪽의 「LX홀딩스 실적현황」에 있다. -->
     <div id="co-group" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num">🏢</span><span class="step-title" id="coPerfTitle">실적</span></div>
@@ -1994,33 +1994,12 @@
       </div>
     </div>
 
-   </div>
-  </div>
-
-  <!-- 탭 7: 시장 지표(LX홀딩스) — 계열사를 가리지 않는 공통 지표만 보여준다.
-       계열사별 지표는 계열사별 탭의 주요 지표 하위 탭에 있다. -->
-  <div id="tab-index" class="tab-panel">
-    <section class="card">
-      <div class="step-head"><span class="step-num">📊</span><span class="step-title">한눈에 보기</span></div>
-      <div class="step-desc" id="mktGridDesc">환율·금리·유가처럼 자주 확인하는 값만 간추렸습니다. 나머지 공통 지표는 아래 전체 목록에 있습니다.</div>
-      <div class="mkt-grid" id="mktGrid"></div>
-    </section>
-
-    <section class="card">
-      <div class="step-head"><span class="step-num">📋</span><span class="step-title">지표 전체</span></div>
-      <div class="step-desc">수집 중인 지표 전체 목록입니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
-      <div class="line-row">
-        <div class="ind-asof" id="indCommonAsOf"></div>
-        <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 공통 원본 엑셀</button>
-      </div>
-      <div class="ind-grid" id="indCommonBody"></div>
-    </section>
-  </div>
-
-  <!-- 탭: 실적현황(LX홀딩스) — 계열사를 가리지 않는 그룹 전체 비교와 LX홀딩스
-       자체 실적을 여기 모은다. 계열사 하나만의 실적은 계열사별 탭의 실적
-       현황 하위 탭에 있다. -->
-  <div id="tab-grpperf" class="tab-panel">
+    <!-- LX홀딩스 실적현황. 계열사를 가리지 않는 그룹 전체 비교와 LX홀딩스
+         자체 실적을 여기 모은다. 전에는 주요정보(옛 LX홀딩스) 갈래의 탭이었는데
+         2026-10-12에 그룹 계열사 갈래의 맨 왼쪽 항목으로 옮겼다. 회사 선택
+         줄의 「LX홀딩스 실적현황」을 누르면 하위 탭 줄 없이 이 칸만 보인다.
+         계열사 하나만의 실적은 그 계열사의 실적 현황 하위 탭에 있다. -->
+    <div id="co-grpperf" class="co-pane">
     <section class="card">
       <div class="step-head"><span class="step-num">🏛</span><span class="step-title">LX홀딩스 실적</span></div>
       <div class="step-desc">DART 공시의 부문별 매출·영업이익입니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
@@ -2038,6 +2017,29 @@
       <div class="ind-grid" id="groupBody"></div>
       <div class="empty-note" id="groupEmpty" style="display:none;"></div>
       <div class="word-hint" id="groupGap" style="display:none;"></div>
+    </section>
+    </div>
+
+   </div>
+  </div>
+
+  <!-- 탭 7: 시장 지표(주요정보) — 계열사를 가리지 않는 공통 지표만 보여준다.
+       계열사별 지표는 계열사별 탭의 주요 지표 하위 탭에 있다. -->
+  <div id="tab-index" class="tab-panel">
+    <section class="card">
+      <div class="step-head"><span class="step-num">📊</span><span class="step-title">한눈에 보기</span></div>
+      <div class="step-desc" id="mktGridDesc">환율·금리·유가처럼 자주 확인하는 값만 간추렸습니다. 나머지 공통 지표는 아래 전체 목록에 있습니다.</div>
+      <div class="mkt-grid" id="mktGrid"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-head"><span class="step-num">📋</span><span class="step-title">지표 전체</span></div>
+      <div class="step-desc">수집 중인 지표 전체 목록입니다. 계열사별 화면에 보일 것은 그 계열사의 「지표 선택」에서 따로 고릅니다 <a href="manual.html#co" style="color:var(--green); font-weight:700;">자세히 →</a></div>
+      <div class="line-row">
+        <div class="ind-asof" id="indCommonAsOf"></div>
+        <button type="button" class="xls-btn" id="indCommonXlsBtn">⬇ 공통 원본 엑셀</button>
+      </div>
+      <div class="ind-grid" id="indCommonBody"></div>
     </section>
   </div>
 
@@ -2810,16 +2812,38 @@
     }).join('');
   }
 
+  /* 회사 선택 줄의 맨 왼쪽 항목. 회사가 아니라 그룹 전체 비교와 LX홀딩스
+     자체 실적을 모은 화면(co-grpperf)이다. 2026-10-12에 주요정보 갈래에서
+     여기로 옮겼다. 회사 열쇠와 같은 자리에 두되 회사 셈(co셈)에는 안 들어간다. */
+  const CO_GRP = '홀딩스실적';
+
   function coDraw(){
     설정보이기();
-    const 목록 = co보임();
-    if (목록.indexOf(coTab) < 0) coTab = 목록[0] || '인터';
+    const 목록 = [CO_GRP].concat(co보임());
+    if (목록.indexOf(coTab) < 0) coTab = '인터';
+    if (목록.indexOf(coTab) < 0) coTab = 목록[1] || CO_GRP;
 
     document.getElementById('coTabs').innerHTML = 목록.map(function (k){
+      if (k === CO_GRP){
+        return '<button type="button" class="tab-btn' + (k === coTab ? ' active' : '') +
+          '" data-co="' + CO_GRP + '">LX홀딩스 실적현황</button>';
+      }
       const c = co셈(k);
       return '<button type="button" class="tab-btn' + (k === coTab ? ' active' : '') +
         '" data-co="' + escapeHtml(k) + '"' + ((!c.경쟁사 && !c.지표) ? ' data-empty="1"' : '') + '>' + escapeHtml(k) + '</button>';
     }).join('');
+
+    /* LX홀딩스 실적현황은 하위 탭이 없다. 회사별 하위 탭 줄과 칸을 전부 감추고
+       이 칸만 보인다. 자료는 회사별 화면과 같은 실적 응답(compData)을 쓴다. */
+    const 그룹화면 = coTab === CO_GRP;
+    document.getElementById('coPaneNav').style.display = 그룹화면 ? 'none' : '';
+    document.getElementById('co-grpperf').classList.toggle('on', 그룹화면);
+    if (그룹화면){
+      CO_PANES.forEach(function (p){ document.getElementById(CO_PANE_ELID[p]).classList.remove('on'); });
+      loadComp(false);
+      if (compData){ groupDraw(); hqPerfDraw(); }
+      return;
+    }
 
     coPane그리기();
 
@@ -2903,12 +2927,13 @@
   /* ---------- 탭 전환 ---------- */
   let applyAutoLoaded = false;
 
-  /* LX홀딩스/계열사별 두 갈래로 화면을 나눴다. 실제 탭은 예전 이름
-     그대로(index/deal/search/adhoc/apply/cal, co) 두고, 이 표로 어느 갈래에
-     속하는지만 따진다. knowledge/cfg 는 헤더 버튼으로 따로 열리는 화면이라
+  /* 주요정보(옛 LX홀딩스)/그룹 계열사(옛 계열사별) 두 갈래로 화면을 나눴다.
+     실제 탭은 예전 이름 그대로(index/deal/search/adhoc/apply/cal, co) 두고,
+     이 표로 어느 갈래에 속하는지만 따진다. 갈래 식별자(holdings/affiliate)도
+     이름만 바뀐 것이라 그대로 둔다. knowledge/cfg 는 헤더 버튼으로 따로 열리는 화면이라
      어느 갈래에도 안 넣는다 — 그 화면을 열어도 왼쪽 메뉴의 갈래 선택은
      그대로 둔다. */
-  const TOP_GROUP_OF = { index: 'holdings', deal: 'holdings', search: 'holdings', adhoc: 'holdings', apply: 'holdings', grpperf: 'holdings', cal: 'holdings', co: 'affiliate', home: 'home' };
+  const TOP_GROUP_OF = { index: 'holdings', deal: 'holdings', search: 'holdings', adhoc: 'holdings', apply: 'holdings', cal: 'holdings', co: 'affiliate', home: 'home' };
   /* 전체뉴스조회 안의 세 하위 탭. 하나를 열면 전체뉴스조회 버튼이 눌린
      것처럼 보이고, newsSubNav 줄이 함께 뜬다. */
   const NEWS_TABS = ['search', 'adhoc', 'apply'];
@@ -2947,7 +2972,6 @@
     if (tabName === 'co'){ coDraw(); }
     if (tabName === 'index'){ indPaneDraw(); }
     if (tabName === 'deal'){ loadDeal(false); dealPaneDraw(); loadWatchlist(); }
-    if (tabName === 'grpperf'){ loadComp(false); }
     if (tabName === 'cal'){ loadCal(false); loadCalSources(); }
     if (tabName === 'cfg'){ 설정그리기(); }
   }
@@ -7786,7 +7810,7 @@
         '<div class="opt-row" style="margin-top:6px;">' + mgmtCheckOptions('mgmt-type', c.수집유형) + '</div>' +
         '<div class="opt-row" style="margin-top:6px;">' +
           '<label class="check-option' + (c.이메일알림 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-news"' + (c.이메일알림 ? ' checked' : '') + '><div class="opt-text">키워드 뉴스 포함</div></label>' +
-          '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">자동수집(주단위)</div></label>' +
+          '<label class="check-option' + (c.사용 ? ' checked' : '') + '"><input type="checkbox" class="mgmt-use"' + (c.사용 ? ' checked' : '') + '><div class="opt-text">사용 (주단위 자동수집과 실적 화면 표시)</div></label>' +
         '</div>' +
         '<div class="disc-row-actions">' +
           '<button type="button" class="upd-btn mgmt-save-btn">저장</button>' +
@@ -9600,7 +9624,7 @@
         ・빼고 싶은 단어는 <b>-</b>로 붙입니다. 여러 개도 됩니다. (예: KCC-농구-감독)<br>
         ・<b>🤖 AI 제외</b>를 켜면 이 그룹은 AI가 평가하지 않습니다. 기사는 계속 모이고 &lsquo;키워드 뉴스&rsquo;에서 볼 수 있지만, 메일·텔레그램에는 나오지 않습니다.
       </details>
-      <label>관련 계열사 (해당 있으면 고름 — 대시보드 계열사별 탭의 관련 뉴스에 나옵니다)</label>
+      <label>관련 계열사 (해당 있으면 고름 — 대시보드 그룹 계열사 탭의 관련 뉴스에 나옵니다)</label>
       <div class="co-tag-picker">
         <select class="co-tag-select">
           <option value="">계열사 선택</option>
@@ -10147,10 +10171,11 @@
       btn.addEventListener('click', () => showTab(btn.dataset.tab));
     });
 
-    /* LX홀딩스/계열사별 버튼은 화면 하나를 열지 않고 하위 탭 줄만 바꾼다.
-       처음 열 때는 그 갈래의 첫 하위 탭을 그대로 연다. 계열사별은 지난번
+    /* 주요정보/그룹 계열사 버튼은 화면 하나를 열지 않고 하위 탭 줄만 바꾼다.
+       처음 열 때는 그 갈래의 첫 하위 탭을 그대로 연다. 그룹 계열사는 지난번
        보던 계열사가 아니라 늘 인터부터 보여준다 — 어느 계열사를 보고 있었는지
-       기억해 뒀다가 엉뚱한 회사로 열리면 그때마다 다시 골라야 한다. */
+       기억해 뒀다가 엉뚱한 회사로 열리면 그때마다 다시 골라야 한다. 맨 왼쪽의
+       LX홀딩스 실적현황은 회사 선택 줄에서 따로 누른다. */
     document.querySelectorAll('#topNav [data-top]').forEach(btn => {
       btn.addEventListener('click', function(){
         if (btn.dataset.top === 'affiliate'){ coTab = '인터'; 기억('lx-co', coTab); }
