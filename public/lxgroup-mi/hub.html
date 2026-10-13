@@ -977,6 +977,19 @@
   .ind-tbl tbody tr:last-child td{border-bottom:none;}
   .ind-tbl td.none{color:var(--muted);}
 
+  /* 비용 구조 카드 — 손익표, 비용 항목표, 같은 계열사 회사 비교표 */
+  .cost-nav{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px;}
+  .cost-pill{border:1.5px solid var(--line); background:var(--card); color:var(--muted);
+             border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;}
+  .cost-pill.on{border-color:var(--green); color:var(--green);}
+  .cost-sub{font-size:13px; font-weight:800; margin:16px 0 0;}
+  .cost-sub:first-child{margin-top:0;}
+  .cost-note{font-size:11.5px; color:var(--muted); line-height:1.6; margin:10px 0 0;}
+  .cost-note b{color:var(--text);}
+  .ind-tbl tr.cost-ratio td{color:var(--muted); font-weight:600;}
+  .ind-tbl tr.cost-ratio td:first-child{font-weight:600;}
+  .ind-tbl td.cost-ours{color:var(--green);}
+
   .xls-btn{border:1px solid var(--line); background:var(--card); color:var(--text);
     border-radius:8px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer;
     font-family:inherit; white-space:nowrap; flex-shrink:0;}
@@ -1976,6 +1989,13 @@
       <div class="ind-grid" id="coPerfBody"></div>
       <div class="empty-note" id="coPerfEmpty" style="display:none;"></div>
     </section>
+    <section class="card" id="coCostCard">
+      <div class="step-head"><span class="step-num">💸</span><span class="step-title" id="coCostTitle">비용 구조</span></div>
+      <div class="step-desc">DART 재무제표의 전사 손익과 비용 주석입니다 (단위 억원)</div>
+      <div class="ind-asof" id="coCostAsOf">불러오는 중…</div>
+      <div id="coCostBody"></div>
+      <div class="empty-note" id="coCostEmpty" style="display:none;"></div>
+    </section>
     </div>
 
     <!-- 경쟁사 현황. 진짜 경쟁사만 본다 — 우리 계열사 실적은 실적 현황
@@ -2076,6 +2096,13 @@
       <div class="ind-asof" id="hqPerfAsOf">불러오는 중…</div>
       <div class="ind-grid" id="hqPerfBody"></div>
       <div class="empty-note" id="hqPerfEmpty" style="display:none;"></div>
+    </section>
+    <section class="card" id="hqCostCard">
+      <div class="step-head"><span class="step-num">💸</span><span class="step-title">LX홀딩스 비용 구조</span></div>
+      <div class="step-desc">DART 재무제표의 전사 손익과 비용 주석입니다 (단위 억원)</div>
+      <div class="ind-asof" id="hqCostAsOf">불러오는 중…</div>
+      <div id="hqCostBody"></div>
+      <div class="empty-note" id="hqCostEmpty" style="display:none;"></div>
     </section>
 
     <section class="card">
@@ -6886,8 +6913,201 @@
     }));
   }
 
+  /* ── 비용 구조 ──────────────────────────────────────────────
+     조회 웹훅이 경쟁사비용 시트를 회사마다 묶어 compData.비용 으로 보낸다.
+     규칙(접수번호 최신 보고서만, 분기 검증 0.2%, 누계·분기 판정)은 마스터정리
+     워크플로와 같아서, 「실적 마스터」 파일의 비용구분 탭과 이 화면의 숫자가
+     같다. 여기서는 새 숫자를 만들지 않고 비율만 계산한다. */
+  const costSt = {};   // 접두 → { 회사, 기간('연'|'분기'), 보기 }
+  const COST_BOGI = [
+    ['성', '성격별 총액'], ['판', '판관비'], ['제', '제조(차감)'], ['비중', '제조 비중(%)'], ['매출', '매출 대비(%)']
+  ];
+  const COST_ORDER = ['매출액', '매출원가', '매출총이익', '판매비와관리비', '영업이익'];
+  const COST_NAME = { 판매비와관리비: '판관비' };
+
+  function 비용기간이름(t, 꼴){
+    const m = /^(\d{4})Q([1-4])$/.exec(String(t || ''));
+    if (!m) return String(t || '');
+    if (꼴 === '누계') return m[1] + ' 1~' + ({ 1: 3, 2: 6, 3: 9, 4: 12 }[m[2]]) + '월 누적';
+    if (꼴 === '분기') return m[1] + ' ' + m[2] + '분기';
+    return String(t);
+  }
+  function 비용꼴말(꼴){
+    if (꼴 === '누계') return '「… 누적」 열은 분기 한 철이 아니라 연초부터의 누계입니다. 전년 같은 시점의 누계와 비교하십시오.';
+    if (꼴 === '분기') return '「… 분기」 열은 그 석 달치만입니다(누계가 아닙니다).';
+    return '분기 열이 누계인지 그 분기만인지 판정하지 못했습니다. 「2025Q2」 형태는 공시 그대로이니 원문을 확인하십시오.';
+  }
+  function 비용칸(v, 소수, 고정){
+    if (v === null || v === undefined || !isFinite(v)) return '<td class="none">—</td>';
+    const 자리 = 소수 === undefined ? 1 : 소수;
+    return '<td>' + Number(v).toLocaleString('ko-KR', { minimumFractionDigits: 고정 ? 자리 : 0, maximumFractionDigits: 자리 }) + '</td>';
+  }
+  function 비용비(a, b){
+    if (a === null || a === undefined || b === null || b === undefined || !b) return null;
+    return Math.round((a / b) * 1000) / 10;
+  }
+  function 비용표(머리, 몸){
+    return '<div class="ind-tbl-wrap"><table class="ind-tbl"><thead><tr>' + 머리 + '</tr></thead><tbody>' + 몸 + '</tbody></table></div>';
+  }
+
+  function 비용그리기(접두, 계열사키){
+    const 박스 = document.getElementById(접두 + 'Body');
+    const 시각 = document.getElementById(접두 + 'AsOf');
+    const 빈칸 = document.getElementById(접두 + 'Empty');
+    if (!박스 || !compData) return;
+    /* 이전 계열사의 제목이 남지 않도록 먼저 기본값으로 되돌린다. */
+    if (접두 === 'coCost') document.getElementById('coCostTitle').textContent = co이름(compTab) + ' 비용 구조';
+
+    /* 화면에 뜰 수 있는 상태가 셋이다. 이 칸을 모르는 옛 조회 웹훅, 연결은 되는데
+       수집된 것이 없음, 진짜 자료. 앞의 둘을 같은 빈 표로 그리면 구별이 안 된다. */
+    if (!Array.isArray(compData.비용)){
+      박스.innerHTML = '';
+      시각.textContent = compData.asOf ? compData.asOf + ' 기준' : '';
+      빈칸.style.display = 'block';
+      빈칸.textContent = '조회 웹훅이 아직 비용 데이터를 보내지 않습니다. n8n의 「LXGroup_경쟁사_조회」가 최신 버전으로 발행됐는지 확인하십시오.';
+      return;
+    }
+    const 모두 = compData.비용.filter(function (x){ return (x.계열사 || []).indexOf(계열사키) >= 0; });
+    const 우리 = 모두.filter(function (x){ return x.우리편; });
+    if (!우리.length){
+      박스.innerHTML = '';
+      시각.textContent = compData.asOf ? compData.asOf + ' 기준 · 수집된 비용 데이터 없음' : '';
+      빈칸.style.display = 'block';
+      빈칸.textContent = '이 계열사의 비용 데이터가 아직 없습니다. 「실적 관리」의 「수집 data」에서 비용 추출 상태를 확인하고, 누락된 보고서를 저장하십시오.';
+      return;
+    }
+    빈칸.style.display = 'none';
+
+    const st = costSt[접두] = costSt[접두] || { 기간: '연', 보기: '성' };
+    if (!우리.some(function (x){ return x.회사명 === st.회사; })) st.회사 = 우리[0].회사명;
+    const c = 우리.filter(function (x){ return x.회사명 === st.회사; })[0];
+    const 분기보기 = st.기간 === '분기';
+    const 이 = function (t){ return /Q/.test(t) === 분기보기; };
+
+    let h = '';
+    h += '<div class="cost-nav" data-cost-pre="' + 접두 + '">';
+    if (우리.length > 1){
+      h += 우리.map(function (x){
+        return '<button type="button" class="cost-pill' + (x.회사명 === st.회사 ? ' on' : '') +
+          '" data-cost-k="회사" data-cost-v="' + escapeHtml(x.회사명) + '">' + escapeHtml(x.회사명) + '</button>';
+      }).join('');
+    }
+    h += ['연', '분기'].map(function (k){
+      return '<button type="button" class="cost-pill' + (st.기간 === k ? ' on' : '') +
+        '" data-cost-k="기간" data-cost-v="' + k + '">' + (k === '연' ? '연간' : '분기') + '</button>';
+    }).join('');
+    h += '</div>';
+
+    /* 1) 전사 손익 */
+    const 손기 = (c.손익기간 || []).filter(이);
+    h += '<div class="cost-sub">전사 손익</div>';
+    if (!손기.length){
+      h += '<div class="cost-note">' + (분기보기 ? '분기 손익 자료가 아직 없습니다.' : '연간 손익 자료가 아직 없습니다.') + '</div>';
+    } else {
+      const 머리 = '<th>항목 <em>(억원)</em></th>' + 손기.map(function (t){ return '<th>' + escapeHtml(비용기간이름(t, c.손익꼴)) + '</th>'; }).join('');
+      let 몸 = '';
+      COST_ORDER.forEach(function (항){
+        if (!(c.손익 || {})[항]) return;
+        몸 += '<tr><td>' + escapeHtml(COST_NAME[항] || 항) + '</td>' + 손기.map(function (t){ return 비용칸(c.손익[항][t], 1); }).join('') + '</tr>';
+      });
+      [['매출원가율(%)', '매출원가'], ['판관비율(%)', '판매비와관리비'], ['영업이익률(%)', '영업이익']].forEach(function (짝){
+        if (!(c.손익 || {})[짝[1]]) return;
+        몸 += '<tr class="cost-ratio"><td>' + 짝[0] + '</td>' + 손기.map(function (t){
+          return 비용칸(비용비((c.손익[짝[1]] || {})[t], (c.손익['매출액'] || {})[t]), 1, true);
+        }).join('') + '</tr>';
+      });
+      h += 비용표(머리, 몸);
+      if (분기보기) h += '<div class="cost-note">' + 비용꼴말(c.손익꼴) + '</div>';
+    }
+
+    /* 2) 비용 항목 */
+    const 비기 = (c.비용기간 || []).filter(이);
+    h += '<div class="cost-sub">비용 항목</div>';
+    h += '<div class="cost-nav" data-cost-pre="' + 접두 + '" style="margin-top:8px;">' + COST_BOGI.map(function (b){
+      return '<button type="button" class="cost-pill' + (st.보기 === b[0] ? ' on' : '') +
+        '" data-cost-k="보기" data-cost-v="' + b[0] + '">' + b[1] + '</button>';
+    }).join('') + '</div>';
+    if (!비기.length || !(c.비용항목 || []).length){
+      h += '<div class="cost-note">' + (분기보기
+        ? '분기 비용 항목이 없습니다. 검증을 넘지 못한 분기는 싣지 않습니다.'
+        : '연간 비용 항목이 아직 없습니다.') + '</div>';
+    } else {
+      /* 매출 대비는 손익표와 같은 기간이 같은 형태일 때만 계산한다. 손익은 석 달치인데
+         비용은 누계이면 분모와 분자의 기간이 달라진다. */
+      const 매출맞음 = !분기보기 || (!!c.손익꼴 && c.손익꼴 === c.비용꼴);
+      const 머리 = '<th>항목 <em>(' + (st.보기 === '비중' || st.보기 === '매출' ? '%' : '억원') + ')</em></th>' +
+        비기.map(function (t){ return '<th>' + escapeHtml(비용기간이름(t, c.비용꼴)) + '</th>'; }).join('');
+      let 몸 = '';
+      c.비용항목.forEach(function (it){
+        몸 += '<tr><td>' + escapeHtml(it.항목) + '</td>' + 비기.map(function (t){
+          const v = (it.값 || {})[t];
+          if (!v) return 비용칸(null);
+          if (st.보기 === '성') return 비용칸(v.성, 1);
+          if (st.보기 === '매출') return 매출맞음 ? 비용칸(비용비(v.성, ((c.손익 || {})['매출액'] || {})[t]), 1, true) : 비용칸(null);
+          if (v.판 === null || v.판 === undefined) return 비용칸(null);
+          if (st.보기 === '판') return 비용칸(v.판, 1);
+          if (st.보기 === '제') return 비용칸(v.제, 1);
+          return 비용칸(비용비(v.제, v.성), 1, true);
+        }).join('') + '</tr>';
+      });
+      h += 비용표(머리, 몸);
+      if (분기보기) h += '<div class="cost-note">' + 비용꼴말(c.비용꼴) + '</div>';
+      if (st.보기 === '매출' && !매출맞음) h += '<div class="cost-note">손익표와 비용표의 분기 형태(누계·분기)가 달라 매출 대비는 계산하지 않았습니다.</div>';
+    }
+
+    /* 3) 같은 계열사 회사 비교 (각 회사의 가장 최근 연간) */
+    if (모두.length > 1){
+      const 줄들 = 모두.map(function (x){
+        const 연들 = (x.손익기간 || []).filter(function (t){ return !/Q/.test(t) && ((x.손익 || {})['매출액'] || {})[t] != null; });
+        const y = 연들[연들.length - 1];
+        if (!y) return null;
+        const g = function (항){ return ((x.손익 || {})[항] || {})[y]; };
+        return { x: x, y: y, 매출: g('매출액'), 원가: 비용비(g('매출원가'), g('매출액')), 판관: 비용비(g('판매비와관리비'), g('매출액')), 이익: 비용비(g('영업이익'), g('매출액')) };
+      }).filter(Boolean).sort(function (a, b){
+        return (b.x.우리편 ? 1 : 0) - (a.x.우리편 ? 1 : 0) || b.매출 - a.매출;
+      });
+      if (줄들.length > 1){
+        h += '<div class="cost-sub">같은 계열사 회사 비교 <span style="font-weight:600; color:var(--muted); font-size:11.5px;">(회사별 가장 최근 연간)</span></div>';
+        h += 비용표('<th>회사</th><th>기준연도</th><th>매출액 <em>(억원)</em></th><th>매출원가율 <em>(%)</em></th><th>판관비율 <em>(%)</em></th><th>영업이익률 <em>(%)</em></th>',
+          줄들.map(function (r){
+            return '<tr><td' + (r.x.우리편 ? ' class="cost-ours"' : '') + '>' + escapeHtml(r.x.회사명) + '</td><td>' + escapeHtml(r.y) + '</td>' +
+              비용칸(r.매출, 0) + 비용칸(r.원가, 1, true) + 비용칸(r.판관, 1, true) + 비용칸(r.이익, 1, true) + '</tr>';
+          }).join(''));
+        h += '<div class="cost-note">회사마다 기준연도가 다를 수 있습니다. 같은 해끼리 비교하려면 기준연도 열을 확인하십시오.</div>';
+      }
+    }
+
+    /* 4) 읽는 법 */
+    h += '<div class="cost-note"><b>읽을 때 주의</b><br>' +
+      '· 연결재무제표 주석 기준이며, 해마다 가장 최근 보고서 하나만 씁니다.<br>' +
+      '· 「제조(차감)」은 성격별 총액에서 판관비를 뺀 값입니다. 성격별 주석에 재고자산 변동이 들어 있어 엄밀한 매출원가는 아닙니다.<br>' +
+      '· 판관비 명세가 없는 기간은 판관비·제조 열을 「—」로 표시합니다.<br>' +
+      '· 회사마다 항목 이름이 달라 굵게 묶었습니다(예: 급여·퇴직급여·복리후생비 → 인건비).' +
+      (c.뺀분기 ? '<br>· 주석을 빠짐없이 읽었는지 검증을 넘지 못한 분기 ' + c.뺀분기 + '개는 비용 항목에서 뺐습니다.' : '') +
+      '</div>';
+
+    박스.innerHTML = h;
+    박스.querySelectorAll('.ind-tbl-wrap').forEach(function (w){ w.scrollLeft = w.scrollWidth; });
+    시각.textContent = (compData.asOf ? compData.asOf + ' 기준 · ' : '') + c.회사명 +
+      ' · 손익 ' + (c.손익기간 || []).length + '개 기간 · 비용 항목 ' + (c.비용항목 || []).length + '개';
+    if (접두 === 'coCost') document.getElementById('coCostTitle').textContent = c.회사명 + ' 비용 구조';
+  }
+
+  ['coCost', 'hqCost'].forEach(function (접두){
+    const 카드 = document.getElementById(접두 + 'Card');
+    if (!카드) return;
+    카드.addEventListener('click', function (e){
+      const b = e.target.closest('button[data-cost-k]');
+      if (!b) return;
+      const st = costSt[접두] = costSt[접두] || { 기간: '연', 보기: '성' };
+      st[b.dataset.costK === '회사' ? '회사' : b.dataset.costK] = b.dataset.costV;
+      비용그리기(접두, 접두 === 'coCost' ? compTab : '홀딩스');
+    });
+  });
+
   function coPerfDraw(){
     if (!compData) return;
+    비용그리기('coCost', compTab);
     const 것들 = 계열사실적것들(compTab);
 
     document.getElementById('coPerfTitle').textContent = co이름(compTab) + ' 실적';
@@ -6913,6 +7133,7 @@
 
   function hqPerfDraw(){
     if (!compData) return;
+    비용그리기('hqCost', '홀딩스');
     const 것들 = 계열사실적것들('홀딩스');
     document.getElementById('hqPerfBody').innerHTML = compBlocks(것들, 'hqPerf');
     document.querySelectorAll('#hqPerfBody .ind-tbl-wrap').forEach(function (w){
