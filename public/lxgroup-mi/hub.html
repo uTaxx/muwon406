@@ -361,6 +361,9 @@
      목록과 같은 톤을 쓰되 버튼이 넷까지 붙을 수 있어 줄바꿈을 허용한다. */
   .tag-ok{display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px;
     background:var(--green-tint); color:var(--green); font-size:10.5px; font-weight:700;}
+  .disc-sum{margin-left:2px;}
+  .disc-sum.has{color:var(--green); font-weight:700;}
+  .disc-sum.none{color:var(--danger);}
   .disc-pick-row{cursor:pointer;}
   .disc-pick-row:hover{background:var(--bg);}
   .disc-row{padding:10px 0; border-bottom:1px solid var(--line);}
@@ -2289,6 +2292,7 @@
      매달 구글 드라이브 공개 파일로 내보내 둔다. 파일 아이디는 손으로
      채운다(운영설정 시트의 DART_LISTED_FILE_ID·DART_UNLISTED_FILE_ID와 같은 값). */
   const DISCCOLL_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-공시수집기');
+  const DISCSUM_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-공시요약');
   /* 계열사·경쟁사 실적 블록의 「최신 공시 반영」 버튼. 서버가 공시검색·db저장·
      실적추출을 그 회사분만 순서대로 다 하고 돌아온다 — 여기서는 부르기만 한다. */
   const PERF_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-실적반영');
@@ -8256,6 +8260,45 @@
         '</div><div class="cal-src-url">' + escapeHtml(c.corp_code) + (c.종목코드 ? ' · ' + escapeHtml(c.종목코드) : '') + '</div></div>' +
         '<div class="cal-src-actions"><button type="button" class="disc-pick-btn">선택</button></div></div>';
     }).join('');
+    discSummaryFill(list.slice(0, 30));
+  }
+
+  /* 같은 이름의 회사 코드가 여럿인 경우가 있다(세스코는 공시가 없는 옛 코드와 실제 코드가 따로 있다). 이름과
+     코드만으로는 어느 것이 진짜인지 알 수 없어서, 결과를 그린 뒤 DART에 물어 코드마다 정기·감사 공시가 몇 건이고
+     가장 최근 것이 언제인지를 줄마다 붙인다. 위쪽 열 곳씩 한 번에 묻는다. */
+  let discSumToken = 0;
+  function discSummaryFill(list){
+    const 번호 = ++discSumToken;
+    const 코드들 = list.map(function (c){ return c.corp_code; });
+    for (let i = 0; i < 코드들.length; i += 10){
+      const 묶음 = 코드들.slice(i, i + 10);
+      묶음.forEach(function (c){
+        const 줄 = document.querySelector('.disc-pick-row[data-corp="' + c + '"] .cal-src-url');
+        if (줄 && !줄.querySelector('.disc-sum')) 줄.insertAdjacentHTML('beforeend', ' <span class="disc-sum">공시 확인 중…</span>');
+      });
+      fetch(DISCSUM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ corp_codes: 묶음 }) })
+        .then(function (r){ return r.json(); })
+        .then(function (d){
+          if (번호 !== discSumToken) return;
+          묶음.forEach(function (c){
+            const 칸 = document.querySelector('.disc-pick-row[data-corp="' + c + '"] .disc-sum');
+            if (!칸) return;
+            const x = ((d && d.요약) || {})[c];
+            if (!x || x.오류){ 칸.textContent = '· 공시 조회 실패'; return; }
+            if (!x.건수){ 칸.textContent = '· 정기·감사 공시 없음'; 칸.classList.add('none'); return; }
+            const 날 = String(x.최근접수일 || '');
+            칸.textContent = '· 공시 ' + x.건수 + '건, 최근 ' + (날.length === 8 ? 날.slice(0, 4) + '-' + 날.slice(4, 6) + '-' + 날.slice(6) : 날) + ' ' + x.최근보고서;
+            칸.classList.add('has');
+          });
+        })
+        .catch(function (){
+          if (번호 !== discSumToken) return;
+          묶음.forEach(function (c){
+            const 칸 = document.querySelector('.disc-pick-row[data-corp="' + c + '"] .disc-sum');
+            if (칸) 칸.textContent = '· 공시 조회 실패';
+          });
+        });
+    }
   }
 
   let discSearchTimer = null;
@@ -8870,6 +8913,10 @@
     const 요 = d.요약 || {};
     document.getElementById('dmSub').textContent = '확인 시각 ' + (d.확인시각 || '') + ' · DART 정기보고서·감사보고서 2020년 이후 최근 40건 기준' + (dm.등록 ? '' : ' · 등록되지 않은 기업');
     const 줄들 = (d.보고서 || []).filter(function (r){ return !dm.누락만 || r.누락; });
+    /* 보고서가 하나도 없으면, 같은 이름의 다른 회사 코드를 골랐을 가능성부터 알려 준다. */
+    const 같은이름 = (!(d.보고서 || []).length)
+      ? ((discUnlistedCache || []).concat(discListedCache || [])).filter(function (c){ return c.회사명 === dm.name && dm코드8(c.corp_code) !== dm.corp; })
+      : [];
     const 칩 = [
       '<span class="dm-chip">전체 ' + (요.전체 || 0) + '건</span>',
       '<span class="dm-chip">원문 저장 ' + (요.원문저장 || 0) + '</span>',
@@ -8904,7 +8951,15 @@
       '<button type="button" class="go-btn" id="dmAllMiss" style="margin-left:0;">누락 전체 선택</button>' +
       '<button type="button" class="go-btn" id="dmReload">새로고침</button></div>' +
       '<div class="dm-wrap"><table class="dm-table"><thead><tr><th></th><th>보고서</th><th class="dm-date">접수일</th><th>원문 저장</th><th>실적 추출</th><th>비용 추출</th></tr></thead><tbody>' +
-      (본문 || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">표시할 보고서가 없습니다.</td></tr>') +
+      (본문 || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">표시할 보고서가 없습니다. 이 회사 코드(' + escapeHtml(dm.corp) + ')로는 DART에 2020년 이후 정기·감사 공시가 없습니다.' +
+        (같은이름.length
+          ? '<div style="margin-top:10px;">같은 이름의 다른 회사 코드가 있습니다. 공시가 있는 쪽을 고르십시오.</div>' +
+            같은이름.slice(0, 6).map(function (c){
+              return '<button type="button" class="go-btn dm-alt" style="margin:6px 4px 0;" data-corp="' + escapeHtml(c.corp_code) + '" data-name="' + escapeHtml(c.회사명) + '">' +
+                escapeHtml(c.corp_code) + ' 선택 (정보 수정일 ' + escapeHtml(String(c.수정일 || '')) + ')</button>';
+            }).join('')
+          : '') +
+      '</td></tr>') +
       '</tbody></table></div>' +
       '<div class="dm-foot">' + 계열사고르기 + '<button type="button" class="submit-btn" id="dmSave"></button></div>';
     dmSaveBtnSync();
@@ -9010,6 +9065,8 @@
     if (e.target.classList.contains('dm-chk')){ dm.선택[e.target.dataset.no] = e.target.checked; dmSaveBtnSync(); }
   });
   document.getElementById('dmBody').addEventListener('click', function (e){
+    const 대안 = e.target.closest('.dm-alt');
+    if (대안){ dmOpen(대안.dataset.corp, 대안.dataset.name); return; }
     if (e.target.id === 'dmAllMiss'){
       (dm.data.보고서 || []).forEach(function (r){ if (r.누락) dm.선택[r.접수번호] = true; });
       dmDraw();
