@@ -79,8 +79,19 @@
   .small-btn:disabled{opacity:.5; cursor:not-allowed;}
   .status{display:none; text-align:center; padding:10px 12px; border-radius:12px; font-size:13.5px; margin-top:9px; font-weight:600;}
   .status.show{display:block;}
+  /* 문구가 들어 있으면 보인다. 예전에는 show 를 안 붙인 상태 칸(ok·bad·진행 문구)이 통째로
+     안 보여서, 저장이 실패해도 「반영하는 중…」도 화면에 없었다. 숨기려면 문구를 비운다. */
+  .status:not(:empty){display:block;}
+  .status:not(:empty):not(.ok):not(.err):not(.bad){background:var(--card); border:1.5px solid var(--line); color:var(--text);}
   .status.ok{background:var(--green-tint); border:1.5px solid var(--green); color:var(--green-dark);}
-  .status.err{background:#FDECEE; border:1.5px solid var(--danger); color:var(--danger);}
+  .status.err, .status.bad{background:#FDECEE; border:1.5px solid var(--danger); color:var(--danger);}
+  /* 기다리는 중임을 보여 주는 돌아가는 고리. data-busy 는 아래 스크립트가 「…하는 중…」 문구에
+     자동으로 붙인다. 새 대기 문구를 써도 따로 손볼 것이 없다. */
+  [data-busy]::before{content:''; display:inline-block; width:.95em; height:.95em; margin-right:.5em;
+    vertical-align:-.14em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%;
+    animation:spin .8s linear infinite; opacity:.75;}
+  .busy-block{padding:28px 12px; text-align:center; color:var(--muted); font-size:13.5px; font-weight:600;}
+  .busy-block[data-busy]::before{width:1.4em; height:1.4em; display:block; margin:0 auto 10px; border-width:3px;}
 
   .loading-overlay{
     position:fixed; inset:0; z-index:9999; padding:24px;
@@ -2471,6 +2482,7 @@
     btn.disabled = true;
     btn.textContent = '저장 중…';
     box.className = 'status';
+    box.textContent = '';
 
     fetch(KNOWLEDGE_URL, {
       method: 'POST',
@@ -8805,7 +8817,7 @@
     dm.등록 = !!discRegistered[corp] || mgmtCompanies.some(function (c){ return dm코드8(c.corp_code) === corp; });
     document.getElementById('dmTitle').textContent = name + ' 수집 data';
     document.getElementById('dmSub').textContent = '';
-    document.getElementById('dmBody').innerHTML = '';
+    document.getElementById('dmBody').innerHTML = '<div class="busy-block">DART 공시 목록과 저장 상태를 확인하는 중입니다. 10초 안팎 걸립니다…</div>';
     const 카드 = document.getElementById('dmCard');
     카드.style.display = '';
     카드.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -8816,7 +8828,8 @@
     const code = sharedCode();
     if (!code){ dmStatus('식별코드를 먼저 확인해 주세요.', 'bad'); return Promise.resolve(false); }
     const 번호 = ++dm.요청번호;
-    if (!조용히) dmStatus('DART 공시 목록과 저장 상태를 확인하는 중입니다. 10초 안팎 걸립니다…', '');
+    /* 처음 여는 때는 본문 자리의 큰 고리가 그 일을 한다. 새로고침으로 표가 이미 떠 있을 때만 위 상태 칸에 적는다. */
+    if (!조용히 && dm.data) dmStatus('DART 공시 목록과 저장 상태를 다시 확인하는 중입니다. 10초 안팎 걸립니다…', '');
     return fetch(COLLSTAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code, corp_code: dm.corp, 회사명: dm.name }) })
       .then(function (res){ return res.json().catch(function (){ return {}; }).then(function (d){ return { ok: res.ok, d: d }; }); })
@@ -8830,6 +8843,7 @@
       })
       .catch(function (err){
         if (번호 !== dm.요청번호) return false;
+        if (!dm.data) document.getElementById('dmBody').innerHTML = '';
         dmStatus(오류메시지(err, '수집 현황 조회'), 'bad');
         return false;
       });
@@ -8947,7 +8961,7 @@
   function dmFollow(번호들, 시작메시지){
     const 시작 = Date.now();
     const 이름 = dm.name;
-    dmStatus(시작메시지 + ' 완료되면 표와 화면 자료가 저절로 갱신됩니다.', '');
+    dmStatus(시작메시지 + ' 서버가 처리하는 중입니다… 끝나면 표와 화면 자료가 저절로 갱신됩니다.', '');
     if (dm.폴링) clearInterval(dm.폴링);
     dm.폴링 = setInterval(function (){
       if (dm.name !== 이름 || !dmShown()){
@@ -11151,5 +11165,40 @@
   });
 </script>
 
+<script>
+/* 기다리는 중임을 보여 주는 고리 자동 부착. 「…하는 중…」, 「…중입니다…」, 「…걸립니다…」처럼
+   기다리는 문구가 들어간 가장 안쪽 요소에 data-busy 를 붙이고, 문구가 바뀌어 그런 말이 없어지면 뗀다.
+   고리 모양은 CSS 의 [data-busy]::before 가 그린다. 문구를 쓰는 코드 76곳을 하나하나 고치지
+   않으려고 화면 변화를 지켜보는 쪽으로 했다. */
+(function (){
+  var 기다림 = /(중(입니다)?|걸립니다)\s*…/;
+  function 판정(el){
+    if (!el || el.nodeType !== 1 || el.children.length > 0) return;
+    var t = el.textContent || '';
+    if (t.length > 160) return;
+    var 맞나 = 기다림.test(t);
+    if (맞나 && !el.hasAttribute('data-busy')) el.setAttribute('data-busy', '1');
+    else if (!맞나 && el.hasAttribute('data-busy')) el.removeAttribute('data-busy');
+  }
+  function 훑기(node){
+    if (!node || node.nodeType !== 1) return;
+    if (node.textContent.indexOf('…') < 0 && !node.hasAttribute('data-busy')) return;
+    if (node.children.length === 0) { 판정(node); return; }
+    var 목록 = node.querySelectorAll('*');
+    for (var i = 0; i < 목록.length; i++) 판정(목록[i]);
+  }
+  new MutationObserver(function (목록){
+    for (var i = 0; i < 목록.length; i++){
+      var m = 목록[i];
+      if (m.type === 'characterData') 판정(m.target.parentElement);
+      else {
+        판정(m.target);
+        for (var j = 0; j < m.addedNodes.length; j++) 훑기(m.addedNodes[j]);
+      }
+    }
+  }).observe(document.body, { childList: true, characterData: true, subtree: true });
+  훑기(document.body);
+})();
+</script>
 </body>
 </html>
