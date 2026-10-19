@@ -1,0 +1,813 @@
+[
+ {
+  "구간": "E1",
+  "기간": "2010-09~2011-01",
+  "가격": "97→141",
+  "이슈": [
+   {
+    "요약": "퀸즐랜드 홍수로 호주 석탄 공급 차질 우려가 커졌고, 일부 발전용탄이 야금용 수요로 전용되며 뉴캐슬 발전용탄 가격이 올랐다.",
+    "시점": "2010-12 중순~2011-01 (정확한 일자 확인필요)",
+    "요인": "기상/공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Miningmx - Floods push coal price to one-year high",
+      "url": "https://www.miningmx.com/news/energy/18454-floods-push-coal-price-to-one-year-high/"
+     },
+     {
+      "이름": "Miningmx - Hunt for coal hots up as floods persist",
+      "url": "https://www.miningmx.com/news/energy/18456-hunt-for-coal-hots-up-as-floods-persist/"
+     },
+     {
+      "이름": "Northern Miner - Wood Mackenzie estimates damage of Australian floods",
+      "url": "https://northernminer.com/news/wood-mackenzie-estimates-damage-of-australian-floods/1000399768"
+     }
+    ],
+    "근거": "검색 결과 요약에 따르면 애널리스트는 퀸즐랜드 손실이 대부분 야금용탄 문제이며 일부 발전용탄이 야금용 수요로 전용된다고 설명했다. 뉴캐슬 가격은 12월 말 하루 10달러 상승해 1년 내 최고였고, Wood Mackenzie는 2011년 초 현물이 약 140달러/t라고 추정했다. 12월 둘째 주 뉴캐슬항은 비 영향이 없어 수출이 14% 늘었다고 한다.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "CBA 추정 호주 석탄 손실 360만 t(전년 생산의 2% 미만). 뉴캐슬 주간 벤치마크 12월 13일 주 118.75달러/t, 1월 14일 주 136.30달러/t(지수·일자가 출처마다 달라 직접 비교 불가). 출처에 따라 12월 말 수준이 128달러 또는 143달러 이상으로 엇갈림."
+   },
+   {
+    "요약": "퀸즐랜드 외 지역(콜롬비아 등)의 발전용탄 공급 문제와 가격 상승 추세.",
+    "시점": "2010-12 (확인필요)",
+    "요인": "공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Miningmx - Floods push coal price to one-year high",
+      "url": "https://www.miningmx.com/news/energy/18454-floods-push-coal-price-to-one-year-high/"
+     }
+    ],
+    "근거": "애널리스트 발언으로 '퀸즐랜드는 주로 야금용탄 문제이나 콜롬비아 등 호주 밖 발전용탄 문제도 여전하다'는 내용이 인용됐다. 콜롬비아 문제의 구체적 내용은 확인하지 못했다.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "근거 없음"
+   }
+  ],
+  "종합": "부분: 2010-12~2011-01 급등은 홍수 이슈로 설명되지만, 2010-09~11 상승(100→113)을 설명하는 근거는 이번 검색에서 찾지 못했다(11월 중국 수요 관련 검색은 해당 시기 자료가 없었음).",
+  "방향불일치": "없음. 다만 출처 자체가 홍수는 야금용탄에 더 큰 영향이라고 하며, 발전용탄에 대한 영향 크기는 출처마다 다르다. 11월 상승은 이슈 근거 없음."
+ },
+ {
+  "구간": "E2",
+  "기간": "2012-02~2012-07",
+  "가격": "125→91",
+  "이슈": [
+   {
+    "요약": "미국 셰일가스로 가스 가격이 떨어지자 미국 발전사가 가스로 전환했고, 남은 미국산 석탄이 수출로 몰려 해상 시장 공급이 늘었다.",
+    "시점": "2012년 상반기",
+    "요인": "공급/거시·에너지가격",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "RBA Statement on Monetary Policy Feb 2013 Box A",
+      "url": "https://www.rba.gov.au/publications/smp/2013/feb/box-a.html"
+     },
+     {
+      "이름": "FNArena (2012-06-27)",
+      "url": "https://fnarena.com/index.php/2012/06/27/when-relief-for-thermal-coal-prices"
+     }
+    ],
+    "근거": "RBA는 2012년 상반기 뉴캐슬 현물이 특히 급락했으며 원인으로 수입국의 부진한 수요와 거래 물량 증가를 들었고, 미국 석탄 수출이 상반기에 50% 넘게 늘었다고 서술한다. FNArena(2012-06)도 미국 발전사의 가스 전환으로 잉여 미국탄이 해외로 나온다고 적었다.",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "미국 석탄 수출 2012년 상반기 +50% 이상(RBA). 2012년 3분기 평균 96.16달러/t로 전년 대비 -26%(KPMG)."
+   },
+   {
+    "요약": "중국 화력발전 증가세 둔화와 수력발전 증가로 중국 내수 석탄 가격이 약세였고, 항구 재고가 쌓였다.",
+    "시점": "2012년 상반기~8월",
+    "요인": "수요/기상",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "RBA Statement on Monetary Policy Feb 2013 Box A",
+      "url": "https://www.rba.gov.au/publications/smp/2013/feb/box-a.html"
+     },
+     {
+      "이름": "CNChemicals - Chinese thermal coal market to remain challenging in Q3",
+      "url": "https://www.cnchemicals.com/Product/Release/17019-Chinese thermal coal market to remain challenging in Q3.html"
+     }
+    ],
+    "근거": "RBA는 2012년 상반기 중국 발전용탄 수입 증가세가 화력발전 감소와 함께 둔화했고 수력발전 증가가 이를 더 눌렀다고 적었다. 중국 벤치마크는 8월 초 12주 연속 하락해 2009년 이후 최저였고 친황다오 재고가 900만 t 가까이 쌓였다(검색 요약 기준, 8월 초 자료라 구간 후반 이후 정황).",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "친황다오 항구 재고 8백만 t 초과 9주 연속(2012년 8월 초 시점). 중국 석탄 수입은 2012년 연간 +29%로 2.36억 t(Mining Monthly) 이므로 수입 자체는 증가했고, 이는 하락 방향 이슈와 별개로 확인한 사실."
+   }
+  ],
+  "종합": "부분: 하락 방향 원인(미국탄 수출 증가, 중국 수요 둔화)은 확인되나, 3월·6월 급락 월별로 어떤 이슈가 계기였는지는 근거 없음.",
+  "방향불일치": "중국 수입이 2012년 연간으로는 29% 증가했는데 가격은 하락했다. 출처는 가격 하락이 수입을 싸게 만들어 늘렸다고 설명하므로 수요 둔화 이슈와 상충한다. 월별 급락 시점 근거 없음."
+ },
+ {
+  "구간": "E3",
+  "기간": "2016-06~2016-12",
+  "가격": "56→64→71→76→96→111→93",
+  "이슈": [
+   {
+    "요약": "중국 정부가 석탄 광산 연간 가동일을 330일에서 276일로 줄여 국내 공급이 감소했고, 국내 가격이 급등하며 해상 석탄 수입 수요가 늘었다.",
+    "시점": "정책 발표 2016-02, 가격 반영 2016년 하반기",
+    "요인": "정책/공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "RBA SMP Nov 2016 Box A",
+      "url": "https://www.rba.gov.au/publications/smp/2016/nov/box-a-production-of-iron-ore-and-coal-in-china.html"
+     },
+     {
+      "이름": "Mining.com - No stopping insane coal price rally",
+      "url": "https://www.mining.com/chart-no-stopping-insane-coal-price-rally/"
+     },
+     {
+      "이름": "Wood Mackenzie - Why have thermal coal prices spiked",
+      "url": "https://www.woodmac.com/reports/coal-why-have-thermal-coal-prices-spiked-22546"
+     },
+     {
+      "이름": "IEEFA - Why rally in coal prices unsustainable",
+      "url": "https://ieefa.org/resources/ieefa-china-why-rally-coal-prices-unsustainable"
+     }
+    ],
+    "근거": "복수 출처가 276일 가동 제한을 가격 급등의 배경으로 언급한다. RBA 2016-11은 발전용탄 가격이 연초 저점 대비 111% 올랐다고 적었고, Mining.com은 10월 초 이후 27% 상승했다고 보도했다. Wood Mackenzie는 11월 정점이 276일 정책 이후라고 언급한다(검색 요약 기준).",
+    "신뢰도": "높음",
+    "타이밍": "선행",
+    "정량": "가동일 330→276일(연 1회 정책), 3~5년간 약 10억 t 감축 계획. 연초 저점 대비 +111%(RBA). 10월 초 이후 +27%, 97.55달러/t(Mining.com 보도 시점)."
+   },
+   {
+    "요약": "가격이 오르자 중국 NDRC가 276일 정책을 일부 완화하고, 11월 초 중장기 계약가를 535~540위안/t(현물 660~670위안 대비 약 20% 낮음)로 유도해 12월 1일부터 시행했다.",
+    "시점": "완화 신호 2016-10~11, 계약가 11월 초 발표, 12월 1일 시행",
+    "요인": "정책",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "MacroBusiness - China moves on thermal coal, but",
+      "url": "https://www.macrobusiness.com.au/2016/11/china-moves-thermal-coal/"
+     },
+     {
+      "이름": "China Daily (2016-11-11)",
+      "url": "https://www.chinadaily.com.cn/a/201611/11/WS5a2b89e4a310eefe3e9a1073.html"
+     }
+    ],
+    "근거": "China Daily는 신화·중국석탄이 535위안에 계약했으며 현물보다 25% 낮고 12월 1일 시행이라고 보도했다. Credit Suisse는 540위안이 뉴캐슬 6000kcal 약 75달러/t에 해당한다고 추정했다(애널리스트 추정). 12월 뉴캐슬 가격 하락 자체를 직접 확인한 출처는 찾지 못했다.",
+    "신뢰도": "중간",
+    "타이밍": "선행",
+    "정량": "계약가 535~540위안/t, 뉴캐슬 환산 약 75달러/t(Credit Suisse 추정). 12월 평균 93달러는 이 환산가보다 높아 하락 폭이 정책 환산가까지는 가지 않았다."
+   },
+   {
+    "요약": "2016년 6~9월 완만한 상승(56→76) 구간의 개별 원인.",
+    "시점": "2016-06~09",
+    "요인": "확인필요",
+    "방향": "상승",
+    "출처": [],
+    "근거": "근거 없음. 검색은 276일 정책 일반 배경만 확인했고 6~9월 월별 원인은 찾지 못했다.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "근거 없음"
+   }
+  ],
+  "종합": "부분: 10~11월 급등은 중국 276일 정책으로 설명되며 정책이 선행한다. 12월 하락은 정책 완화·계약가 유도가 방향상 맞지만 12월 가격 하락을 직접 확인한 출처는 없어 추정에 가깝다.",
+  "방향불일치": "없음. 다만 정책(2월)과 급등(10월) 사이 시차가 8개월이라 선행 이슈만으로 10월 급등 월을 설명하기는 부족하다. 10월 급등을 촉발한 개별 사건은 근거 없음."
+ },
+ {
+  "구간": "E4",
+  "기간": "2017-05~2017-09",
+  "가격": "80→86→91→103→105",
+  "이슈": [
+   {
+    "요약": "사이클론 데비(2017-03 말) 이후 퀸즐랜드 수출 차질, 인도네시아 우기, 헌터밸리 파업 등으로 공급이 빠듯했다.",
+    "시점": "사이클론 2017-03 말, 파업·강우는 2017 상반기 (일자 확인필요)",
+    "요인": "기상/공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "S&P Global - Cyclone Debbie fuels strongest rally in Newcastle thermal coal prices since Yasi",
+      "url": "https://www.spglobal.com/commodity-insights/en/news-research/blog/coal/040617-cyclone-debbie-fuels-strongest-rally-in-newcastle-thermal-coal-prices-since-yasi-in-2011"
+     },
+     {
+      "이름": "Global Mining Review (2017-08-08)",
+      "url": "https://www.globalminingreview.com/mining/08082017/successful-recommissioning-of-blair-athol-coal-mine/amp/"
+     }
+    ],
+    "근거": "S&P Global은 데비가 퀸즐랜드 수출에 1,500만~2,000만 t 영향을 준다고 봤고 뉴캐슬 급등은 야시(2011) 이후 가장 강하다고 적었다. Global Mining Review는 데비 이후 생산 손실, 인도네시아 강우, 헌터밸리 파업으로 시장이 타이트하다고 적었다.",
+    "신뢰도": "중간",
+    "타이밍": "선행",
+    "정량": "퀸즐랜드 수출 영향 1,500만~2,000만 t(S&P Global 추정). 데비 영향은 4월 가격 급등(90달러)에 더 직접 연결되고, 5월 하락 후 8월 재상승과의 연결은 출처가 직접 말하지 않는다."
+   },
+   {
+    "요약": "중국 수요 강세, 운임 상승, 호주 광산 가동 중단으로 8월 뉴캐슬 6000 NAR이 108달러/t로 전년 11월 이후 최고가.",
+    "시점": "2017-08",
+    "요인": "수요/공급/거시",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 일일 리포트 (2017-08-15)",
+      "url": "https://pvpower.vn/pow-media/uploads/2017/08/15-08-17-pv-power-eng.pdf"
+     },
+     {
+      "이름": "Mining.com - Australian spot coal prices hit highest since April amid mine outages, strong demand",
+      "url": "https://www.mining.com/web/australian-spot-coal-prices-hit-highest-since-april-amid-mine-outages-strong-demand/"
+     }
+    ],
+    "근거": "PetroVietnam 요약에 뉴캐슬 6000 NAR이 11월 이후 최고인 108달러/t, 운임 상승이 원인으로 적혀 있다. Mining.com은 광산 중단과 강한 수요를 언급하나 기사 일자는 불명확하다. Global Mining Review는 2017 상반기 중국 GDP 성장에 따른 수입가 강세를 적었다.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "뉴캐슬 6000 NAR 108달러/t(8월 중순, PetroVietnam)."
+   },
+   {
+    "요약": "2017-05 가격 하락(90→80)의 원인.",
+    "시점": "2017-05",
+    "요인": "확인필요",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 일일 리포트 (2017-05-23)",
+      "url": "https://pvpower.vn/pow-media/uploads/2017/05/23-05-17-pv-power-eng.pdf"
+     }
+    ],
+    "근거": "출처는 5월 시장 배경이 약세(bearish)라고만 적었고 원인은 서술하지 않았다. 또 호주·콜롬비아·인도네시아가 가격 상승에 대응해 생산을 재개한다는 BoAML 언급(Cemnet)이 있으나 5월 특정 근거는 아니다. 데비 복구나 NDRC 조치와의 연결은 확인하지 못했다.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "근거 없음"
+   }
+  ],
+  "종합": "부분: 8월 급등은 중국 수요·운임·공급 차질로 설명 가능하나 근거 출처가 짧은 시장 일지 수준이고, 5월 저점과 6~7월 완만한 상승의 원인은 근거 없음.",
+  "방향불일치": "데비는 3월 말 사건인데 가격은 4월 90에서 5월 80으로 떨어졌다가 8월에 다시 올랐다. 공급 차질 이슈는 4월 가격과는 맞지만 이 구간(5~9월)의 상승과 직접 연결되지 않는다."
+ },
+ {
+  "구간": "E5",
+  "기간": "2018-04~2019-08",
+  "가격": "99→125(2018-07)→105(2019-01)→89(2019-04)→78(2019-06)→70(2019-08)",
+  "이슈": [
+   {
+    "요약": "중국의 한파·폭염으로 발전용 재고가 줄어 수요가 유지되는 가운데 폭염이 겹쳐 뉴캐슬 가격이 6년 고점까지 상승",
+    "시점": "2018-01 한파, 2018-05 폭염, 2018-06-07 가격 보도",
+    "요인": "기상/수요",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Mining Weekly (2018-06-08)",
+      "url": "https://www.miningweekly.com/article/coal-rallies-to-six-year-high-as-heatwave-fires-up-china-demand-2018-06-08"
+     },
+     {
+      "이름": "Adaro 뉴스 재게시",
+      "url": "https://www.adaro.com/news/read/1420/Australian_Newcastle_spot_coal_prices_hit_US_120_for_1st_time_since_2012"
+     }
+    ],
+    "근거": "뉴캐슬 가격이 4월 중순 이후 24% 올라 112.05$/t로 2012년 이후 최고. 중국이 이상 고온 속에서 수요를 유지했고 1월 한파와 5월 폭염으로 발전사 재고가 줄었다고 보도. 7월 초에는 일본 유틸리티의 스팟 구매와 아시아 소비 증가가 언급됨.",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "4월 저점 대비 +24%(6월 초 112.05$/t), 7월 초 스팟 120.10$/t"
+   },
+   {
+    "요약": "일본 2018-19 회계연도 장기계약 가격 협상이 교착되어 스팟 가격 상승이 가속",
+    "시점": "2018-04~07",
+    "요인": "수요/계약",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "S&P Global 블로그 (2018-12-31)",
+      "url": "https://www.spglobal.com/commodity-insights/en/news-research/blog/coal/123118-newcastle-coal-rally-eases-but-supply-could-stay-tight-in-2019"
+     }
+    ],
+    "근거": "S&P가 4월 협상이 정체되기 시작하면서 6,000 kcal NAR 스팟이 급등하기 시작했다고 설명하고 7월 중순 고점을 125$/mt FOB로 제시. 여러 요인 중 하나로 서술되며 다른 출처와 비중이 다름(검색 요약 기준, 원문 전체는 확인하지 못함).",
+    "신뢰도": "중간",
+    "타이밍": "선행",
+    "정량": "7월 중순 고점 125$/mt(S&P)"
+   },
+   {
+    "요약": "중국 수입 통관 지연과 LNG·유럽 가스 가격 하락으로 수입 수요가 약해지면서 2019년 상반기 하락",
+    "시점": "2019-02~04",
+    "요인": "정책/에너지가격",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Peak Oil 재게시 Reuters (2019-02)",
+      "url": "https://news.peak-oil.org/2019/02/australian-thermal-coal-prices-fall-to-lowest-since-april-2018-on-weak-china-demand/"
+     },
+     {
+      "이름": "Mining.com (2019-04)",
+      "url": "https://www.mining.com/web/coals-collapse-crowns-winners-losers-china-us/"
+     },
+     {
+      "이름": "IEA Coal 2020",
+      "url": "https://www.iea.org/reports/coal-2020/prices-and-costs"
+     }
+    ],
+    "근거": "스팟 95.75$/t(2018-04 이후 최저), 연초 이후 -6%, 중국 수입 급감과 항구 통관 지연. 4월 3일까지 3월 초 대비 20% 하락, 유럽 가스 과잉 공급과 LNG 가격 하락에 따른 일본의 석탄-가스 전환 가능성. IEA는 2017-18 고가에 대응한 공급 증가, 전력 수요 둔화, 낮은 LNG 가격을 2019년 하락 원인으로 제시.",
+    "신뢰도": "높음",
+    "타이밍": "선행",
+    "정량": "2019-04-03까지 3월 초 대비 -20%, 2019-02 스팟 95.75$/t. 2019-06 Argus 6,000 kcal 평균 72.46$/t(Argus 2020 보도를 인용한 검색 요약)"
+   }
+  ],
+  "종합": "부분: 2018년 상반기 급등(기상·일본 계약 협상)과 2019년 상반기 하락(중국 통관 지연·가스 약세)은 설명되나, 2018-08~2019-01의 완만한 하락과 2019-06~08의 추가 하락은 직접 근거를 찾지 못했다.",
+  "방향불일치": "없음. 다만 2018-10~12 하락(115→106)은 S&P 글 제목('랠리 완화, 공급은 타이트')만 확인했고 근거 없음. 2019-06(-13%)·2019-08 하락의 직접 원인도 근거 없음(확인필요), 4월 보도 이후 원인이 이어졌을 가능성은 추정일 뿐이다."
+ },
+ {
+  "구간": "E6",
+  "기간": "2020-04~2020-08",
+  "가격": "65→54(5월 -16%)→55→52→51",
+  "이슈": [
+   {
+    "요약": "코로나19로 전력 수요와 경제 활동이 줄어 열탄 수요가 감소하고 뉴캐슬 가격이 2016년 이후 최저로 하락",
+    "시점": "2020-04~05",
+    "요인": "수요",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "IEEFA (2020-05-05)",
+      "url": "https://ieefa.org/ieefa-update-covid-19-is-giving-the-thermal-coal-sector-a-look-at-its-long-term-future/"
+     },
+     {
+      "이름": "Argus 피바디 광산 중단 기사",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2108267-weak-demand-sees-peabody-suspend-australian-coal-mine"
+     }
+    ],
+    "근거": "IEEFA: 뉴캐슬 고열량탄이 50.60$/t로 1월 대비 약 25% 하락, 경제 활동 감소에 따른 전력 수요 감소를 원인으로 서술. Argus 평가는 5월 7일 저점 48.63$/t(2016-05 이후 최저), 5월 22일 52.04$/t (검색 요약).",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "1월 대비 -25%(5월 초 50.60$/t), 5월 7일 48.63$/t"
+   },
+   {
+    "요약": "일본 장기계약 가격이 전년 대비 27% 낮게 체결되어 약세 기준선 형성",
+    "시점": "2020-05경(정확한 날짜 확인필요)",
+    "요인": "수요/계약",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "IEEFA 검색 요약에 인용된 보도",
+      "url": "https://ieefa.org/ieefa-update-covid-19-is-giving-the-thermal-coal-sector-a-look-at-its-long-term-future/"
+     }
+    ],
+    "근거": "Glencore-Tohoku 계약이 68.75$/t로 전년보다 27% 낮았다고 보도됨.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "68.75$/t, 전년 대비 -27%"
+   },
+   {
+    "요약": "공급 과잉과 중국 항구 통관 제한이 겹쳐 가격 하락",
+    "시점": "2020 상반기",
+    "요인": "공급/정책",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Newcastle Herald",
+      "url": "https://newcastleherald.com.au/story/6816559/coal-prices-tumble-but-volumes-holding-up-as-covid-and-chinese-port-restrictions-take-effect"
+     },
+     {
+      "이름": "IEA Coal 2020",
+      "url": "https://www.iea.org/reports/coal-2020/prices-and-costs"
+     }
+    ],
+    "근거": "Newcastle Herald는 코로나와 중국 항구 제한 때문에 가격이 급락했으나 물량은 유지됐다고 보도. IEA는 2019 4분기 중국 수입 제한이 가격에 압력을 줬다고 서술. Fitch는 공급 여유도 지적(검색 요약). 2020-05 급락 월에 중국 제한이 새로 추가됐다는 근거는 확인하지 못함.",
+    "신뢰도": "중간",
+    "타이밍": "불명",
+    "정량": ""
+   }
+  ],
+  "종합": "충분: 코로나19 수요 감소가 복수 출처로 확인되고 방향도 일치한다. 다만 4월 대비 5월의 -16% 낙폭을 월 단위로 나눠 설명하는 근거는 없고, 6~8월 보합(51~55)에 대한 별도 근거도 없다.",
+  "방향불일치": "없음"
+ },
+ {
+  "구간": "E7",
+  "기간": "2020-10~2021-11",
+  "가격": "58→63→81(2020-12)→91→92→95→98(2021-04)→104→132(2021-06)→153→174→188→241(2021-10)→178(2021-11)",
+  "이슈": [
+   {
+    "요약": "중국의 호주산 석탄 수입 금지로 중국이 비호주산(남아공·러시아 등) 5,500 kcal를 적극 매입해 다른 구매자가 호주산으로 몰림",
+    "시점": "2020-12 초",
+    "요인": "정책/수요",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Argus (2020-12 후속 보도)",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2174418-newcastle-coal-exports-rebound-despite-china-ban"
+     }
+    ],
+    "근거": "Argus 12월 초 기사: 중국이 비호주산 NAR 5,500 kcal를 공격적으로 입찰해 기존 구매자가 호주산을 찾게 됨. 12월 4일 이전 2주간 약 10$/t 상승. 호주 12월 수출 14.4Mt 중 중국행은 0(2019-12는 4.13Mt). 한파·La Nina를 원인으로 든 근거는 검색 결과에 없음.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "6,000 kcal: 9월 4일 46.18$/t, 12월 4일 70.33$/t, 12월 31일 81.44$/t(Argus)"
+   },
+   {
+    "요약": "중국 석탄 수요 급증과 인도네시아 우기 공급 차질, 낮은 공급 대응으로 2021-05~08 상승(2021-06 +27%)",
+    "시점": "2021-04~06",
+    "요인": "수요/기상/공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "ESDM 인도네시아 정부 (HBA 2021-06)",
+      "url": "https://esdm.go.id/en/media-center/news-archives/june-hba-soars-to-usd10033-per-tonne"
+     },
+     {
+      "이름": "Wood Mackenzie 2021-06 전망",
+      "url": "https://www.woodmac.com/reports/coal-thermal-coal-markets-short-term-outlook-june-2021-505900/"
+     }
+    ],
+    "근거": "인도네시아 에너지부: HBA 6월 100.33$/t로 2018-11 이후 최고, 4~5월부터 중국 수요 급증과 우기로 인한 공급 능력 감소를 원인으로 서술. Wood Mackenzie: 6월 내내 상승세가 이어져 2011년 이후 최고 수준, 공급 대응 부족을 언급. 뉴캐슬 6월 월평균 132$/t 수치를 직접 확인한 출처는 없음.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": ""
+   },
+   {
+    "요약": "중국 석탄 공급 부족·재고 최저와 전력 제한, 유럽 가스 가격 급등에 따른 석탄 수요로 2021-09~10 상승",
+    "시점": "2021-09~10",
+    "요인": "수요/공급/에너지가격",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Mining.com",
+      "url": "https://www.mining.com/web/coal-surges-to-record-as-global-scramble-for-energy-accelerates/"
+     },
+     {
+      "이름": "Business Recorder",
+      "url": "https://www.brecorder.com/news/amp/40137097"
+     },
+     {
+      "이름": "The Coal Hub 37주차",
+      "url": "https://thecoalhub.com/world-coal-market-review-week-37/"
+     },
+     {
+      "이름": "Engineering News (2021-11-12)",
+      "url": "https://www.engineeringnews.co.za/article/coal-prices-to-remain-volatile-heading-into-2022-2021-11-12"
+     }
+    ],
+    "근거": "중국이 자국 생산을 줄여 석탄이 부족했고 재고가 기록적 저점이며 전력 제한이 이어졌다고 보도. 유럽 가스 가격 급등과 EU 저장고 부족이 석탄 수요를 키움(9월 초 유럽 지수 170$/t 초과). 인도네시아 HBA 9월 150.03$/t(전월 +14.5%). 10월 초 뉴캐슬 기록은 소스별로 269$/t(Business Recorder, 269.5 후 223.3으로 하락)로 서로 다르다.",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "10월 초 기록 약 269$/t(출처마다 상이), 인도네시아 HBA 9월 150.03$/t, 중국 Qinhuangdao 190$/t 초과"
+   },
+   {
+    "요약": "중국 정부(NDRC)의 석탄 가격 개입과 증산으로 중국 석탄 가격이 급락, 전력 제한도 완화되어 2021-11 하락(-26%)",
+    "시점": "2021-10 중순~11",
+    "요인": "정책",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Mining-technology",
+      "url": "https://www.mining-technology.com/news/chinese-coal-futures-slump/"
+     },
+     {
+      "이름": "Engineering News (2021-11-12)",
+      "url": "https://www.engineeringnews.co.za/article/coal-prices-to-remain-volatile-heading-into-2022-2021-11-12"
+     },
+     {
+      "이름": "Business Recorder",
+      "url": "https://www.brecorder.com/news/amp/40137097"
+     }
+    ],
+    "근거": "NDRC가 개입 방침을 밝히자 정저우 선물이 한도까지 하락해 고점 1,982위안에서 31% 이상 하락. NDRC는 산지 기준 440위안/t 가이던스 가격 검토. 11월에는 정부 개입으로 공급이 개선되고 전력 제한이 완화되어 중국 석탄 가격이 10월 고점보다 낮아졌다고 보도. 정저우 선물 하락 날짜는 출처에 없고 10월 중순으로 보이나 확인필요. 뉴캐슬 가격 자체의 하락폭은 출처에서 확인하지 못함.",
+    "신뢰도": "높음",
+    "타이밍": "선행",
+    "정량": "정저우 선물 고점 1,982위안에서 31% 초과 하락"
+   }
+  ],
+  "종합": "부분: 2021-09~10 급등과 2021-11 급락은 중국 수급·정책으로 잘 설명되나, 2020-10~11 시작 구간(+8~+9%)과 2021-01~04 완만한 상승은 직접 근거가 없고, 2020-12·2021-06 급등의 근거는 일부 출처에 의존한다.",
+  "방향불일치": "없음. 다만 12월 급등에 대한 일반 설명(한파)은 검색 결과에 없어 쓰지 않았다. 2021-10의 최고가 수치는 출처 간 불일치(검색 요약에서 269, 월평균은 241)."
+ },
+ {
+  "구간": "E8",
+  "기간": "2022-01~2022-12",
+  "가격": "182→232→272→353→335→418→427→434→447→468→427→368→428",
+  "이슈": [
+   {
+    "요약": "러시아의 우크라이나 침공과 대러 제재로 유럽 구매자가 대체 물량을 찾으면서 뉴캐슬 가격이 3월 사상 최고치로 급등",
+    "시점": "2022-03 초 (3/2 선물 약 440$/t, 3/4 주간지수 353.75$)",
+    "요인": "지정학",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     },
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/energy/en/news-research/latest-news/coal/031022-australias-record-high-thermal-coal-prices-here-to-stay-amid-sweeping-european-demand"
+     },
+     {
+      "이름": "Mining.com / Reuters",
+      "url": "https://www.mining.com/web/russia-ban-seen-tightening-coal-market-thats-already-surging/"
+     }
+    ],
+    "근거": "IEA는 침공과 대러 제재가 3월 석탄 가격을 사상 최고로 끌어올렸다고 기술. S&P Global는 러시아 석탄이 빠지면서 유럽이 대체재를 찾는다고 보도. 검색 결과 요약상 수치는 출처마다 다름(선물 440$, IEA 400$ 미만, 주간지수 353.75$).",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "뉴캐슬 선물 3/2 최고 약 440$/t (Reuters 인용, 검색 요약 기준)"
+   },
+   {
+    "요약": "인도네시아의 2022년 1월 석탄 수출 금지 조치가 연초 가격을 밀어올림",
+    "시점": "2022-01 (금지 약 1월 초~말, 이후 부분 완화)",
+    "요인": "정책",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Nippon.com / Reuters",
+      "url": "https://www.nippon.com/en/news/reu20220114KBN2JO0ZP/"
+     },
+     {
+      "이름": "Hellenic Shipping News",
+      "url": "https://www.hellenicshippingnews.com/?p=911613"
+     }
+    ],
+    "근거": "검색 요약상 금지 조치로 뉴캐슬이 1월 말 249$/t까지 올랐다고 보도. 일본 전력업계가 금지가 가격에 상승 압력을 준다고 언급. 1월~2월 상승(232→272)과 방향은 일치하나 2월 상승 자체의 원인 근거는 확인하지 못함.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "뉴캐슬 1월 말 249$/t (단일 보도 요약)"
+   },
+   {
+    "요약": "IEA는 뉴캐슬 가격이 공급 부족까지 겹쳐 5월에 처음 400$/t를 넘고 2023년 초까지 그 수준을 유지했다고 기술. 5월 급등(+25%)의 개별 월 원인은 확인필요",
+    "시점": "2022-05",
+    "요인": "공급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     },
+     {
+      "이름": "IEA Coal Market Update July 2023",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2023/prices"
+     }
+    ],
+    "근거": "IEA 2023년 7월판에 'Newcastle prices, also boosted by supply shortages, first surpassed USD 400/t in May'로 기술. 구체적 공급 차질 사건(홍수, 인도네시아 추가 금지 우려 등)은 일부 Reuters 인용에서만 언급되고 5월과의 연결은 확인하지 못함.",
+    "신뢰도": "낮음",
+    "타이밍": "동행",
+    "정량": "400$/t 최초 돌파 (IEA, 일간 기준이라 IMF 월평균 418과 정합)"
+   },
+   {
+    "요약": "2022년 4분기 유럽 ARA 가격이 온화한 날씨와 석탄 재고 충분으로 하락하기 시작했으나 뉴캐슬은 호주 석탄 수요 견조와 라니냐발 공급 부족으로 상대적으로 버팀",
+    "시점": "2022-Q4~2023-01",
+    "요인": "기상",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2023",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2023/prices"
+     },
+     {
+      "이름": "Barchart",
+      "url": "https://www.barchart.com/story/news/19756898/are-coal-prices-setting-up-for-an-end-of-the-year-rebound"
+     }
+    ],
+    "근거": "IEA는 ARA 가격이 4분기에 하락하기 시작했다고 기술하고, 뉴캐슬은 ARA 대비 최대 225$ 프리미엄이라 설명. 11월 -14%(427→368)와 12월 +16%(→428)를 직접 설명하는 출처는 찾지 못함. 중국 코로나 확산으로 중국 내수 가격(QHD)이 11월에 350위안/t 넘게 하락했다는 Wood Mackenzie 노트가 있으나 뉴캐슬 가격이 아닌 중국 내수 가격임.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "뉴캐슬 선물 10/17 약 387.5$/t (Barchart), QHD 11월 -350위안/t 초과 (Wood Mackenzie)"
+   }
+  ],
+  "종합": "부분: 3월 급등(침공·제재)과 1월(인도네시아 수출 금지)은 근거가 있으나 2월·5월의 월별 급변, 9월 정점(468)과 10~11월 하락(-14%), 12월 반등(+16%)의 원인은 근거 없음에 가까움.",
+  "방향불일치": "2022-12 뉴캐슬 가격 +16%와 달리 검색된 12월 뉴스는 가스 가격 하락과 재고 과다 등 하락 요인이었음(Sxcoal 12/14, 일 단위 선물). 12월 반등 월평균은 이슈로 설명되지 않음."
+ },
+ {
+  "구간": "E9",
+  "기간": "2023-01~2023-06",
+  "가격": "405→244→196→201→179→139",
+  "이슈": [
+   {
+    "요약": "온화한 겨울로 유럽 등 북반구의 석탄·가스 수요가 줄고 가스 가격이 급락하면서 2023년 상반기 석탄 가격이 급락",
+    "시점": "2023-01~2023-03",
+    "요인": "기상",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Stockhead Bulk Buys",
+      "url": "https://stockhead.com.au/?p=291632"
+     },
+     {
+      "이름": "Databoks 2023 상반기 석탄 가격",
+      "url": "https://databoks.katadata.co.id/en/mining/statistics/0e508e820dcb9c6/coal-prices-plummeted-in-the-first-half-of-2023-cheaper-than-before-the-war"
+     }
+    ],
+    "근거": "Stockhead는 예상보다 따뜻한 겨울 이후 석탄·가스 수요가 크게 줄었고 Wood Mackenzie 분석가가 가스 가격 붕괴를 포함한 하락 속도에 놀랐다고 전함. Databoks는 2023년 1~2월 뉴캐슬이 연초(390$) 대비 44.1% 하락, 2/14 218$/t라고 보도.",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "2/14 218$/t (Databoks), 6000kcal 등급 2022년 말 394$→135$ (Stockhead)"
+   },
+   {
+    "요약": "중국의 석탄 재고 축적과 인도네시아·호주 물량 유입, 세계 석탄 생산 증가로 공급 과잉",
+    "시점": "2023-상반기",
+    "요인": "공급",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Databoks 2월 14일",
+      "url": "https://databoks.katadata.co.id/en/market/statistics/8dc619c2bd70e10/newcastle-coal-price-falls-to-us218-per-ton-tuesday-february-14-2023"
+     },
+     {
+      "이름": "Mining Monthly",
+      "url": "https://miningmonthly.com/markets/international-coal-news/1293912/newcastle-coal-resists-falls"
+     }
+    ],
+    "근거": "WSJ 인용 기사에 중국이 2023년 인도네시아·호주 공급 유입으로 재고를 쌓았다고 서술. 날짜 불명 기사라 2월과의 직접 연결은 확인필요.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "근거 없음"
+   },
+   {
+    "요약": "세계은행은 탄소가격 정책과 미국·유럽의 낮은 가스 가격으로 석탄 수요가 약해졌다고 설명",
+    "시점": "2023-04 (세계은행 전망)",
+    "요인": "정책",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Databoks 2023 상반기 석탄 가격",
+      "url": "https://databoks.katadata.co.id/en/mining/statistics/0e508e820dcb9c6/coal-prices-plummeted-in-the-first-half-of-2023-cheaper-than-before-the-war"
+     },
+     {
+      "이름": "Databoks 2023 5월",
+      "url": "https://databoks.katadata.co.id/en/mining/statistics/732358646bea54c/may-2023-coal-price-down-57-year-on-year"
+     }
+    ],
+    "근거": "World Bank 자료 인용: 6월 평균 약 139$/t로 5월 대비 약 -13%, 1월 대비 -56%. 5월은 약 160$로 4월 대비 약 -17%. 월별(3·4·5·6월) 개별 원인은 출처에 없음. 저급탄(5500kcal)은 중국의 호주산 금지 해제 후 수요로 덜 하락.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "6월 139$, 5월 160$ (World Bank, Databoks 인용)"
+   }
+  ],
+  "종합": "부분: 하락 전체 흐름(온화한 겨울·가스 가격 붕괴·재고 증가)은 설명되나 2월(-40%)·3월(-20%)·6월(-23%)의 월별 급락 원인을 구분하는 출처는 찾지 못함.",
+  "방향불일치": "없음 (모두 하락 요인)."
+ },
+ {
+  "구간": "E10",
+  "기간": "2023-12",
+  "가격": "132→149",
+  "이슈": [
+   {
+    "요약": "12월 중국 한파로 중국 내수 가격(QHD)이 일시 상승했으나 폭이 작고 연말에 사라졌다는 Wood Mackenzie 노트",
+    "시점": "2023-12 중순",
+    "요인": "기상",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie China Coal Outlook Dec 2023",
+      "url": "https://www.woodmac.com/reports/coal-china-coal-short-term-outlook-december-2023-150189932/"
+     }
+    ],
+    "근거": "중국 여러 지역 한파로 12월 중순 가격 상승, 시베리아 한파로 산간 채굴 지장. 단 이는 중국 내수 가격이며 같은 노트가 뉴캐슬 가격 상승은 완화될 것으로 전망. 뉴캐슬 +13%의 직접 원인은 근거 없음.",
+    "신뢰도": "낮음",
+    "타이밍": "동행",
+    "정량": "근거 없음"
+   },
+   {
+    "요약": "12월 뉴캐슬항 출하는 PWCS 9.93Mt로 전월·전년 동월 대비 증가, 중국 수요는 견조하나 10월 기록·11월보다 약함",
+    "시점": "2023-12",
+    "요인": "수요",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Argus",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2525286-australia-s-2023-newcastle-coal-exports-ahead-of-2022"
+     }
+    ],
+    "근거": "Argus 초기 선적 데이터. 물량 증가가 가격 상승 원인인지는 출처가 말하지 않음.",
+    "신뢰도": "낮음",
+    "타이밍": "동행",
+    "정량": "12월 PWCS 9.93Mt, 2023년 95.51Mt (Argus)"
+   }
+  ],
+  "종합": "불충분: 12월 +13%를 직접 설명하는 출처가 없고, 확인된 것은 중국 내수 한파와 출하량 정도임.",
+  "방향불일치": "Wood Mackenzie는 뉴캐슬 상승이 완화될 것으로 보고, Stockhead는 따뜻한 겨울이 시장을 식혔다고 해 방향이 엇갈림(후자는 시점 불명)."
+ },
+ {
+  "구간": "E11",
+  "기간": "2024-12~2025-04 (이후 반등 2025-08, 9월 재하락 포함)",
+  "가격": "150(2024-11)→140→125→113→105→101(2025-04)→104→110→116→119(2025-08)→113(9월)",
+  "이슈": [
+   {
+    "요약": "중국 항만·발전소 재고가 높고 장기계약 국내 공급이 충분해 해상 수입 구매가 위축됐다.",
+    "시점": "2024-12 중순(ICE 1월물 12/19 종가 140.25달러), 2025-01~02 지속",
+    "요인": "수요",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Sxcoal (Newcastle thermal coal prices fall 4 days running)",
+      "url": "https://en.sxcoal.com/news/detail/1737351188542849025"
+     },
+     {
+      "이름": "Breakwave Advisors (China's coal imports in 2025)",
+      "url": "https://www.breakwaveadvisors.com/insights/2025/2/26/chinas-coal-imports-in-2025"
+     }
+    ],
+    "근거": "Sxcoal은 추운 날씨에도 중국 구매자가 해상 구매를 미뤘고 이유로 항만·발전소 재고와 장기계약 국내 공급을 들었다고 한다(연도는 스니펫에 없어 2024년으로 추정). Breakwave는 2025-01 온화한 겨울로 전력 수요가 줄었고, 중국 국내 가격 하락으로 호주·인도네시아 FOB와의 가격차가 좁아져 수입 유인이 줄었으며 2/21 China Energy가 수입 입찰을 중단했다고 적었다.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "ICE 1월물 140.25달러/t(12/19). 구체적 재고 수치는 확인 못함."
+   },
+   {
+    "요약": "중국 국내 석탄 생산이 사상 최고였고 석탄발전이 약해 중국·인도·일본 수입이 줄면서 아시아 해상 유연탄이 4년 최저로 떨어졌다.",
+    "시점": "2025-03~05 (보도 2025-05-07경)",
+    "요인": "공급/수요",
+    "방향": "하락",
+    "출처": [
+     {
+      "이름": "Malaya (Reuters 인용, Thermal coal prices hit 4-year low in Asia)",
+      "url": "https://malaya.com.ph/business/shipping-transportation/thermal-coal-prices-hit-4-year-low-in-asia"
+     },
+     {
+      "이름": "Petromindo",
+      "url": "https://cn.petromindo.com/news/article/thermal-coal-prices-hit-4-year-low-in-asia-as-china-imports-wane"
+     },
+     {
+      "이름": "IEA Coal 2025 Prices and costs",
+      "url": "https://www.iea.org/reports/coal-2025/prices-and-costs"
+     }
+    ],
+    "근거": "Kpler 자료 기준 중국 4월 발전용탄 수입 약 2270만t(3월 2380만t), 1~4월 전년 대비 13.1% 감소. 중국 3월 국내 생산 4억 4058만t으로 사상 최고. 호주·인도네시아 등급 가격은 전년 10월부터 하락 추세였다고 한다. IEA는 2025-01~08 고열량 태평양 벤치마크 평균이 약 104달러이고 뉴캐슬 하락폭이 벤치마크 중 가장 컸다고 한다. Argus는 고열량 뉴캐슬이 4월 말 91.71달러/t FOB로 최저였다고 보도(검색 요약 인용).",
+    "신뢰도": "높음",
+    "타이밍": "동행",
+    "정량": "중국 수입 22.7Mt(4월), 1~4월 -13.1% y/y, 국내 생산 440.58Mt(3월), Argus 4월 말 91.71달러/t. 시트 4월 월평균 101과 일일 저점 91.7은 월평균 효과로 보이며 차이 자체는 확인필요."
+   },
+   {
+    "요약": "2025-05~08 반등(101→119)의 원인은 확인하지 못했다. 중국 내수 가격 상승과 8월 광산 생산 점검이 있었으나 뉴캐슬과의 연결을 보여주는 출처는 없다.",
+    "시점": "2025-07-31(국가에너지국 생산 점검 발표), 8월 중순 Q5500 황화항 708위안/t",
+    "요인": "정책/수급",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "iTiger (Coal Prices Break 700 Yuan Barrier, anti-involution)",
+      "url": "https://www.itiger.com/hant/news/1165302252"
+     }
+    ],
+    "근거": "검색에서 확인된 것은 중국 내수 석탄(7월 내몽골·산시 폭우로 생산 감소, 7/31 주요 산지 생산 점검, 8/15 황화항 Q5500 708위안/t, 주 +2.3%)뿐이다. 반등 기간의 뉴캐슬 가격 자료는 찾지 못했다. 9월 하락(119→113)의 원인도 근거 없음.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "황화항 Q5500 708위안/t(8/15)"
+   }
+  ],
+  "종합": "2024-12~2025-04 하락은 부분 이상 설명 가능(중국 재고·국내 공급·수입 감소 근거가 복수 출처로 있고 하락 방향과 일치). 2025-05~09 반등과 재하락은 불충분(중국 내수 정보만 있고 뉴캐슬 근거 없음).",
+  "방향불일치": "하락 구간은 불일치 없음. 반등 구간은 방향이 맞는 이슈(중국 내수 상승)가 있으나 뉴캐슬에 전달됐다는 근거가 없어 검증 불가. 시트 월평균 101과 Argus 일일 저점 91.71의 차이는 월평균 효과로 추정(확인필요)."
+ },
+ {
+  "구간": "E12",
+  "기간": "2026-02~2026-07",
+  "가격": "116(2026-01)→122→140(3월, +14.6%)→142→141→150(6월)→140(7월)",
+  "이슈": [
+   {
+    "요약": "이란 관련 전쟁으로 카타르 LNG 생산이 중단·차질을 빚어 가스에서 석탄으로의 연료 전환 수요가 커졌다.",
+    "시점": "2026-02 말 전쟁 시작, 2026-03-02~03 카타르 라스라판 가동 중단 보도, 3월 3일 Bloomberg 석탄 가격 급등 기사",
+    "요인": "지정학/에너지가격",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Bloomberg (Coal Prices Jump as Qatar LNG Halt Boosts Fuel-Switching Needs, 2026-03-03)",
+      "url": "https://www.bloomberg.com/news/articles/2026-03-03/coal-prices-jump-as-qatar-lng-halt-boosts-fuel-switching-needs"
+     },
+     {
+      "이름": "NPR (Asia boosts coal use as Iran war squeezes global LNG supplies, 2026-03-24)",
+      "url": "https://www.npr.org/2026/03/24/g-s1-114940/asia-boosts-coal-use-as-iran-war-squeezes-global-lng-supplies"
+     },
+     {
+      "이름": "Mining Weekly / BMI",
+      "url": "https://www.miningweekly.com/article/iran-conflict-and-spinoff-effects-are-keeping-coal-prices-higher-2026-04-10"
+     },
+     {
+      "이름": "IDN Financials (Coal prices soar 8.6%)",
+      "url": "https://www.idnfinancials.com/news/61870/coal-prices-soar-8-6-due-to-lng-disruptions-from-qatar"
+     }
+    ],
+    "근거": "BMI: 2/27~3/31 뉴캐슬 발전용탄 23% 상승해 142달러/t 마감, 2월 말부터 중동 지정학 위험으로 에너지 가격이 올랐고 아시아 주요 시장에서 가스→석탄 전환이 늘었다. 카타르 LNG 중단 후 석탄이 하루 8.6% 올랐다는 보도, 일본·한국이 석탄발전을 최대로 올린다는 보도(NPR 등). 시트 3월 140은 BMI 3월 말 종가 142와 일치.",
+    "신뢰도": "높음",
+    "타이밍": "선행(전쟁 시작 2월 말, 시트 급변은 3월)",
+    "정량": "BMI 2/27~3/31 +23%, 3/31 142달러/t. 다른 보도는 3/20경 134달러(+13~20%). 2월 월평균이 122로 이미 오른 점은 2월 중 움직임이나 일부 분량은 확인필요."
+   },
+   {
+    "요약": "호르무즈 해협 통항 차질로 Brent가 약 70달러에서 3월 9일 약 109달러, 4월 말 약 125달러까지 올랐고 아시아 LNG 현물이 급등했다. 석탄은 유가보다 가스(LNG)를 통해 움직였다.",
+    "시점": "2026-02 말~2026-04",
+    "요인": "에너지가격/지정학",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Gulf News (Brent spikes amid Iran-US-Israel war)",
+      "url": "https://gulfnews.com/business/energy/brent-crude-oil-price-spikes-to-1071-amid-iran-us-israel-war-1.500467933"
+     },
+     {
+      "이름": "Al Attiyah Foundation weekly energy market review (2026-08-08)",
+      "url": "https://marhaba.qa/al-attiyah-foundation-weekly-energy-market-review-8-august-2026/"
+     },
+     {
+      "이름": "Northern Miner (IEA Coal Mid-Year Update 2026 요약)",
+      "url": "https://www.northernminer.com/news/hormuz-nat-gas-shock-revives-coal-trade-iea/1003894754/"
+     }
+    ],
+    "근거": "Brent는 전쟁 전 약 70달러, 3월 9일 약 109달러, 4월 말 6월물 125.36달러(Annahar/AP 보도 제목은 125달러 돌파). 7월 Brent는 24% 올라 90.12달러, 8월 7일 83.55달러. 아시아 LNG 현물 7월 말 21.35달러/MMBtu, TTF 8월 7일 18.70달러. IEA 중간 업데이트는 석탄 선적은 호르무즈를 거의 지나지 않아 LNG 감소로 오른 가스 가격을 통해 간접적으로 영향을 줬다고 설명한다. 한 보도는 아시아 LNG 현물이 전쟁 이후 62% 오를 때 뉴캐슬 벤치마크는 13% 올랐다고 했다.",
+    "신뢰도": "중간",
+    "타이밍": "동행",
+    "정량": "Brent 70→109(3/9)→125.36(4월 말). 시트의 10/14 Brent 126은 이 구간 밖이며 별도 확인 못함. 유가 자체가 석탄 가격을 움직였다는 직접 근거는 없음(가스 경유)."
+   },
+   {
+    "요약": "5~7월(141→150→140)의 변동 원인은 근거 없음. 폭염(인도 수력 감소, 일본 냉방)과 LNG 부족 지속이 수요 요인으로 언급되나 이 시기 가격과 직접 연결한 출처는 찾지 못했다.",
+    "시점": "2026-05~07",
+    "요인": "기상/수요",
+    "방향": "상승",
+    "출처": [
+     {
+      "이름": "Bloomberg 인용 기사 (Asia's coal imports set to surge as LNG stays costly)",
+      "url": "https://www.thedailystar.net/business/global-economy/news/asias-coal-imports-set-surge-lng-stays-costly-4295366"
+     }
+    ],
+    "근거": "기사는 인도 폭염이 수력을 줄이고 냉방 수요를 늘렸다고 언급하나 게재 시점이 불명확하다. IEA 인용 2차 보도는 뉴캐슬이 6월 평균 139달러, 8월 131달러라고 하여 시트의 6월 150과 맞지 않는다(지표·집계 차이 가능, 확인필요). 7월 하락(150→140)의 원인은 근거 없음.",
+    "신뢰도": "낮음",
+    "타이밍": "불명",
+    "정량": "IEA 2차 인용 6월 평균 139, 8월 말 136달러/t"
+   }
+  ],
+  "종합": "3월 급등은 충분히 설명 가능(카타르 LNG 중단과 연료 전환이 복수 출처, 이슈가 가격보다 먼저). 4~7월 등락은 불충분(근거 없음).",
+  "방향불일치": "3월 급등은 불일치 없음. 6월 시트 150과 IEA 2차 인용 139의 수치 차이가 있어 확인필요. 7월 Brent는 +24%(90달러)인데 같은 달 석탄은 150→140으로 하락해, 월 단위로는 유가와 석탄 방향이 어긋난다. 석탄은 유가보다 LNG·가스 가격과 연관이 높은 것으로 보인다. 웹 검색으로 2026년 5~7월 석탄 뉴스는 확인하지 못했다."
+ }
+]
