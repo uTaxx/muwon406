@@ -1,0 +1,446 @@
+[
+ {
+  "id": "E01a",
+  "사건": "중국의 호주산 석탄 비공식 수입 중단 (최초 보도)",
+  "일자": "2020-10-12",
+  "일자구분": "최초보도",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Mining Weekly (2020-10-12)",
+    "url": "https://www.miningweekly.com/article/china-bans-australian-coal-imports-as-political-relations-sour-2020-10-12"
+   },
+   {
+    "이름": "Coal Age",
+    "url": "https://www.coalage.com/breaking-news/china-orders-stoppage-to-imports-of-australian-coal/"
+   }
+  ],
+  "비고": "Platts 보도에 따르면 발전사 4곳은 10-09에 구두 통보를 받았다. 이 통보일은 보도 기준이며 중국 정부의 확인은 없었다. 검색 결과에서 로이터 원문은 확인하지 못했다. 방향은 일반적 해석이며 가격 데이터로 검증하지 않았다."
+ },
+ {
+  "id": "E01b",
+  "사건": "중국의 호주산 석탄 수입 중단 (공식발표)",
+  "일자": "확인필요",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [],
+  "비고": "중국 정부가 공식 발표한 사실을 확인하지 못했다. 비공식 조치로 보도되었다."
+ },
+ {
+  "id": "E02",
+  "사건": "중국 NDRC 석탄 가격 개입 시사 발표 (가격법 제30조 언급)",
+  "일자": "2021-10-19",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Caixin (2021-10-20)",
+    "url": "https://www.caixinglobal.com/2021-10-20/china-weighs-coal-market-intervention-to-end-stunning-rally-101788801.html"
+   },
+   {
+    "이름": "Zawya/Reuters",
+    "url": "https://www.zawya.com/en/business/china-coal-futures-slump-as-govt-signals-intervention-to-ease-power-crisis-ibp5nz8b"
+   }
+  ],
+  "비고": "발표 당일 10-19, 정저우 석탄 선물 하한가는 10-20에 발생했다. 10-28에도 가격 상한 보도로 하한가가 재발했다. 별도의 상한 확정 발표일은 확인하지 못했다."
+ },
+ {
+  "id": "E03a",
+  "사건": "인도네시아 석탄 수출 금지 (1월 한 달 전면 금지 통지)",
+  "일자": "2021-12-31",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Pinsent Masons",
+    "url": "https://www.pinsentmasons.com/out-law/news/indonesia-lift-coal-export-ban-ahead-schedule"
+   },
+   {
+    "이름": "S&P Global (2022-01-20)",
+    "url": "https://www.spglobal.com/commodityinsights/en/market-insights/latest-news/coal/012022-indonesia-revokes-coal-export-ban-for-companies-meeting-domestic-obligation"
+   }
+  ],
+  "비고": "국내시장공급의무(DMO) 미이행이 이유로 제시되었다. S&P에 따르면 뉴캐슬은 12-31 103.50달러에서 01-19 136.05달러(FOB)로 상승했다."
+ },
+ {
+  "id": "E03b",
+  "사건": "인도네시아 석탄 수출 단계적 재개 발표",
+  "일자": "2022-01-11",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Financial Express (방글라데시)",
+    "url": "https://mail.thefinancialexpress.com.bd/trade/indonesia-to-lift-ban-on-coal-export-in-phases-1641882601"
+   },
+   {
+    "이름": "Pinsent Masons",
+    "url": "https://www.pinsentmasons.com/out-law/news/indonesia-lift-coal-export-ban-ahead-schedule"
+   }
+  ],
+  "비고": "기사 URL의 타임스탬프로 보아 01-11로 판단한다. 기사 본문에는 날짜가 직접 보이지 않았다. 재개 시작은 01-12로 보도되었으나 S&P는 01-17 주간부터라고 했다."
+ },
+ {
+  "id": "E03c",
+  "사건": "인도네시아 DMO 이행 139개사 수출 금지 공식 해제",
+  "일자": "2022-01-20",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "S&P Global",
+    "url": "https://www.spglobal.com/energy/en/news-research/latest-news/coal/012022-indonesia-revokes-coal-export-ban-for-companies-meeting-domestic-obligation"
+   }
+  ],
+  "비고": "에너지광물자원부 서한 기준이다. 100% DMO 이행 기업에 한해 해제되었다."
+ },
+ {
+  "id": "E04",
+  "사건": "러시아의 우크라이나 침공",
+  "일자": "2022-02-24",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Newcastle Herald",
+    "url": "https://www.newcastleherald.com.au/story/7643332/russian-invasion-sends-coal-futures-soaring-above-already-record-prices"
+   },
+   {
+    "이름": "Mining.com",
+    "url": "https://www.mining.com/web/asias-coal-imports-decline-but-ukraine-crisis-will-keep-prices-up/"
+   }
+  ],
+  "비고": "침공 일자 02-24는 의뢰 내용을 따랐다. 이번 검색 결과 본문에서 날짜를 직접 확인하지는 못했다. 침공 직후 주(02-25 종료)에 Argus 뉴캐슬 지수가 기록적 264.52달러를 찍었다."
+ },
+ {
+  "id": "E05a",
+  "사건": "미국 러시아산 석탄·원유·LNG 수입 금지 행정명령",
+  "일자": "2022-03-08",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Norton Rose Fulbright",
+    "url": "https://www.nortonrosefulbright.com/de-de/wissen/publications/b58475c4/us-bans-imports-of-russian-oil-liquefied-natural-gas-and-coal"
+   },
+   {
+    "이름": "Hogan Lovells",
+    "url": "https://www.hoganlovells.com/en/publications/new-measures-from-the-us-uk-and-eu-aim-to-significantly-reduce-reliance-on-russian-energy-supplies"
+   }
+  ],
+  "비고": "즉시 시행되었고 기존 계약분은 일반허가 16호로 04-22까지 허용되었다."
+ },
+ {
+  "id": "E05b",
+  "사건": "영국 러시아산 석탄 금지 최초 발표",
+  "일자": "확인필요",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Hogan Lovells",
+    "url": "https://www.hoganlovells.com/en/publications/new-measures-from-the-us-uk-and-eu-aim-to-significantly-reduce-reliance-on-russian-energy-supplies"
+   }
+  ],
+  "비고": "03-08 영국 발표는 원유 단계적 중단이었고 석탄 금지의 최초 발표일은 확인하지 못했다. 영국은 2022년 말까지 러시아산 석탄·원유 의존 종료를 목표로 했다고 한다."
+ },
+ {
+  "id": "E05c",
+  "사건": "영국 러시아산 석탄 수입 금지 시행",
+  "일자": "2022-08-10",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "BOFIT 주간 리뷰 (EU·영국·미국 금지 채택 언급, 영국 날짜는 없음)",
+    "url": "https://www.bofit.fi/en/monitoring/weekly/2022/vw202235_4/"
+   }
+  ],
+  "비고": "08-10 시작이라는 검색 요약이 있었으나 출처 페이지를 특정하지 못했고 영국 정부 원문도 확인하지 못했다. 신뢰도 낮음."
+ },
+ {
+  "id": "E05d",
+  "사건": "일본 러시아산 석탄 수입 금지 방침 발표 (기시다 총리)",
+  "일자": "2022-04-08",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "S&P Global",
+    "url": "https://www.spglobal.com/energy/en/news-research/latest-news/crude-oil/040822-japan-to-phase-out-russian-coal-imports-with-eye-to-suspend-it-on-g7-pledge-minister"
+   },
+   {
+    "이름": "Jakarta Post",
+    "url": "https://newgelora.thejakartapost.com/business/2022/04/08/japan-prime-minister-announces-ban-on-russian-coal"
+   }
+  ],
+  "비고": "단계적으로 줄이는 방식이며 기한은 공개되지 않았다. 일부 보도는 04-22 전면 금지로 서술했으나 확인하지 못했다."
+ },
+ {
+  "id": "E05e",
+  "사건": "일본 러시아산 석탄 수입 금지 시행일",
+  "일자": "확인필요",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [],
+  "비고": "시행일을 확인하지 못했다. 검색에서 8월 시행을 뒷받침하는 출처가 없었다."
+ },
+ {
+  "id": "E05f",
+  "사건": "EU 5차 제재 패키지 러시아산 석탄 금수 채택 (대사 합의는 04-07)",
+  "일자": "2022-04-08",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "West P&I",
+    "url": "https://www.westpandi.com/publications/news/april-2022/ukraine-conflict-eu-adopts-further-sanctions-again/"
+   },
+   {
+    "이름": "TimesLIVE (04-07 대사 합의 보도)",
+    "url": "https://www.timeslive.co.za/news/world/2022-04-07-eus-full-ban-on-russian-coal-to-be-pushed-back-to-mid-august/"
+   }
+  ],
+  "비고": "최초 보도일은 2022-04-07(EU 대사 합의, 8월 중순 시행 예정 보도), 공식 채택은 04-08이다. 규정 2022/576 기준이다."
+ },
+ {
+  "id": "E05g",
+  "사건": "EU 러시아산 석탄 금수 시행 (전환기간 종료)",
+  "일자": "2022-08-10",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "West P&I",
+    "url": "https://www.westpandi.com/News-and-Resources/Notice-To-Members/2022-2023/No-8-2022-2023-EU-clarifies-sanctions-on-Russian-c/"
+   },
+   {
+    "이름": "BOFIT",
+    "url": "https://www.bofit.fi/en/monitoring/weekly/2022/vw202235_4/"
+   }
+  ],
+  "비고": "04-09 이전 체결 계약의 전환 예외가 08-10까지였다. BOFIT는 08-10 발효로 적었다. 08-11부터 전면 적용된다는 통상 설명은 이번 검색에서 확인하지 못했다."
+ },
+ {
+  "id": "E06a",
+  "사건": "중국 NDRC 호주산 석탄 수입 일부 재개 허용 (국영 4개사) 보도",
+  "일자": "2023-01-04",
+  "일자구분": "최초보도",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Malay Mail (2023-01-04)",
+    "url": "https://www.malaymail.com/news/money/2023/01/04/china-allows-four-firms-to-resume-aussie-coal-imports/48434"
+   },
+   {
+    "이름": "Mining.com",
+    "url": "https://www.mining.com/web/china-allows-four-firms-to-resume-aussie-coal-imports-sources/"
+   }
+  ],
+  "비고": "NDRC 회의는 2023-01-03(화)로 판단된다. 보도 날짜에서 추론했다. 의뢰의 2022-12 보도는 확인하지 못했고 2022-12에 외교장관 회담이 있었다는 내용만 확인했다. 방향은 일반적 해석이며 가격 데이터로 검증하지 않았다."
+ },
+ {
+  "id": "E06b",
+  "사건": "중국 호주산 석탄 수입 전면 허용 보도",
+  "일자": "2023-03-14",
+  "일자구분": "최초보도",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Mining.com",
+    "url": "https://www.mining.com/web/china-removes-all-remaining-curbs-on-australian-coal-imports/"
+   }
+  ],
+  "비고": "Bloomberg 보도 기준이다. 중국 정부의 공식 발표일은 확인하지 못했다(확인필요). 첫 호주산 선박 도착은 2023-02 초순으로 보도되었다."
+ },
+ {
+  "id": "E07a",
+  "사건": "중국 석탄 가동일수 276일 제한 (통지 보도)",
+  "일자": "2016-04-18",
+  "일자구분": "최초보도",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Mining.com (2016-04-18)",
+    "url": "https://www.mining.com/chinese-coal-miners-work-less-hours-year-bid-reduce-supply-glut/"
+   },
+   {
+    "이름": "RBA 통화정책 보고서 2016-11",
+    "url": "https://www.rba.gov.au/publications/smp/2016/nov/box-a-production-of-iron-ore-and-coal-in-china.html"
+   }
+  ],
+  "비고": "국무원이 2016-02에 330일에서 276일로 줄이도록 지시했다(RBA). 02월 정확한 일자는 확인필요. 시행일(04-01 여부)은 확인하지 못했다. 산시성은 2016-04에 먼저 시행했다."
+ },
+ {
+  "id": "E07b",
+  "사건": "중국 NDRC 276일 제한 완화 (330일 허용)",
+  "일자": "2016-11-17",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "Caixin (2016-11-18)",
+    "url": "https://www.caixinglobal.com/2016-11-18/mining-restrictions-eased-to-prevent-winter-coal-price-surge-101009092.html"
+   },
+   {
+    "이름": "Mining.com",
+    "url": "https://mining.com/china-relaxes-coal-mining-restrictions-as-supply-tightens/"
+   }
+  ],
+  "비고": "Caixin이 목요일 발표라고 적었다. 11-18자 기사이므로 11-17로 판단한다. 안전기준 충족 광산에 한해 난방철 종료(3월)까지 적용되었다."
+ },
+ {
+  "id": "E08a",
+  "사건": "퀸즐랜드 홍수 - Macarthur Coal 불가항력 선언",
+  "일자": "2010-12-03",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Mining Monthly",
+    "url": "https://miningmonthly.com/markets/international-coal-news/1304572/macarthur-declares-force-majeure"
+   },
+   {
+    "이름": "Petromindo",
+    "url": "https://www.petromindo.com/news/article/regional-coal-macarthur-coal-lifts-force-majeure"
+   }
+  ],
+  "비고": "Bowen Basin 폭우에 따른 첫 불가항력 선언으로 확인된 사례다. 해제는 2011-04-28. 이 일자는 홍수 전체의 시작일이 아니다. 대규모 홍수와 BHP·Rio·Peabody·Vale 불가항력은 2010-12 말~2011-01이며 각사 선언일은 확인하지 못했다."
+ },
+ {
+  "id": "E08b",
+  "사건": "퀸즐랜드 홍수 - 석탄 2년 최고가 보도",
+  "일자": "2011-01-04",
+  "일자구분": "최초보도",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Bloomberg (2011-01-04)",
+    "url": "https://www.bloomberg.com/news/articles/2011-01-04/coal-rises-to-2-year-high-after-floods-in-australia-correct-"
+   },
+   {
+    "이름": "Yale Global (2011-01-14)",
+    "url": "https://archive-yaleglobal.yale.edu/content/floods-hit-key-coal-area"
+   }
+  ],
+  "비고": "시장 가격 반응 보도일이다. 불가항력 선언 기업 5곳(Macarthur, Peabody, Rio Tinto, BHP, Vale)은 2011-01 중순 보도에서 확인했다."
+ },
+ {
+  "id": "E08c",
+  "사건": "후쿠시마 원전 사고 (도호쿠 지진)",
+  "일자": "2011-03-11",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "S&P Global",
+    "url": "https://www.spglobal.com/commodity-insights/en/news-research/blog/coal/040617-cyclone-debbie-fuels-strongest-rally-in-newcastle-thermal-coal-prices-since-yasi-in-2011"
+   },
+   {
+    "이름": "HFW 상품 브리프 2011-03",
+    "url": "https://HFW.COM/downloads/Client Brief - Commodites Japan [A4 4pp] March 2011.pdf"
+   }
+  ],
+  "비고": "일자는 S&P 본문 기준이다. 석탄 가격에 대한 영향은 분석가의 해석이며 정량 확인은 못했다."
+ },
+ {
+  "id": "E09a",
+  "사건": "미국·이스라엘의 이란 공격으로 전쟁 시작",
+  "일자": "2026-02-28",
+  "일자구분": "시행",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Standard Media (AFP)",
+    "url": "https://www.standardmedia.co.ke/amp/world/article/2001556590/us-strikes-iran-for-first-time-in-a-month"
+   }
+  ],
+  "비고": "혁명수비대는 03-01 호르무즈 해협 통항 불허를 경고했다."
+ },
+ {
+  "id": "E09b",
+  "사건": "카타르에너지 라스라판 LNG 생산 중단",
+  "일자": "2026-03-02",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "PGJ Online",
+    "url": "https://pgjonline.com/news/2026/march/qatarenergy-halts-lng-output-declares-force-majeure-after-facility-attacks"
+   },
+   {
+    "이름": "ShareCafe (2026-03-04)",
+    "url": "https://www.sharecafe.com.au/2026/03/04/coal-prices-soar-amid-qatar-lng-shutdown/"
+   }
+  ],
+  "비고": "카타르에너지 성명 기준이다. 최초 보도 일자가 03-02보다 빠른지는 확인하지 못했다. 뉴캐슬 선물은 연속 8.6%, 7.3% 상승해 135달러(USD/t)를 기록했다."
+ },
+ {
+  "id": "E09c",
+  "사건": "카타르에너지 LNG 불가항력 선언",
+  "일자": "2026-03-04",
+  "일자구분": "공식발표",
+  "방향": "상승",
+  "출처": [
+   {
+    "이름": "Gulf News",
+    "url": "https://gulfnews.com/business/markets/qatarenergy-declares-force-majeure-after-lng-production-halt-1.500463379"
+   },
+   {
+    "이름": "Al Jazeera (03-24 일부 장기계약 확대)",
+    "url": "https://www.aljazeera.com/news/2026/3/24/qatarenergy-declares-force-majeure-on-some-lng-contracts"
+   }
+  ],
+  "비고": "03-04 성명으로 보도되었다. Shell 불가항력은 03-11 보도다."
+ },
+ {
+  "id": "E10a",
+  "사건": "중국 석탄 수입관세 부활 발표 (국무원 관세세칙위원회)",
+  "일자": "2023-12-28",
+  "일자구분": "공식발표",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "SXCoal",
+    "url": "https://en.sxcoal.com/news/detail/1740642759593840641"
+   },
+   {
+    "이름": "Mysteel",
+    "url": "https://www.mysteel.net/news/5046322-china-to-reinstate-coal-import-duties-from-jan-2024"
+   }
+  ],
+  "비고": "한 분석(SMM·Hellenic Shipping News)은 발표일을 2023-12-20으로 적어 출처 간 차이가 있다. 호주·ASEAN은 0% 유지. MFN 3%(무연탄·제철용탄·갈탄)와 6%(그 밖의 석탄)다. 러시아·몽골산이 0%에서 인상된다. 가격 방향은 해석이며 검증하지 않았다."
+ },
+ {
+  "id": "E10b",
+  "사건": "중국 석탄 수입관세 부활 시행",
+  "일자": "2024-01-01",
+  "일자구분": "시행",
+  "방향": "하락",
+  "출처": [
+   {
+    "이름": "SXCoal",
+    "url": "https://en.sxcoal.com/news/detail/1740642759593840641"
+   }
+  ],
+  "비고": "2022-05-01부터 적용된 무관세가 종료되었다. 방향은 해석이며 검증하지 않았다."
+ },
+ {
+  "id": "E10c",
+  "사건": "인도네시아 HBA 산정 방식 변경 및 해외 판매 HBA 가격 의무화 시행",
+  "일자": "2023-03-01",
+  "일자구분": "시행",
+  "방향": "확인필요",
+  "출처": [
+   {
+    "이름": "ESDM",
+    "url": "https://esdm.go.id/en/media-center/news-archives/ini-harga-batubara-acuan-bulan-maret-2023"
+   },
+   {
+    "이름": "Hellenic Shipping News",
+    "url": "https://www.hellenicshippingnews.com/?p=1078934"
+   }
+  ],
+  "비고": "장관령 41.K/MB.01/MEM.B/2023 기준이다. 전월 70%, 전전월 30% 실현가 가중 방식으로 바뀌었다. 공포일은 확인하지 못했다. 방향은 판단 근거가 없어 확인필요로 둔다."
+ }
+]

@@ -1,0 +1,1857 @@
+[
+ {
+  "월": "2010-02",
+  "이슈": [
+   {
+    "요약": "춘절과 따뜻한 날씨로 중국 수요가 줄었다는 보도가 있으나 연도·출처 확인필요.",
+    "시점": "2010-02",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Coal Age",
+      "url": "https://www.coalage.com/world-news/newcastles-exports-to-china-decrease/"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2010-07",
+  "이슈": [],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "메모": "근거 없음. 검색에서 2010년 7월 석탄 시황을 다룬 출처를 찾지 못했다. 러시아 폭염·곡물 수출 금지(2010-08-05)는 해당 월 이후이고 석탄과의 연결 출처도 없다."
+ },
+ {
+  "월": "2011-01",
+  "이슈": [
+   {
+    "요약": "퀸즐랜드 대홍수로 호주 탄광 46곳이 침수되거나 철도 차질을 겪었다(수출량의 55%, 이 중 열탄 비중은 27%).",
+    "시점": "2010-12~2011-01",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Northern Miner (Wood Mackenzie 추정)",
+      "url": "https://northernminer.com/news/wood-mackenzie-estimates-damage-of-australian-floods/1000399768"
+     },
+     {
+      "이름": "Gulf News",
+      "url": "https://gulfnews.com/business/markets/australian-floods-likely-to-spurcoal-prices-1.750202"
+     }
+    ]
+   },
+   {
+    "요약": "Dalrymple Bay 등 항만 재고가 평소보다 크게 낮았다(Dalrymple Bay 야드 재고 약 40만 t, 평시 120만 t).",
+    "시점": "2011-01",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Northern Miner (ANZ 인용)",
+      "url": "https://northernminer.com/news/wood-mackenzie-estimates-damage-of-australian-floods/1000399768"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "높음"
+ },
+ {
+  "월": "2011-03",
+  "이슈": [
+   {
+    "요약": "3월 11일 일본 대지진과 후쿠시마 사고로 원전을 대체할 석탄 발전 수요 증가가 예상됐다(Deutsche Bank 추정 최대 100만 톤 추가).",
+    "시점": "2011-03-11",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Gulf News Thermal coal poised to beat oil, gas after quake",
+      "url": "https://gulfnews.com/business/energy/thermal-coal-poised-to-beat-oil-gas-after-quake-1.798177"
+     },
+     {
+      "이름": "Energy Risk Coal prices rise on back of Japanese disaster and Queensland flooding",
+      "url": "https://www.energyrisk.com/node/7951630"
+     }
+    ]
+   },
+   {
+    "요약": "퀸즐랜드 홍수와 사이클론 Yasi로 1~3월 수출이 약 1,500만 톤 지연됐고, 3월 분기 퀸즐랜드 열탄 수출액이 39% 감소했다.",
+    "시점": "2011-01~2011-03",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "ABS International Trade in Goods and Services Mar 2011",
+      "url": "https://www.abs.gov.au/ausstats/abs@.nsf/Products/5368.0~Mar+2011~Main+Features~Impact+of+natural+disasters"
+     },
+     {
+      "이름": "Dry Cargo Asian coal trade 2011",
+      "url": "https://drycargomag.com/asian-coal-trade-2011"
+     }
+    ]
+   },
+   {
+    "요약": "쓰나미로 일본 동북부 석탄 터미널 4곳(Hachinohe, Kashima, Ishinomaki, Onahama)이 수개월 폐쇄될 것으로 예상돼 단기 수입이 줄 수 있다.",
+    "시점": "2011-03",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Dry Cargo Asian coal trade 2011",
+      "url": "https://drycargomag.com/asian-coal-trade-2011"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2011-07",
+  "이슈": [
+   {
+    "요약": "일본 대지진 여파로 일본·중국 바이어가 9월 겨울 구매 전까지 시장 밖에 있을 것으로 전망됐다",
+    "시점": "2011-06~07",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Business Recorder",
+      "url": "https://www.brecorder.com/news/18833"
+     }
+    ]
+   },
+   {
+    "요약": "일본 연간 계약 협상이 기존보다 높은 수준(125~128달러)으로 전망돼 시장이 빡빡해질 신호로 해석됐다",
+    "시점": "2011-06~07",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "World Finance",
+      "url": "https://www.worldfinance.com/?p=1858"
+     },
+     {
+      "이름": "Business Recorder",
+      "url": "https://www.brecorder.com/news/18833"
+     }
+    ]
+   },
+   {
+    "요약": "헌터밸리 우천으로 추가 공급이 흡수되고 매도자가 할인을 꺼렸다",
+    "시점": "2011-06~07",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Business Recorder",
+      "url": "https://www.brecorder.com/news/18833"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2013-01",
+  "이슈": [
+   {
+    "요약": "중국 수입 수요가 2013년에 회복될 것으로 전망됐으나 바이어는 대량 계약을 미뤘다(날짜는 12월 추정, 확인필요)",
+    "시점": "2012-12~2013-01",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "PortNews",
+      "url": "https://en.portnews.ru/news/133088"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "비고": "중국 NDRC의 석탄 가격 통제 해제(2013-01-01)는 방향 확인필요로 제외"
+ },
+ {
+  "월": "2013-09",
+  "이슈": [],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "비고": "근거 없음. 9월 시점의 구체 이슈를 확인하지 못했다. 검색에서는 아시아 수요 증가와 가격 약세 압력을 다룬 연간 단위 자료(KPMG 2013년 2~3분기)만 나왔다."
+ },
+ {
+  "월": "2014-01",
+  "이슈": [],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "비고": "근거 없음: 해당 월 직접 출처를 찾지 못함"
+ },
+ {
+  "월": "2014-06",
+  "이슈": [],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "메모": "근거 없음. 검색에서 2014년 6월 시황 출처를 찾지 못했다. 중국 수입 관세 재도입은 2014-10 발표로 해당 월 이후라 제외했다."
+ },
+ {
+  "월": "2015-07",
+  "이슈": [
+   {
+    "요약": "중국 7월 석탄 판매가 전년 대비 4.9% 감소하는 등 소비가 부진했고, 1~7월 수입이 전년 대비 34.4% 감소",
+    "시점": "2015-07",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "IEEFA",
+      "url": "https://ieefa.org/in-chinas-turmoil-further-declines-for-coal/"
+     }
+    ]
+   },
+   {
+    "요약": "공급 과잉이 이어졌고 take-or-pay 운임 계약 때문에 적자 광산도 가동을 지속(시점 확인필요)",
+    "시점": "2015 상반기",
+    "요인": "공급",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie 인용 Mining Weekly",
+      "url": "https://www.miningweekly.com/article/australian-coal-miners-ahead-in-2015---woodmack-2015-02-09"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2015-08",
+  "이슈": [
+   {
+    "요약": "중국 석탄 수입이 1~7월 전년 대비 34.4% 감소했고 7월 감소폭은 9%로 축소됐다.",
+    "시점": "2015-07~08",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "IEEFA",
+      "url": "https://ieefa.org/in-chinas-turmoil-further-declines-for-coal/"
+     }
+    ]
+   },
+   {
+    "요약": "중국 제조업 수요 부진과 위안화 절하, 증시 급락으로 석탄 소비가 약했다.",
+    "시점": "2015-08",
+    "요인": "거시·환율",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "IEEFA",
+      "url": "https://ieefa.org/in-chinas-turmoil-further-declines-for-coal/"
+     }
+    ]
+   },
+   {
+    "요약": "UBS는 2015년 해상 열탄 수요가 연 9억 톤으로 정점(약 10억 톤) 대비 감소했다고 추정했다.",
+    "시점": "2015",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "IEEFA(UBS 인용)",
+      "url": "https://ieefa.org/thermal-coal-hits-a-new-low-where-does-the-market-go-from-here"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2016-04",
+  "이슈": [
+   {
+    "요약": "중국이 4월부터 석탄 광산 연간 조업일수를 330일에서 276일로 제한해 국내 생산이 줄었다",
+    "시점": "2016-04",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-chinas-276-working-days-policy-a-short-term-boost-for-the-coal-market-40348069/"
+     },
+     {
+      "이름": "IEEFA",
+      "url": "https://ieefa.org/resources/ieefa-china-why-rally-coal-prices-unsustainable"
+     }
+    ]
+   },
+   {
+    "요약": "중국 내 생산 감소로 중국 바이어가 수입으로 돌아설 것으로 전망됐다",
+    "시점": "2016-04",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "MacroBusiness",
+      "url": "https://www.macrobusiness.com.au/2016/06/is-thermal-coal-past-the-bottom/"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2016-05",
+  "이슈": [
+   {
+    "요약": "중국이 4월부터 탄광 연간 가동일수를 330일에서 276일로 줄여 내수 공급이 감소했고, 이후 수입탄 구매가 늘었다는 분석이 있다.",
+    "시점": "2016-04",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Reserve Bank of Australia SMP Nov 2016 Box A",
+      "url": "https://www.rba.gov.au/publications/smp/2016/nov/box-a-production-of-iron-ore-and-coal-in-china.html"
+     },
+     {
+      "이름": "Wood Mackenzie 276 working days policy",
+      "url": "https://www.woodmac.com/reports/coal-chinas-276-working-days-policy-a-short-term-boost-for-the-coal-market-40348069/"
+     },
+     {
+      "이름": "IFRI Steam coal market 2016 supply shock",
+      "url": "https://www.ifri.org/en/publications/notes-de-lifri/steam-coal-market-2016-supply-shock"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2016-07",
+  "이슈": [
+   {
+    "요약": "276일 조업 제한과 감산 정책으로 중국 6월 석탄 생산이 전년 대비 약 17% 감소하고 상반기 생산이 9.7% 줄었다",
+    "시점": "2016-04~07",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Alamtri(Adaro) 뉴스",
+      "url": "https://www.alamtri.com/news/read/638/Thermal_coal_price_hits_10_month_high_as_Chinese_buyers_snap_up_cargoes"
+     },
+     {
+      "이름": "Bloomberg",
+      "url": "https://www.bloomberg.com/news/articles/2016-09-21/china-coal-control-jolts-global-markets-from-steel-to-freight"
+     }
+    ]
+   },
+   {
+    "요약": "성 정부가 7월 15일까지 설비 감축 목표를 정하도록 NDRC가 지시하고 미이행 시 엄벌을 예고",
+    "시점": "2016-07",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "The Wire (FIIG)",
+      "url": "https://thewire.fiig.com.au/article/2016/07/14/the-outlook-for-thermal-coal-is-improving"
+     }
+    ]
+   },
+   {
+    "요약": "국내 공급 감소를 메우려 중국 구매자가 해상 수입 시장에 나선다는 분석(Morgan Stanley, Citi)",
+    "시점": "2016-07",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Alamtri(Adaro) 뉴스",
+      "url": "https://www.alamtri.com/news/read/638/Thermal_coal_price_hits_10_month_high_as_Chinese_buyers_snap_up_cargoes"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2016-10",
+  "이슈": [
+   {
+    "요약": "276일 조업 제한(4월 시행)의 영향이 이어져 1~10월 중국 석탄 생산이 전년 대비 11% 감소",
+    "시점": "2016-04~10",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Mining.com",
+      "url": "https://www.mining.com/?p=876754"
+     },
+     {
+      "이름": "RBA Statement on Monetary Policy Nov 2016",
+      "url": "https://www.rba.gov.au/publications/smp/2016/nov/box-a-production-of-iron-ore-and-coal-in-china.html"
+     }
+    ]
+   },
+   {
+    "요약": "9월부터 조건을 충족한 광산에 276~330일 조업을 허용해 월 생산이 증가세(조업일 제한 전면 해제 발표는 11월 17일로 대상 시점 밖)",
+    "시점": "2016-09~10",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Caixin",
+      "url": "https://www.caixinglobal.com/2016-11-18/mining-restrictions-eased-to-prevent-winter-coal-price-surge-101009092.html"
+     },
+     {
+      "이름": "Alamtri(Adaro) 뉴스",
+      "url": "https://www.alamtri.com/news/read/634/China_s_June_coal_output_falls_17_on_year_to_277.54_million_mt"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2016-11",
+  "이슈": [
+   {
+    "요약": "중국의 조업일수 제한(330일에서 276일)에 안전 점검 폐쇄와 날씨 영향이 겹쳐 국내 공급이 줄었다",
+    "시점": "2016-04~11",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Mining.com",
+      "url": "https://mining.com/chart-no-stopping-insane-coal-price-rally/"
+     },
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-why-have-thermal-coal-prices-spiked-22546"
+     }
+    ]
+   },
+   {
+    "요약": "9월 수력 발전이 부진해 중국 석탄발전 가동이 늘었다",
+    "시점": "2016-09",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/energy/en/news-research/blog/coal/111116-revival-in-chinas-thermal-coal-market-fueled-by-flagging-hydropower-generation"
+     }
+    ]
+   },
+   {
+    "요약": "중국 해상 수입이 10월 월간 기준 최대 수준이었다",
+    "시점": "2016-10",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Global Mining Review",
+      "url": "https://www.globalminingreview.com/magazine/world-coal/november-2016/editorial-comment/"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2016-12",
+  "이슈": [
+   {
+    "요약": "NDRC가 276일 조업일 제한을 일부 생산업체에 한해 완화해 조업일을 임시로 늘리는 방안을 시사했다.",
+    "시점": "2016-11~12",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "RBA SMP Nov 2016 Box A",
+      "url": "https://www.rba.gov.au/publications/smp/2016/nov/box-a-production-of-iron-ore-and-coal-in-china.html"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음",
+  "비고": "276일 제한은 2016-04 부터 시행 중이라 해당 월의 새 이슈가 아니다. 12월 시점의 구체 사건은 확인필요."
+ },
+ {
+  "월": "2017-08",
+  "이슈": [
+   {
+    "요약": "중국 정부가 석탄 광산 안전 점검과 소규모 광산 정리를 계속했다(1~7월 행정처분 3,967건). 시장 영향은 확인필요.",
+    "시점": "2017-07~08",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Xinhua(중국 정부 영문 사이트)",
+      "url": "https://english.www.gov.cn/state_council/ministries/2017/08/05/content_281475772393582.htm"
+     },
+     {
+      "이름": "China Daily",
+      "url": "https://www.chinadaily.com.cn/china/2017-07/28/content_30277298.htm"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2017-10",
+  "이슈": [
+   {
+    "요약": "중국 일부 항만의 수입 제한과 NDRC의 동절기 석탄 가격 급변동 억제 방침으로 중국 바이어가 관망했다.",
+    "시점": "2017-09~10",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 시황 리포트(Platts 인용)",
+      "url": "https://pvpower.vn/pow-media/uploads/2017/10/10-10-17-pv-power-eng.pdf"
+     }
+    ]
+   },
+   {
+    "요약": "국경절 연휴, 광산 안전 점검, 10월 중순 당대회로 중국 내 석탄 생산이 제약될 것으로 전망됐다.",
+    "시점": "2017-10",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 시황 리포트(Platts 인용)",
+      "url": "https://pvpower.vn/pow-media/uploads/2017/10/05-10-17-pv-power-eng.pdf"
+     }
+    ]
+   },
+   {
+    "요약": "중국 내수 가격이 높아 호주·인도네시아산 해상탄 구매가 늘었다.",
+    "시점": "2017-10",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 시황 리포트(Platts 인용)",
+      "url": "https://pvpower.vn/pow-media/uploads/2017/10/10-10-17-pv-power-eng.pdf"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2017-11",
+  "이슈": [
+   {
+    "요약": "NDRC가 발전소·항만 재고 증가와 생산 확대를 이유로 겨울철 석탄 공급이 안정적이라고 발표했다.",
+    "시점": "2017-11-17",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "China Daily",
+      "url": "https://global.chinadaily.com.cn/a/201710/17/WS5a0c0885a31061a738406621.html"
+     },
+     {
+      "이름": "Alamtri (Reuters 인용)",
+      "url": "https://www.alamtri.com/news/read/1326/China_underscores_push_toward_longer_term_coal_contracts"
+     }
+    ]
+   },
+   {
+    "요약": "NDRC가 중장기 계약 비중 확대(목표 75%)를 재차 요구해 현물 거래 부담을 줄이려 했다.",
+    "시점": "2017-11-29",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Alamtri (Reuters 인용)",
+      "url": "https://www.alamtri.com/news/read/1326/China_underscores_push_toward_longer_term_coal_contracts"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2018-09",
+  "이슈": [
+   {
+    "요약": "중국 NDRC가 구두로 세관에 수입탄 통관 제한을 지시했다고 알려져 9월 호주산 열탄 수요가 약해졌고, 일부 수입업체가 3분기 말에 수입 쿼터를 소진",
+    "시점": "2018-09",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Coal Age",
+      "url": "https://www.coalage.com/?p=14584"
+     },
+     {
+      "이름": "S&P Global Platts",
+      "url": "https://www.spglobal.com/energy/en/news-research/blog/coal/102618-near-term-seaborne-thermal-coal-market-in-limbo-as-china-plays-its-cards"
+     }
+    ]
+   },
+   {
+    "요약": "태풍 망쿳으로 광저우항 하역이 차질을 빚었고, 친황다오가 환경 캠페인으로 하역을 일시 제한",
+    "시점": "2018-09",
+    "요인": "기상",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Adaro 뉴스 모음",
+      "url": "https://adaro.com/news/read/1536/require.js"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2018-12",
+  "이슈": [
+   {
+    "요약": "중국이 트레이더 화물은 발전사 직판일 때만 통관하고 지정 지역 밖 통관을 막는 등 전 항구 수입 중단 조치를 시도",
+    "시점": "2018-11~12",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Argus",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2014342-china-seeks-to-suspend-coal-imports-at-all-ports"
+     }
+    ]
+   },
+   {
+    "요약": "중국 구매자가 12월 인도분 화물을 취소하거나 연기(원문 URL 날짜는 2019년이나 내용은 2018년 말로 보임)",
+    "시점": "2018-12",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Cyprus Shipping News",
+      "url": "https://cyprusshippingnews.com/2019/11/21/chinese-seaborne-thermal-coal-deals-being-canceled-delayed-amid-import-curb/"
+     }
+    ]
+   },
+   {
+    "요약": "1월 1일부터 중국 수요자 수입 쿼터가 갱신될 수 있어 연초 재구매 기대가 있었다",
+    "시점": "2018-11",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "PetroVietnam Power 일일 보고",
+      "url": "https://pvpower.vn/pow-media/uploads/2018/11/5-11-18-pv-power-eng.pdf"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2019-03",
+  "이슈": [
+   {
+    "요약": "중국 다롄 세관이 호주산 석탄 수입을 막고 2019년 총 수입 한도를 1,200만 톤으로 제한했다고 보도됐다(익명 관계자 단일 출처, 중국·호주 정부는 부인 또는 점검이라 설명).",
+    "시점": "2019-02~03",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Reuters(Yahoo News 전재)",
+      "url": "https://news.yahoo.com/exclusive-chinas-dalian-port-bans-053107856.html"
+     },
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://woodmac.com/press-releases/china-restricts-seaborne-coal-imports"
+     }
+    ]
+   },
+   {
+    "요약": "북동부 항만의 호주산 석탄 통관 기간이 40일에서 2개월로 늘었다.",
+    "시점": "2019-02~03",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://woodmac.com/press-releases/china-restricts-seaborne-coal-imports"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2019-06",
+  "이슈": [
+   {
+    "요약": "아시아 시장에서 공급 과잉이 이어졌고 구매자 대부분이 재고를 충분히 확보해 구매 관심이 약했다(과잉 약 1,900만 t).",
+    "시점": "2019-05~06",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Dry Cargo Magazine (Perret Associates)",
+      "url": "https://www.drycargomag.com/global-thermal-coal-markets-bottom-out-as-supply-contracts"
+     },
+     {
+      "이름": "Petromindo SGX Daily Update",
+      "url": "https://www.petromindo.com/news/article/sgx-m42f-thermal-coal-daily-update-19-june-2019"
+     }
+    ]
+   },
+   {
+    "요약": "중국이 연초에 호주산 수입을 제한해 호주 물량이 다른 아시아 시장으로 몰렸다.",
+    "시점": "2019 상반기",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Argus",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/1959192-asian-coal-market-oversupply-to-continue"
+     }
+    ]
+   },
+   {
+    "요약": "칼리만탄 홍수로 일부 인도네시아 물량에 불가항력이 선언돼 트레이더가 대체 물량을 찾았다.",
+    "시점": "2019-06",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Petromindo SGX Daily Update",
+      "url": "https://www.petromindo.com/news/article/sgx-m42f-thermal-coal-daily-update-10-june-2019"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2019-11",
+  "이슈": [
+   {
+    "요약": "중국이 수입 석탄에 통관 제한을 적용해 중국 구매자가 계약을 취소하거나 인도를 12월 말로 연기했다.",
+    "시점": "2019-11",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Cyprus Shipping News (Argus 인용)",
+      "url": "https://cyprusshippingnews.com/2019/11/21/chinese-seaborne-thermal-coal-deals-being-canceled-delayed-amid-import-curb/"
+     },
+     {
+      "이름": "Mining.com",
+      "url": "https://www.mining.com/web/australian-coal-exports-to-china-slump-but-prices-are-mixed/"
+     }
+    ]
+   },
+   {
+    "요약": "중국의 호주산 수입이 전년 대비 31% 감소하고 러시아산이 81% 증가해 호주산 수요가 줄었다.",
+    "시점": "2019-11",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Mining.com (Bloomberg 인용)",
+      "url": "https://www.mining.com/web/australian-coal-exports-to-china-slump-but-prices-are-mixed/"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2020-02",
+  "이슈": [
+   {
+    "요약": "코로나19 방역으로 중국의 춘절 연장과 이동 제한이 이어져 2월 석탄 수요가 크게 줄 것으로 전망됐다.",
+    "시점": "2020-01-31~02",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Engineering News (Wood Mackenzie 인용)",
+      "url": "https://www.engineeringnews.co.za/article/fallout-from-coronavirus-expected-to-have-a-ripple-effect-on-coal-iron-ore-2020-01-31"
+     },
+     {
+      "이름": "Wood Mackenzie China Coal Outlook Feb 2020",
+      "url": "https://woodmac.com/reports/coal-china-coal-short-term-outlook-february-2020-price-support-from-tight-supply-is-fading-391715"
+     }
+    ]
+   },
+   {
+    "요약": "인도네시아 생산업체에 선적 연기 요청이 있었다는 보도가 나왔다(영향은 제한적이라는 평가).",
+    "시점": "2020-02",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Engineering News (Wood Mackenzie 인용)",
+      "url": "https://www.engineeringnews.co.za/article/fallout-from-coronavirus-expected-to-have-a-ripple-effect-on-coal-iron-ore-2020-01-31"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2020-05",
+  "이슈": [
+   {
+    "요약": "코로나19로 전력 수요가 줄어 열탄 수요가 약했고, 해상 시장이 약 4,000만 톤 공급 과잉이라는 평가가 나왔다.",
+    "시점": "2020-04~2020-05",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "IEEFA COVID-19 is giving the thermal coal sector a look at its long term future",
+      "url": "https://ieefa.org/ieefa-update-covid-19-is-giving-the-thermal-coal-sector-a-look-at-its-long-term-future/"
+     },
+     {
+      "이름": "Argus Seaborne coal market oversupplied by 40mn t: Noble",
+      "url": "https://argusmedia.com/en/news/2098599-seaborne-coal-market-oversupplied-by-40mn-t-noble"
+     }
+    ]
+   },
+   {
+    "요약": "중국 NDRC가 국유 발전사 5곳에 5월 15일부터 호주산 열탄 신규 구매 중단을 구두 지시했다는 소문이 돌았다. Wood Mackenzie는 시장 영향이 제한적일 것으로 봤다.",
+    "시점": "2020-05-15",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie What does China's thermal coal import restriction mean for Australian producers",
+      "url": "https://www.woodmac.com/zh/press-releases/what-does-chinas-thermal-coal-import-restriction-mean-for-australian-producers/"
+     },
+     {
+      "이름": "Argus China delays import licences for Australian coal",
+      "url": "https://argusmedia.com/en/news/2131593-china-delays-import-licences-for-australian-coal"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2020-08",
+  "이슈": [
+   {
+    "요약": "중국 상무부가 호주산 석탄 수입 허가 발급을 지연했고(발급 11일 소요), 일부 수입업체는 연간 쿼터를 거의 소진했다. 중국 수요 약세로 열탄 영향은 제한적이라는 평가다.",
+    "시점": "2020-08-12",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Argus China delays import licences for Australian coal",
+      "url": "https://argusmedia.com/en/news/2131593-china-delays-import-licences-for-australian-coal"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2020-12",
+  "이슈": [
+   {
+    "요약": "중국의 이례적 한파와 산시(山西)·산시(陝西)·내몽골 탄광 사고로 내수 공급이 부족해졌고, 12월 3일 일일 가격지수 발표가 중단되며 후난·저장에서 전력 제한이 시작됐다.",
+    "시점": "2020-12",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Splash247 No signs of thawing in coal ties as China suffers freezing winter",
+      "url": "https://splash247.com/no-signs-of-thawing-in-coal-ties-as-china-suffers-freezing-winter/"
+     },
+     {
+      "이름": "The Coal Hub World coal market brief overview",
+      "url": "https://thecoalhub.com/?p=6504"
+     }
+    ]
+   },
+   {
+    "요약": "중국이 11월 27일 신규 수입 쿼터를 발급하는 등 수입 규제를 완화해 12월 수입이 크게 늘었다. 다만 호주산은 사실상 배제돼 11~12월 뉴캐슬발 중국행 선적이 없었다.",
+    "시점": "2020-11-27~2020-12",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Bigmint China hikes CY20 thermal coal import quota",
+      "url": "https://bigmint.co/insights/detail/china-hikes-cy20-thermal-coal-import-quota-but-no-cheer-for-australia-sources-195914"
+     },
+     {
+      "이름": "Splash247 No signs of thawing in coal ties",
+      "url": "https://splash247.com/no-signs-of-thawing-in-coal-ties-as-china-suffers-freezing-winter/"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2021-02",
+  "이슈": [
+   {
+    "요약": "북아시아 한파로 급등했던 수요가 2월 들어 완화됐고, 2월 아시아 해상 석탄 수입은 전년 동월보다 15% 적었다.",
+    "시점": "2021-02",
+    "요인": "기상",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Mining.com Asia seaborne coal prices start to retreat, China-Australia dispute lingers",
+      "url": "https://www.mining.com/web/asia-seaborne-coal-prices-start-to-retreat-china-australia-dispute-lingers/"
+     }
+    ]
+   },
+   {
+    "요약": "중국 북동부 항만 5곳이 2월 말 통관 절차를 바꿔 호주산 열탄 수입 금지설이 확산됐다. 호주산 석탄의 중국 수출은 1월에 0이었다.",
+    "시점": "2021-02 말",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie China's thermal coal import restriction could mean a game of musical chairs",
+      "url": "https://www.woodmac.com/news/chinas-thermal-coal-import-restriction-could-mean-a-game-of-musical-chairs-for-producers/"
+     },
+     {
+      "이름": "Argus Deep freeze draws coal back into global power mix",
+      "url": "https://www.argusmedia.com/en/news/2176492-deep-freeze-draws-coal-back-into-global-power-mix"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2021-06",
+  "이슈": [
+   {
+    "요약": "국제 유가 상승과 중국의 경기 회복에 따른 발전 수요 증가가 유연탄 강세 요인으로 설명됐다. 단일 블로그 전재 기사이며 원문 시점은 확인되지 않았다.",
+    "시점": "2021-06",
+    "요인": "가스·유가",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "한국경제 기사 전재 (dmomo 블로그)",
+      "url": "https://blog.ai.dmomo.co.kr/news/4239"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2021-07",
+  "이슈": [
+   {
+    "요약": "여름철 전력 수요, 가스 가격 급등, 원전 가동 중단으로 석탄 발전이 늘었고 공급 대응은 약했다.",
+    "시점": "2021-07",
+    "요인": "가스·유가",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie Thermal coal short-term outlook July 2021",
+      "url": "https://www.woodmac.com/reports/coal-thermal-coal-markets-short-term-outlook-july-2021-515314/"
+     }
+    ]
+   },
+   {
+    "요약": "중국이 증산 승인을 앞당기고 수입 규제를 완화해 내수 탄가를 누르려 한다는 보도가 있으나 확인되지 않았다.",
+    "시점": "2021-07",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie Thermal coal short-term outlook July 2021",
+      "url": "https://www.woodmac.com/reports/coal-thermal-coal-markets-short-term-outlook-july-2021-515314/"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2021-08",
+  "이슈": [
+   {
+    "요약": "중국 내수 증산이 7월부터 지연돼 공급이 빠듯했다",
+    "시점": "2021-07~08",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie 2021년 8월 중국 석탄 단기 전망",
+      "url": "https://www.woodmac.com/reports/coal-china-coal-short-term-outlook-august-2021-524906/"
+     }
+    ]
+   },
+   {
+    "요약": "북반구 여름 폭염 수요와 중국 일부 성의 전력난",
+    "시점": "2021-06~08",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie 2021년 8월 열탄 단기 전망",
+      "url": "https://www.woodmac.com/reports/coal-thermal-coal-markets-short-term-outlook-august-2021-523592"
+     },
+     {
+      "이름": "Quantum Commodity Intelligence",
+      "url": "https://qcintel.com/article/asian-thermal-coal-prices-surge-on-supply-shortages-firm-summer-demand-721.html"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2021-10",
+  "이슈": [
+   {
+    "요약": "중국이 전력난과 석탄 부족에 직면해 산시·내몽골에 연 1.6억 톤 이상 증산을 지시했다.",
+    "시점": "2021-10",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Jakarta Post(Reuters)",
+      "url": "https://www.thejakartapost.com/news/2021/10/08/amid-power-crunch-chinas-top-coal-region-tells-mines-to-boost-output-immediately"
+     },
+     {
+      "이름": "China Daily",
+      "url": "https://govt.chinadaily.com.cn/s/202110/12/WS6164fd11498e6a12c1206940/coal-output-hiked-to-address-power-shortfalls.html"
+     }
+    ]
+   },
+   {
+    "요약": "산시 폭우로 광산 60곳 가동이 중단되고 중국 내 공급 차질이 우려됐다.",
+    "시점": "2021-10 초중순",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Caixin",
+      "url": "https://www.caixinglobal.com/2021-10-12/more-northern-china-regions-hit-by-heavy-rains-risking-coal-supply-101785306.html"
+     },
+     {
+      "이름": "Malay Mail",
+      "url": "https://www.malaymail.com/news/world/2021/10/11/thousands-evacuated-and-coal-mines-shuttered-as-floods-hit-north-china/2012498"
+     }
+    ]
+   },
+   {
+    "요약": "중국 4분기 석탄 수급 갭이 3,000만~4,000만 톤으로 전망되고 공장 전력 수요가 회복세였다.",
+    "시점": "2021-10",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Caixin",
+      "url": "https://www.caixinglobal.com/2021-10-12/more-northern-china-regions-hit-by-heavy-rains-risking-coal-supply-101785306.html"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2021-11",
+  "이슈": [
+   {
+    "요약": "중국 NDRC가 석탄 가격 개입을 예고하고 규제를 강화했다. 11월 말에는 주요 광산업체를 소집해 가격 메커니즘 개선을 논의했다.",
+    "시점": "2021-10 중순~11",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Caixin",
+      "url": "https://www.caixinglobal.com/2021-11-03/chinas-coal-prices-plummet-after-regulators-step-in-101795733.html"
+     },
+     {
+      "이름": "Argus",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2285770-china-imports-record-thermal-coal-volumes-in-2021"
+     }
+    ]
+   },
+   {
+    "요약": "중국 11월 열탄 수입이 전월 대비 20.2% 늘었다(수입 수요 지속). 근거는 Argus 단일 출처.",
+    "시점": "2021-11",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Argus",
+      "url": "https://www.argusmedia.com/en/news-and-insights/latest-market-news/2285770-china-imports-record-thermal-coal-volumes-in-2021"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2022-01",
+  "이슈": [
+   {
+    "요약": "인도네시아가 PLN 재고 부족을 이유로 1월 1일 석탄 수출을 금지했다(해상 열탄 수출의 약 45%).",
+    "시점": "2021-12-31~2022-01",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Fitch 인용 보도(Hellenic Shipping News)",
+      "url": "https://www.hellenicshippingnews.com/?p=911613"
+     },
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/energy/en/news-research/latest-news/coal/012122-spot-thermal-coal-prices-likely-to-spike-as-indonesia-eases-export-ban-sources"
+     }
+    ]
+   },
+   {
+    "요약": "1월 20일경 의무 내수 공급을 이행한 139개 업체에 한해 수출 금지가 완화됐다.",
+    "시점": "2022-01-20",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/energy/en/news-research/latest-news/coal/012122-spot-thermal-coal-prices-likely-to-spike-as-indonesia-eases-export-ban-sources"
+     }
+    ]
+   },
+   {
+    "요약": "완화 후에도 물류 병목과 서류 문제로 인도네시아 선적이 지연됐다.",
+    "시점": "2022-01-25",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/energy/en/news-research/latest-news/coal/012522-indonesias-coal-exports-face-delays-on-logistical-hurdles-despite-eased-ban"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2022-02",
+  "이슈": [
+   {
+    "요약": "러시아의 우크라이나 침공(2월 24일)으로 유럽이 러시아산 석탄·가스에서 다변화하며 대체 수요가 늘었다",
+    "시점": "2022-02-24",
+    "요인": "지정학",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Mining.com(Fitch 인용)",
+      "url": "https://www.mining.com/web/asias-coal-imports-decline-but-ukraine-crisis-will-keep-prices-up/"
+     },
+     {
+      "이름": "Business Recorder(Reuters)",
+      "url": "https://www.brecorder.com/news/40157889/asias-coal-imports-decline-but-ukraine-crisis-will-keep-prices-up-russell"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "높음"
+ },
+ {
+  "월": "2022-03",
+  "이슈": [
+   {
+    "요약": "러시아의 우크라이나 침공과 서방 제재로 러시아산 석탄 거래가 어려워지고 공급 불안이 커졌다",
+    "시점": "2022-02-24~03",
+    "요인": "지정학",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     },
+     {
+      "이름": "Rystad Energy",
+      "url": "https://procurementresource.com/news-and-articles/rystad-energy-predicts-that-coal-prices-will-surpass"
+     }
+    ]
+   },
+   {
+    "요약": "미국이 3월에 러시아산 석탄 수입 금지를 발표했고 EU도 4월에 뒤따랐다",
+    "시점": "2022-03",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "높음"
+ },
+ {
+  "월": "2022-05",
+  "이슈": [
+   {
+    "요약": "호주 동부 홍수로 석탄 생산과 운송이 차질을 빚었고 인력 부족과 코로나 확산도 겹쳤다.",
+    "시점": "2022-04~05",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     },
+     {
+      "이름": "Mining.com",
+      "url": "https://www.mining.com/web/indonesia-australia-face-limits-in-coal-exports-to-europe-ahead-of-russian-ban/"
+     }
+    ]
+   },
+   {
+    "요약": "EU의 러시아 석탄 금수 확정을 앞두고 유럽 구매자가 호주·인도네시아산 대체 물량을 확보했다(EU 석탄 수입의 약 45%가 러시아산).",
+    "시점": "2022-04~05",
+    "요인": "지정학",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "Mining.com",
+      "url": "https://www.mining.com/web/indonesia-australia-face-limits-in-coal-exports-to-europe-ahead-of-russian-ban/"
+     },
+     {
+      "이름": "The Coal Hub",
+      "url": "https://thecoalhub.com/world-coal-market-brief-overview-28/"
+     }
+    ]
+   },
+   {
+    "요약": "북반구 난방 시즌이 끝났고 중국 국내 생산이 늘어 중국 수입 수요가 약해졌다.",
+    "시점": "2022-04~05",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "IEA Coal Market Update July 2022",
+      "url": "https://www.iea.org/reports/coal-market-update-july-2022/prices"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2022-11",
+  "이슈": [
+   {
+    "요약": "유럽 가스 공급 전망이 개선되고 세계 경기 우려가 커져 11월 중순 시장 심리가 약해졌다.",
+    "시점": "2022-11 중순",
+    "요인": "가스·유가",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-global-thermal-short-term-outlook-november-2022-150082605"
+     }
+    ]
+   },
+   {
+    "요약": "북반구 한파와 주요 수출 지역의 공급 차질로 월말 수급이 빠듯해졌다.",
+    "시점": "2022-11 하순",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-global-thermal-short-term-outlook-november-2022-150082605"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2022-12",
+  "이슈": [
+   {
+    "요약": "뉴캐슬 항구로 가는 NSW 공급이 2022년 10~12월 홍수로 차질을 빚었다(BHP 실적 기준, 12월 월별 영향은 확인필요)",
+    "시점": "2022-10~12",
+    "요인": "기상",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Argus(BHP)",
+      "url": "https://www.argusmedia.com/de/news-and-insights/latest-market-news/2528847-bhp-aims-for-top-of-australian-thermal-coal-guidance"
+     }
+    ]
+   },
+   {
+    "요약": "중국이 호주산 석탄 수입 제한을 연말연초에 부분 해제했다(발표 시점은 확인필요)",
+    "시점": "2022-12~2023-01",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Stockhead",
+      "url": "https://stockhead.com.au/resources/bulk-buys-like-a-cat-on-its-ninth-life-can-thermal-coal-bounce-back-yet-again"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2023-02",
+  "이슈": [
+   {
+    "요약": "북반구 겨울이 예상보다 따뜻해 천연가스 가격이 내리고 대서양 석탄 수요가 약했다.",
+    "시점": "2023-01~02",
+    "요인": "가스·유가",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Westpac IQ Commodities Update Feb 2023",
+      "url": "https://www.westpaciq.com.au/economics/2023/02/commodities-update-february-2023/"
+     }
+    ]
+   },
+   {
+    "요약": "EU 가스 가격 상한이 2023-02-15 에 시행됐고 EU 가스 저장률이 80% 이상을 유지했다.",
+    "시점": "2023-02",
+    "요인": "정책",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "The Coal Hub",
+      "url": "https://thecoalhub.com/?p=10217"
+     }
+    ]
+   },
+   {
+    "요약": "중국의 호주산 석탄 비공식 수입 금지가 해제됐다.",
+    "시점": "2023-01~02",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Kitco (Reuters 칼럼)",
+      "url": "https://www.kitco.com/news/off-the-wire/2023-02-13/column-lng-thermal-coal-prices-slip-china-europe-buying-pulls-back"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2023-03",
+  "이슈": [
+   {
+    "요약": "중국 3월 수입이 호주산 제한 해제와 수요 회복 기대로 3년 만에 최고였고 인도네시아 물량도 라마단 전에 선구매됐다",
+    "시점": "2023-03",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Kontan(Reuters)",
+      "url": "https://english.kontan.co.id/news/chinas-march-coal-imports-jump-to-3-year-high"
+     }
+    ]
+   },
+   {
+    "요약": "북반구 겨울이 예상보다 따뜻했고 유럽 가스 재고가 채워져 현물 수요가 줄었다",
+    "시점": "2023-02~03",
+    "요인": "가스·유가",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Stockhead",
+      "url": "https://stockhead.com.au/resources/bulk-buys-like-a-cat-on-its-ninth-life-can-thermal-coal-bounce-back-yet-again"
+     }
+    ]
+   },
+   {
+    "요약": "중국 내수 가격이 하락하고 친황다오 재고가 6Mt 이상으로 늘었다",
+    "시점": "2023-03",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-china-coal-short-term-outlook-march-2023-150114835"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2023-06",
+  "이슈": [
+   {
+    "요약": "중국 1~5월 석탄 수입이 전년 대비 89.6% 증가했고, 엘니뇨로 냉방 수요 증가와 수력 발전 부진이 예상됐다.",
+    "시점": "2023-06",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "S&P Global",
+      "url": "https://www.spglobal.com/market-intelligence/en/news-insights/articles/2023/6/china-s-coal-imports-headed-for-record-year-in-2023-76185032"
+     }
+    ]
+   },
+   {
+    "요약": "유럽 석탄 재고 과잉과 가스 저장고 충만(83%), LNG 하락으로 유럽 석탄 수요가 약했다(게재 시점 불확실).",
+    "시점": "2023 상반기",
+    "요인": "가스·유가",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "TheCoalHub",
+      "url": "https://thecoalhub.com/?p=11452"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2023-12",
+  "이슈": [
+   {
+    "요약": "중국 항만·발전소 재고가 많고 장기계약 물량으로 국내 공급이 충분해 수입 수요가 약했다",
+    "시점": "2023-12",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "SXCoal 뉴캐슬 가격 하락 기사",
+      "url": "https://en.sxcoal.com/news/detail/1737351188542849025"
+     }
+    ]
+   },
+   {
+    "요약": "따뜻한 날씨와 미국 가스 재고 최고 수준으로 유가·가스가 약세였다",
+    "시점": "2023-12",
+    "요인": "가스·유가",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "SXCoal 유가 약세 기사",
+      "url": "https://en.sxcoal.com/news/detail/1734850909314416642"
+     }
+    ]
+   },
+   {
+    "요약": "일본·한국의 구매는 견조했다",
+    "시점": "2023-12",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "SXCoal 주간 시황",
+      "url": "https://en.sxcoal.com/news/detail/1735594008853958657"
+     }
+    ]
+   }
+  ],
+  "판정": "하락 우세",
+  "강도": "보통",
+  "판정확신": "중간"
+ },
+ {
+  "월": "2024-04",
+  "이슈": [
+   {
+    "요약": "러시아산 석탄이 일부 북아시아 시장에서 빠져나가 공급 측면의 지지 요인이 됐다.",
+    "시점": "2024-04",
+    "요인": "지정학",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie Short-term Outlook Apr 2024",
+      "url": "https://public.woodmac.com/reports/coal-global-thermal-short-term-outlook-april-2024-150265734"
+     }
+    ]
+   },
+   {
+    "요약": "중국 경기 지표가 예상보다 좋았고 안전 점검에 따른 국내 생산 중단 우려가 있었다.",
+    "시점": "2024-04",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie Short-term Outlook Apr 2024",
+      "url": "https://public.woodmac.com/reports/coal-global-thermal-short-term-outlook-april-2024-150265734"
+     }
+    ]
+   },
+   {
+    "요약": "환절기 수요가 부진했다.",
+    "시점": "2024-04",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie Short-term Outlook Apr 2024",
+      "url": "https://public.woodmac.com/reports/coal-global-thermal-short-term-outlook-april-2024-150265734"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2024-11",
+  "이슈": [
+   {
+    "요약": "중국 11월 열탄 수입이 전년 대비 약 27% 증가해 수입 수요가 강했다",
+    "시점": "2024-11",
+    "요인": "수요",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "SXCOAL",
+      "url": "https://sxcoal.substack.com/p/weekly-alert-china-nov-coal-imports"
+     }
+    ]
+   },
+   {
+    "요약": "중국 발전사가 높은 재고와 약세인 내수 시장 때문에 스팟 수입을 신중하게 구매했고, 온화한 날씨로 연안 발전소 일일 소비도 전년보다 낮았다",
+    "시점": "2024-11",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "SXCOAL",
+      "url": "https://sxcoal.substack.com/p/weekly-alert-china-nov-coal-imports"
+     },
+     {
+      "이름": "SunSirs",
+      "url": "https://www.sunsirs.com/uk/detail_news-22231.html"
+     }
+    ]
+   }
+  ],
+  "판정": "중립",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2025-10",
+  "이슈": [
+   {
+    "요약": "인도네시아 주요 생산자가 10~12월 선적 물량 대부분을 이미 판매해 공급이 빡빡했다(저열량탄 특히)",
+    "시점": "2025-09 말",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "alCircle",
+      "url": "https://www.alcircle.com/news/indonesian-thermal-coal-supply-to-tighten-next-quarter-115638"
+     }
+    ]
+   },
+   {
+    "요약": "중국 내수 석탄 가격이 10월 초 공급 축소로 크게 올랐다",
+    "시점": "2025-10",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "SunSirs",
+      "url": "https://www.sunsirs.com/uk/detail_news-25531.html"
+     }
+    ]
+   },
+   {
+    "요약": "중국의 해상 석탄 수요가 국내 생산 증가와 재생에너지 확대로 위축됐다",
+    "시점": "2025",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "APBI-ICMA(호주 정부 분기 보고서 인용)",
+      "url": "https://apbi-icma.org/media-article/global-thermal-coal-trade-sets-to-rebound-in-h2-2025-yet-likely-to-weaken-next-2-yrs"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ },
+ {
+  "월": "2026-03",
+  "이슈": [
+   {
+    "요약": "2월 말 호르무즈 해협 차단과 카타르 Ras Laffan LNG 설비 피해로 세계 LNG 공급의 약 5분의 1이 줄어 발전사가 석탄으로 이동",
+    "시점": "2026-02-말~03",
+    "요인": "가스·유가",
+    "방향": "상승",
+    "신뢰도": "높음",
+    "출처": [
+     {
+      "이름": "SXCOAL 인용 호주 산업과학자원부 보고",
+      "url": "https://apbi-icma.org/media-article/global-thermal-coal-demand-boosted-by-middle-east-supply-disruption-long-term-decline-remains-unchanged"
+     },
+     {
+      "이름": "IEA Coal Mid-Year Update 2026",
+      "url": "https://www.iea.org/reports/coal-mid-year-update-2026/prices"
+     }
+    ]
+   },
+   {
+    "요약": "재고 보충, 운임, 공급 타이트가 3월 말 아시아 석탄 시장을 지지",
+    "시점": "2026-03",
+    "요인": "공급",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "Mysteel(BigMint)",
+      "url": "https://www.mysteel.net/news/5118002-asian-thermal-coal-prices-break-higher-on-supply-tightness-after-a-fragmented-mar26"
+     }
+    ]
+   },
+   {
+    "요약": "인도네시아가 2026년 석탄 생산 쿼터 감축을 계획",
+    "시점": "2026",
+    "요인": "정책",
+    "방향": "상승",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "Wood Mackenzie",
+      "url": "https://www.woodmac.com/reports/coal-three-factors-driving-chinas-thermal-coal-market-in-2026-150441688/"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "강함",
+  "판정확신": "높음"
+ },
+ {
+  "월": "2026-05",
+  "이슈": [
+   {
+    "요약": "호르무즈 해협 차단(2월 말)과 카타르 LNG 설비 피해로 LNG 공급이 줄어 일본·한국·EU 향 석탄 선적이 4월에 전년 대비 27% 늘었고, 한국은 석탄발전 상한을 해제했다고 보도됨",
+    "시점": "2026-02~04",
+    "요인": "가스·유가",
+    "방향": "상승",
+    "신뢰도": "중간",
+    "출처": [
+     {
+      "이름": "BIMCO 인용 Petromindo",
+      "url": "https://www.petromindo.com/news/article/coal-shipments-to-japan-south-korea-and-eu-jump-on-lng-disruption-bimco"
+     },
+     {
+      "이름": "IEA",
+      "url": "https://www.iea.org/news/global-coal-demand-set-to-increase-this-year-amid-middle-east-conflict"
+     }
+    ]
+   },
+   {
+    "요약": "중국 해상 수입 수요가 약해 4월 수입이 전년 대비 약 30% 감소했다고 보도됨(단일 요약 출처)",
+    "시점": "2026-04",
+    "요인": "수요",
+    "방향": "하락",
+    "신뢰도": "낮음",
+    "출처": [
+     {
+      "이름": "APBI-ICMA",
+      "url": "https://apbi-icma.org/media-article/global-thermal-coal-demand-boosted-by-middle-east-supply-disruption-long-term-decline-remains-unchanged"
+     }
+    ]
+   }
+  ],
+  "판정": "상승 우세",
+  "강도": "약함",
+  "판정확신": "낮음"
+ }
+]
