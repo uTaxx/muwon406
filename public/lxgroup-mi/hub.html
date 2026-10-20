@@ -895,6 +895,19 @@
   .ind-item-detail .chg em{font-style:normal; font-weight:600; margin-left:4px;}
   .ind-item-detail .ind-note{font-size:11px; color:var(--muted); margin-top:6px;}
   .ind-item-detail .ind-chart-mini{height:110px; margin:10px 0 0;}
+  .coal-ev{margin-top:12px; padding-top:10px; border-top:1px dashed var(--line);}
+  .coal-ev-h{font-size:12.5px; font-weight:700;}
+  .coal-ev-h span{font-weight:500; font-size:11px; color:var(--muted); margin-left:6px;}
+  .coal-ev ul{list-style:none; margin:8px 0 0; padding:0;}
+  .coal-ev li{display:flex; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
+  .coal-ev li:last-child{border-bottom:0;}
+  .coal-ev-d{flex:none; width:38px; font-size:11px; color:var(--muted); padding-top:1px;}
+  .coal-ev-t{min-width:0; font-size:12.5px; line-height:1.45;}
+  .coal-ev-t a{color:var(--text); text-decoration:none;}
+  .coal-ev-t a:hover{text-decoration:underline;}
+  .coal-ev-m{font-size:11px; color:var(--muted); margin-top:2px;}
+  /* 붉은색은 우리 계열사와 적자에만 쓰는 약속이라 방향 표시는 화살표 글자로만 구분한다. */
+  .coal-ev-dir{font-weight:700; margin-left:2px; color:var(--pick-on);}
 
   /* 아래 실선은 그래프의 바닥이다. 눈이 걸칠 데가 없으면 선들이
      공중에 떠 보인다. */
@@ -2280,6 +2293,7 @@
   const KNOWLEDGE_URL    = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-knowledge';
   const DELETE_URL       = 'https://sondullab.app.n8n.cloud/webhook/lxgroup-delete-articles';
   const INDEX_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표');
+  const COALEV_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-석탄사건');
   const INDMEMBER_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표소속관리');
   const INDHOME_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-지표한눈에관리');
   const COMP_URL = 'https://sondullab.app.n8n.cloud/webhook/' + encodeURIComponent('lxgroup-경쟁사');
@@ -3620,6 +3634,53 @@
      설명·기간·증감·그래프가 펼쳐진다. 체크박스와 같은 열쇠 체계(열쇠@이름)를
      쓴다 — 항목 이름이 한 블록 안에서 겹치지 않는다는 전제도 그대로다. */
   let 지표펼침 = {};
+
+  /* 석탄(뉴캐슬) 지표를 펼치면 그 아래에 최근 사건 기사 목록을 붙인다(2026-10-20).
+     기사는 LXGroup_석탄사건수집이 매일 구글 뉴스 RSS로 모아 시트에 쌓은 것이고,
+     방향(상승·하락)은 제목 키워드 규칙으로 붙인 추정값이다. 가격 예측이 아니라 참고용이다.
+     응답은 한 번만 받아 두고 화면을 다시 그릴 때 재사용한다. 실패하면 이 칸만 안내 문구를 보이고
+     지표 화면은 그대로 뜬다. */
+  let 석탄사건 = null, 석탄사건적재중 = false, 석탄사건실패 = false;
+  function 석탄사건불러오기(){
+    if (석탄사건적재중) return;
+    석탄사건적재중 = true;
+    fetch(COALEV_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: sharedCode() || 'LXHOLDINGS' })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        석탄사건적재중 = false;
+        if (!d || d.ok === false){ 석탄사건실패 = true; } else { 석탄사건 = d; 석탄사건실패 = false; }
+        indDraw();
+      })
+      .catch(function(){ 석탄사건적재중 = false; 석탄사건실패 = true; indDraw(); });
+  }
+  function 석탄사건HTML(){
+    if (!석탄사건){
+      if (!석탄사건적재중 && !석탄사건실패) 석탄사건불러오기();
+      return '<div class="coal-ev"><div class="ind-note">' +
+        (석탄사건실패 ? '관련 사건 기사를 불러오지 못했습니다.' : '관련 사건 기사를 불러오는 중…') + '</div></div>';
+    }
+    const d = 석탄사건;
+    const 목록 = (d.분류 || []).slice(0, 8);
+    const 달 = (d.월별 || []).slice(-1)[0];
+    const 이번 = 달 && String(d.asOf || '').slice(0, 7) === 달.월 ? 달 : null;
+    const 줄들 = 목록.map(function(a){
+      const 방향 = a.방향 === '상승' ? '<b class="coal-ev-dir">▲ 상승 요인 추정</b>'
+                 : a.방향 === '하락' ? '<b class="coal-ev-dir">▼ 하락 요인 추정</b>' : '';
+      return '<li><span class="coal-ev-d">' + escapeHtml(String(a.일 || '').slice(5)) + '</span>' +
+        '<div class="coal-ev-t"><a href="' + escapeHtml(a.링크) + '" target="_blank" rel="noopener">' + escapeHtml(a.제목) + '</a>' +
+        '<div class="coal-ev-m">' + escapeHtml(a.출처 || '') + (a.유형 ? ' · ' + escapeHtml(a.유형) : '') + ' ' + 방향 + '</div></div></li>';
+    }).join('');
+    return '<div class="coal-ev">' +
+      '<div class="coal-ev-h">관련 사건 기사 <span>자동 수집 · ' + escapeHtml(String(d.수집최신 || '').slice(0, 10)) + ' 갱신</span></div>' +
+      (이번 ? '<div class="ind-leg-meta">이번 달 기사 ' + 이번.건수 + '건 중 키워드로 분류된 것 상승 ' + 이번.상승 + ' · 하락 ' + 이번.하락 + '</div>' : '') +
+      (줄들 ? '<ul>' + 줄들 + '</ul>' : '<div class="ind-note">분류된 기사가 아직 없습니다.</div>') +
+      '<div class="ind-note">방향은 제목 키워드 규칙으로 붙인 추정값이며 확정이 아닙니다. 가격 예측에 쓰지 않습니다.</div>' +
+    '</div>';
+  }
   function 그래프체크박스(열쇠, 이름){
     const 키 = 열쇠 + '@' + 이름;
     const 숨김 = 그래프숨김[키] === true;
@@ -3856,6 +3917,7 @@
               '<div class="ind-leg-meta">' + escapeHtml(indPeriodLabel(x, R)) + '</div>' +
               (b ? indChgHtml(b) : '') +
               상세그래프 +
+              (x.id === 'COAL_NEWC' ? 석탄사건HTML() : '') +
             '</div>'
           : '') +
       '</div>';
