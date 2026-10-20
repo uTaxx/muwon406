@@ -3641,6 +3641,9 @@
      응답은 한 번만 받아 두고 화면을 다시 그릴 때 재사용한다. 실패하면 이 칸만 안내 문구를 보이고
      지표 화면은 그대로 뜬다. */
   let 석탄사건 = null, 석탄사건적재중 = false, 석탄사건실패 = false;
+  /* 사건 기사의 방향이 가격 변동을 설명하는지 검증이 끝나기 전까지는 화면에 보이지 않는다(2026-10-20).
+     검증하는 사람만 주소 뒤에 ?coalev=1 을 붙여 연다. 검증이 끝나면 아래 한 줄을 true 로 바꾼다. */
+  const 석탄사건표시 = false || new URLSearchParams(window.location.search).get('coalev') === '1';
   function 석탄사건불러오기(){
     if (석탄사건적재중) return;
     석탄사건적재중 = true;
@@ -3917,7 +3920,7 @@
               '<div class="ind-leg-meta">' + escapeHtml(indPeriodLabel(x, R)) + '</div>' +
               (b ? indChgHtml(b) : '') +
               상세그래프 +
-              (x.id === 'COAL_NEWC' ? 석탄사건HTML() : '') +
+              (x.id === 'COAL_NEWC' && 석탄사건표시 ? 석탄사건HTML() : '') +
             '</div>'
           : '') +
       '</div>';
