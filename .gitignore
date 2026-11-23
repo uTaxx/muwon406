@@ -16,3 +16,13 @@ LCIP_PILOT/n8n_credential_ids.json
 # Apps Script
 .clasprc.json
 apps-script/node_modules/
+
+# 서버 프로그램(server/) 산출물과 로컬 백업 — 키·데이터는 저장소에 넣지 않는다
+server/.env
+server/data/
+server/logs/
+server/node_modules/
+*.db
+*.sqlite
+*.bundle
+dist/
